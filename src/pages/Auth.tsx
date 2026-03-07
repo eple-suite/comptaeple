@@ -15,6 +15,18 @@ const Auth = () => {
   const [loginForm, setLoginForm] = useState({ email: "", password: "" });
   const [signupForm, setSignupForm] = useState({ email: "", password: "", first_name: "", last_name: "" });
   const [loading, setLoading] = useState(false);
+  const [oauthLoading, setOauthLoading] = useState(false);
+
+  const handleGoogleSignIn = async () => {
+    setOauthLoading(true);
+    const result = await lovable.auth.signInWithOAuth("google", {
+      redirect_uri: window.location.origin,
+    });
+    if (result?.error) {
+      toast({ title: "Erreur Google", description: String(result.error), variant: "destructive" });
+    }
+    setOauthLoading(false);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
