@@ -31,9 +31,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 const Dashboard = () => {
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <h1 className="text-2xl font-bold font-display">Tableau de bord</h1>
-        <p className="text-sm text-muted-foreground mt-1">Exercice 2023 — Vue d'ensemble financière</p>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold font-display">Tableau de bord</h1>
+          <p className="text-sm text-muted-foreground mt-1">Exercice 2023 — Vue d'ensemble financière</p>
+        </div>
+        <Button size="sm" onClick={() => generateFinancialReport()} className="gradient-primary border-0">
+          <Download className="h-4 w-4 mr-1" /> Rapport PDF
+        </Button>
       </motion.div>
 
       {/* KPIs */}
