@@ -1,5 +1,7 @@
 import { motion } from "framer-motion";
-import { Wallet, TrendingUp, Landmark, CalendarDays, BarChart3, PieChart, Receipt, Users } from "lucide-react";
+import { Wallet, TrendingUp, Landmark, CalendarDays, BarChart3, PieChart, Receipt, Users, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { generateFinancialReport } from "@/lib/pdfGenerator";
 import { KpiCard } from "@/components/KpiCard";
 import {
   mockIndicators,
