@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import DataImport from "./pages/DataImport";
@@ -16,9 +17,36 @@ import FondsSociaux from "./pages/FondsSociaux";
 import SATD from "./pages/SATD";
 import CreditNourriture from "./pages/CreditNourriture";
 import SettingsPage from "./pages/SettingsPage";
+import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
+
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+  if (!session) return <Navigate to="/auth" replace />;
+  return <>{children}</>;
+}
+
+function PublicRoute({ children }: { children: React.ReactNode }) {
+  const { session, loading } = useAuth();
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+      </div>
+    );
+  }
+  if (session) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
@@ -26,23 +54,26 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/import" element={<DataImport />} />
-            <Route path="/etablissements" element={<Establishments />} />
-            <Route path="/balance" element={<BalanceAnalysis />} />
-            <Route path="/fonds-roulement" element={<WorkingCapital />} />
-            <Route path="/indicateurs" element={<Indicators />} />
-            <Route path="/annexe" element={<AccountingAnnex />} />
-            <Route path="/voyages" element={<Voyages />} />
-            <Route path="/fonds-sociaux" element={<FondsSociaux />} />
-            <Route path="/satd" element={<SATD />} />
-            <Route path="/credit-nourriture" element={<CreditNourriture />} />
-            <Route path="/parametres" element={<SettingsPage />} />
-          </Route>
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
+            <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/import" element={<DataImport />} />
+              <Route path="/etablissements" element={<Establishments />} />
+              <Route path="/balance" element={<BalanceAnalysis />} />
+              <Route path="/fonds-roulement" element={<WorkingCapital />} />
+              <Route path="/indicateurs" element={<Indicators />} />
+              <Route path="/annexe" element={<AccountingAnnex />} />
+              <Route path="/voyages" element={<Voyages />} />
+              <Route path="/fonds-sociaux" element={<FondsSociaux />} />
+              <Route path="/satd" element={<SATD />} />
+              <Route path="/credit-nourriture" element={<CreditNourriture />} />
+              <Route path="/parametres" element={<SettingsPage />} />
+            </Route>
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
