@@ -1,0 +1,1 @@
+ALTER TABLE public.establishments ADD COLUMN opale_number text DEFAULT '' NOT NULL;
