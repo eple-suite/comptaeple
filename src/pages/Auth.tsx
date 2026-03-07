@@ -8,6 +8,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { lovable } from "@/integrations/lovable/index";
 
 const Auth = () => {
   const { signIn, signUp } = useAuth();
