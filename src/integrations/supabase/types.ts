@@ -14,16 +14,252 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      balances: {
+        Row: {
+          account_label: string
+          account_number: string
+          balance: number
+          created_at: string
+          credit: number
+          debit: number
+          establishment_id: string
+          id: string
+          year: number
+        }
+        Insert: {
+          account_label?: string
+          account_number: string
+          balance?: number
+          created_at?: string
+          credit?: number
+          debit?: number
+          establishment_id: string
+          id?: string
+          year: number
+        }
+        Update: {
+          account_label?: string
+          account_number?: string
+          balance?: number
+          created_at?: string
+          credit?: number
+          debit?: number
+          establishment_id?: string
+          id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balances_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      establishments: {
+        Row: {
+          academy: string
+          city: string
+          created_at: string
+          id: string
+          name: string
+          type: string
+          uai: string
+          updated_at: string
+        }
+        Insert: {
+          academy?: string
+          city?: string
+          created_at?: string
+          id?: string
+          name: string
+          type?: string
+          uai: string
+          updated_at?: string
+        }
+        Update: {
+          academy?: string
+          city?: string
+          created_at?: string
+          id?: string
+          name?: string
+          type?: string
+          uai?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      indicators: {
+        Row: {
+          bfr: number | null
+          charges_weight: number | null
+          created_at: string
+          establishment_id: string
+          exercise_result: number | null
+          fdr: number | null
+          id: string
+          operating_days: number | null
+          recovery_rate: number | null
+          srh_weight: number | null
+          treasury: number | null
+          year: number
+        }
+        Insert: {
+          bfr?: number | null
+          charges_weight?: number | null
+          created_at?: string
+          establishment_id: string
+          exercise_result?: number | null
+          fdr?: number | null
+          id?: string
+          operating_days?: number | null
+          recovery_rate?: number | null
+          srh_weight?: number | null
+          treasury?: number | null
+          year: number
+        }
+        Update: {
+          bfr?: number | null
+          charges_weight?: number | null
+          created_at?: string
+          establishment_id?: string
+          exercise_result?: number | null
+          fdr?: number | null
+          id?: string
+          operating_days?: number | null
+          recovery_rate?: number | null
+          srh_weight?: number | null
+          treasury?: number | null
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "indicators_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logs: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          id: string
+          uai: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          uai?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          uai?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          academy: string | null
+          created_at: string
+          first_name: string
+          id: string
+          last_name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          academy?: string | null
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          academy?: string | null
+          created_at?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_establishments: {
+        Row: {
+          establishment_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          establishment_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          establishment_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_establishments_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "agent"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +386,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "agent"],
+    },
   },
 } as const
