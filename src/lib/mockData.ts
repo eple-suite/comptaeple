@@ -9,6 +9,41 @@ export const mockIndicators = {
   poidsSRH: 62.3,
 };
 
+// Données pour le calcul de la trésorerie propre (autonomie financière)
+export const mockDettes = {
+  subventions: 45000,         // Subventions reçues non consommées
+  reliquatsSubventions: 12300, // Reliquats de subventions
+  avancesEleves: 18500,        // Avances des élèves
+  avancesCommensaux: 4200,     // Avances des commensaux
+};
+
+export const mockTresoreriePropreData = {
+  tresorerieBrute: 167382,
+  totalDettes: 45000 + 12300 + 18500 + 4200, // 80000
+  tresoreriePropre: 167382 - (45000 + 12300 + 18500 + 4200), // 87382
+};
+
+// Données pour le prélèvement sur FDR (modèle Marseille)
+export const mockPrelevementFDR = {
+  fdrAvantPrelevement: 245832,
+  montantPrelevement: 35000,
+  prelevementsAutorises: 15000, // Prélèvements déjà autorisés dans l'exercice
+  fdrApresPrelevement: 245832 - 35000,
+  // Répartition avant prélèvement
+  repartitionAvant: [
+    { name: "FDR mobilisable", value: 245832, fill: "hsl(215, 70%, 45%)" },
+    { name: "BFR", value: 78450, fill: "hsl(38, 92%, 50%)" },
+  ],
+  // Répartition après prélèvement
+  repartitionApres: [
+    { name: "FDR résiduel", value: 245832 - 35000, fill: "hsl(160, 45%, 45%)" },
+    { name: "Prélèvement demandé", value: 35000, fill: "hsl(0, 70%, 55%)" },
+    { name: "BFR", value: 78450, fill: "hsl(38, 92%, 50%)" },
+  ],
+  // Jours de fonctionnement après prélèvement
+  joursFonctionnementApres: 36,
+};
+
 export const mockEvolutionData = [
   { year: "2019", fdr: 210000, bfr: 65000, tresorerie: 145000 },
   { year: "2020", fdr: 198000, bfr: 72000, tresorerie: 126000 },
