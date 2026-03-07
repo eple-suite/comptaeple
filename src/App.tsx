@@ -11,7 +11,11 @@ import BalanceAnalysis from "./pages/BalanceAnalysis";
 import WorkingCapital from "./pages/WorkingCapital";
 import Indicators from "./pages/Indicators";
 import AccountingAnnex from "./pages/AccountingAnnex";
-import ComingSoon from "./pages/ComingSoon";
+import Voyages from "./pages/Voyages";
+import FondsSociaux from "./pages/FondsSociaux";
+import SATD from "./pages/SATD";
+import CreditNourriture from "./pages/CreditNourriture";
+import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -31,11 +35,11 @@ const App = () => (
             <Route path="/fonds-roulement" element={<WorkingCapital />} />
             <Route path="/indicateurs" element={<Indicators />} />
             <Route path="/annexe" element={<AccountingAnnex />} />
-            <Route path="/voyages" element={<ComingSoon />} />
-            <Route path="/fonds-sociaux" element={<ComingSoon />} />
-            <Route path="/satd" element={<ComingSoon />} />
-            <Route path="/credit-nourriture" element={<ComingSoon />} />
-            <Route path="/parametres" element={<ComingSoon />} />
+            <Route path="/voyages" element={<Voyages />} />
+            <Route path="/fonds-sociaux" element={<FondsSociaux />} />
+            <Route path="/satd" element={<SATD />} />
+            <Route path="/credit-nourriture" element={<CreditNourriture />} />
+            <Route path="/parametres" element={<SettingsPage />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
