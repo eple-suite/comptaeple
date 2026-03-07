@@ -68,15 +68,22 @@ const SettingsPage = () => {
       if (opaleNumber && !opaleRegex.test(opaleNumber.toUpperCase())) {
         throw new Error("Le numéro Op@le doit être au format P00804 (P suivi de 5 chiffres)");
       }
-      const { error } = await supabase.from("establishments").insert({
+      const { data, error } = await supabase.from("establishments").insert({
         uai: uaiInput.toUpperCase(),
         name: lookupResult.nom_etablissement,
         type: lookupResult.type_etablissement || "Lycée",
         academy: lookupResult.libelle_academie || "",
         city: lookupResult.nom_commune || "",
         opale_number: opaleNumber.toUpperCase(),
-      });
+      }).select().single();
       if (error) throw error;
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && data) {
+        await supabase.from("user_establishments").insert({
+          user_id: user.id,
+          establishment_id: data.id,
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["establishments"] });
