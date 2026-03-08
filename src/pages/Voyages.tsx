@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Bus, Plus, Users, Euro, CalendarDays, MapPin, Trash2, Edit, Eye, ShieldAlert, FileText, Download, ChevronRight, Clock, CheckCircle2, XCircle } from "lucide-react";
+import { Bus, Plus, Users, Euro, CalendarDays, MapPin, Trash2, Edit, Eye, ShieldAlert, FileText, Download, ChevronRight, Clock, CheckCircle2, XCircle, Landmark, Gift } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,10 +15,13 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/mockData";
 import { KpiCard } from "@/components/KpiCard";
-import { Voyage, initialVoyages, STATUT_CONFIG, SEUILS, CATEGORIES_PRESTATIONS, getRecommandation } from "./voyages/types";
+import { Voyage, initialVoyages, STATUT_CONFIG, SEUILS, CATEGORIES_PRESTATIONS, CHECKLIST_DEFAUT, getRecommandation } from "./voyages/types";
 import { VoyageElevesTab } from "./voyages/VoyageElevesTab";
 import { VoyageMarchesTab } from "./voyages/VoyageMarchesTab";
 import { VoyageBilanTab } from "./voyages/VoyageBilanTab";
+import { VoyageActesCATab } from "./voyages/VoyageActesCATab";
+import { VoyageSubventionsTab } from "./voyages/VoyageSubventionsTab";
+import { VoyageParticipantsTab } from "./voyages/VoyageParticipantsTab";
 
 const Voyages = () => {
   const [voyages, setVoyages] = useState<Voyage[]>(initialVoyages);
@@ -91,10 +94,23 @@ const Voyages = () => {
       subventionAutre: subvAutre,
       autofinancement: autofi,
       eleves: [],
+      accompagnateurs: [],
       dateVoteCA: form.dateVoteCA,
       dateLimiteInscription: form.dateLimiteInscription,
       echeances: [{ date: form.dateLimiteInscription || form.dateDepart, pourcentage: 100 }],
       observations: form.observations,
+      actesCA: [],
+      conventions: [],
+      subventionsDetail: [],
+      checklist: CHECKLIST_DEFAUT.map((item, i) => ({ ...item, id: `chk-new-${i}`, fait: false, observations: "" })),
+      devis: [],
+      lieuDepart: "",
+      horairesDepart: "",
+      horairesRetour: "",
+      moyenTransport: "",
+      typeHebergement: "",
+      contactUrgence: "",
+      telUrgence: "",
     };
     setVoyages([...voyages, newVoyage]);
     setOpen(false);
@@ -116,6 +132,13 @@ const Voyages = () => {
   // Workflow steps
   const statutSteps = ["projet", "vote_ca", "planifie", "valide", "realise", "bilan"] as const;
 
+  // Checklist global progress
+  const checklistGlobal = useMemo(() => {
+    const total = voyagesActifs.reduce((s, v) => s + v.checklist.length, 0);
+    const done = voyagesActifs.reduce((s, v) => s + v.checklist.filter(c => c.fait).length, 0);
+    return { total, done, pct: total > 0 ? (done / total) * 100 : 0 };
+  }, [voyagesActifs]);
+
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
@@ -123,7 +146,7 @@ const Voyages = () => {
           <div>
             <h1 className="text-2xl font-bold font-display">Voyages scolaires</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              Gestion complète : inscription élèves, suivi financier, conformité marchés publics
+              Gestion complète : actes du CA, participants, subventions, marchés publics, bilan financier
             </p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
@@ -182,7 +205,7 @@ const Voyages = () => {
 
       {/* Navigation par onglets */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full justify-start">
+        <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
           <TabsTrigger value="tableau-bord">📊 Tableau de bord</TabsTrigger>
           <TabsTrigger value="marches-publics" className="relative">
             ⚖️ Marchés publics
@@ -190,20 +213,24 @@ const Voyages = () => {
               <Badge variant="destructive" className="ml-1.5 h-4 w-4 p-0 text-[9px] flex items-center justify-center rounded-full">{alertesCount}</Badge>
             )}
           </TabsTrigger>
-          {selectedVoyage && <TabsTrigger value="eleves">👥 Élèves — {selectedVoyage.destination}</TabsTrigger>}
-          {selectedVoyage && <TabsTrigger value="bilan">📋 Bilan — {selectedVoyage.destination}</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="actes-ca">🏛️ Actes CA & Conformité</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="participants">👥 Participants</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="eleves">🎒 Élèves & Paiements</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="subventions">💰 Subventions & Dons</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="bilan">📋 Bilan financier</TabsTrigger>}
         </TabsList>
 
         {/* TAB: Tableau de bord */}
         <TabsContent value="tableau-bord" className="space-y-5">
           {/* KPIs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4">
             <KpiCard title="Voyages actifs" value={String(voyagesActifs.length)} subtitle={`${voyages.length} total`} icon={Bus} variant="primary" />
             <KpiCard title="Budget total" value={formatCurrency(totaux.budget)} icon={Euro} variant="primary" />
             <KpiCard title="Part familles" value={formatCurrency(totaux.familles)} subtitle={totaux.budget > 0 ? `${((totaux.familles / totaux.budget) * 100).toFixed(0)}%` : "—"} icon={Users} variant="success" />
-            <KpiCard title="Subventions" value={formatCurrency(totaux.subventions)} icon={CalendarDays} variant="default" />
-            <KpiCard title="Charge établissement" value={formatCurrency(totaux.charge)} icon={Bus} variant="warning" />
-            <KpiCard title="Coût moyen / élève" value={formatCurrency(coutMoyenEleve)} subtitle={`${totaux.eleves} élèves`} icon={Users} variant="primary" />
+            <KpiCard title="Subventions" value={formatCurrency(totaux.subventions)} icon={Gift} variant="default" />
+            <KpiCard title="Charge étab." value={formatCurrency(totaux.charge)} icon={Bus} variant="warning" />
+            <KpiCard title="Coût / élève" value={formatCurrency(coutMoyenEleve)} subtitle={`${totaux.eleves} élèves`} icon={Users} variant="primary" />
+            <KpiCard title="Conformité" value={`${checklistGlobal.pct.toFixed(0)}%`} subtitle={`${checklistGlobal.done}/${checklistGlobal.total}`} icon={CheckCircle2} variant={checklistGlobal.pct >= 80 ? "success" : "warning"} />
           </div>
 
           {/* Alertes marchés publics résumé */}
@@ -234,9 +261,9 @@ const Voyages = () => {
                     <TableHead>Destination</TableHead>
                     <TableHead>Classe / Référent</TableHead>
                     <TableHead>Dates</TableHead>
-                    <TableHead className="text-center">Élèves</TableHead>
+                    <TableHead className="text-center">Participants</TableHead>
                     <TableHead className="text-right">Budget</TableHead>
-                    <TableHead className="text-right">Charge étab.</TableHead>
+                    <TableHead className="text-center">Conformité</TableHead>
                     <TableHead>Progression</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead className="text-center">Actions</TableHead>
@@ -247,6 +274,9 @@ const Voyages = () => {
                     const step = STATUT_CONFIG[v.statut].step;
                     const pctWorkflow = v.statut === "annule" ? 0 : ((step + 1) / statutSteps.length) * 100;
                     const couverture = v.budgetTotal > 0 ? ((v.participationFamilles + v.subventions + v.autofinancement) / v.budgetTotal) * 100 : 0;
+                    const checkDone = v.checklist.filter(c => c.fait).length;
+                    const checkTotal = v.checklist.length;
+                    const checkPct = checkTotal > 0 ? (checkDone / checkTotal) * 100 : 0;
                     return (
                       <TableRow key={v.id} className={v.statut === "annule" ? "opacity-50" : ""}>
                         <TableCell>
@@ -271,7 +301,12 @@ const Voyages = () => {
                           <div className="font-mono text-sm font-semibold">{formatCurrency(v.budgetTotal)}</div>
                           <div className="text-[10px] text-muted-foreground">{couverture.toFixed(0)}% couvert</div>
                         </TableCell>
-                        <TableCell className="text-right font-mono text-sm">{formatCurrency(v.chargeEtablissement)}</TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex flex-col items-center gap-0.5">
+                            <Progress value={checkPct} className={`h-1.5 w-16 ${checkPct >= 100 ? "[&>div]:bg-success" : checkPct >= 50 ? "" : "[&>div]:bg-warning"}`} />
+                            <span className="text-[9px] text-muted-foreground">{checkDone}/{checkTotal}</span>
+                          </div>
+                        </TableCell>
                         <TableCell className="min-w-[100px]">
                           <Progress value={pctWorkflow} className="h-1.5" />
                           <div className="text-[9px] text-muted-foreground mt-0.5">
@@ -294,7 +329,10 @@ const Voyages = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1">
-                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Voir les élèves" onClick={() => { setSelectedVoyageId(v.id); setActiveTab("eleves"); }}>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Actes CA & Conformité" onClick={() => { setSelectedVoyageId(v.id); setActiveTab("actes-ca"); }}>
+                              <Landmark className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Participants & Devis" onClick={() => { setSelectedVoyageId(v.id); setActiveTab("participants"); }}>
                               <Users className="h-3.5 w-3.5" />
                             </Button>
                             <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Bilan financier" onClick={() => { setSelectedVoyageId(v.id); setActiveTab("bilan"); }}>
@@ -342,12 +380,39 @@ const Voyages = () => {
           <VoyageMarchesTab voyages={voyages} />
         </TabsContent>
 
+        {/* TAB: Actes CA & Conformité */}
+        <TabsContent value="actes-ca">
+          {selectedVoyage ? (
+            <VoyageActesCATab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour voir les actes du CA et la conformité.</p>
+          )}
+        </TabsContent>
+
+        {/* TAB: Participants */}
+        <TabsContent value="participants">
+          {selectedVoyage ? (
+            <VoyageParticipantsTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
+          )}
+        </TabsContent>
+
         {/* TAB: Élèves */}
         <TabsContent value="eleves">
           {selectedVoyage ? (
             <VoyageElevesTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
           ) : (
             <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour voir les élèves.</p>
+          )}
+        </TabsContent>
+
+        {/* TAB: Subventions */}
+        <TabsContent value="subventions">
+          {selectedVoyage ? (
+            <VoyageSubventionsTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
           )}
         </TabsContent>
 
