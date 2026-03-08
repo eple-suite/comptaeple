@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Heart, Plus, Trash2, Users, Euro, FileText, TrendingUp, Calendar, Search, Filter, CheckCircle2, Clock, XCircle } from "lucide-react";
+import { Heart, Plus, Trash2, Users, Euro, FileText, Search, CheckCircle2, Clock, XCircle, Eye, AlertTriangle, Wallet, Calendar, ChevronDown, ChevronUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,119 +10,100 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/lib/mockData";
 import { KpiCard } from "@/components/KpiCard";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
-
-interface Aide {
-  id: string;
-  beneficiaire: string;
-  type: "FSL" | "FSC" | "FSE" | "autre";
-  montant: number;
-  date: string;
-  motif: string;
-  statut: "verse" | "en_attente" | "refuse";
-  dateCommission: string;
-  commentaire: string;
-  classe: string;
-  regime: "interne" | "dp" | "externe";
-  criteresSociaux: string;
-  numeroDecision: string;
-}
-
-const initialAides: Aide[] = [
-  { id: "1", beneficiaire: "Élève A", type: "FSL", montant: 350, date: "2024-01-15", motif: "Restauration — créances impayées", statut: "verse", dateCommission: "2024-01-10", commentaire: "Situation familiale difficile, revenus < seuil", classe: "2nde B", regime: "dp", criteresSociaux: "RSA", numeroDecision: "FSL-2024-001" },
-  { id: "2", beneficiaire: "Élève B", type: "FSC", montant: 200, date: "2024-01-20", motif: "Fournitures scolaires", statut: "verse", dateCommission: "2024-01-10", commentaire: "Famille monoparentale", classe: "5ème A", regime: "externe", criteresSociaux: "Famille monoparentale", numeroDecision: "FSC-2024-001" },
-  { id: "3", beneficiaire: "Élève C", type: "FSL", montant: 180, date: "2024-02-05", motif: "Transport scolaire", statut: "en_attente", dateCommission: "2024-02-15", commentaire: "Dossier en cours d'instruction", classe: "1ère S", regime: "dp", criteresSociaux: "AAH", numeroDecision: "" },
-  { id: "4", beneficiaire: "Élève D", type: "FSE", montant: 450, date: "2024-02-10", motif: "Équipement professionnel (bac pro)", statut: "verse", dateCommission: "2024-02-01", commentaire: "Besoin d'équipement pour stage", classe: "Terminale Pro", regime: "interne", criteresSociaux: "Boursier échelon 5", numeroDecision: "FSE-2024-001" },
-  { id: "5", beneficiaire: "Élève E", type: "FSC", montant: 120, date: "2024-03-01", motif: "Sortie pédagogique", statut: "refuse", dateCommission: "2024-02-25", commentaire: "Revenus au-dessus du seuil", classe: "4ème C", regime: "dp", criteresSociaux: "—", numeroDecision: "" },
-  { id: "6", beneficiaire: "Élève F", type: "FSL", montant: 280, date: "2024-03-10", motif: "Restauration — trimestre 2", statut: "verse", dateCommission: "2024-03-05", commentaire: "Renouvellement aide T1", classe: "Terminale L", regime: "interne", criteresSociaux: "RSA", numeroDecision: "FSL-2024-002" },
-  { id: "7", beneficiaire: "Élève G", type: "autre", montant: 150, date: "2024-03-15", motif: "Aide exceptionnelle — incendie domicile", statut: "verse", dateCommission: "2024-03-12", commentaire: "Aide d'urgence chef d'établissement", classe: "3ème B", regime: "dp", criteresSociaux: "Urgence sociale", numeroDecision: "AEX-2024-001" },
-];
-
-const typeLabels: Record<string, string> = {
-  FSL: "Fonds Social Lycéen",
-  FSC: "Fonds Social Collégien",
-  FSE: "Fonds Social pour les Cantines (état)",
-  autre: "Aide exceptionnelle",
-};
-
-const statutConfig = {
-  verse: { label: "Versé", class: "bg-success/10 text-success border-0", icon: CheckCircle2 },
-  en_attente: { label: "En attente", class: "bg-warning/10 text-warning border-0", icon: Clock },
-  refuse: { label: "Refusé", class: "bg-destructive/10 text-destructive border-0", icon: XCircle },
-};
+import {
+  DemandeAide, Commission, Budget, Eleve,
+  mockDemandes, mockCommissions, mockBudgets, mockEleves,
+  NATURES_AIDE, TYPE_LABELS, STATUT_CONFIG, PIECES_REQUISES,
+} from "./fonds-sociaux/types";
+import FondsSociauxBudget from "./fonds-sociaux/FondsSociauxBudget";
+import FondsSociauxCommissions from "./fonds-sociaux/FondsSociauxCommissions";
+import FondsSociauxDocuments from "./fonds-sociaux/FondsSociauxDocuments";
+import FondsSociauxStats from "./fonds-sociaux/FondsSociauxStats";
 
 const FondsSociaux = () => {
-  const [aides, setAides] = useState<Aide[]>(initialAides);
+  const [demandes, setDemandes] = useState<DemandeAide[]>(mockDemandes);
+  const [commissions, setCommissions] = useState<Commission[]>(mockCommissions);
+  const [budgets] = useState<Budget[]>(mockBudgets);
   const [open, setOpen] = useState(false);
-  const [filterType, setFilterType] = useState<string>("all");
-  const [filterStatut, setFilterStatut] = useState<string>("all");
+  const [detailDemande, setDetailDemande] = useState<DemandeAide | null>(null);
+  const [filterType, setFilterType] = useState("all");
+  const [filterStatut, setFilterStatut] = useState("all");
+  const [filterTrimestre, setFilterTrimestre] = useState("all");
   const [search, setSearch] = useState("");
+
+  // Form state
   const [form, setForm] = useState({
-    beneficiaire: "", type: "FSL" as Aide["type"], montant: "", motif: "", date: "",
-    dateCommission: "", commentaire: "", classe: "", regime: "dp" as Aide["regime"],
-    criteresSociaux: "",
+    eleveId: "", type: "FSL" as DemandeAide["type"], nature: "restauration",
+    montantDemande: "", dateDepot: "", dateLimite: "", commissionId: "",
+    motifDetaille: "", commentaireAS: "", commentaireGestion: "",
+    trimestre: "T1" as DemandeAide["trimestre"], serviceRestauration: false,
+    piecesFournies: [] as string[],
   });
 
   const filtered = useMemo(() => {
-    return aides.filter(a => {
-      if (filterType !== "all" && a.type !== filterType) return false;
-      if (filterStatut !== "all" && a.statut !== filterStatut) return false;
-      if (search && !a.beneficiaire.toLowerCase().includes(search.toLowerCase()) && !a.motif.toLowerCase().includes(search.toLowerCase())) return false;
+    return demandes.filter(d => {
+      if (filterType !== "all" && d.type !== filterType) return false;
+      if (filterStatut !== "all" && d.statut !== filterStatut) return false;
+      if (filterTrimestre !== "all" && d.trimestre !== filterTrimestre) return false;
+      if (search) {
+        const s = search.toLowerCase();
+        if (!d.eleve.nom.toLowerCase().includes(s) && !d.eleve.prenom.toLowerCase().includes(s) && !d.motifDetaille.toLowerCase().includes(s)) return false;
+      }
       return true;
     });
-  }, [aides, filterType, filterStatut, search]);
+  }, [demandes, filterType, filterStatut, filterTrimestre, search]);
 
-  const totalVerse = aides.filter(a => a.statut === "verse").reduce((s, a) => s + a.montant, 0);
-  const totalEnAttente = aides.filter(a => a.statut === "en_attente").reduce((s, a) => s + a.montant, 0);
-  const totalRefuse = aides.filter(a => a.statut === "refuse").reduce((s, a) => s + a.montant, 0);
-  const nbBeneficiaires = new Set(aides.filter(a => a.statut === "verse").map(a => a.beneficiaire)).size;
-  const nbDossiers = aides.length;
-  const tauxAcceptation = nbDossiers > 0 ? ((aides.filter(a => a.statut === "verse").length / nbDossiers) * 100) : 0;
+  // KPIs
+  const accordes = demandes.filter(d => d.statut === "accorde" || d.statut === "verse");
+  const totalVerse = accordes.reduce((s, d) => s + d.montantAccorde, 0);
+  const enInstruction = demandes.filter(d => d.statut === "instruction" || d.statut === "commission");
+  const totalEnAttente = enInstruction.reduce((s, d) => s + d.montantDemande, 0);
+  const nbBeneficiaires = new Set(accordes.map(d => d.eleveId)).size;
+  const tauxAcceptation = demandes.length > 0 ? ((accordes.length / demandes.length) * 100) : 0;
   const montantMoyen = nbBeneficiaires > 0 ? totalVerse / nbBeneficiaires : 0;
-
-  const repartitionType = [
-    { name: "FSL", value: aides.filter(a => a.type === "FSL" && a.statut === "verse").reduce((s, a) => s + a.montant, 0), fill: "hsl(215, 70%, 45%)" },
-    { name: "FSC", value: aides.filter(a => a.type === "FSC" && a.statut === "verse").reduce((s, a) => s + a.montant, 0), fill: "hsl(160, 45%, 45%)" },
-    { name: "FSE", value: aides.filter(a => a.type === "FSE" && a.statut === "verse").reduce((s, a) => s + a.montant, 0), fill: "hsl(280, 60%, 55%)" },
-    { name: "Autre", value: aides.filter(a => a.type === "autre" && a.statut === "verse").reduce((s, a) => s + a.montant, 0), fill: "hsl(38, 92%, 50%)" },
-  ].filter(r => r.value > 0);
-
-  const repartitionMotif = useMemo(() => {
-    const motifs: Record<string, number> = {};
-    aides.filter(a => a.statut === "verse").forEach(a => {
-      const cat = a.motif.split("—")[0].trim();
-      motifs[cat] = (motifs[cat] || 0) + a.montant;
-    });
-    return Object.entries(motifs).map(([name, value]) => ({ name, value }));
-  }, [aides]);
-
-  const repartitionRegime = useMemo(() => {
-    const labels: Record<string, string> = { interne: "Internes", dp: "Demi-pensionnaires", externe: "Externes" };
-    const regimes: Record<string, number> = {};
-    aides.filter(a => a.statut === "verse").forEach(a => {
-      const k = labels[a.regime] || a.regime;
-      regimes[k] = (regimes[k] || 0) + 1;
-    });
-    return Object.entries(regimes).map(([name, value]) => ({ name, value }));
-  }, [aides]);
+  const totalDispo = budgets.reduce((s, b) => s + b.totalDisponible, 0);
+  const totalReste = budgets.reduce((s, b) => s + b.reste, 0);
 
   const handleAdd = () => {
-    const count = aides.filter(a => a.type === form.type).length + 1;
-    const prefix = form.type === "autre" ? "AEX" : form.type;
-    setAides([...aides, {
-      id: Date.now().toString(), ...form, montant: Number(form.montant), statut: "en_attente",
-      numeroDecision: "",
-    }]);
+    const eleve = mockEleves.find(e => e.id === form.eleveId);
+    if (!eleve) return;
+    const newDemande: DemandeAide = {
+      id: `d${Date.now()}`, eleveId: form.eleveId, eleve,
+      type: form.type, nature: form.nature,
+      montantDemande: Number(form.montantDemande), montantAccorde: 0,
+      dateDepot: form.dateDepot || new Date().toISOString().split("T")[0],
+      dateLimite: form.dateLimite, commissionId: form.commissionId,
+      statut: "instruction", motifDetaille: form.motifDetaille, motifRefus: "",
+      piecesFournies: form.piecesFournies, piecesManquantes: PIECES_REQUISES.filter(p => !form.piecesFournies.includes(p)),
+      commentaireAS: form.commentaireAS, commentaireGestion: form.commentaireGestion,
+      numeroDecision: "", dateVersement: "", mandatRef: "",
+      serviceRestauration: form.serviceRestauration, trimestre: form.trimestre,
+    };
+    setDemandes([...demandes, newDemande]);
     setOpen(false);
-    setForm({ beneficiaire: "", type: "FSL", montant: "", motif: "", date: "", dateCommission: "", commentaire: "", classe: "", regime: "dp", criteresSociaux: "" });
+    setForm({ eleveId: "", type: "FSL", nature: "restauration", montantDemande: "", dateDepot: "", dateLimite: "", commissionId: "", motifDetaille: "", commentaireAS: "", commentaireGestion: "", trimestre: "T1", serviceRestauration: false, piecesFournies: [] });
   };
 
-  const handleChangeStatut = (id: string, newStatut: Aide["statut"]) => {
-    setAides(aides.map(a => a.id === id ? { ...a, statut: newStatut, numeroDecision: newStatut === "verse" ? `${a.type}-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 999)).padStart(3, "0")}` : a.numeroDecision } : a));
+  const handleUpdateDemande = (updated: DemandeAide) => {
+    setDemandes(demandes.map(d => d.id === updated.id ? updated : d));
+  };
+
+  const handleChangeStatut = (id: string, newStatut: DemandeAide["statut"]) => {
+    setDemandes(demandes.map(d => {
+      if (d.id !== id) return d;
+      const numDecision = newStatut === "accorde" || newStatut === "verse"
+        ? `${d.type}-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 999)).padStart(3, "0")}`
+        : d.numeroDecision;
+      return {
+        ...d, statut: newStatut, numeroDecision: numDecision,
+        montantAccorde: newStatut === "accorde" || newStatut === "verse" ? d.montantDemande : 0,
+        dateVersement: newStatut === "verse" ? new Date().toISOString().split("T")[0] : d.dateVersement,
+      };
+    }));
   };
 
   return (
@@ -131,48 +112,128 @@ const FondsSociaux = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold font-display">Fonds sociaux</h1>
-            <p className="text-sm text-muted-foreground mt-1">Gestion des aides — FSL, FSC, FSE et aides exceptionnelles</p>
+            <p className="text-sm text-muted-foreground mt-1">Gestion complète des aides — FSL, FSC, FSE, aides exceptionnelles CE</p>
           </div>
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
               <Button className="gradient-primary border-0"><Plus className="h-4 w-4 mr-1" /> Nouvelle demande</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Enregistrer une demande d'aide sociale</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">
-                <div className="grid grid-cols-3 gap-3">
-                  <div><Label>Bénéficiaire</Label><Input value={form.beneficiaire} onChange={(e) => setForm({ ...form, beneficiaire: e.target.value })} /></div>
-                  <div><Label>Classe</Label><Input value={form.classe} onChange={(e) => setForm({ ...form, classe: e.target.value })} placeholder="Ex: 2nde A" /></div>
-                  <div><Label>Régime</Label>
-                    <Select value={form.regime} onValueChange={(v) => setForm({ ...form, regime: v as Aide["regime"] })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
+                {/* Élève */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2">
+                    <Label>Élève</Label>
+                    <Select value={form.eleveId} onValueChange={v => setForm({ ...form, eleveId: v })}>
+                      <SelectTrigger><SelectValue placeholder="Sélectionner un élève..." /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="interne">Interne</SelectItem>
-                        <SelectItem value="dp">Demi-pensionnaire</SelectItem>
-                        <SelectItem value="externe">Externe</SelectItem>
+                        {mockEleves.map(e => (
+                          <SelectItem key={e.id} value={e.id}>
+                            {e.nom} {e.prenom} — {e.classe} ({e.regime === "dp" ? "DP" : e.regime === "interne" ? "INT" : "EXT"})
+                            {e.boursier ? ` • Bourse éch.${e.echelonBourse}` : ""}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div><Label>Type de fonds</Label>
-                    <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v as Aide["type"] })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="FSL">FSL — Fonds Social Lycéen</SelectItem>
-                        <SelectItem value="FSC">FSC — Fonds Social Collégien</SelectItem>
-                        <SelectItem value="FSE">FSE — Fonds Social pour les Cantines</SelectItem>
-                        <SelectItem value="autre">Aide exceptionnelle</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div><Label>Montant demandé (€)</Label><Input type="number" value={form.montant} onChange={(e) => setForm({ ...form, montant: e.target.value })} /></div>
-                  <div><Label>Critères sociaux</Label><Input value={form.criteresSociaux} onChange={(e) => setForm({ ...form, criteresSociaux: e.target.value })} placeholder="Ex: RSA, boursier..." /></div>
-                  <div><Label>Date demande</Label><Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} /></div>
-                  <div><Label>Date commission</Label><Input type="date" value={form.dateCommission} onChange={(e) => setForm({ ...form, dateCommission: e.target.value })} /></div>
-                  <div />
-                  <div className="col-span-3"><Label>Motif détaillé</Label><Input value={form.motif} onChange={(e) => setForm({ ...form, motif: e.target.value })} placeholder="Ex: Restauration — créances impayées T2" /></div>
-                  <div className="col-span-3"><Label>Commentaire / observations</Label><Textarea value={form.commentaire} onChange={(e) => setForm({ ...form, commentaire: e.target.value })} rows={2} /></div>
+                  {form.eleveId && (() => {
+                    const el = mockEleves.find(e => e.id === form.eleveId);
+                    if (!el) return null;
+                    return (
+                      <div className="col-span-2 bg-muted/30 rounded-lg p-3 text-xs space-y-1">
+                        <p><strong>Situation :</strong> {el.situationFamiliale}</p>
+                        <p><strong>Responsable :</strong> {el.responsableLegal} — {el.telephone}</p>
+                        <p><strong>QF :</strong> {el.quotientFamilial} {el.boursier ? `• Boursier échelon ${el.echelonBourse}` : "• Non boursier"}</p>
+                      </div>
+                    );
+                  })()}
                 </div>
-                <Button onClick={handleAdd} className="w-full gradient-primary border-0">Enregistrer la demande</Button>
+
+                {/* Type et nature */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <Label>Type de fonds</Label>
+                    <Select value={form.type} onValueChange={(v: any) => setForm({ ...form, type: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(TYPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{k} — {v}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Nature de l'aide</Label>
+                    <Select value={form.nature} onValueChange={v => setForm({ ...form, nature: v, serviceRestauration: v === "restauration" })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(NATURES_AIDE).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label>Trimestre</Label>
+                    <Select value={form.trimestre} onValueChange={(v: any) => setForm({ ...form, trimestre: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="T1">Trimestre 1</SelectItem>
+                        <SelectItem value="T2">Trimestre 2</SelectItem>
+                        <SelectItem value="T3">Trimestre 3</SelectItem>
+                        <SelectItem value="annuel">Année entière</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Montant et dates */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div><Label>Montant demandé (€)</Label><Input type="number" value={form.montantDemande} onChange={e => setForm({ ...form, montantDemande: e.target.value })} /></div>
+                  <div><Label>Date dépôt</Label><Input type="date" value={form.dateDepot} onChange={e => setForm({ ...form, dateDepot: e.target.value })} /></div>
+                  <div>
+                    <Label>Commission prévue</Label>
+                    <Select value={form.commissionId} onValueChange={v => setForm({ ...form, commissionId: v })}>
+                      <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
+                      <SelectContent>
+                        {commissions.filter(c => c.statut === "planifiee" || c.statut === "convoquee").map(c => (
+                          <SelectItem key={c.id} value={c.id}>{new Date(c.date).toLocaleDateString("fr-FR")} ({c.type})</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                {/* Motif */}
+                <div><Label>Motif détaillé</Label><Textarea value={form.motifDetaille} onChange={e => setForm({ ...form, motifDetaille: e.target.value })} rows={2} placeholder="Décrivez la situation et le besoin..." /></div>
+                <div><Label>Observation AS / CPE</Label><Input value={form.commentaireAS} onChange={e => setForm({ ...form, commentaireAS: e.target.value })} placeholder="Avis de l'assistante sociale ou du CPE" /></div>
+
+                {/* Pièces */}
+                <div>
+                  <Label className="mb-2 block">Pièces fournies</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {PIECES_REQUISES.map(p => (
+                      <label key={p} className="flex items-center gap-2 text-xs cursor-pointer">
+                        <Checkbox
+                          checked={form.piecesFournies.includes(p)}
+                          onCheckedChange={(checked) => {
+                            setForm({
+                              ...form,
+                              piecesFournies: checked ? [...form.piecesFournies, p] : form.piecesFournies.filter(x => x !== p),
+                            });
+                          }}
+                        />
+                        {p}
+                      </label>
+                    ))}
+                  </div>
+                  {form.piecesFournies.length < 3 && (
+                    <p className="text-[10px] text-warning mt-1 flex items-center gap-1">
+                      <AlertTriangle className="h-3 w-3" /> Dossier incomplet — {PIECES_REQUISES.length - form.piecesFournies.length} pièce(s) manquante(s)
+                    </p>
+                  )}
+                </div>
+
+                <Button onClick={handleAdd} disabled={!form.eleveId || !form.montantDemande} className="w-full gradient-primary border-0">
+                  Enregistrer la demande
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -182,168 +243,237 @@ const FondsSociaux = () => {
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         <KpiCard title="Total versé" value={formatCurrency(totalVerse)} icon={Euro} variant="success" />
-        <KpiCard title="En attente" value={formatCurrency(totalEnAttente)} icon={Clock} variant="warning" />
-        <KpiCard title="Refusé" value={formatCurrency(totalRefuse)} icon={XCircle} variant="default" />
+        <KpiCard title="En instruction" value={`${enInstruction.length} dossier(s)`} subtitle={formatCurrency(totalEnAttente)} icon={Clock} variant="warning" />
         <KpiCard title="Bénéficiaires" value={`${nbBeneficiaires}`} icon={Users} variant="primary" />
-        <KpiCard title="Taux d'acceptation" value={`${tauxAcceptation.toFixed(0)}%`} icon={CheckCircle2} variant="success" />
+        <KpiCard title="Taux acceptation" value={`${tauxAcceptation.toFixed(0)}%`} icon={CheckCircle2} variant="success" />
         <KpiCard title="Aide moyenne" value={formatCurrency(montantMoyen)} icon={Heart} variant="primary" />
+        <KpiCard title="Crédits restants" value={formatCurrency(totalReste)} subtitle={`sur ${formatCurrency(totalDispo)}`} icon={Wallet} variant="default" />
       </div>
 
       <Tabs defaultValue="dossiers">
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="dossiers">Dossiers ({filtered.length})</TabsTrigger>
+          <TabsTrigger value="commissions">Commissions ({commissions.length})</TabsTrigger>
+          <TabsTrigger value="budget">Suivi budgétaire</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="statistiques">Statistiques</TabsTrigger>
         </TabsList>
 
+        {/* === DOSSIERS === */}
         <TabsContent value="dossiers" className="space-y-4 mt-4">
-          {/* Filtres */}
           <div className="flex gap-3 flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Rechercher un bénéficiaire ou motif..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+              <Input placeholder="Rechercher un élève ou motif..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
             </div>
             <Select value={filterType} onValueChange={setFilterType}>
-              <SelectTrigger className="w-[150px]"><SelectValue placeholder="Type" /></SelectTrigger>
+              <SelectTrigger className="w-[130px]"><SelectValue /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les types</SelectItem>
-                <SelectItem value="FSL">FSL</SelectItem>
-                <SelectItem value="FSC">FSC</SelectItem>
-                <SelectItem value="FSE">FSE</SelectItem>
-                <SelectItem value="autre">Aide except.</SelectItem>
+                <SelectItem value="all">Tous types</SelectItem>
+                {Object.keys(TYPE_LABELS).map(k => <SelectItem key={k} value={k}>{k}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filterStatut} onValueChange={setFilterStatut}>
-              <SelectTrigger className="w-[150px]"><SelectValue placeholder="Statut" /></SelectTrigger>
+              <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous statuts</SelectItem>
-                <SelectItem value="verse">Versé</SelectItem>
-                <SelectItem value="en_attente">En attente</SelectItem>
-                <SelectItem value="refuse">Refusé</SelectItem>
+                {Object.entries(STATUT_CONFIG).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={filterTrimestre} onValueChange={setFilterTrimestre}>
+              <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Tous trim.</SelectItem>
+                <SelectItem value="T1">T1</SelectItem>
+                <SelectItem value="T2">T2</SelectItem>
+                <SelectItem value="T3">T3</SelectItem>
+                <SelectItem value="annuel">Annuel</SelectItem>
               </SelectContent>
             </Select>
           </div>
 
           <Card className="shadow-card">
-            <CardContent className="pt-4">
+            <CardContent className="pt-4 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>N° décision</TableHead>
-                    <TableHead>Bénéficiaire</TableHead>
+                    <TableHead>Élève</TableHead>
                     <TableHead>Classe</TableHead>
                     <TableHead>Type</TableHead>
-                    <TableHead>Motif</TableHead>
-                    <TableHead>Commission</TableHead>
-                    <TableHead className="text-right">Montant</TableHead>
+                    <TableHead>Nature</TableHead>
+                    <TableHead>Trim.</TableHead>
+                    <TableHead className="text-right">Demandé</TableHead>
+                    <TableHead className="text-right">Accordé</TableHead>
+                    <TableHead>Pièces</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((a) => {
-                    const StatIcon = statutConfig[a.statut].icon;
-                    return (
-                      <TableRow key={a.id}>
-                        <TableCell className="font-mono text-xs text-primary font-semibold">{a.numeroDecision || "—"}</TableCell>
-                        <TableCell className="font-medium">{a.beneficiaire}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{a.classe}</TableCell>
-                        <TableCell><Badge variant="outline" className="text-[10px]">{a.type}</Badge></TableCell>
-                        <TableCell className="text-muted-foreground text-sm max-w-[200px] truncate" title={a.motif}>{a.motif}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{a.dateCommission || "—"}</TableCell>
-                        <TableCell className="text-right font-mono text-sm">{formatCurrency(a.montant)}</TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className={`text-[10px] ${statutConfig[a.statut].class}`}>
-                            <StatIcon className="h-3 w-3 mr-1" />{statutConfig[a.statut].label}
+                  {filtered.map(d => (
+                    <TableRow key={d.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setDetailDemande(d)}>
+                      <TableCell className="font-mono text-xs text-primary font-semibold">{d.numeroDecision || "—"}</TableCell>
+                      <TableCell className="font-medium text-sm">{d.eleve.nom} {d.eleve.prenom}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{d.eleve.classe}</TableCell>
+                      <TableCell><Badge variant="outline" className="text-[10px]">{d.type}</Badge></TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{NATURES_AIDE[d.nature]?.split(" ")[0] || d.nature}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{d.trimestre}</TableCell>
+                      <TableCell className="text-right font-mono text-sm">{formatCurrency(d.montantDemande)}</TableCell>
+                      <TableCell className="text-right font-mono text-sm font-semibold">{d.montantAccorde > 0 ? formatCurrency(d.montantAccorde) : "—"}</TableCell>
+                      <TableCell>
+                        {d.piecesManquantes.length > 0 ? (
+                          <Badge variant="secondary" className="text-[9px] bg-warning/10 text-warning border-0">
+                            <AlertTriangle className="h-2.5 w-2.5 mr-0.5" />{d.piecesManquantes.length} manq.
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex gap-1">
-                            {a.statut === "en_attente" && (
-                              <>
-                                <Button size="sm" variant="ghost" onClick={() => handleChangeStatut(a.id, "verse")} className="h-7 px-2 text-xs text-success hover:text-success">
-                                  <CheckCircle2 className="h-3 w-3 mr-1" />Accepter
-                                </Button>
-                                <Button size="sm" variant="ghost" onClick={() => handleChangeStatut(a.id, "refuse")} className="h-7 px-2 text-xs text-destructive hover:text-destructive">
-                                  <XCircle className="h-3 w-3 mr-1" />Refuser
-                                </Button>
-                              </>
-                            )}
-                            <Button size="sm" variant="ghost" onClick={() => setAides(aides.filter(x => x.id !== a.id))} className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive">
-                              <Trash2 className="h-3.5 w-3.5" />
+                        ) : (
+                          <Badge variant="secondary" className="text-[9px] bg-success/10 text-success border-0">
+                            <CheckCircle2 className="h-2.5 w-2.5 mr-0.5" />Complet
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={`text-[10px] ${STATUT_CONFIG[d.statut].color}`}>
+                          {STATUT_CONFIG[d.statut].label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                          {d.statut === "instruction" && (
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] text-success" onClick={() => handleChangeStatut(d.id, "accorde")}>
+                              <CheckCircle2 className="h-3 w-3" />
                             </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                          )}
+                          {d.statut === "instruction" && (
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] text-destructive" onClick={() => handleChangeStatut(d.id, "refuse")}>
+                              <XCircle className="h-3 w-3" />
+                            </Button>
+                          )}
+                          {d.statut === "accorde" && (
+                            <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] text-success" onClick={() => handleChangeStatut(d.id, "verse")}>
+                              <Euro className="h-3 w-3 mr-0.5" />Verser
+                            </Button>
+                          )}
+                          <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => setDemandes(demandes.filter(x => x.id !== d.id))}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="statistiques" className="space-y-6 mt-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <Card className="shadow-card">
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Répartition par type de fonds</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie data={repartitionType} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value"
-                      label={({ name, value }) => `${name}: ${formatCurrency(value)}`}>
-                      {repartitionType.map((entry, i) => (<Cell key={i} fill={entry.fill} />))}
-                    </Pie>
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+        {/* === COMMISSIONS === */}
+        <TabsContent value="commissions" className="mt-4">
+          <FondsSociauxCommissions
+            commissions={commissions}
+            demandes={demandes}
+            onUpdateCommission={c => setCommissions(commissions.map(x => x.id === c.id ? c : x))}
+            onAddCommission={c => setCommissions([...commissions, c])}
+            onUpdateDemande={handleUpdateDemande}
+          />
+        </TabsContent>
 
-            <Card className="shadow-card">
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Répartition par motif</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={repartitionMotif} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis type="number" tickFormatter={(v) => formatCurrency(v)} tick={{ fontSize: 10 }} />
-                    <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={100} />
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                    <Bar dataKey="value" fill="hsl(215, 70%, 45%)" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+        {/* === BUDGET === */}
+        <TabsContent value="budget" className="mt-4">
+          <FondsSociauxBudget budgets={budgets} demandes={demandes} />
+        </TabsContent>
 
-            <Card className="shadow-card">
-              <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Bénéficiaires par régime</CardTitle></CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={220}>
-                  <PieChart>
-                    <Pie data={repartitionRegime} cx="50%" cy="50%" innerRadius={40} outerRadius={70} paddingAngle={3} dataKey="value"
-                      label={({ name, value }) => `${name}: ${value}`}>
-                      {repartitionRegime.map((_, i) => (
-                        <Cell key={i} fill={["hsl(215, 70%, 45%)", "hsl(160, 45%, 45%)", "hsl(38, 92%, 50%)"][i % 3]} />
-                      ))}
-                    </Pie>
-                    <Tooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </div>
+        {/* === DOCUMENTS === */}
+        <TabsContent value="documents" className="mt-4">
+          <FondsSociauxDocuments demandes={demandes} commissions={commissions} budgets={budgets} />
+        </TabsContent>
 
-          {/* Synthèse textuelle pour le CA */}
-          <Card className="shadow-card">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Synthèse pour le Conseil d'Administration</CardTitle></CardHeader>
-            <CardContent className="text-sm leading-relaxed text-muted-foreground space-y-2">
-              <p>Au cours de l'exercice, <strong className="text-foreground">{nbDossiers} demandes</strong> d'aides sociales ont été instruites pour un montant total de <strong className="text-foreground">{formatCurrency(totalVerse + totalEnAttente + totalRefuse)}</strong>.</p>
-              <p><strong className="text-foreground">{aides.filter(a => a.statut === "verse").length} demandes ont été acceptées</strong> pour un total de <strong className="text-success">{formatCurrency(totalVerse)}</strong>, soit un taux d'acceptation de <strong className="text-foreground">{tauxAcceptation.toFixed(0)}%</strong>. Le montant moyen par bénéficiaire s'élève à <strong className="text-foreground">{formatCurrency(montantMoyen)}</strong>.</p>
-              {totalEnAttente > 0 && <p><strong className="text-warning">{aides.filter(a => a.statut === "en_attente").length} dossier(s)</strong> sont en attente de passage en commission pour un montant de <strong className="text-warning">{formatCurrency(totalEnAttente)}</strong>.</p>}
-              {totalRefuse > 0 && <p><strong>{aides.filter(a => a.statut === "refuse").length} demande(s)</strong> ont été refusées ({formatCurrency(totalRefuse)}).</p>}
-            </CardContent>
-          </Card>
+        {/* === STATISTIQUES === */}
+        <TabsContent value="statistiques" className="mt-4">
+          <FondsSociauxStats demandes={demandes} budgets={budgets} commissions={commissions} />
         </TabsContent>
       </Tabs>
+
+      {/* Détail dossier en Dialog */}
+      <Dialog open={!!detailDemande} onOpenChange={() => setDetailDemande(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          {detailDemande && (
+            <>
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  Dossier {detailDemande.numeroDecision || detailDemande.id}
+                  <Badge variant="secondary" className={`text-[10px] ${STATUT_CONFIG[detailDemande.statut].color}`}>
+                    {STATUT_CONFIG[detailDemande.statut].label}
+                  </Badge>
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                {/* Élève */}
+                <Card>
+                  <CardContent className="pt-4">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Élève</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <p><strong>{detailDemande.eleve.prenom} {detailDemande.eleve.nom}</strong></p>
+                      <p>{detailDemande.eleve.classe} — {detailDemande.eleve.regime === "dp" ? "Demi-pensionnaire" : detailDemande.eleve.regime === "interne" ? "Interne" : "Externe"}</p>
+                      <p className="text-muted-foreground">{detailDemande.eleve.situationFamiliale}</p>
+                      <p className="text-muted-foreground">QF : {detailDemande.eleve.quotientFamilial} {detailDemande.eleve.boursier ? `• Boursier éch.${detailDemande.eleve.echelonBourse}` : ""}</p>
+                      <p className="text-muted-foreground">{detailDemande.eleve.responsableLegal}</p>
+                      <p className="text-muted-foreground">{detailDemande.eleve.telephone} — {detailDemande.eleve.email}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Demande */}
+                <Card>
+                  <CardContent className="pt-4">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Demande</h4>
+                    <div className="grid grid-cols-2 gap-2 text-sm">
+                      <p><strong>Type :</strong> {TYPE_LABELS[detailDemande.type]}</p>
+                      <p><strong>Nature :</strong> {NATURES_AIDE[detailDemande.nature]}</p>
+                      <p><strong>Trimestre :</strong> {detailDemande.trimestre}</p>
+                      <p><strong>Dépôt :</strong> {new Date(detailDemande.dateDepot).toLocaleDateString("fr-FR")}</p>
+                      <p><strong>Demandé :</strong> {formatCurrency(detailDemande.montantDemande)}</p>
+                      <p><strong>Accordé :</strong> {detailDemande.montantAccorde > 0 ? formatCurrency(detailDemande.montantAccorde) : "—"}</p>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-2"><strong>Motif :</strong> {detailDemande.motifDetaille}</p>
+                    {detailDemande.motifRefus && <p className="text-sm text-destructive mt-1"><strong>Motif refus :</strong> {detailDemande.motifRefus}</p>}
+                  </CardContent>
+                </Card>
+
+                {/* Pièces */}
+                <Card>
+                  <CardContent className="pt-4">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Pièces du dossier</h4>
+                    <div className="grid grid-cols-2 gap-1">
+                      {PIECES_REQUISES.map(p => (
+                        <div key={p} className="flex items-center gap-2 text-xs">
+                          {detailDemande.piecesFournies.includes(p) ? (
+                            <CheckCircle2 className="h-3 w-3 text-success" />
+                          ) : (
+                            <XCircle className="h-3 w-3 text-destructive" />
+                          )}
+                          <span className={detailDemande.piecesFournies.includes(p) ? "" : "text-destructive"}>{p}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Observations */}
+                <Card>
+                  <CardContent className="pt-4 space-y-2">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase mb-2">Observations</h4>
+                    {detailDemande.commentaireAS && <p className="text-sm"><strong>AS / CPE :</strong> {detailDemande.commentaireAS}</p>}
+                    {detailDemande.commentaireGestion && <p className="text-sm"><strong>Gestion :</strong> {detailDemande.commentaireGestion}</p>}
+                    {detailDemande.mandatRef && <p className="text-sm"><strong>Mandat :</strong> {detailDemande.mandatRef}</p>}
+                    {detailDemande.dateVersement && <p className="text-sm"><strong>Date versement :</strong> {new Date(detailDemande.dateVersement).toLocaleDateString("fr-FR")}</p>}
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
