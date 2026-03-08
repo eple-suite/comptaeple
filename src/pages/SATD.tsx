@@ -23,6 +23,7 @@ import {
 } from "./satd/types";
 import SatdDocuments from "./satd/SatdDocuments";
 import SatdStats from "./satd/SatdStats";
+import SatdProcedure from "./satd/SatdProcedure";
 
 const SATD = () => {
   const [satds, setSatds] = useState<Satd[]>(mockSatds);
@@ -305,6 +306,7 @@ const SATD = () => {
       <Tabs defaultValue="registre">
         <TabsList className="flex-wrap">
           <TabsTrigger value="registre">Registre ({filtered.length})</TabsTrigger>
+          <TabsTrigger value="procedure">📋 Procédure & Guide</TabsTrigger>
           <TabsTrigger value="workflow">Workflow procédure</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="statistiques">Statistiques</TabsTrigger>
@@ -504,6 +506,30 @@ const SATD = () => {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* === PROCEDURE === */}
+        <TabsContent value="procedure" className="mt-4">
+          <SatdProcedure
+            satd={selectedSatd}
+            onGenerateDocument={(satd, docType) => {
+              // Trigger document generation based on type
+              const etape: EtapeProcedure = { type: docType as any, date: new Date().toISOString().split("T")[0], commentaire: "Document généré", documentGenere: true };
+              // Auto-generate relevant document
+            }}
+            onAddEtape={(type) => {
+              if (!selectedSatd) return;
+              const now = new Date().toISOString().split("T")[0];
+              const etape: EtapeProcedure = { type: type as any, date: now, commentaire: "", documentGenere: false };
+              let newStatut = selectedSatd.statut;
+              if (type === "avis_poursuites") newStatut = "avis_poursuites";
+              if (type === "autorisation_ordonnateur") newStatut = "autorisation";
+              if (type === "satd_emission") newStatut = "emise";
+              if (type === "satd_reception_ar") newStatut = "en_cours";
+              setSatds(satds.map(s => s.id === selectedSatd.id ? { ...s, etapes: [...s.etapes, etape], statut: newStatut } : s));
+              setSelectedSatd({ ...selectedSatd, etapes: [...selectedSatd.etapes, etape], statut: newStatut });
+            }}
+          />
         </TabsContent>
 
         {/* === DOCUMENTS === */}
