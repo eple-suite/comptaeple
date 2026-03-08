@@ -49,15 +49,33 @@ export function savePDF(doc: jsPDF, filename: string) {
   doc.save(filename);
 }
 
-// Print-specific: opens PDF in new tab for browser printing
+// Print-specific: uses hidden iframe to avoid popup blockers
 export function printPDF(doc: jsPDF) {
   addPDFFooters(doc);
   const blob = doc.output("blob");
   const url = URL.createObjectURL(blob);
-  const win = window.open(url, "_blank");
-  if (win) {
-    win.addEventListener("load", () => {
-      win.print();
-    });
-  }
+  
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "none";
+  iframe.src = url;
+  
+  iframe.onload = () => {
+    try {
+      iframe.contentWindow?.print();
+    } catch {
+      // Fallback: download the file if print fails
+      savePDF(doc, `impression_${new Date().toISOString().split("T")[0]}.pdf`);
+    }
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+      URL.revokeObjectURL(url);
+    }, 1000);
+  };
+  
+  document.body.appendChild(iframe);
 }
