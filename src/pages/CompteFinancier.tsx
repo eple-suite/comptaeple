@@ -531,6 +531,87 @@ const CompteFinancier = () => {
           </div>
         );
 
+      /* ═══ NEW: Confrontation subventions ═══ */
+      case "exec-confrontation":
+        return (
+          <div className="space-y-4">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-2 font-semibold">Convention</th>
+                    <th className="text-right py-2 px-2 font-semibold">Recettes</th>
+                    <th className="text-right py-2 px-2 font-semibold">Dépenses</th>
+                    <th className="text-right py-2 px-2 font-semibold">Solde</th>
+                    <th className="text-center py-2 px-2 font-semibold">Statut</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mockConfrontationSubventions.map((s, i) => (
+                    <tr key={i} className="border-b border-border/30">
+                      <td className="py-2 px-2">{s.convention}</td>
+                      <td className="text-right py-2 px-2 text-success">{formatCurrency(s.recettes)}</td>
+                      <td className="text-right py-2 px-2 text-destructive">{formatCurrency(s.depenses)}</td>
+                      <td className={`text-right py-2 px-2 font-medium ${s.solde >= 0 ? "text-success" : "text-destructive"}`}>{formatCurrency(s.solde)}</td>
+                      <td className="text-center py-2 px-2">
+                        <Badge className={`text-[8px] border-0 ${s.statut === "ok" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>
+                          {s.statut === "ok" ? "✓ Conforme" : "⚠ Attention"}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              💡 La <strong>confrontation</strong> vérifie que les subventions sous condition d'emploi ont bien été utilisées conformément à leur objet.
+              Un solde négatif indique un dépassement des crédits alloués.
+            </p>
+          </div>
+        );
+
+      /* ═══ NEW: Coût repas SRH détaillé ═══ */
+      case "exec-cout-repas": {
+        const coutRepasData = [
+          { name: "Denrées", value: mockCoutRepasSRH.chargesAlimentaires, fill: "hsl(var(--destructive))" },
+          { name: "Personnel", value: mockCoutRepasSRH.chargesPersonnel, fill: "hsl(var(--primary))" },
+          { name: "Fluides", value: mockCoutRepasSRH.chargesFluides, fill: "hsl(var(--warning))" },
+          { name: "Entretien", value: mockCoutRepasSRH.chargesEntretien, fill: "hsl(var(--muted-foreground))" },
+        ];
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <RPieChart>
+                  <Pie data={coutRepasData} dataKey="value" cx="50%" cy="50%" innerRadius={45} outerRadius={90} paddingAngle={3}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {coutRepasData.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                </RPieChart>
+              </ResponsiveContainer>
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-2">
+                <p className="text-sm font-semibold">Décomposition du coût du repas</p>
+                <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono space-y-1">
+                  <p>Nombre de repas total : <strong>{mockCoutRepasSRH.nbRepasTotal.toLocaleString("fr-FR")}</strong></p>
+                  <p>  dont élèves : {mockCoutRepasSRH.nbRepasEleves.toLocaleString("fr-FR")}</p>
+                  <p>  dont commensaux : {mockCoutRepasSRH.nbRepasCommensaux.toLocaleString("fr-FR")}</p>
+                  <Separator />
+                  <p>Coût denrée / repas : <strong>{mockCoutRepasSRH.coutDenreeParRepas.toFixed(2)} €</strong></p>
+                  <p>Coût complet / repas : <strong>{mockCoutRepasSRH.coutCompletParRepas.toFixed(2)} €</strong></p>
+                  <p>Prix moyen facturé : <strong>{mockCoutRepasSRH.prixMoyenFacture.toFixed(2)} €</strong></p>
+                  <Separator />
+                  <p className="font-bold">Marge brute SRH : <span className={mockCoutRepasSRH.margeBrute >= 0 ? "text-success" : "text-destructive"}>{formatCurrency(mockCoutRepasSRH.margeBrute)}</span></p>
+                </div>
+                <p className="text-xs text-muted-foreground">💡 Le coût denrée est la référence pour le calcul du crédit nourriture.</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
+
       /* ═══ NEW: Evolution Solde budgétaire ═══ */
       case "exec-evolution-solde":
         return (
