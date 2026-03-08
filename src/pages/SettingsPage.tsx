@@ -1,6 +1,5 @@
-import { useState } from "react";
 import { motion } from "framer-motion";
-import { Settings, Building2, User, Bell, Database, Search, Loader2, CheckCircle2, MapPin } from "lucide-react";
+import { Settings, User, Bell, Database } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,28 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { supabase } from "@/integrations/supabase/client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
-
-interface AnnuaireResult {
-  nom_etablissement: string;
-  type_etablissement: string;
-  nom_commune: string;
-  libelle_academie: string;
-  identifiant_de_l_etablissement: string;
-}
-
-const fetchEstablishmentByUAI = async (uai: string): Promise<AnnuaireResult | null> => {
-  const url = `https://data.education.gouv.fr/api/records/1.0/search/?dataset=fr-en-annuaire-education&q=&refine.identifiant_de_l_etablissement=${uai.toUpperCase()}`;
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Erreur réseau");
-  const json = await res.json();
-  if (json.records && json.records.length > 0) {
-    return json.records[0].fields as AnnuaireResult;
-  }
-  return null;
-};
 
 const SettingsPage = () => {
   const [uaiInput, setUaiInput] = useState("");
