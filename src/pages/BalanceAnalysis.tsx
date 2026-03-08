@@ -350,19 +350,11 @@ const BalanceAnalysis = () => {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <Treemap data={treemapData} dataKey="size" nameKey="name" stroke="hsl(var(--background))" 
-                    content={({ x, y, width, height, name, fill }: any) => (
-                      <g>
-                        <rect x={x} y={y} width={width} height={height} fill={fill} rx={4} opacity={0.85} />
-                        {width > 60 && height > 30 && (
-                          <text x={x + width / 2} y={y + height / 2} textAnchor="middle" dominantBaseline="middle" 
-                            fill="white" fontSize={Math.min(11, width / 8)} fontWeight={500}>
-                            {(name as string)?.substring(0, Math.floor(width / 7))}
-                          </text>
-                        )}
-                      </g>
-                    )}
-                  />
+                  <Treemap data={treemapData} dataKey="size" nameKey="name" stroke="hsl(var(--background))">
+                    {treemapData.map((item, idx) => (
+                      <Cell key={idx} fill={item.fill} />
+                    ))}
+                  </Treemap>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
