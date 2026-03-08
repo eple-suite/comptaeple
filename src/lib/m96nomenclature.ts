@@ -17,6 +17,7 @@ export interface CompteM96 {
   estSubvention?: boolean;
   imputationRecettes?: boolean;
   imputationDepenses?: boolean;
+  sphere?: "ordonnateur" | "comptable" | "les_deux"; // sphère Op@le
 }
 
 // ─── Référentiel M9-6 enrichi ───
