@@ -1632,110 +1632,127 @@ const CompteFinancier = () => {
   const santeIdx = slides.findIndex(s => s.section === "sante");
 
   return (
-    <div className="space-y-4" onKeyDown={handleKey} tabIndex={0}>
+    <div className="space-y-4">
       {/* Header */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold font-display">Compte financier — Mode REPROFI</h1>
+            <h1 className="text-2xl font-bold font-display">Compte financier</h1>
             <p className="text-sm text-muted-foreground mt-1">
-              {slides.length} diapositives • Exercice 2023 • Instruction M9.6
+              Présentation REPROFI et annexe du comptable — Exercice 2023 — Instruction M9.6
             </p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={toggleFullscreen}>
-              <Maximize2 className="h-4 w-4 mr-1" /> Plein écran
-            </Button>
-            <Button size="sm" className="gradient-primary border-0" onClick={exportPDF}>
-              <Download className="h-4 w-4 mr-1" /> Export PDF
-            </Button>
           </div>
         </div>
       </motion.div>
 
-      {/* Historical data input panel */}
-      <HistoricalDataPanel
-        onDataChange={setAllYearsData}
-        currentYearData={defaultCurrentYear}
-      />
+      <Tabs defaultValue="reprofi" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="reprofi">📊 Présentation REPROFI ({slides.length} diapos)</TabsTrigger>
+          <TabsTrigger value="annexe">📝 Annexe du comptable</TabsTrigger>
+        </TabsList>
 
-      {/* Section tabs */}
-      <div className="flex gap-2">
-        <Button
-          variant={slide.section === "exec" ? "default" : "outline"}
-          size="sm"
-          onClick={() => goTo(execIdx)}
-          className={slide.section === "exec" ? "gradient-primary border-0" : ""}
-        >
-          <FileBarChart className="h-4 w-4 mr-1" /> Exécution budgétaire ({execSlides.length})
-        </Button>
-        <Button
-          variant={slide.section === "sante" ? "default" : "outline"}
-          size="sm"
-          onClick={() => goTo(santeIdx)}
-          className={slide.section === "sante" ? "bg-secondary text-secondary-foreground hover:bg-secondary/90 border-0" : ""}
-        >
-          <ShieldCheck className="h-4 w-4 mr-1" /> Santé financière ({santeSlides.length})
-        </Button>
-      </div>
-
-      {/* Slide viewer */}
-      <Card className="shadow-card overflow-hidden">
-        <CardHeader className="pb-2 border-b border-border/50">
-          <div className="flex items-center justify-between">
-            <div>
-              <Badge variant="outline" className="text-[9px] mb-1">
-                {slide.section === "exec" ? "Exécution budgétaire" : "Santé financière"} — Diapositive {currentSlide + 1}/{slides.length}
-              </Badge>
-              <CardTitle className="text-lg">{slide.title}</CardTitle>
-              {slide.subtitle && <p className="text-xs text-muted-foreground mt-0.5">{slide.subtitle}</p>}
+        <TabsContent value="reprofi">
+          <div className="space-y-4" onKeyDown={handleKey} tabIndex={0}>
+            {/* REPROFI controls */}
+            <div className="flex items-center justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={toggleFullscreen}>
+                <Maximize2 className="h-4 w-4 mr-1" /> Plein écran
+              </Button>
+              <Button size="sm" className="gradient-primary border-0" onClick={exportPDF}>
+                <Download className="h-4 w-4 mr-1" /> Export PDF
+              </Button>
             </div>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" onClick={prev} disabled={currentSlide === 0}>
-                <ChevronLeft className="h-5 w-5" />
+
+            {/* Historical data input panel */}
+            <HistoricalDataPanel
+              onDataChange={setAllYearsData}
+              currentYearData={defaultCurrentYear}
+            />
+
+            {/* Section tabs */}
+            <div className="flex gap-2">
+              <Button
+                variant={slide.section === "exec" ? "default" : "outline"}
+                size="sm"
+                onClick={() => goTo(execIdx)}
+                className={slide.section === "exec" ? "gradient-primary border-0" : ""}
+              >
+                <FileBarChart className="h-4 w-4 mr-1" /> Exécution budgétaire ({execSlides.length})
               </Button>
-              <span className="text-xs font-mono text-muted-foreground min-w-[4rem] text-center">
-                {currentSlide + 1} / {slides.length}
-              </span>
-              <Button variant="ghost" size="icon" onClick={next} disabled={currentSlide === slides.length - 1}>
-                <ChevronRight className="h-5 w-5" />
+              <Button
+                variant={slide.section === "sante" ? "default" : "outline"}
+                size="sm"
+                onClick={() => goTo(santeIdx)}
+                className={slide.section === "sante" ? "bg-secondary text-secondary-foreground hover:bg-secondary/90 border-0" : ""}
+              >
+                <ShieldCheck className="h-4 w-4 mr-1" /> Santé financière ({santeSlides.length})
               </Button>
+            </div>
+
+            {/* Slide viewer */}
+            <Card className="shadow-card overflow-hidden">
+              <CardHeader className="pb-2 border-b border-border/50">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Badge variant="outline" className="text-[9px] mb-1">
+                      {slide.section === "exec" ? "Exécution budgétaire" : "Santé financière"} — Diapositive {currentSlide + 1}/{slides.length}
+                    </Badge>
+                    <CardTitle className="text-lg">{slide.title}</CardTitle>
+                    {slide.subtitle && <p className="text-xs text-muted-foreground mt-0.5">{slide.subtitle}</p>}
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Button variant="ghost" size="icon" onClick={prev} disabled={currentSlide === 0}>
+                      <ChevronLeft className="h-5 w-5" />
+                    </Button>
+                    <span className="text-xs font-mono text-muted-foreground min-w-[4rem] text-center">
+                      {currentSlide + 1} / {slides.length}
+                    </span>
+                    <Button variant="ghost" size="icon" onClick={next} disabled={currentSlide === slides.length - 1}>
+                      <ChevronRight className="h-5 w-5" />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-6 min-h-[420px]">
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={slide.id}
+                    initial={{ opacity: 0, x: 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -30 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {renderSlide()}
+                  </motion.div>
+                </AnimatePresence>
+              </CardContent>
+            </Card>
+
+            {/* Slide strip */}
+            <div className="flex gap-1.5 overflow-x-auto pb-2">
+              {slides.map((s, i) => (
+                <button
+                  key={s.id}
+                  onClick={() => goTo(i)}
+                  className={`shrink-0 px-2.5 py-1.5 rounded-md text-[10px] font-medium transition-all border ${
+                    i === currentSlide
+                      ? s.section === "exec"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-secondary text-secondary-foreground border-secondary"
+                      : "bg-card text-muted-foreground border-border hover:bg-accent"
+                  }`}
+                >
+                  {i + 1}. {s.title.length > 20 ? s.title.slice(0, 20) + "…" : s.title}
+                </button>
+              ))}
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-6 min-h-[420px]">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={slide.id}
-              initial={{ opacity: 0, x: 30 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -30 }}
-              transition={{ duration: 0.2 }}
-            >
-              {renderSlide()}
-            </motion.div>
-          </AnimatePresence>
-        </CardContent>
-      </Card>
+        </TabsContent>
 
-      {/* Slide strip */}
-      <div className="flex gap-1.5 overflow-x-auto pb-2">
-        {slides.map((s, i) => (
-          <button
-            key={s.id}
-            onClick={() => goTo(i)}
-            className={`shrink-0 px-2.5 py-1.5 rounded-md text-[10px] font-medium transition-all border ${
-              i === currentSlide
-                ? s.section === "exec"
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "bg-secondary text-secondary-foreground border-secondary"
-                : "bg-card text-muted-foreground border-border hover:bg-accent"
-            }`}
-          >
-            {i + 1}. {s.title.length > 20 ? s.title.slice(0, 20) + "…" : s.title}
-          </button>
-        ))}
-      </div>
+        <TabsContent value="annexe">
+          <AccountingAnnexPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
