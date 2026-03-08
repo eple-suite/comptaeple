@@ -48,7 +48,7 @@ const SATD = () => {
 
   // Form Tiers
   const [formTiers, setFormTiers] = useState({
-    nom: "", type: "employeur" as TiersDetenteur["type"],
+    nom: "", type: "employeur_prive" as TiersDetenteur["type"],
     adresse: "", codePostal: "", ville: "",
     siret: "", contact: "", email: "", telephone: "",
   });
@@ -114,7 +114,7 @@ const SATD = () => {
   const handleAddTiers = () => {
     setTiersDetenteurs([...tiersDetenteurs, { id: `t${Date.now()}`, ...formTiers }]);
     setOpenTiers(false);
-    setFormTiers({ nom: "", type: "employeur", adresse: "", codePostal: "", ville: "", siret: "", contact: "", email: "", telephone: "" });
+    setFormTiers({ nom: "", type: "employeur_prive", adresse: "", codePostal: "", ville: "", siret: "", contact: "", email: "", telephone: "" });
   };
 
   const handleAddPrelevement = () => {
