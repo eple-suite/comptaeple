@@ -9,6 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
 import { KpiCard } from "@/components/KpiCard";
+import {
+  PieChart as RPieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid,
+} from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { createStyledPDF, savePDF, type PDFOrientation } from "@/lib/pdfUtils";
@@ -89,7 +94,50 @@ const ControleInterne = () => {
   const conformes = controles.filter(c => c.statut === "conforme").length;
   const anomalies = controles.filter(c => c.statut === "anomalie").length;
   const nonRealises = controles.filter(c => c.statut === "non_realise").length;
+  const enCours = controles.filter(c => c.statut === "en_cours").length;
   const tauxConformite = controles.length > 0 ? (conformes / controles.length) * 100 : 0;
+
+  // Charts data
+  const pieStatut = [
+    { name: "Conformes", value: conformes, fill: "hsl(var(--success))" },
+    { name: "Anomalies", value: anomalies, fill: "hsl(var(--destructive))" },
+    { name: "En cours", value: enCours, fill: "hsl(var(--warning))" },
+    { name: "Non réalisés", value: nonRealises, fill: "hsl(var(--muted-foreground))" },
+  ].filter(d => d.value > 0);
+
+  const pieRisque = (() => {
+    const counts: Record<string, number> = {};
+    controles.forEach(c => { counts[c.risque] = (counts[c.risque] || 0) + 1; });
+    return Object.entries(counts).map(([k, v]) => ({
+      name: RISQUE_CONFIG[k].label,
+      value: v,
+      fill: k === "faible" ? "hsl(var(--success))" : k === "moyen" ? "hsl(var(--warning))" : "hsl(var(--destructive))",
+    }));
+  })();
+
+  const radarProcessus = PROCESSUS_CIC.map(p => {
+    const items = controles.filter(c => c.processus === p);
+    if (items.length === 0) return null;
+    const conf = items.filter(c => c.statut === "conforme").length;
+    const pct = (conf / items.length) * 100;
+    const riskScore = items.reduce((s, c) => s + (c.risque === "critique" ? 4 : c.risque === "eleve" ? 3 : c.risque === "moyen" ? 2 : 1), 0) / items.length;
+    return {
+      subject: p.replace(/^P\d+ — /, ""),
+      conformite: pct,
+      risque: riskScore * 25,
+    };
+  }).filter(Boolean);
+
+  const barProcessus = PROCESSUS_CIC.map(p => {
+    const items = controles.filter(c => c.processus === p);
+    if (items.length === 0) return null;
+    return {
+      name: p.replace(/^P\d+ — /, ""),
+      conformes: items.filter(c => c.statut === "conforme").length,
+      anomalies: items.filter(c => c.statut === "anomalie").length,
+      autres: items.filter(c => c.statut !== "conforme" && c.statut !== "anomalie").length,
+    };
+  }).filter(Boolean);
 
   const genererPlanControle = () => {
     const doc = createStyledPDF({
@@ -176,7 +224,89 @@ const ControleInterne = () => {
         <KpiCard title="Non réalisés" value={`${nonRealises}`} icon={Clock} variant="warning" />
       </div>
 
-      {/* Conformité par processus */}
+      {/* Charts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Pie: Conformité */}
+        <Card className="shadow-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold">Répartition par statut</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <RPieChart>
+                <Pie data={pieStatut} dataKey="value" cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3}
+                  label={({ name, value }) => `${name}: ${value}`}>
+                  {pieStatut.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </RPieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Pie: Risques */}
+        <Card className="shadow-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold">Répartition par niveau de risque</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={250}>
+              <RPieChart>
+                <Pie data={pieRisque} dataKey="value" cx="50%" cy="50%" innerRadius={50} outerRadius={85} paddingAngle={3}
+                  label={({ name, value }) => `${name}: ${value}`}>
+                  {pieRisque.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </RPieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Radar: Conformité par processus */}
+        <Card className="shadow-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold">Radar conformité / risque par processus</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <RadarChart data={radarProcessus}>
+                <PolarGrid stroke="hsl(var(--border))" />
+                <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9 }} />
+                <PolarRadiusAxis tick={{ fontSize: 8 }} domain={[0, 100]} />
+                <Radar name="Conformité %" dataKey="conformite" stroke="hsl(var(--success))" fill="hsl(var(--success))" fillOpacity={0.3} strokeWidth={2} />
+                <Radar name="Risque" dataKey="risque" stroke="hsl(var(--destructive))" fill="hsl(var(--destructive))" fillOpacity={0.15} strokeWidth={2} />
+                <Legend />
+                <Tooltip formatter={(v: number) => `${v.toFixed(0)}%`} />
+              </RadarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+
+        {/* Stacked bar by processus */}
+        <Card className="shadow-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold">Contrôles par processus</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={barProcessus} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis type="number" tick={{ fontSize: 10 }} />
+                <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 9 }} />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="conformes" name="Conformes" stackId="a" fill="hsl(var(--success))" />
+                <Bar dataKey="anomalies" name="Anomalies" stackId="a" fill="hsl(var(--destructive))" />
+                <Bar dataKey="autres" name="Autres" stackId="a" fill="hsl(var(--muted))" radius={[0, 4, 4, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Conformité par processus (progress bars) */}
       <Card className="shadow-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold">Conformité par processus</CardTitle>
