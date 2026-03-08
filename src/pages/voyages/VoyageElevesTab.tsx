@@ -231,12 +231,17 @@ export const VoyageElevesTab = ({ voyage, onUpdateVoyage }: Props) => {
                                 </TableBody>
                               </Table>
                             )}
-                            <div className="flex justify-between text-sm font-semibold pt-2">
-                              <span>Reste à payer :</span>
-                              <span className={reste => { const r = e.participationDue - e.paiements.reduce((s, p) => s + p.montant, 0); return r <= 0 ? "text-success" : "text-destructive"; }}>
-                                {(() => { const r = e.participationDue - e.paiements.reduce((s, p) => s + p.montant, 0); return r <= 0 ? "Soldé" : formatCurrency(r); })()}
-                              </span>
-                            </div>
+                            {(() => {
+                              const r = e.participationDue - e.paiements.reduce((s, p) => s + p.montant, 0);
+                              return (
+                                <div className="flex justify-between text-sm font-semibold pt-2">
+                                  <span>Reste à payer :</span>
+                                  <span className={r <= 0 ? "text-success" : "text-destructive"}>
+                                    {r <= 0 ? "Soldé" : formatCurrency(r)}
+                                  </span>
+                                </div>
+                              );
+                            })()}
                             <Separator />
                             <Button size="sm" variant="outline" className="w-full" onClick={() => generateLettreEngagement(e)}>
                               <Download className="h-3 w-3 mr-1" /> Lettre d'engagement PDF
