@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -6,17 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import {
-  ChevronLeft, ChevronRight, Download, Printer, Maximize2,
-  FileBarChart, CheckCircle2, AlertTriangle, Clock, TrendingUp, Wallet,
-  Landmark, ArrowDownUp, BarChart3, PieChart, ShieldCheck, Receipt,
-  Users, Building2, Bot, Play, RefreshCw, Calculator, Sparkles, ChevronsRight
+  ChevronLeft, ChevronRight, Download, Maximize2,
+  FileBarChart, CheckCircle2, AlertTriangle, ShieldCheck,
+  TrendingUp, TrendingDown,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import {
-  mockIndicators, mockBalanceData, mockEvolutionData, mockDettes,
-  mockFragiliteFDR, mockTresoreriePropreData, mockTresorerieDetail,
-  mockCreancesData, mockRepartitionCharges, formatCurrency, formatPercent,
-  mockPrelevementFDR,
+  mockIndicators, mockDettes, mockFragiliteFDR,
+  mockTresorerieDetail, mockCreancesData, mockRepartitionCharges,
+  formatCurrency, formatPercent,
 } from "@/lib/mockData";
 import {
   BarChart as RBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -24,13 +22,13 @@ import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   LineChart, Line, ComposedChart,
 } from "recharts";
-import jsPDF from "jspdf";
+import { createStyledPDF, savePDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
-import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
 import { GaugeChart } from "@/components/GaugeChart";
 import { WaterfallChart } from "@/components/WaterfallChart";
 import { BalanceScale } from "@/components/BalanceScale";
 import { ThermometerChart } from "@/components/ThermometerChart";
+import { HistoricalDataPanel, defaultCurrentYear, defaultHistoricalData, type YearlyFinancialData } from "@/components/HistoricalDataPanel";
 
 /* ─────────── Calculs M9-6 ─────────── */
 const totalFragilite = mockFragiliteFDR.stocks + mockFragiliteFDR.creancesAnciennes + mockFragiliteFDR.compte416;
@@ -53,7 +51,6 @@ const tauxVetusteImmo = (520000 / 1250000) * 100;
 const ratioRigiditeCharges = 62.3;
 const soldebudgetaire = totalRecettes - totalDepenses;
 
-// Budget data
 const budgetRecettes = [
   { service: "SRH", prevu: 850000, realise: 842000 },
   { service: "ALO", prevu: 520000, realise: 498000 },
@@ -68,15 +65,6 @@ const budgetDepenses = [
   { service: "Entretien", prevu: 165000, realise: 160000 },
   { service: "Enseignement", prevu: 250000, realise: 232000 },
   { service: "Investissement", prevu: 200000, realise: 183000 },
-];
-
-// Évolution data
-const evolutionCAF = [
-  { year: "2019", caf: 52000, resultat: -2000, cafNette: 48000 },
-  { year: "2020", caf: 38000, resultat: -15000, cafNette: 32000 },
-  { year: "2021", caf: 65000, resultat: 12000, cafNette: 58000 },
-  { year: "2022", caf: 72000, resultat: 18000, cafNette: 65000 },
-  { year: "2023", caf, resultat: mockIndicators.resultatExercice, cafNette },
 ];
 
 const repartitionBilan = [
@@ -135,23 +123,11 @@ const creancesAge = [
   { tranche: "> 12 mois", montant: 3200, color: "hsl(var(--destructive))" },
 ];
 
-const evolutionTreso = mockEvolutionData.map((d, i) => ({
-  ...d,
-  caf: evolutionCAF[i]?.caf || 0,
-  resultat: evolutionCAF[i]?.resultat || 0,
-  tresoreriePropre: d.tresorerie - totalDettes + (i * 5000),
-}));
-
-/* ─────────── SLIDE DEFINITIONS ─────────── */
-interface Slide {
-  id: string;
-  section: "exec" | "sante";
-  title: string;
-  subtitle?: string;
-}
+/* ─────────── SLIDES ─────────── */
+interface Slide { id: string; section: "exec" | "sante"; title: string; subtitle?: string; }
 
 const slides: Slide[] = [
-  // Section 1: Exécution budgétaire (10 slides)
+  // Exécution budgétaire (12 slides — 2 new evolution slides)
   { id: "exec-title", section: "exec", title: "EXÉCUTION BUDGÉTAIRE", subtitle: "Analyse de l'exécution du budget de l'exercice 2023" },
   { id: "exec-synthese", section: "exec", title: "Synthèse de l'exécution", subtitle: "Recettes et dépenses — Vue d'ensemble" },
   { id: "exec-recettes", section: "exec", title: "Exécution des recettes", subtitle: "Par service et nature" },
@@ -160,32 +136,57 @@ const slides: Slide[] = [
   { id: "exec-repartition-dep", section: "exec", title: "Répartition des dépenses", subtitle: "Structure des charges par nature" },
   { id: "exec-repartition-rec", section: "exec", title: "Répartition des recettes", subtitle: "Origine des ressources" },
   { id: "exec-srh", section: "exec", title: "Focus SRH", subtitle: "Service de restauration et d'hébergement" },
-  { id: "exec-evolution", section: "exec", title: "Évolution pluriannuelle du budget", subtitle: "Tendances sur 5 exercices" },
+  { id: "exec-evolution-budget", section: "exec", title: "📈 Évolution Recettes / Dépenses", subtitle: "Tendances pluriannuelles du budget (N à N-4)" },
+  { id: "exec-evolution-solde", section: "exec", title: "📈 Évolution du solde budgétaire", subtitle: "Résultat de l'exécution sur 5 exercices" },
+  { id: "exec-evolution", section: "exec", title: "Évolution FDR / BFR / Trésorerie", subtitle: "Tendances sur 5 exercices" },
   { id: "exec-solde", section: "exec", title: "Solde budgétaire", subtitle: "Résultat de l'exécution budgétaire" },
 
-  // Section 2: Santé financière (16 slides)
+  // Santé financière (20 slides — 4 new evolution slides)
   { id: "sante-title", section: "sante", title: "SANTÉ FINANCIÈRE", subtitle: "Diagnostic financier de l'établissement — Exercice 2023" },
   { id: "sante-balance", section: "sante", title: "Équilibre financier", subtitle: "Produits vs Charges — Résultat de l'exercice" },
   { id: "sante-caf", section: "sante", title: "Capacité d'autofinancement", subtitle: "Du résultat à la CAF : amortissements et neutralisations" },
-  { id: "sante-caf-evolution", section: "sante", title: "Évolution de la CAF", subtitle: "Tendance pluriannuelle de la CAF et du résultat" },
+  { id: "sante-caf-evolution", section: "sante", title: "📈 Évolution CAF & Résultat", subtitle: "Tendance pluriannuelle de la CAF et du résultat" },
   { id: "sante-fdr", section: "sante", title: "Fonds de roulement (FDR)", subtitle: "Ressources stables vs emplois stables" },
   { id: "sante-fdr-mobilisable", section: "sante", title: "FDR mobilisable", subtitle: "Déduction des éléments de fragilité" },
   { id: "sante-fdr-jours", section: "sante", title: "Jours de fonctionnement", subtitle: "Combien de jours l'établissement peut fonctionner ?" },
+  { id: "sante-evolution-fdr", section: "sante", title: "📈 Évolution du FDR en jours", subtitle: "Seuil de 30 jours de fonctionnement sur 5 ans" },
   { id: "sante-bfr", section: "sante", title: "Besoin en fonds de roulement", subtitle: "Le FDR couvre-t-il le BFR ?" },
   { id: "sante-tresorerie", section: "sante", title: "Trésorerie nette", subtitle: "Composition de la trésorerie" },
   { id: "sante-treso-propre", section: "sante", title: "Trésorerie propre", subtitle: "L'autonomie financière réelle" },
+  { id: "sante-evolution-treso", section: "sante", title: "📈 Évolution Trésorerie", subtitle: "Trésorerie brute vs propre sur 5 ans" },
   { id: "sante-dettes", section: "sante", title: "Dettes à court terme", subtitle: "Ce qui n'appartient pas à l'établissement" },
   { id: "sante-creances", section: "sante", title: "Créances & Recouvrement", subtitle: "Âge des créances et taux de recouvrement" },
+  { id: "sante-evolution-recouvrement", section: "sante", title: "📈 Évolution du recouvrement", subtitle: "Taux de recouvrement et poids des charges sur 5 ans" },
   { id: "sante-charges", section: "sante", title: "Structure des charges", subtitle: "Rigidité et répartition" },
   { id: "sante-patrimoine", section: "sante", title: "Patrimoine & Immobilisations", subtitle: "Vétusté et politique d'amortissement" },
   { id: "sante-radar", section: "sante", title: "Profil REPROFI de l'établissement", subtitle: "Synthèse radar multi-critères" },
+  { id: "sante-evolution-radar", section: "sante", title: "📈 Évolution du profil REPROFI", subtitle: "Comparaison N vs N-1 en radar" },
   { id: "sante-diagnostic", section: "sante", title: "Diagnostic global", subtitle: "Synthèse, points forts, vigilances et recommandations" },
 ];
+
+/* ─────────── Helper: trend badge ─────────── */
+const TrendBadge = ({ current, previous, unit = "€", inverse = false }: { current: number; previous: number; unit?: string; inverse?: boolean }) => {
+  const diff = current - previous;
+  const pct = previous !== 0 ? ((diff / Math.abs(previous)) * 100) : 0;
+  const isPositive = inverse ? diff < 0 : diff > 0;
+  return (
+    <Badge className={`text-[9px] border-0 ${isPositive ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+      {isPositive ? <TrendingUp className="h-3 w-3 mr-0.5" /> : <TrendingDown className="h-3 w-3 mr-0.5" />}
+      {pct >= 0 ? "+" : ""}{pct.toFixed(1)}%
+    </Badge>
+  );
+};
 
 /* ─────────── COMPONENT ─────────── */
 const CompteFinancier = () => {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+
+  // Historical data state
+  const initialAllYears = useMemo(() => {
+    return [defaultCurrentYear, ...defaultHistoricalData].sort((a, b) => a.year - b.year);
+  }, []);
+  const [allYearsData, setAllYearsData] = useState<YearlyFinancialData[]>(initialAllYears);
 
   const slide = slides[currentSlide];
   const execSlides = slides.filter(s => s.section === "exec");
@@ -205,7 +206,6 @@ const CompteFinancier = () => {
     }
   };
 
-  // Keyboard nav
   const handleKey = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowRight" || e.key === " ") next();
     if (e.key === "ArrowLeft") prev();
@@ -215,13 +215,49 @@ const CompteFinancier = () => {
     }
   };
 
+  // Derived evolution data from user-editable historical data
+  const evolutionData = useMemo(() => allYearsData.map(d => ({
+    year: String(d.year),
+    fdr: d.fdr,
+    bfr: d.bfr,
+    tresorerie: d.tresorerie,
+    caf: d.caf,
+    cafNette: d.cafNette,
+    resultat: d.resultat,
+    totalRecettes: d.totalRecettes,
+    totalDepenses: d.totalDepenses,
+    solde: d.totalRecettes - d.totalDepenses,
+    joursFDR: d.joursFDR,
+    tauxRecouvrement: d.tauxRecouvrement,
+    tresoreriePropre: d.tresoreriePropre,
+    poidsCharges: d.poidsCharges,
+    poidsSRH: d.poidsSRH,
+    dotationAmortissements: d.dotationAmortissements,
+    neutralisations: d.neutralisations,
+  })), [allYearsData]);
+
+  const currentYearEvo = evolutionData[evolutionData.length - 1];
+  const previousYearEvo = evolutionData.length > 1 ? evolutionData[evolutionData.length - 2] : currentYearEvo;
+
+  // Radar data for N-1 comparison
+  const radarN1 = useMemo(() => {
+    if (evolutionData.length < 2) return null;
+    const prev = evolutionData[evolutionData.length - 2];
+    return [
+      { subject: "FDR (j)", value: Math.min(prev.joursFDR / 90 * 100, 100), fullMark: 100 },
+      { subject: "CAF", value: Math.min(prev.caf / 100000 * 100, 100), fullMark: 100 },
+      { subject: "Recouvrement", value: prev.tauxRecouvrement, fullMark: 100 },
+      { subject: "Autonomie fin.", value: prev.tresoreriePropre > 0 && prev.tresorerie > 0 ? (prev.tresoreriePropre / prev.tresorerie * 100) : 0, fullMark: 100 },
+      { subject: "Exec. recettes", value: tauxExecutionRecettes, fullMark: 100 },
+      { subject: "Exec. dépenses", value: tauxExecutionDepenses, fullMark: 100 },
+      { subject: "Maîtrise charges", value: Math.max(100 - prev.poidsCharges, 0), fullMark: 100 },
+    ];
+  }, [evolutionData]);
+
   const exportPDF = () => {
     const doc = createStyledPDF({ title: "Compte financier — Rapport REPROFI", subtitle: "Exercice 2023 — Instruction M9.6" });
-    const pw = doc.internal.pageSize.getWidth();
     const m = 14;
     let y = 48;
-
-    // Indicators table
     doc.setTextColor(37, 68, 120); doc.setFontSize(12); doc.setFont("helvetica", "bold");
     doc.text("Synthèse des indicateurs financiers (M9-6)", m, y); y += 6;
     const allIndicators = [
@@ -249,7 +285,6 @@ const CompteFinancier = () => {
   /* ─── Slide content renderer ─── */
   const renderSlide = () => {
     switch (slide.id) {
-      /* ═══ EXEC TITLE ═══ */
       case "exec-title":
         return (
           <div className="flex flex-col items-center justify-center h-full gap-6 py-12">
@@ -281,35 +316,25 @@ const CompteFinancier = () => {
       case "exec-synthese":
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <BalanceScale
-              leftLabel="Recettes réalisées"
-              leftValue={totalRecettes}
-              rightLabel="Dépenses réalisées"
-              rightValue={totalDepenses}
-              leftColor="hsl(var(--success))"
-              rightColor="hsl(var(--destructive))"
-              title="Balance recettes / dépenses"
-            />
-            <div className="space-y-4">
-              <Card className="shadow-card">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex justify-between"><span className="text-sm text-muted-foreground">Recettes prévues</span><span className="font-medium">{formatCurrency(1920000)}</span></div>
-                  <div className="flex justify-between"><span className="text-sm text-muted-foreground">Recettes réalisées</span><span className="font-medium text-success">{formatCurrency(totalRecettes)}</span></div>
-                  <Progress value={tauxExecutionRecettes} className="h-3" />
-                  <p className="text-xs text-muted-foreground">Taux d'exécution : {formatPercent(tauxExecutionRecettes)}</p>
-                  <Separator />
-                  <div className="flex justify-between"><span className="text-sm text-muted-foreground">Dépenses prévues</span><span className="font-medium">{formatCurrency(1900000)}</span></div>
-                  <div className="flex justify-between"><span className="text-sm text-muted-foreground">Dépenses réalisées</span><span className="font-medium text-destructive">{formatCurrency(totalDepenses)}</span></div>
-                  <Progress value={tauxExecutionDepenses} className="h-3" />
-                  <p className="text-xs text-muted-foreground">Taux d'exécution : {formatPercent(tauxExecutionDepenses)}</p>
-                  <Separator />
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm font-semibold">Solde budgétaire</span>
-                    <span className="text-lg font-bold text-success">{formatCurrency(soldebudgetaire)}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            <BalanceScale leftLabel="Recettes réalisées" leftValue={totalRecettes} rightLabel="Dépenses réalisées" rightValue={totalDepenses} leftColor="hsl(var(--success))" rightColor="hsl(var(--destructive))" title="Balance recettes / dépenses" />
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Recettes prévues</span><span className="font-medium">{formatCurrency(1920000)}</span></div>
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Recettes réalisées</span><span className="font-medium text-success">{formatCurrency(totalRecettes)}</span></div>
+                <Progress value={tauxExecutionRecettes} className="h-3" />
+                <p className="text-xs text-muted-foreground">Taux d'exécution : {formatPercent(tauxExecutionRecettes)}</p>
+                <Separator />
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Dépenses prévues</span><span className="font-medium">{formatCurrency(1900000)}</span></div>
+                <div className="flex justify-between"><span className="text-sm text-muted-foreground">Dépenses réalisées</span><span className="font-medium text-destructive">{formatCurrency(totalDepenses)}</span></div>
+                <Progress value={tauxExecutionDepenses} className="h-3" />
+                <p className="text-xs text-muted-foreground">Taux d'exécution : {formatPercent(tauxExecutionDepenses)}</p>
+                <Separator />
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-semibold">Solde budgétaire</span>
+                  <span className="text-lg font-bold text-success">{formatCurrency(soldebudgetaire)}</span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
 
@@ -358,15 +383,14 @@ const CompteFinancier = () => {
               <CardContent className="p-4 space-y-3">
                 <p className="text-sm font-semibold">Analyse des taux d'exécution</p>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Le taux d'exécution des <strong>recettes</strong> s'établit à <strong>{formatPercent(tauxExecutionRecettes)}</strong>, 
-                  ce qui traduit une bonne capacité de l'établissement à mobiliser ses ressources. 
-                  Le taux d'exécution des <strong>dépenses</strong> est de <strong>{formatPercent(tauxExecutionDepenses)}</strong>, 
+                  Le taux d'exécution des <strong>recettes</strong> s'établit à <strong>{formatPercent(tauxExecutionRecettes)}</strong>,
+                  ce qui traduit une bonne capacité de l'établissement à mobiliser ses ressources.
+                  Le taux d'exécution des <strong>dépenses</strong> est de <strong>{formatPercent(tauxExecutionDepenses)}</strong>,
                   reflétant une consommation maîtrisée des crédits ouverts.
                 </p>
                 <Separator />
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  💡 <strong>Un taux d'exécution &gt; 90%</strong> est considéré comme satisfaisant. Un taux inférieur peut 
-                  révéler des difficultés d'encaissement ou un budget surévalué.
+                  💡 <strong>Un taux d'exécution &gt; 90%</strong> est considéré comme satisfaisant.
                 </p>
               </CardContent>
             </Card>
@@ -434,15 +458,7 @@ const CompteFinancier = () => {
       case "exec-srh":
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <BalanceScale
-              leftLabel="Recettes SRH"
-              leftValue={842000}
-              rightLabel="Dépenses SRH"
-              rightValue={712000 + 375000}
-              leftColor="hsl(var(--success))"
-              rightColor="hsl(var(--destructive))"
-              title="Équilibre du SRH"
-            />
+            <BalanceScale leftLabel="Recettes SRH" leftValue={842000} rightLabel="Dépenses SRH" rightValue={712000 + 375000} leftColor="hsl(var(--success))" rightColor="hsl(var(--destructive))" title="Équilibre du SRH" />
             <Card className="shadow-card">
               <CardContent className="p-4 space-y-3">
                 <p className="text-sm font-semibold">Service de restauration et d'hébergement</p>
@@ -451,12 +467,92 @@ const CompteFinancier = () => {
                   <div className="flex justify-between text-xs"><span className="text-muted-foreground">Charges personnel SRH</span><span className="font-medium">{formatCurrency(712000)}</span></div>
                   <div className="flex justify-between text-xs"><span className="text-muted-foreground">Charges alimentation</span><span className="font-medium">{formatCurrency(375000)}</span></div>
                   <Separator />
-                  <div className="flex justify-between text-xs"><span className="text-muted-foreground">Coût du repas (estimation)</span><span className="font-medium">3,85 €</span></div>
                   <div className="flex justify-between text-xs"><span className="text-muted-foreground">Poids SRH / charges totales</span><span className="font-medium">{formatPercent(mockIndicators.poidsSRH)}</span></div>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed mt-2">
-                  💡 Le SRH représente <strong>{formatPercent(mockIndicators.poidsSRH)}</strong> des charges totales. 
-                  Son équilibre est un enjeu majeur pour la santé financière de l'établissement.
+                  💡 Le SRH représente <strong>{formatPercent(mockIndicators.poidsSRH)}</strong> des charges totales.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      /* ═══ NEW: Evolution Recettes / Dépenses ═══ */
+      case "exec-evolution-budget":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={evolutionData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000000).toFixed(1)}M`} />
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  <Legend />
+                  <Area type="monotone" dataKey="totalRecettes" name="Recettes" fill="hsl(var(--success))" fillOpacity={0.15} stroke="hsl(var(--success))" strokeWidth={2} />
+                  <Area type="monotone" dataKey="totalDepenses" name="Dépenses" fill="hsl(var(--destructive))" fillOpacity={0.15} stroke="hsl(var(--destructive))" strokeWidth={2} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Tendance budgétaire</p>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center text-xs">
+                    <span>Recettes</span>
+                    <TrendBadge current={currentYearEvo.totalRecettes} previous={previousYearEvo.totalRecettes} />
+                  </div>
+                  <div className="flex justify-between items-center text-xs">
+                    <span>Dépenses</span>
+                    <TrendBadge current={currentYearEvo.totalDepenses} previous={previousYearEvo.totalDepenses} inverse />
+                  </div>
+                </div>
+                <Separator />
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  💡 Ce graphique montre l'évolution des <strong>recettes et dépenses</strong> sur les 5 derniers exercices.
+                  Les données sont modifiables via le panneau « Données des exercices antérieurs ».
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      /* ═══ NEW: Evolution Solde budgétaire ═══ */
+      case "exec-evolution-solde":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={evolutionData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  <Legend />
+                  <ReferenceLine y={0} stroke="hsl(var(--destructive))" strokeDasharray="3 3" label={{ value: "Équilibre", fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
+                  <Bar dataKey="solde" name="Solde budgétaire" radius={[4, 4, 0, 0]}>
+                    {evolutionData.map((d, i) => (
+                      <Cell key={i} fill={d.solde >= 0 ? "hsl(var(--success))" : "hsl(var(--destructive))"} />
+                    ))}
+                  </Bar>
+                  <Line type="monotone" dataKey="resultat" name="Résultat comptable" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Analyse des soldes</p>
+                {evolutionData.map((d, i) => (
+                  <div key={i} className="flex justify-between text-xs border-b border-border/30 py-1">
+                    <span className="font-medium">{d.year}</span>
+                    <span className={d.solde >= 0 ? "text-success font-medium" : "text-destructive font-medium"}>
+                      {formatCurrency(d.solde)}
+                    </span>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                  💡 Le <strong>solde budgétaire</strong> (recettes − dépenses) et le <strong>résultat comptable</strong> (produits − charges) 
+                  peuvent différer en raison des opérations d'ordre.
                 </p>
               </CardContent>
             </Card>
@@ -467,7 +563,7 @@ const CompteFinancier = () => {
         return (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
-              <RBarChart data={mockEvolutionData} barGap={4}>
+              <RBarChart data={evolutionData} barGap={4}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                 <XAxis dataKey="year" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
@@ -484,15 +580,7 @@ const CompteFinancier = () => {
       case "exec-solde":
         return (
           <div className="flex flex-col items-center justify-center gap-6 py-8">
-            <BalanceScale
-              leftLabel="Total recettes"
-              leftValue={totalRecettes}
-              rightLabel="Total dépenses"
-              rightValue={totalDepenses}
-              leftColor="hsl(var(--success))"
-              rightColor="hsl(var(--destructive))"
-              title="Résultat de l'exécution budgétaire"
-            />
+            <BalanceScale leftLabel="Total recettes" leftValue={totalRecettes} rightLabel="Total dépenses" rightValue={totalDepenses} leftColor="hsl(var(--success))" rightColor="hsl(var(--destructive))" title="Résultat de l'exécution budgétaire" />
             <div className="text-center mt-4">
               <p className="text-sm text-muted-foreground">Solde budgétaire de l'exercice 2023</p>
               <p className="text-4xl font-bold font-display text-success mt-2">{formatCurrency(soldebudgetaire)}</p>
@@ -512,19 +600,13 @@ const CompteFinancier = () => {
             </div>
             <h2 className="text-3xl font-bold font-display text-secondary">Santé financière</h2>
             <p className="text-muted-foreground text-center max-w-lg">
-              Diagnostic complet : résultat, CAF, fonds de roulement, trésorerie, 
+              Diagnostic complet : résultat, CAF, fonds de roulement, trésorerie,
               créances, patrimoine. Conforme M9-6 et modèle REPROFI.
             </p>
             <div className="flex gap-6 mt-4">
-              <div className="flex flex-col items-center">
-                <ThermometerChart value={mockIndicators.joursFonctionnement} max={90} label="Jours FDR" format="days" thresholds={{ danger: 15, warning: 30, ok: 45 }} />
-              </div>
-              <div className="flex flex-col items-center">
-                <ThermometerChart value={ratioAutonomie} max={100} label="Autonomie fin." format="percent" thresholds={{ danger: 20, warning: 50, ok: 70 }} />
-              </div>
-              <div className="flex flex-col items-center">
-                <ThermometerChart value={mockIndicators.tauxRecouvrement} max={100} label="Recouvrement" format="percent" thresholds={{ danger: 80, warning: 90, ok: 95 }} />
-              </div>
+              <ThermometerChart value={mockIndicators.joursFonctionnement} max={90} label="Jours FDR" format="days" thresholds={{ danger: 15, warning: 30, ok: 45 }} />
+              <ThermometerChart value={ratioAutonomie} max={100} label="Autonomie fin." format="percent" thresholds={{ danger: 20, warning: 50, ok: 70 }} />
+              <ThermometerChart value={mockIndicators.tauxRecouvrement} max={100} label="Recouvrement" format="percent" thresholds={{ danger: 80, warning: 90, ok: 95 }} />
             </div>
           </div>
         );
@@ -532,15 +614,7 @@ const CompteFinancier = () => {
       case "sante-balance":
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <BalanceScale
-              leftLabel="Produits (cl. 7)"
-              leftValue={1855230}
-              rightLabel="Charges (cl. 6)"
-              rightValue={1840000}
-              leftColor="hsl(var(--success))"
-              rightColor="hsl(var(--destructive))"
-              title="Le résultat est-il excédentaire ou déficitaire ?"
-            />
+            <BalanceScale leftLabel="Produits (cl. 7)" leftValue={1855230} rightLabel="Charges (cl. 6)" rightValue={1840000} leftColor="hsl(var(--success))" rightColor="hsl(var(--destructive))" title="Le résultat est-il excédentaire ou déficitaire ?" />
             <Card className="shadow-card">
               <CardContent className="p-4 space-y-4">
                 <p className="text-sm font-semibold">Comment se calcule le résultat ?</p>
@@ -552,7 +626,6 @@ const CompteFinancier = () => {
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   💡 <strong>Le résultat mesure l'enrichissement ou l'appauvrissement</strong> de l'établissement sur l'exercice.
-                  Un résultat positif signifie que l'établissement a dégagé plus de ressources qu'il n'en a consommé.
                 </p>
               </CardContent>
             </Card>
@@ -576,49 +649,64 @@ const CompteFinancier = () => {
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   💡 <strong>La CAF</strong> mesure la capacité de l'établissement à financer ses investissements avec ses propres moyens.
-                  Les <strong>neutralisations</strong> correspondent aux amortissements financés par des subventions : 
-                  elles ne génèrent pas de trésorerie propre et sont donc soustraites.
-                </p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  <strong>CAF nette {cafNette > 0 ? "positive" : "négative"}</strong> = l'établissement 
-                  {cafNette > 0 ? " peut financer le renouvellement de ses immobilisations" : " a besoin de ressources externes pour renouveler ses immobilisations"}.
                 </p>
               </CardContent>
             </Card>
           </div>
         );
 
+      /* ═══ NEW: CAF Evolution ═══ */
       case "sante-caf-evolution":
         return (
-          <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={evolutionCAF}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="year" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <Legend />
-                <ReferenceLine y={0} stroke="hsl(var(--destructive))" strokeDasharray="3 3" />
-                <Bar dataKey="caf" name="CAF brute" fill="hsl(215, 70%, 45%)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="cafNette" name="CAF nette" fill="hsl(var(--secondary))" radius={[4, 4, 0, 0]} />
-                <Line type="monotone" dataKey="resultat" name="Résultat" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 4 }} />
-              </ComposedChart>
-            </ResponsiveContainer>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={evolutionData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  <Legend />
+                  <ReferenceLine y={0} stroke="hsl(var(--destructive))" strokeDasharray="3 3" />
+                  <Bar dataKey="caf" name="CAF brute" fill="hsl(215, 70%, 45%)" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="cafNette" name="CAF nette" fill="hsl(var(--secondary))" radius={[4, 4, 0, 0]} />
+                  <Line type="monotone" dataKey="resultat" name="Résultat" stroke="hsl(var(--destructive))" strokeWidth={2} dot={{ r: 4 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Tendance CAF</p>
+                <div className="space-y-2">
+                  {evolutionData.map((d, i) => (
+                    <div key={i} className="flex justify-between text-xs border-b border-border/30 py-1">
+                      <span>{d.year}</span>
+                      <div className="flex gap-2">
+                        <span className="text-primary font-mono">{formatCurrency(d.caf)}</span>
+                        <span className={d.resultat >= 0 ? "text-success" : "text-destructive"} style={{ fontSize: 9 }}>
+                          R: {formatCurrency(d.resultat)}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs">CAF N/N-1 :</span>
+                  <TrendBadge current={currentYearEvo.caf} previous={previousYearEvo.caf} />
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  💡 La CAF doit rester <strong>positive sur la durée</strong> pour assurer le renouvellement des immobilisations.
+                  Un résultat négatif n'empêche pas une CAF positive grâce aux amortissements.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         );
 
       case "sante-fdr":
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <BalanceScale
-              leftLabel="Ressources stables (cl. 1)"
-              leftValue={1250000}
-              rightLabel="Emplois stables (cl. 2)"
-              rightValue={1250000 - mockIndicators.fdr}
-              leftColor="hsl(var(--primary))"
-              rightColor="hsl(38, 92%, 50%)"
-              title="Le FDR : l'excédent des ressources stables"
-            />
+            <BalanceScale leftLabel="Ressources stables (cl. 1)" leftValue={1250000} rightLabel="Emplois stables (cl. 2)" rightValue={1250000 - mockIndicators.fdr} leftColor="hsl(var(--primary))" rightColor="hsl(38, 92%, 50%)" title="Le FDR : l'excédent des ressources stables" />
             <Card className="shadow-card">
               <CardContent className="p-4 space-y-3">
                 <p className="text-sm font-semibold">Qu'est-ce que le Fonds de Roulement ?</p>
@@ -629,15 +717,11 @@ const CompteFinancier = () => {
                   <p className="font-bold text-sm">= FDR : <span className="text-primary">{formatCurrency(mockIndicators.fdr)}</span></p>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  💡 Le FDR est <strong>le matelas de sécurité</strong> de l'établissement. Il représente 
-                  l'excédent des ressources à long terme sur les emplois à long terme. Ce surplus 
-                  finance le cycle d'exploitation courant.
+                  💡 Le FDR est <strong>le matelas de sécurité</strong> de l'établissement.
                 </p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge className="bg-success/10 text-success border-0">
-                    <CheckCircle2 className="h-3 w-3 mr-1" /> {mockIndicators.joursFonctionnement} jours de fonctionnement
-                  </Badge>
-                </div>
+                <Badge className="bg-success/10 text-success border-0">
+                  <CheckCircle2 className="h-3 w-3 mr-1" /> FDR positif : {mockIndicators.joursFonctionnement} jours
+                </Badge>
               </CardContent>
             </Card>
           </div>
@@ -649,20 +733,16 @@ const CompteFinancier = () => {
             <WaterfallChart data={waterfallFDR} height={300} />
             <Card className="shadow-card">
               <CardContent className="p-4 space-y-3">
-                <p className="text-sm font-semibold">Le FDR est-il réellement mobilisable ?</p>
+                <p className="text-sm font-semibold">Du FDR brut au FDR mobilisable</p>
                 <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono space-y-1">
                   <p>FDR brut : {formatCurrency(mockIndicators.fdr)}</p>
-                  <p className="text-destructive">(−) Stocks (classe 3) : {formatCurrency(mockFragiliteFDR.stocks)}</p>
+                  <p className="text-destructive">(−) Stocks (cl. 3) : {formatCurrency(mockFragiliteFDR.stocks)}</p>
                   <p className="text-destructive">(−) Créances anciennes : {formatCurrency(mockFragiliteFDR.creancesAnciennes)}</p>
-                  <p className="text-destructive">(−) Créances douteuses (416) : {formatCurrency(mockFragiliteFDR.compte416)}</p>
+                  <p className="text-destructive">(−) Cpt 416 (douteuses) : {formatCurrency(mockFragiliteFDR.compte416)}</p>
                   <Separator />
-                  <p className="font-bold text-sm">= FDR mobilisable : <span className="text-primary">{formatCurrency(fdrMobilisable)}</span> ({joursMobilisable} j.)</p>
+                  <p className="font-bold text-sm">= FDR mobilisable : {formatCurrency(fdrMobilisable)}</p>
                 </div>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  💡 Les <strong>éléments de fragilité</strong> sont des actifs immobilisés dans le FDR : 
-                  stocks non liquides, créances dont le recouvrement est incertain. Le FDR mobilisable 
-                  représente ce que l'établissement peut réellement utiliser.
-                </p>
+                <p className="text-xs text-muted-foreground">💡 Le FDR mobilisable représente la part réellement disponible.</p>
               </CardContent>
             </Card>
           </div>
@@ -670,26 +750,65 @@ const CompteFinancier = () => {
 
       case "sante-fdr-jours":
         return (
-          <div className="flex flex-col items-center gap-6 py-4">
-            <div className="flex gap-10 items-end">
-              <GaugeChart value={mockIndicators.joursFonctionnement} max={90} label="Jours FDR brut" unit=" j" thresholds={{ ok: 30, warning: 15 }} size="lg" />
-              <GaugeChart value={joursMobilisable} max={90} label="Jours FDR mobilisable" unit=" j" thresholds={{ ok: 30, warning: 15 }} size="lg" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="flex flex-col items-center gap-4">
+              <GaugeChart value={mockIndicators.joursFonctionnement} max={90} label="Jours de FDR brut" unit=" j." thresholds={{ ok: 45, warning: 30 }} size="lg" />
+              <GaugeChart value={joursMobilisable} max={90} label="Jours de FDR mobilisable" unit=" j." thresholds={{ ok: 45, warning: 30 }} size="lg" />
             </div>
-            <Card className="shadow-card w-full max-w-2xl">
-              <CardContent className="p-4">
-                <p className="text-sm font-semibold mb-3">Combien de jours l'établissement peut-il fonctionner ?</p>
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  Le FDR brut permet <strong>{mockIndicators.joursFonctionnement} jours</strong> de fonctionnement.
-                  Après déduction des éléments de fragilité, le FDR mobilisable ne couvre que <strong>{joursMobilisable} jours</strong>.
-                </p>
-                <div className="mt-3 p-3 bg-muted/50 rounded-lg text-xs">
-                  <p className="font-mono">Charge journalière = Charges annuelles / 360 = {formatCurrency(Math.round(chargeFonctionnementJour))}</p>
-                  <p className="font-mono">Jours FDR = FDR / charge journalière</p>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Combien de jours l'établissement peut-il fonctionner ?</p>
+                <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono space-y-1">
+                  <p>FDR : {formatCurrency(mockIndicators.fdr)} ÷ charge/jour ({formatCurrency(Math.round(chargeFonctionnementJour))})</p>
+                  <p className="font-bold">= {mockIndicators.joursFonctionnement} jours de fonctionnement</p>
+                  <Separator />
+                  <p>FDR mobilisable : {formatCurrency(fdrMobilisable)}</p>
+                  <p className="font-bold">= {joursMobilisable} jours mobilisables</p>
                 </div>
-                <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                  💡 <strong>Seuil recommandé : 30 à 90 jours.</strong> En dessous de 30 jours, l'établissement 
-                  est en situation de fragilité. Au-dessus de 90 jours, le FDR est peut-être excessif 
-                  et pourrait être mobilisé pour des investissements.
+                <p className="text-xs text-muted-foreground">💡 Le seuil réglementaire est de <strong>30 jours minimum</strong>.</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      /* ═══ NEW: Evolution FDR en jours ═══ */
+      case "sante-evolution-fdr":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={evolutionData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 10 }} domain={[0, 'auto']} />
+                  <Tooltip />
+                  <Legend />
+                  <ReferenceLine y={30} stroke="hsl(var(--destructive))" strokeDasharray="5 3" label={{ value: "Seuil 30 j.", fontSize: 9, fill: "hsl(var(--destructive))" }} />
+                  <ReferenceLine y={60} stroke="hsl(var(--success))" strokeDasharray="5 3" label={{ value: "Confort 60 j.", fontSize: 9, fill: "hsl(var(--success))" }} />
+                  <Area type="monotone" dataKey="joursFDR" name="Jours de FDR" fill="hsl(var(--primary))" fillOpacity={0.2} stroke="hsl(var(--primary))" strokeWidth={3} />
+                  <Bar dataKey="joursFDR" name="Jours" fill="hsl(var(--primary))" fillOpacity={0.5} radius={[4, 4, 0, 0]}>
+                    {evolutionData.map((d, i) => (
+                      <Cell key={i} fill={d.joursFDR < 30 ? "hsl(var(--destructive))" : d.joursFDR < 45 ? "hsl(var(--warning))" : "hsl(var(--success))"} fillOpacity={0.6} />
+                    ))}
+                  </Bar>
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Évolution des jours de FDR</p>
+                {evolutionData.map((d, i) => (
+                  <div key={i} className="flex justify-between items-center text-xs border-b border-border/30 py-1">
+                    <span>{d.year}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-medium">{d.joursFDR} j.</span>
+                      <div className={`w-2 h-2 rounded-full ${d.joursFDR < 30 ? "bg-destructive" : d.joursFDR < 45 ? "bg-warning" : "bg-success"}`} />
+                    </div>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                  💡 Le seuil minimal est de <strong>30 jours</strong>. Entre 30 et 60 jours, la situation est correcte.
+                  Au-delà de 90 jours, le FDR est jugé excessif.
                 </p>
               </CardContent>
             </Card>
@@ -699,15 +818,7 @@ const CompteFinancier = () => {
       case "sante-bfr":
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <BalanceScale
-              leftLabel="FDR"
-              leftValue={mockIndicators.fdr}
-              rightLabel="BFR"
-              rightValue={mockIndicators.bfr}
-              leftColor="hsl(var(--primary))"
-              rightColor="hsl(var(--warning))"
-              title="Le FDR couvre-t-il le BFR ?"
-            />
+            <BalanceScale leftLabel="FDR" leftValue={mockIndicators.fdr} rightLabel="BFR" rightValue={mockIndicators.bfr} leftColor="hsl(var(--primary))" rightColor="hsl(var(--warning))" title="Le FDR couvre-t-il le BFR ?" />
             <Card className="shadow-card">
               <CardContent className="p-4 space-y-3">
                 <p className="text-sm font-semibold">Trésorerie = FDR − BFR</p>
@@ -718,9 +829,7 @@ const CompteFinancier = () => {
                   <p className="font-bold text-sm">= Trésorerie : <span className="text-success">{formatCurrency(mockIndicators.tresorerie)}</span></p>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  💡 Le <strong>BFR</strong> (Besoin en Fonds de Roulement) représente le financement nécessaire 
-                  pour le cycle d'exploitation courant. Si le FDR est supérieur au BFR, l'établissement 
-                  dégage une trésorerie positive.
+                  💡 Le <strong>BFR</strong> représente le financement nécessaire pour le cycle d'exploitation courant.
                 </p>
               </CardContent>
             </Card>
@@ -730,38 +839,28 @@ const CompteFinancier = () => {
       case "sante-tresorerie":
         return (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="space-y-4">
-              <Card className="shadow-card">
-                <CardContent className="p-4">
-                  <p className="text-sm font-semibold mb-3">Composition de la trésorerie</p>
-                  {mockTresorerieDetail.map((t, i) => (
-                    <div key={i} className="flex justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
-                      <span className="text-muted-foreground">{t.label} ({t.compte})</span>
-                      <span className="font-medium">{formatCurrency(t.montant)}</span>
-                    </div>
-                  ))}
-                  <Separator className="my-2" />
-                  <div className="flex justify-between text-sm font-bold">
-                    <span>TOTAL trésorerie</span>
-                    <span className="text-success">{formatCurrency(mockIndicators.tresorerie)}</span>
+            <Card className="shadow-card">
+              <CardContent className="p-4">
+                <p className="text-sm font-semibold mb-3">Composition de la trésorerie</p>
+                {mockTresorerieDetail.map((t, i) => (
+                  <div key={i} className="flex justify-between text-sm py-1.5 border-b border-border/50 last:border-0">
+                    <span className="text-muted-foreground">{t.label} ({t.compte})</span>
+                    <span className="font-medium">{formatCurrency(t.montant)}</span>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
+                ))}
+                <Separator className="my-2" />
+                <div className="flex justify-between text-sm font-bold">
+                  <span>TOTAL trésorerie</span><span className="text-success">{formatCurrency(mockIndicators.tresorerie)}</span>
+                </div>
+              </CardContent>
+            </Card>
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <RPieChart>
-                  <Pie
-                    data={mockTresorerieDetail.map((t, i) => ({
-                      name: t.label, value: t.montant,
-                      fill: ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--warning))"][i],
-                    }))}
+                  <Pie data={mockTresorerieDetail.map((t, i) => ({ name: t.label, value: t.montant, fill: ["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--warning))"][i] }))}
                     dataKey="value" cx="50%" cy="50%" innerRadius={45} outerRadius={90} paddingAngle={4}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  >
-                    {mockTresorerieDetail.map((_, i) => (
-                      <Cell key={i} fill={["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--warning))"][i]} />
-                    ))}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {mockTresorerieDetail.map((_, i) => <Cell key={i} fill={["hsl(var(--primary))", "hsl(var(--secondary))", "hsl(var(--warning))"][i]} />)}
                   </Pie>
                   <Tooltip formatter={(v: number) => formatCurrency(v)} />
                 </RPieChart>
@@ -785,9 +884,49 @@ const CompteFinancier = () => {
                   <p className="text-destructive">(−) Avances des commensaux : {formatCurrency(mockDettes.avancesCommensaux)}</p>
                   <Separator />
                   <p className="font-bold text-sm">= Trésorerie propre : <span className="text-success">{formatCurrency(tresoreriePropre)}</span></p>
-                  <p>Ratio d'autonomie : <span className="font-bold">{formatPercent(ratioAutonomie)}</span></p>
                 </div>
                 <GaugeChart value={ratioAutonomie} max={100} label="Autonomie financière" unit="%" thresholds={{ ok: 50, warning: 30 }} size="md" />
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      /* ═══ NEW: Evolution Trésorerie ═══ */
+      case "sante-evolution-treso":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={evolutionData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  <Legend />
+                  <Area type="monotone" dataKey="tresorerie" name="Trésorerie brute" fill="hsl(var(--primary))" fillOpacity={0.2} stroke="hsl(var(--primary))" strokeWidth={2} />
+                  <Area type="monotone" dataKey="tresoreriePropre" name="Trésorerie propre" fill="hsl(var(--success))" fillOpacity={0.2} stroke="hsl(var(--success))" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Tendance trésorerie</p>
+                {evolutionData.map((d, i) => (
+                  <div key={i} className="flex justify-between text-xs border-b border-border/30 py-1">
+                    <span>{d.year}</span>
+                    <div className="flex gap-2">
+                      <span className="text-primary font-mono">{formatCurrency(d.tresorerie)}</span>
+                      <span className="text-success font-mono" style={{ fontSize: 9 }}>{formatCurrency(d.tresoreriePropre)}</span>
+                    </div>
+                  </div>
+                ))}
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs">Tréso propre N/N-1 :</span>
+                  <TrendBadge current={currentYearEvo.tresoreriePropre} previous={previousYearEvo.tresoreriePropre} />
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  💡 L'écart entre trésorerie brute et propre représente les <strong>fonds qui ne vous appartiennent pas</strong>.
+                </p>
               </CardContent>
             </Card>
           </div>
@@ -813,18 +952,13 @@ const CompteFinancier = () => {
                 {dettesTreso.map((d, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: d.fill }} />
-                    <div className="flex-1 flex justify-between text-sm">
-                      <span>{d.name}</span><span className="font-medium">{formatCurrency(d.value)}</span>
-                    </div>
+                    <div className="flex-1 flex justify-between text-sm"><span>{d.name}</span><span className="font-medium">{formatCurrency(d.value)}</span></div>
                   </div>
                 ))}
                 <Separator />
-                <div className="flex justify-between text-sm font-bold">
-                  <span>Total dettes CT</span><span className="text-destructive">{formatCurrency(totalDettes)}</span>
-                </div>
+                <div className="flex justify-between text-sm font-bold"><span>Total dettes CT</span><span className="text-destructive">{formatCurrency(totalDettes)}</span></div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  💡 Ces sommes sont dans la trésorerie mais <strong>ne sont pas disponibles</strong> : 
-                  elles devront être restituées ou utilisées selon leur affectation.
+                  💡 Ces sommes sont dans la trésorerie mais <strong>ne sont pas disponibles</strong>.
                 </p>
               </CardContent>
             </Card>
@@ -858,11 +992,53 @@ const CompteFinancier = () => {
                     </div>
                   ))}
                   <p className="text-xs text-muted-foreground mt-2">
-                    💡 Les créances de plus de 12 mois doivent faire l'objet d'un examen pour <strong>admission en non-valeur (ANV)</strong>.
+                    💡 Les créances de plus de 12 mois doivent faire l'objet d'un examen pour <strong>admission en non-valeur</strong>.
                   </p>
                 </CardContent>
               </Card>
             </div>
+          </div>
+        );
+
+      /* ═══ NEW: Evolution recouvrement & charges ═══ */
+      case "sante-evolution-recouvrement":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={evolutionData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                  <YAxis yAxisId="left" tick={{ fontSize: 10 }} domain={[80, 100]} unit="%" />
+                  <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 10 }} domain={[50, 100]} unit="%" />
+                  <Tooltip />
+                  <Legend />
+                  <ReferenceLine yAxisId="left" y={95} stroke="hsl(var(--success))" strokeDasharray="5 3" label={{ value: "Cible 95%", fontSize: 9, fill: "hsl(var(--success))" }} />
+                  <Line yAxisId="left" type="monotone" dataKey="tauxRecouvrement" name="Taux de recouvrement (%)" stroke="hsl(var(--primary))" strokeWidth={3} dot={{ r: 5, fill: "hsl(var(--primary))" }} />
+                  <Bar yAxisId="right" dataKey="poidsCharges" name="Poids des charges (%)" fill="hsl(var(--warning))" fillOpacity={0.5} radius={[4, 4, 0, 0]} />
+                  <Line yAxisId="right" type="monotone" dataKey="poidsSRH" name="Poids SRH (%)" stroke="hsl(var(--destructive))" strokeWidth={2} strokeDasharray="5 3" dot={{ r: 3 }} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Ratios clés pluriannuels</p>
+                {evolutionData.map((d, i) => (
+                  <div key={i} className="text-xs border-b border-border/30 py-1.5 space-y-0.5">
+                    <div className="flex justify-between font-medium"><span>{d.year}</span></div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Recouvrement</span><span className={d.tauxRecouvrement >= 95 ? "text-success" : "text-warning"}>{d.tauxRecouvrement.toFixed(1)}%</span>
+                    </div>
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Charges</span><span>{d.poidsCharges.toFixed(1)}%</span>
+                    </div>
+                  </div>
+                ))}
+                <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                  💡 Un <strong>taux de recouvrement &gt; 95%</strong> est l'objectif. La rigidité des charges doit être surveillée.
+                </p>
+              </CardContent>
+            </Card>
           </div>
         );
 
@@ -892,8 +1068,7 @@ const CompteFinancier = () => {
                   <Progress value={ratioRigiditeCharges} className="h-2" />
                 </div>
                 <p className="text-xs text-muted-foreground mt-2 leading-relaxed">
-                  💡 Un <strong>ratio de rigidité élevé</strong> signifie que l'établissement a peu de marge de manœuvre 
-                  pour réduire ses charges en cas de baisse de recettes.
+                  💡 Un <strong>ratio de rigidité élevé</strong> signifie peu de marge de manœuvre pour réduire les charges.
                 </p>
               </CardContent>
             </Card>
@@ -921,9 +1096,7 @@ const CompteFinancier = () => {
                   <div className="flex justify-between text-xs"><span>Impact net sur résultat</span><span className="font-medium">{formatCurrency(dotationAmortissements - neutralisationAmortissements)}</span></div>
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  💡 Un <strong>taux de vétusté &gt; 70%</strong> signale un patrimoine vieillissant nécessitant 
-                  un plan de renouvellement. Les neutralisations compensent l'impact des amortissements 
-                  sur les biens financés par subventions.
+                  💡 Un <strong>taux de vétusté &gt; 70%</strong> signale un patrimoine vieillissant.
                 </p>
               </CardContent>
             </Card>
@@ -948,17 +1121,59 @@ const CompteFinancier = () => {
               <p className="text-sm font-semibold">Profil multi-critères REPROFI</p>
               {radarPerformance.map((r, i) => (
                 <div key={i}>
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>{r.subject}</span><span className="font-medium">{r.value.toFixed(0)}%</span>
-                  </div>
+                  <div className="flex justify-between text-xs mb-1"><span>{r.subject}</span><span className="font-medium">{r.value.toFixed(0)}%</span></div>
                   <Progress value={r.value} className="h-2" />
                 </div>
               ))}
-              <p className="text-xs text-muted-foreground mt-2">
-                💡 Ce radar offre une vision synthétique. Plus la surface est grande, 
-                meilleure est la situation financière.
-              </p>
+              <p className="text-xs text-muted-foreground mt-2">💡 Plus la surface est grande, meilleure est la situation financière.</p>
             </div>
+          </div>
+        );
+
+      /* ═══ NEW: Radar N vs N-1 ═══ */
+      case "sante-evolution-radar":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="lg:col-span-2 h-80">
+              <ResponsiveContainer width="100%" height="100%">
+                <RadarChart data={radarPerformance.map((r, i) => ({
+                  ...r,
+                  valueN1: radarN1 ? radarN1[i].value : 0,
+                }))}>
+                  <PolarGrid stroke="hsl(var(--border))" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
+                  <PolarRadiusAxis tick={{ fontSize: 8 }} domain={[0, 100]} />
+                  <Radar name={`${currentYearEvo.year} (N)`} dataKey="value" stroke="hsl(215, 70%, 45%)" fill="hsl(215, 70%, 45%)" fillOpacity={0.3} strokeWidth={2} />
+                  <Radar name={`${previousYearEvo.year} (N-1)`} dataKey="valueN1" stroke="hsl(var(--warning))" fill="hsl(var(--warning))" fillOpacity={0.1} strokeWidth={2} strokeDasharray="5 3" />
+                  <Legend />
+                  <Tooltip formatter={(v: number) => `${Number(v).toFixed(0)}%`} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Comparaison N / N-1</p>
+                {radarPerformance.map((r, i) => {
+                  const prev = radarN1 ? radarN1[i].value : 0;
+                  const diff = r.value - prev;
+                  return (
+                    <div key={i} className="flex justify-between items-center text-xs border-b border-border/30 py-1">
+                      <span className="text-muted-foreground">{r.subject}</span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono">{r.value.toFixed(0)}%</span>
+                        <Badge className={`text-[8px] border-0 px-1 ${diff >= 0 ? "bg-success/10 text-success" : "bg-destructive/10 text-destructive"}`}>
+                          {diff >= 0 ? "+" : ""}{diff.toFixed(0)}
+                        </Badge>
+                      </div>
+                    </div>
+                  );
+                })}
+                <p className="text-xs text-muted-foreground leading-relaxed mt-1">
+                  💡 Le radar superposé permet de visualiser l'<strong>évolution de chaque dimension</strong> de la santé financière.
+                  La zone bleue (N) doit idéalement être plus grande que la zone orange (N-1).
+                </p>
+              </CardContent>
+            </Card>
           </div>
         );
 
@@ -1049,6 +1264,12 @@ const CompteFinancier = () => {
         </div>
       </motion.div>
 
+      {/* Historical data input panel */}
+      <HistoricalDataPanel
+        onDataChange={setAllYearsData}
+        currentYearData={defaultCurrentYear}
+      />
+
       {/* Section tabs */}
       <div className="flex gap-2">
         <Button
@@ -1108,7 +1329,7 @@ const CompteFinancier = () => {
         </CardContent>
       </Card>
 
-      {/* Slide strip / thumbnails */}
+      {/* Slide strip */}
       <div className="flex gap-1.5 overflow-x-auto pb-2">
         {slides.map((s, i) => (
           <button
