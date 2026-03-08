@@ -17,11 +17,13 @@ import {
   Treemap,
 } from "recharts";
 import { cn } from "@/lib/utils";
-import { 
+import {
   Brain, AlertTriangle, CheckCircle2, Info, Link2, Sparkles, Loader2, 
-  ArrowRight, ChevronDown, ChevronUp, Search, Filter, Zap, Network
+  ArrowRight, ChevronDown, ChevronUp, Search, Filter, Zap, Network, Download, Printer
 } from "lucide-react";
 import ReactMarkdown from "react-markdown";
+import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
+import autoTable from "jspdf-autotable";
 
 // ─── Enrichir les données balance avec la nomenclature M9-6 ───
 interface EnrichedBalanceRow {
@@ -260,10 +262,70 @@ const BalanceAnalysis = () => {
           </h1>
           <p className="text-sm text-muted-foreground mt-1">Nomenclature M9-6 • Détection d'anomalies • Analyse IA en temps réel</p>
         </div>
-        <Button onClick={launchAiAnalysis} disabled={isAnalyzing} className="gap-2 shadow-md">
-          {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
-          {isAnalyzing ? "Analyse en cours..." : "Lancer l'analyse IA"}
-        </Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => {
+            const doc = createStyledPDF({ title: "Analyse de la balance comptable", subtitle: "Nomenclature M9-6 — Détail par sous-comptes" });
+            autoTable(doc, {
+              startY: 48,
+              head: [["Compte", "Libellé", "Débits", "Crédits", "Solde", "Anomalie"]],
+              body: enrichedDetailed.map(a => [a.numero, a.label, formatCurrency(a.debit), formatCurrency(a.credit), formatCurrency(a.solde), a.anomalie === "critique" ? "⚠️ CRITIQUE" : a.anomalie === "attention" ? "⚠ Attention" : "Normal"]),
+              headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+              alternateRowStyles: { fillColor: [240, 244, 248] },
+              margin: { left: 10, right: 10 },
+              columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
+              styles: { fontSize: 8 },
+            });
+            const y2 = (doc as any).lastAutoTable.finalY + 8;
+            if (subventionsData.length > 0) {
+              doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(37, 68, 120);
+              doc.text("Subventions", 14, y2);
+              autoTable(doc, {
+                startY: y2 + 4,
+                head: [["Compte", "Source", "Crédits", "Débits", "Solde"]],
+                body: subventionsData.map(s => [s.name, s.source || "—", formatCurrency(s.credit), formatCurrency(s.debit), formatCurrency(s.solde)]),
+                headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+                margin: { left: 10, right: 10 },
+                styles: { fontSize: 8 },
+              });
+            }
+            printPDF(doc);
+          }}>
+            <Printer className="h-4 w-4 mr-1" /> Imprimer
+          </Button>
+          <Button size="sm" variant="outline" onClick={() => {
+            const doc = createStyledPDF({ title: "Analyse de la balance comptable", subtitle: "Nomenclature M9-6 — Détail par sous-comptes" });
+            autoTable(doc, {
+              startY: 48,
+              head: [["Compte", "Libellé", "Débits", "Crédits", "Solde", "Anomalie"]],
+              body: enrichedDetailed.map(a => [a.numero, a.label, formatCurrency(a.debit), formatCurrency(a.credit), formatCurrency(a.solde), a.anomalie === "critique" ? "CRITIQUE" : a.anomalie === "attention" ? "Attention" : "Normal"]),
+              headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+              alternateRowStyles: { fillColor: [240, 244, 248] },
+              margin: { left: 10, right: 10 },
+              columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
+              styles: { fontSize: 8 },
+            });
+            const y2 = (doc as any).lastAutoTable.finalY + 8;
+            if (subventionsData.length > 0) {
+              doc.setFontSize(12); doc.setFont("helvetica", "bold"); doc.setTextColor(37, 68, 120);
+              doc.text("Subventions", 14, y2);
+              autoTable(doc, {
+                startY: y2 + 4,
+                head: [["Compte", "Source", "Crédits", "Débits", "Solde"]],
+                body: subventionsData.map(s => [s.name, s.source || "—", formatCurrency(s.credit), formatCurrency(s.debit), formatCurrency(s.solde)]),
+                headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+                margin: { left: 10, right: 10 },
+                styles: { fontSize: 8 },
+              });
+            }
+            savePDF(doc, `Balance_M96_${new Date().toISOString().split("T")[0]}.pdf`);
+          }}>
+            <Download className="h-4 w-4 mr-1" /> PDF
+          </Button>
+          <Button onClick={launchAiAnalysis} disabled={isAnalyzing} className="gap-2 shadow-md">
+            {isAnalyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Brain className="h-4 w-4" />}
+            {isAnalyzing ? "Analyse en cours..." : "Lancer l'analyse IA"}
+          </Button>
+        </div>
       </motion.div>
 
       {/* KPI avec anomalies */}
