@@ -93,6 +93,43 @@ const repartitionBilan = [
   { name: "Trésorerie propre", value: tresoreriePropre, fill: "hsl(var(--success))" },
 ];
 
+// Radar data REPROFI-style
+const radarPerformance = [
+  { subject: "FDR (j)", value: Math.min(mockIndicators.joursFonctionnement / 90 * 100, 100), fullMark: 100 },
+  { subject: "CAF", value: Math.min(caf / 100000 * 100, 100), fullMark: 100 },
+  { subject: "Recouvrement", value: mockIndicators.tauxRecouvrement, fullMark: 100 },
+  { subject: "Autonomie fin.", value: ratioAutonomie, fullMark: 100 },
+  { subject: "Exec. recettes", value: tauxExecutionRecettes, fullMark: 100 },
+  { subject: "Exec. dépenses", value: tauxExecutionDepenses, fullMark: 100 },
+  { subject: "Maîtrise charges", value: Math.max(100 - mockIndicators.poidsCharges, 0), fullMark: 100 },
+];
+
+// Waterfall: Construction du FDR mobilisable
+const waterfallFDR = [
+  { name: "FDR brut", value: mockIndicators.fdr, type: "total" as const },
+  { name: "(-) Stocks", value: -mockFragiliteFDR.stocks, type: "negative" as const },
+  { name: "(-) Créances anc.", value: -mockFragiliteFDR.creancesAnciennes, type: "negative" as const },
+  { name: "(-) Cpt 416", value: -mockFragiliteFDR.compte416, type: "negative" as const },
+  { name: "= FDR mobilisable", value: fdrMobilisable, type: "total" as const },
+];
+
+// Waterfall: Construction de la trésorerie propre
+const waterfallTreso = [
+  { name: "Trésorerie brute", value: mockIndicators.tresorerie, type: "total" as const },
+  { name: "(-) Subventions", value: -mockDettes.subventions, type: "negative" as const },
+  { name: "(-) Reliquats", value: -mockDettes.reliquatsSubventions, type: "negative" as const },
+  { name: "(-) Av. élèves", value: -mockDettes.avancesEleves, type: "negative" as const },
+  { name: "(-) Av. commens.", value: -mockDettes.avancesCommensaux, type: "negative" as const },
+  { name: "= Tréso. propre", value: tresoreriePropre, type: "total" as const },
+];
+
+// Évolution trésorerie en area chart
+const evolutionTreso = mockEvolutionData.map((d, i) => ({
+  ...d,
+  caf: evolutionCAF[i]?.caf || 0,
+  resultat: evolutionCAF[i]?.resultat || 0,
+}));
+
 const statutConfig = {
   ok: { label: "Conforme", class: "bg-success/10 text-success border-0", icon: CheckCircle2 },
   vigilance: { label: "Vigilance", class: "bg-warning/10 text-warning border-0", icon: AlertTriangle },
