@@ -275,6 +275,7 @@ const FondsSociaux = () => {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </motion.div>
 

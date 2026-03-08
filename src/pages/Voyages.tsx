@@ -236,6 +236,7 @@ const Voyages = () => {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
       </motion.div>
 
