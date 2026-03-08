@@ -14,6 +14,7 @@ import {
   Settings,
   Scale,
   ShieldCheck,
+  BookOpen,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -44,7 +45,8 @@ const analysisItems = [
 ];
 
 const toolItems = [
-  { title: "Annexe comptable", url: "/annexe", icon: FileText },
+  { title: "Compte financier", url: "/compte-financier", icon: BookOpen },
+  { title: "Annexe du comptable", url: "/annexe", icon: FileText },
   { title: "Voyages scolaires", url: "/voyages", icon: Bus },
   { title: "Fonds sociaux", url: "/fonds-sociaux", icon: Heart },
   { title: "SATD", url: "/satd", icon: Gavel },
