@@ -14,6 +14,10 @@ import { toast } from "@/hooks/use-toast";
 import {
   mockIndicators, mockDettes, mockFragiliteFDR,
   mockTresorerieDetail, mockCreancesData, mockRepartitionCharges,
+  mockConfrontationSubventions, mockRAR, mockProvisions,
+  mockChargesAPayer, mockProduitsARecevoir, mockCoutRepasSRH,
+  mockDelais, mockCapaciteInvestissement, mockSolvabilite,
+  mockComptesTiers, mockPrelevementFDR,
   formatCurrency, formatPercent,
 } from "@/lib/mockData";
 import {
@@ -138,6 +142,8 @@ const slides: Slide[] = [
   { id: "exec-srh", section: "exec", title: "Focus SRH", subtitle: "Service de restauration et d'hébergement" },
   { id: "exec-evolution-budget", section: "exec", title: "📈 Évolution Recettes / Dépenses", subtitle: "Tendances pluriannuelles du budget (N à N-4)" },
   { id: "exec-evolution-solde", section: "exec", title: "📈 Évolution du solde budgétaire", subtitle: "Résultat de l'exécution sur 5 exercices" },
+  { id: "exec-confrontation", section: "exec", title: "Confrontation subventions", subtitle: "Suivi des subventions sous condition d'emploi" },
+  { id: "exec-cout-repas", section: "exec", title: "Coût du repas SRH détaillé", subtitle: "Décomposition du coût de la restauration" },
   { id: "exec-evolution", section: "exec", title: "Évolution FDR / BFR / Trésorerie", subtitle: "Tendances sur 5 exercices" },
   { id: "exec-solde", section: "exec", title: "Solde budgétaire", subtitle: "Résultat de l'exécution budgétaire" },
 
@@ -159,6 +165,14 @@ const slides: Slide[] = [
   { id: "sante-evolution-recouvrement", section: "sante", title: "📈 Évolution du recouvrement", subtitle: "Taux de recouvrement et poids des charges sur 5 ans" },
   { id: "sante-charges", section: "sante", title: "Structure des charges", subtitle: "Rigidité et répartition" },
   { id: "sante-patrimoine", section: "sante", title: "Patrimoine & Immobilisations", subtitle: "Vétusté et politique d'amortissement" },
+  { id: "sante-prelevement-fdr", section: "sante", title: "Prélèvement sur FDR", subtitle: "Simulation d'un prélèvement et impact sur le FDR" },
+  { id: "sante-rar", section: "sante", title: "Restes à recouvrer (RAR)", subtitle: "Analyse des créances par ancienneté et nature" },
+  { id: "sante-provisions", section: "sante", title: "Provisions & Dépréciations", subtitle: "Comptes 15xx et 491 — Risques provisionnés" },
+  { id: "sante-rattachements", section: "sante", title: "Charges à payer / Produits à recevoir", subtitle: "Rattachements de fin d'exercice" },
+  { id: "sante-comptes-tiers", section: "sante", title: "Comptes de tiers (classe 4)", subtitle: "Analyse des soldes débiteurs et créditeurs" },
+  { id: "sante-delais", section: "sante", title: "Délais de paiement & recouvrement", subtitle: "Mesure de la performance de gestion" },
+  { id: "sante-investissement", section: "sante", title: "Capacité d'investissement", subtitle: "Autofinancement et financement des investissements" },
+  { id: "sante-solvabilite", section: "sante", title: "Solvabilité & Endettement", subtitle: "Ratios de solvabilité générale" },
   { id: "sante-radar", section: "sante", title: "Profil REPROFI de l'établissement", subtitle: "Synthèse radar multi-critères" },
   { id: "sante-evolution-radar", section: "sante", title: "📈 Évolution du profil REPROFI", subtitle: "Comparaison N vs N-1 en radar" },
   { id: "sante-diagnostic", section: "sante", title: "Diagnostic global", subtitle: "Synthèse, points forts, vigilances et recommandations" },
@@ -516,6 +530,87 @@ const CompteFinancier = () => {
             </Card>
           </div>
         );
+
+      /* ═══ NEW: Confrontation subventions ═══ */
+      case "exec-confrontation":
+        return (
+          <div className="space-y-4">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-2 font-semibold">Convention</th>
+                    <th className="text-right py-2 px-2 font-semibold">Recettes</th>
+                    <th className="text-right py-2 px-2 font-semibold">Dépenses</th>
+                    <th className="text-right py-2 px-2 font-semibold">Solde</th>
+                    <th className="text-center py-2 px-2 font-semibold">Statut</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mockConfrontationSubventions.map((s, i) => (
+                    <tr key={i} className="border-b border-border/30">
+                      <td className="py-2 px-2">{s.convention}</td>
+                      <td className="text-right py-2 px-2 text-success">{formatCurrency(s.recettes)}</td>
+                      <td className="text-right py-2 px-2 text-destructive">{formatCurrency(s.depenses)}</td>
+                      <td className={`text-right py-2 px-2 font-medium ${s.solde >= 0 ? "text-success" : "text-destructive"}`}>{formatCurrency(s.solde)}</td>
+                      <td className="text-center py-2 px-2">
+                        <Badge className={`text-[8px] border-0 ${s.statut === "ok" ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}`}>
+                          {s.statut === "ok" ? "✓ Conforme" : "⚠ Attention"}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground leading-relaxed">
+              💡 La <strong>confrontation</strong> vérifie que les subventions sous condition d'emploi ont bien été utilisées conformément à leur objet.
+              Un solde négatif indique un dépassement des crédits alloués.
+            </p>
+          </div>
+        );
+
+      /* ═══ NEW: Coût repas SRH détaillé ═══ */
+      case "exec-cout-repas": {
+        const coutRepasData = [
+          { name: "Denrées", value: mockCoutRepasSRH.chargesAlimentaires, fill: "hsl(var(--destructive))" },
+          { name: "Personnel", value: mockCoutRepasSRH.chargesPersonnel, fill: "hsl(var(--primary))" },
+          { name: "Fluides", value: mockCoutRepasSRH.chargesFluides, fill: "hsl(var(--warning))" },
+          { name: "Entretien", value: mockCoutRepasSRH.chargesEntretien, fill: "hsl(var(--muted-foreground))" },
+        ];
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <RPieChart>
+                  <Pie data={coutRepasData} dataKey="value" cx="50%" cy="50%" innerRadius={45} outerRadius={90} paddingAngle={3}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {coutRepasData.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                </RPieChart>
+              </ResponsiveContainer>
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-2">
+                <p className="text-sm font-semibold">Décomposition du coût du repas</p>
+                <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono space-y-1">
+                  <p>Nombre de repas total : <strong>{mockCoutRepasSRH.nbRepasTotal.toLocaleString("fr-FR")}</strong></p>
+                  <p>  dont élèves : {mockCoutRepasSRH.nbRepasEleves.toLocaleString("fr-FR")}</p>
+                  <p>  dont commensaux : {mockCoutRepasSRH.nbRepasCommensaux.toLocaleString("fr-FR")}</p>
+                  <Separator />
+                  <p>Coût denrée / repas : <strong>{mockCoutRepasSRH.coutDenreeParRepas.toFixed(2)} €</strong></p>
+                  <p>Coût complet / repas : <strong>{mockCoutRepasSRH.coutCompletParRepas.toFixed(2)} €</strong></p>
+                  <p>Prix moyen facturé : <strong>{mockCoutRepasSRH.prixMoyenFacture.toFixed(2)} €</strong></p>
+                  <Separator />
+                  <p className="font-bold">Marge brute SRH : <span className={mockCoutRepasSRH.margeBrute >= 0 ? "text-success" : "text-destructive"}>{formatCurrency(mockCoutRepasSRH.margeBrute)}</span></p>
+                </div>
+                <p className="text-xs text-muted-foreground">💡 Le coût denrée est la référence pour le calcul du crédit nourriture.</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
 
       /* ═══ NEW: Evolution Solde budgétaire ═══ */
       case "exec-evolution-solde":
@@ -1098,6 +1193,298 @@ const CompteFinancier = () => {
                 <p className="text-xs text-muted-foreground leading-relaxed">
                   💡 Un <strong>taux de vétusté &gt; 70%</strong> signale un patrimoine vieillissant.
                 </p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      /* ═══ Prélèvement sur FDR ═══ */
+      case "sante-prelevement-fdr": {
+        const prelevData = mockPrelevementFDR;
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <RPieChart>
+                  <Pie data={prelevData.repartitionApres} dataKey="value" cx="50%" cy="50%" innerRadius={45} outerRadius={90} paddingAngle={3}
+                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                    {prelevData.repartitionApres.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                  </Pie>
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                </RPieChart>
+              </ResponsiveContainer>
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Impact du prélèvement sur le FDR</p>
+                <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono space-y-1">
+                  <p>FDR avant prélèvement : {formatCurrency(prelevData.fdrAvantPrelevement)}</p>
+                  <p className="text-destructive">(−) Prélèvement demandé : {formatCurrency(prelevData.montantPrelevement)}</p>
+                  <p className="text-muted-foreground">Prélèvements déjà autorisés : {formatCurrency(prelevData.prelevementsAutorises)}</p>
+                  <Separator />
+                  <p className="font-bold">= FDR résiduel : <span className={prelevData.fdrApresPrelevement > 0 ? "text-success" : "text-destructive"}>{formatCurrency(prelevData.fdrApresPrelevement)}</span></p>
+                  <p>Jours de fonctionnement après : <strong>{prelevData.joursFonctionnementApres} j.</strong></p>
+                </div>
+                <p className="text-xs text-muted-foreground">💡 Vérifiez que le FDR résiduel reste au-dessus de <strong>30 jours</strong> de fonctionnement.</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
+
+      /* ═══ Restes à recouvrer (RAR) ═══ */
+      case "sante-rar":
+        return (
+          <div className="space-y-4">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-2 font-semibold">Nature</th>
+                    <th className="text-right py-2 px-2 font-semibold">Montant</th>
+                    <th className="text-center py-2 px-2 font-semibold">Exercice</th>
+                    <th className="text-center py-2 px-2 font-semibold">Ancienneté</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mockRAR.map((r, i) => (
+                    <tr key={i} className="border-b border-border/30">
+                      <td className="py-2 px-2">{r.nature}</td>
+                      <td className="text-right py-2 px-2 font-medium">{formatCurrency(r.montant)}</td>
+                      <td className="text-center py-2 px-2">{r.exercice}</td>
+                      <td className="text-center py-2 px-2">
+                        <Badge className={`text-[8px] border-0 ${r.anciennete.includes("> 12") ? "bg-destructive/10 text-destructive" : r.anciennete.includes("6-12") ? "bg-warning/10 text-warning" : "bg-success/10 text-success"}`}>
+                          {r.anciennete}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-border font-bold">
+                    <td className="py-2 px-2">TOTAL RAR</td>
+                    <td className="text-right py-2 px-2">{formatCurrency(mockRAR.reduce((s, r) => s + r.montant, 0))}</td>
+                    <td colSpan={2}></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground">💡 Les créances de plus de 12 mois doivent être examinées pour <strong>admission en non-valeur</strong> ou provisionnées au compte 416/491.</p>
+          </div>
+        );
+
+      /* ═══ Provisions & Dépréciations ═══ */
+      case "sante-provisions":
+        return (
+          <div className="space-y-4">
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-2 px-2 font-semibold">Compte</th>
+                    <th className="text-left py-2 px-2 font-semibold">Libellé</th>
+                    <th className="text-right py-2 px-2 font-semibold">Début</th>
+                    <th className="text-right py-2 px-2 font-semibold text-success">Dotation</th>
+                    <th className="text-right py-2 px-2 font-semibold text-destructive">Reprise</th>
+                    <th className="text-right py-2 px-2 font-semibold">Fin</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mockProvisions.map((p, i) => (
+                    <tr key={i} className="border-b border-border/30">
+                      <td className="py-2 px-2 font-mono">{p.compte}</td>
+                      <td className="py-2 px-2">{p.libelle}</td>
+                      <td className="text-right py-2 px-2">{formatCurrency(p.montantDebut)}</td>
+                      <td className="text-right py-2 px-2 text-success">{formatCurrency(p.dotation)}</td>
+                      <td className="text-right py-2 px-2 text-destructive">{formatCurrency(p.reprise)}</td>
+                      <td className="text-right py-2 px-2 font-medium">{formatCurrency(p.montantFin)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="text-xs text-muted-foreground">💡 Les <strong>provisions pour risques</strong> (cpt 15xx) et les <strong>dépréciations de créances</strong> (cpt 491) traduisent la prudence comptable de l'établissement.</p>
+          </div>
+        );
+
+      /* ═══ Charges à payer / Produits à recevoir ═══ */
+      case "sante-rattachements":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-2">
+                <p className="text-sm font-semibold text-destructive">Charges à payer</p>
+                {mockChargesAPayer.map((c, i) => (
+                  <div key={i} className="flex justify-between text-xs border-b border-border/30 py-1.5">
+                    <span className="text-muted-foreground">{c.libelle} ({c.compte})</span>
+                    <span className="font-medium">{formatCurrency(c.montant)}</span>
+                  </div>
+                ))}
+                <Separator />
+                <div className="flex justify-between text-sm font-bold">
+                  <span>Total</span>
+                  <span className="text-destructive">{formatCurrency(mockChargesAPayer.reduce((s, c) => s + c.montant, 0))}</span>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-2">
+                <p className="text-sm font-semibold text-success">Produits à recevoir</p>
+                {mockProduitsARecevoir.map((p, i) => (
+                  <div key={i} className="flex justify-between text-xs border-b border-border/30 py-1.5">
+                    <span className="text-muted-foreground">{p.libelle} ({p.compte})</span>
+                    <span className="font-medium">{formatCurrency(p.montant)}</span>
+                  </div>
+                ))}
+                <Separator />
+                <div className="flex justify-between text-sm font-bold">
+                  <span>Total</span>
+                  <span className="text-success">{formatCurrency(mockProduitsARecevoir.reduce((s, p) => s + p.montant, 0))}</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      /* ═══ Comptes de tiers ═══ */
+      case "sante-comptes-tiers":
+        return (
+          <div className="space-y-4">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <RBarChart data={mockComptesTiers} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
+                  <YAxis type="category" dataKey="libelle" tick={{ fontSize: 10 }} width={120} />
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  <Legend />
+                  <Bar dataKey="debit" name="Débit" fill="hsl(var(--primary))" opacity={0.7} radius={[0, 4, 4, 0]} />
+                  <Bar dataKey="credit" name="Crédit" fill="hsl(var(--success))" opacity={0.7} radius={[0, 4, 4, 0]} />
+                </RBarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-1 px-2">Compte</th><th className="text-left py-1 px-2">Libellé</th>
+                    <th className="text-right py-1 px-2">Débit</th><th className="text-right py-1 px-2">Crédit</th>
+                    <th className="text-right py-1 px-2">Solde</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {mockComptesTiers.map((c, i) => (
+                    <tr key={i} className="border-b border-border/30">
+                      <td className="py-1 px-2 font-mono">{c.compte}</td>
+                      <td className="py-1 px-2">{c.libelle}</td>
+                      <td className="text-right py-1 px-2">{formatCurrency(c.debit)}</td>
+                      <td className="text-right py-1 px-2">{formatCurrency(c.credit)}</td>
+                      <td className={`text-right py-1 px-2 font-medium ${c.solde >= 0 ? "text-primary" : "text-destructive"}`}>{formatCurrency(c.solde)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+
+      /* ═══ Délais de paiement & recouvrement ═══ */
+      case "sante-delais":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="flex flex-col items-center gap-6">
+              <GaugeChart value={mockDelais.delaiPaiementFournisseurs} max={60} label="Délai paiement fournisseurs (j.)" unit=" j." thresholds={{ ok: 20, warning: 30 }} size="lg" />
+              <GaugeChart value={mockDelais.delaiRecouvrementCreances} max={60} label="Délai recouvrement créances (j.)" unit=" j." thresholds={{ ok: 20, warning: 35 }} size="lg" />
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Évolution des délais</p>
+                <div className="space-y-3">
+                  <div>
+                    <div className="flex justify-between text-xs mb-1"><span>Délai paiement N</span><span className="font-medium">{mockDelais.delaiPaiementFournisseurs} j.</span></div>
+                    <div className="flex justify-between text-xs mb-1"><span>Délai paiement N-1</span><span className="text-muted-foreground">{mockDelais.delaiPaiementN1} j.</span></div>
+                    <TrendBadge current={mockDelais.delaiPaiementFournisseurs} previous={mockDelais.delaiPaiementN1} inverse />
+                  </div>
+                  <Separator />
+                  <div>
+                    <div className="flex justify-between text-xs mb-1"><span>Délai recouvrement N</span><span className="font-medium">{mockDelais.delaiRecouvrementCreances} j.</span></div>
+                    <div className="flex justify-between text-xs mb-1"><span>Délai recouvrement N-1</span><span className="text-muted-foreground">{mockDelais.delaiRecouvrementN1} j.</span></div>
+                    <TrendBadge current={mockDelais.delaiRecouvrementCreances} previous={mockDelais.delaiRecouvrementN1} inverse />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">💡 Un délai de paiement court est un signe de bonne gestion. Un délai de recouvrement long nécessite des relances.</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+
+      /* ═══ Capacité d'investissement ═══ */
+      case "sante-investissement": {
+        const investData = [
+          { name: "CAF nette", value: mockCapaciteInvestissement.cafNette, fill: "hsl(var(--success))" },
+          { name: "Subventions invest.", value: mockCapaciteInvestissement.investissementsFinancesSubventions, fill: "hsl(var(--primary))" },
+          { name: "Autofinancé", value: mockCapaciteInvestissement.investissementsAutofinances, fill: "hsl(var(--warning))" },
+        ];
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <RBarChart data={[{
+                  name: "Investissements",
+                  subventions: mockCapaciteInvestissement.investissementsFinancesSubventions,
+                  autofinance: mockCapaciteInvestissement.investissementsAutofinances,
+                  cafNette: mockCapaciteInvestissement.cafNette,
+                }]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                  <YAxis tick={{ fontSize: 10 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                  <Legend />
+                  <Bar dataKey="subventions" name="Financement subventions" stackId="a" fill="hsl(var(--primary))" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="autofinance" name="Autofinancé" stackId="a" fill="hsl(var(--warning))" radius={[4, 4, 0, 0]} />
+                </RBarChart>
+              </ResponsiveContainer>
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Capacité d'investissement</p>
+                <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono space-y-1">
+                  <p>CAF nette : {formatCurrency(mockCapaciteInvestissement.cafNette)}</p>
+                  <p>(−) Remboursement emprunts : {formatCurrency(mockCapaciteInvestissement.remboursementEmprunts)}</p>
+                  <Separator />
+                  <p className="font-bold">= Capacité d'investissement : {formatCurrency(mockCapaciteInvestissement.capaciteInvestissement)}</p>
+                  <Separator />
+                  <p>Investissements réalisés : {formatCurrency(mockCapaciteInvestissement.investissementsRealises)}</p>
+                  <p>  dont subventions : {formatCurrency(mockCapaciteInvestissement.investissementsFinancesSubventions)}</p>
+                  <p>  dont autofinancés : {formatCurrency(mockCapaciteInvestissement.investissementsAutofinances)}</p>
+                </div>
+                <p className="text-xs text-muted-foreground">💡 La capacité d'investissement mesure la marge dont dispose l'EPLE pour renouveler ses équipements.</p>
+              </CardContent>
+            </Card>
+          </div>
+        );
+      }
+
+      /* ═══ Solvabilité & Endettement ═══ */
+      case "sante-solvabilite":
+        return (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="flex flex-col items-center gap-6">
+              <GaugeChart value={Number(mockSolvabilite.ratioSolvabiliteGenerale.toFixed(1))} max={100} label="Ratio de solvabilité générale" unit="%" thresholds={{ ok: 40, warning: 25 }} size="lg" />
+              <GaugeChart value={mockSolvabilite.ratioEndettement} max={100} label="Ratio d'endettement" unit="%" thresholds={{ ok: 20, warning: 40 }} size="lg" />
+            </div>
+            <Card className="shadow-card">
+              <CardContent className="p-4 space-y-3">
+                <p className="text-sm font-semibold">Ratios de solvabilité</p>
+                <div className="bg-muted/50 rounded-lg p-3 text-xs font-mono space-y-1">
+                  <p>Capitaux propres : {formatCurrency(mockSolvabilite.capitauxPropres)}</p>
+                  <p>Total bilan : {formatCurrency(mockSolvabilite.totalBilan)}</p>
+                  <p>Dettes long terme : {formatCurrency(mockSolvabilite.totalDettesLT)}</p>
+                  <Separator />
+                  <p className="font-bold">Solvabilité : {mockSolvabilite.ratioSolvabiliteGenerale.toFixed(1)}%</p>
+                  <p className="font-bold">Endettement : {mockSolvabilite.ratioEndettement}%</p>
+                </div>
+                <p className="text-xs text-muted-foreground">💡 Un ratio de solvabilité &gt; 40% et un endettement proche de 0% sont des signes de solidité financière.</p>
               </CardContent>
             </Card>
           </div>
