@@ -1,7 +1,8 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { UtensilsCrossed, Fuel, Target, AlertTriangle, CheckCircle, TrendingDown, Calendar } from "lucide-react";
+import { UtensilsCrossed, Fuel, Target, AlertTriangle, CheckCircle, TrendingDown, Calendar, Download, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +11,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatCurrency } from "@/lib/mockData";
 import { KpiCard } from "@/components/KpiCard";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell } from "recharts";
+import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
+import autoTable from "jspdf-autotable";
 
 const CreditNourriture = () => {
   // --- Paramètres du trimestre ---
@@ -33,6 +36,59 @@ const CreditNourriture = () => {
 
   const peutFinirTrimestre = ecart >= 0;
 
+  const exportPDF = (print = false) => {
+    const doc = createStyledPDF({
+      orientation: "portrait",
+      title: "Crédit nourriture — Projection trimestrielle",
+      subtitle: `EPLE — ${new Date().toLocaleDateString("fr-FR")}`,
+    });
+    let y = 48;
+    const margin = 14;
+
+    doc.setTextColor(37, 68, 120);
+    doc.setFontSize(13);
+    doc.setFont("helvetica", "bold");
+    doc.text(peutFinirTrimestre ? "VERDICT : Budget suffisant" : "VERDICT : Budget insuffisant", margin, y);
+    y += 8;
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Indicateur", "Valeur"]],
+      body: [
+        ["Budget ouvert", formatCurrency(budgetInitial)],
+        ["Dépenses réalisées", formatCurrency(depensesRealisees)],
+        ["Budget restant", formatCurrency(budgetRestant)],
+        ["Repas prévus (trimestre)", repasPrevisionnels.toLocaleString("fr-FR")],
+        ["Repas déjà servis", repasServis.toLocaleString("fr-FR")],
+        ["Repas restants", repasRestants.toLocaleString("fr-FR")],
+        ["Coût constaté / repas", `${coutParRepas.toFixed(2)} €`],
+        ["Budget nécessaire (restant)", formatCurrency(budgetNecessaire)],
+        ["Repas encore finançables", repasFinancables.toLocaleString("fr-FR")],
+        [peutFinirTrimestre ? "Marge prévisionnelle" : "Insuffisance prévisionnelle", formatCurrency(ecart)],
+        ["Taux de couverture", `${tauxCouverture.toFixed(1)}%`],
+      ],
+      headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+      alternateRowStyles: { fillColor: [240, 244, 248] },
+      margin: { left: margin, right: margin },
+      columnStyles: { 1: { halign: "right" } },
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 10;
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    const verdict = peutFinirTrimestre
+      ? `Au rythme actuel de ${coutParRepas.toFixed(2)} €/repas, le budget est suffisant pour financer les ${repasRestants.toLocaleString("fr-FR")} repas restants. Marge : ${formatCurrency(ecart)}.`
+      : `Au rythme actuel de ${coutParRepas.toFixed(2)} €/repas, il manque ${formatCurrency(Math.abs(ecart))} pour couvrir les ${repasRestants.toLocaleString("fr-FR")} repas restants.`;
+    doc.text(verdict, margin, y, { maxWidth: doc.internal.pageSize.getWidth() - 2 * margin });
+
+    if (print) {
+      printPDF(doc);
+    } else {
+      savePDF(doc, `credit_nourriture_${new Date().toISOString().split("T")[0]}.pdf`);
+    }
+  };
+
   // --- Données pour le graphe mensuel ---
   const moisData = useMemo(() => [
     { mois: "Mois 1", repas: 6200, depenses: 30100 },
@@ -44,10 +100,22 @@ const CreditNourriture = () => {
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <h1 className="text-2xl font-bold font-display">Crédit nourriture</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Projection trimestrielle — Puis-je assurer les repas jusqu'à la fin du trimestre ?
-        </p>
+        <div className="flex items-center justify-between w-full">
+          <div>
+            <h1 className="text-2xl font-bold font-display">Crédit nourriture</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Projection trimestrielle — Puis-je assurer les repas jusqu'à la fin du trimestre ?
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => exportPDF(true)}>
+              <Printer className="h-4 w-4 mr-1" /> Imprimer
+            </Button>
+            <Button size="sm" className="gradient-primary border-0" onClick={() => exportPDF(false)}>
+              <Download className="h-4 w-4 mr-1" /> PDF
+            </Button>
+          </div>
+        </div>
       </motion.div>
 
       {/* === VERDICT PRINCIPAL === */}
