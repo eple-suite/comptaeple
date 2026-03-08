@@ -640,23 +640,6 @@ export const NOMENCLATURE_M96: CompteM96[] = [
     sphere: "ordonnateur",
   },
   {
-    numero: "7413",
-    libelle: "Subventions — Communes et EPCI",
-    classe: 7, sensNormal: "crediteur", categorie: "gestion", sousCategorie: "Subventions collectivités",
-    description: "Subventions de fonctionnement communales et intercommunales",
-    estSubvention: true, sourceFinancement: "collectivite",
-    imputationRecettes: true,
-  },
-  {
-    numero: "744",
-    libelle: "Subventions — État",
-    classe: 7, sensNormal: "crediteur", categorie: "gestion", sousCategorie: "Subventions État",
-    description: "Subventions de fonctionnement de l'État",
-    estSubvention: true, sourceFinancement: "etat",
-    interconnexions: ["443"],
-    imputationRecettes: true,
-  },
-  {
     numero: "78",
     libelle: "Reprises sur amortissements et provisions",
     classe: 7, sensNormal: "crediteur", categorie: "gestion", sousCategorie: "Reprises",
