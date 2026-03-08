@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, MapPin, Plus, Loader2, CheckCircle2 } from "lucide-react";
+import { Search, MapPin, Plus, Loader2, CheckCircle2, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -9,8 +9,10 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useEstablishment } from "@/contexts/EstablishmentContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface AnnuaireResult {
   nom_etablissement: string;
@@ -40,15 +42,8 @@ const Establishments = () => {
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState("");
   const queryClient = useQueryClient();
-
-  const { data: establishments = [], isLoading } = useQuery({
-    queryKey: ["establishments"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("establishments").select("*").order("name");
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { establishments, selectedEstablishment, selectEstablishment, isLoading, refetch } = useEstablishment();
+  const { user } = useAuth();
 
   const handleLookup = async () => {
     if (uaiInput.length < 7) {
@@ -88,17 +83,19 @@ const Establishments = () => {
         opale_number: opaleNumber.toUpperCase(),
       }).select().single();
       if (error) throw error;
-      const { data: { user } } = await supabase.auth.getUser();
       if (user && data) {
         await supabase.from("user_establishments").insert({
           user_id: user.id,
           establishment_id: data.id,
         });
       }
+      return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["establishments"] });
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["user-establishments"] });
+      refetch();
       toast.success("Établissement ajouté avec succès");
+      if (data) selectEstablishment(data);
       resetDialog();
     },
     onError: (err: any) => {
@@ -124,7 +121,7 @@ const Establishments = () => {
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <h1 className="text-2xl font-bold font-display">Établissements</h1>
-        <p className="text-sm text-muted-foreground mt-1">Gestion multi-établissements par code UAI</p>
+        <p className="text-sm text-muted-foreground mt-1">Gérez vos établissements — Sélectionnez-en un pour travailler dessus</p>
       </motion.div>
 
       <div className="flex gap-3">
@@ -148,7 +145,6 @@ const Establishments = () => {
               <DialogTitle>Ajouter un établissement</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
-              {/* UAI Lookup */}
               <div className="space-y-2">
                 <Label>Code UAI *</Label>
                 <div className="flex gap-2">
@@ -173,12 +169,9 @@ const Establishments = () => {
                     <span className="ml-1">Rechercher</span>
                   </Button>
                 </div>
-                {lookupError && (
-                  <p className="text-sm text-destructive">{lookupError}</p>
-                )}
+                {lookupError && <p className="text-sm text-destructive">{lookupError}</p>}
               </div>
 
-              {/* Results */}
               {lookupResult && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -213,13 +206,8 @@ const Establishments = () => {
                 </motion.div>
               )}
 
-              {/* Op@le Number */}
               {lookupResult && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="space-y-2"
-                >
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
                   <Label>Numéro Op@le</Label>
                   <Input
                     placeholder="Ex: P00804"
@@ -255,48 +243,78 @@ const Establishments = () => {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-12"></TableHead>
                 <TableHead>Code UAI</TableHead>
                 <TableHead>Nom</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead>Académie</TableHead>
                 <TableHead>Ville</TableHead>
                 <TableHead>N° Op@le</TableHead>
-                <TableHead></TableHead>
+                <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     Chargement...
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                    Aucun établissement trouvé
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                    {establishments.length === 0
+                      ? "Aucun établissement. Cliquez sur « Ajouter » pour commencer."
+                      : "Aucun résultat pour cette recherche."}
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((e) => (
-                  <TableRow key={e.id} className="cursor-pointer hover:bg-muted/50">
-                    <TableCell className="font-mono font-semibold text-primary">{e.uai}</TableCell>
-                    <TableCell className="font-medium">{e.name}</TableCell>
-                    <TableCell><Badge variant="secondary" className="text-[10px]">{e.type}</Badge></TableCell>
-                    <TableCell className="text-muted-foreground">{e.academy}</TableCell>
-                    <TableCell>
-                      <span className="flex items-center gap-1 text-muted-foreground">
-                        <MapPin className="h-3 w-3" /> {e.city}
-                      </span>
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {(e as any).opale_number || "—"}
-                    </TableCell>
-                    <TableCell>
-                      <Button size="sm" variant="ghost">Charger</Button>
-                    </TableCell>
-                  </TableRow>
-                ))
+                filtered.map((e) => {
+                  const isSelected = selectedEstablishment?.id === e.id;
+                  return (
+                    <TableRow
+                      key={e.id}
+                      className={`cursor-pointer transition-colors ${isSelected ? "bg-primary/5 border-l-2 border-l-primary" : "hover:bg-muted/50"}`}
+                      onClick={() => {
+                        selectEstablishment(e);
+                        toast.success(`${e.name} sélectionné`);
+                      }}
+                    >
+                      <TableCell>
+                        {isSelected && (
+                          <div className="h-6 w-6 rounded-full bg-primary flex items-center justify-center">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-primary-foreground" />
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="font-mono font-semibold text-primary">{e.uai}</TableCell>
+                      <TableCell className="font-medium">{e.name}</TableCell>
+                      <TableCell><Badge variant="secondary" className="text-[10px]">{e.type}</Badge></TableCell>
+                      <TableCell className="text-muted-foreground">{e.academy}</TableCell>
+                      <TableCell>
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          <MapPin className="h-3 w-3" /> {e.city}
+                        </span>
+                      </TableCell>
+                      <TableCell className="font-mono text-sm">
+                        {e.opale_number || "—"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button
+                          size="sm"
+                          variant={isSelected ? "default" : "outline"}
+                          onClick={(ev) => {
+                            ev.stopPropagation();
+                            selectEstablishment(e);
+                            toast.success(`${e.name} sélectionné`);
+                          }}
+                        >
+                          {isSelected ? "✓ Actif" : "Sélectionner"}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
