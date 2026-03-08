@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Gavel, Plus, Trash2, AlertTriangle, CheckCircle2, Clock, Euro, Calendar, FileText, TrendingDown, Search, PauseCircle, Play } from "lucide-react";
+import { Gavel, Plus, Trash2, AlertTriangle, CheckCircle2, Clock, Euro, FileText, TrendingDown, Search, PauseCircle, Play, Eye, Users, ChevronRight, XCircle, Scale } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -13,123 +13,107 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/lib/mockData";
 import { KpiCard } from "@/components/KpiCard";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, LineChart, Line } from "recharts";
-
-interface Prelevement {
-  date: string;
-  montant: number;
-}
-
-interface Satd {
-  id: string;
-  reference: string;
-  debiteur: string;
-  typeDebiteur: "agent" | "fournisseur" | "usager" | "autre";
-  montantInitial: number;
-  montantPreleve: number;
-  prelevements: Prelevement[];
-  dateReception: string;
-  dateEcheance: string;
-  statut: "en_cours" | "termine" | "suspendu" | "conteste";
-  organisme: string;
-  motif: string;
-  compteBudgetaire: string;
-  observations: string;
-}
-
-const initialSatd: Satd[] = [
-  {
-    id: "1", reference: "SATD-2024-001", debiteur: "Agent A", typeDebiteur: "agent",
-    montantInitial: 2500, montantPreleve: 1500,
-    prelevements: [{ date: "2024-02-15", montant: 500 }, { date: "2024-03-15", montant: 500 }, { date: "2024-04-15", montant: 500 }],
-    dateReception: "2024-01-10", dateEcheance: "2024-06-30", statut: "en_cours",
-    organisme: "DGFIP", motif: "Impôt sur le revenu — rôle 2023", compteBudgetaire: "421000",
-    observations: "Prélèvement mensuel de 500€",
-  },
-  {
-    id: "2", reference: "SATD-2024-002", debiteur: "Agent B", typeDebiteur: "agent",
-    montantInitial: 800, montantPreleve: 800,
-    prelevements: [{ date: "2024-01-15", montant: 400 }, { date: "2024-02-15", montant: 400 }],
-    dateReception: "2023-11-15", dateEcheance: "2024-03-15", statut: "termine",
-    organisme: "URSSAF", motif: "Cotisations sociales", compteBudgetaire: "421000",
-    observations: "Soldé",
-  },
-  {
-    id: "3", reference: "SATD-2024-003", debiteur: "Fournisseur C", typeDebiteur: "fournisseur",
-    montantInitial: 3200, montantPreleve: 0,
-    prelevements: [],
-    dateReception: "2024-02-20", dateEcheance: "2024-08-20", statut: "suspendu",
-    organisme: "Trésor Public", motif: "Taxe professionnelle", compteBudgetaire: "401000",
-    observations: "Suspendu suite à contestation du débiteur",
-  },
-  {
-    id: "4", reference: "SATD-2024-004", debiteur: "Agent D", typeDebiteur: "agent",
-    montantInitial: 1200, montantPreleve: 300,
-    prelevements: [{ date: "2024-03-15", montant: 300 }],
-    dateReception: "2024-03-01", dateEcheance: "2024-09-30", statut: "conteste",
-    organisme: "CAF", motif: "Trop-perçu allocation logement", compteBudgetaire: "421000",
-    observations: "Contestation en cours auprès de la CAF — maintien du prélèvement",
-  },
-];
-
-const statutConfig = {
-  en_cours: { label: "En cours", class: "bg-warning/10 text-warning border-0", icon: Clock },
-  termine: { label: "Soldé", class: "bg-success/10 text-success border-0", icon: CheckCircle2 },
-  suspendu: { label: "Suspendu", class: "bg-muted text-muted-foreground border-0", icon: PauseCircle },
-  conteste: { label: "Contesté", class: "bg-destructive/10 text-destructive border-0", icon: AlertTriangle },
-};
+import {
+  Satd, TiersDetenteur, Creance, EtapeProcedure,
+  mockSatds, mockTiers,
+  STATUT_SATD_CONFIG, TYPE_DEBITEUR_LABELS, TYPE_TIERS_LABELS, ETAPE_LABELS,
+} from "./satd/types";
+import SatdDocuments from "./satd/SatdDocuments";
+import SatdStats from "./satd/SatdStats";
 
 const SATD = () => {
-  const [satds, setSatds] = useState<Satd[]>(initialSatd);
+  const [satds, setSatds] = useState<Satd[]>(mockSatds);
+  const [tiersDetenteurs, setTiersDetenteurs] = useState<TiersDetenteur[]>(mockTiers);
   const [open, setOpen] = useState(false);
+  const [openTiers, setOpenTiers] = useState(false);
   const [search, setSearch] = useState("");
-  const [filterStatut, setFilterStatut] = useState<string>("all");
+  const [filterStatut, setFilterStatut] = useState("all");
   const [selectedSatd, setSelectedSatd] = useState<Satd | null>(null);
-  const [newPrelevement, setNewPrelevement] = useState({ date: "", montant: "" });
+  const [newPrelevement, setNewPrelevement] = useState({ date: "", montant: "", reference: "", mode: "virement" as const });
+  const [newEtape, setNewEtape] = useState({ type: "relance1" as EtapeProcedure["type"], date: "", commentaire: "" });
+
+  // Form SATD
   const [form, setForm] = useState({
-    reference: "", debiteur: "", typeDebiteur: "agent" as Satd["typeDebiteur"],
-    montantInitial: "", dateReception: "", dateEcheance: "",
-    organisme: "", motif: "", compteBudgetaire: "", observations: "",
+    debiteur: "", debiteurAdresse: "", debiteurCP: "", debiteurVille: "",
+    typeDebiteur: "eleve_famille" as Satd["typeDebiteur"],
+    motif: "", observations: "",
+    tiersDetenteurId: "", compteBudgetaire: "411200",
+    creanceCompte: "4112", creanceLibelle: "", creanceExercice: new Date().getFullYear().toString(),
+    creanceMontant: "",
+  });
+
+  // Form Tiers
+  const [formTiers, setFormTiers] = useState({
+    nom: "", type: "employeur" as TiersDetenteur["type"],
+    adresse: "", codePostal: "", ville: "",
+    siret: "", contact: "", email: "", telephone: "",
   });
 
   const filtered = useMemo(() => {
     return satds.filter(s => {
       if (filterStatut !== "all" && s.statut !== filterStatut) return false;
-      if (search && !s.debiteur.toLowerCase().includes(search.toLowerCase()) && !s.reference.toLowerCase().includes(search.toLowerCase())) return false;
+      if (search) {
+        const q = search.toLowerCase();
+        if (!s.debiteur.toLowerCase().includes(q) && !s.reference.toLowerCase().includes(q)) return false;
+      }
       return true;
     });
   }, [satds, filterStatut, search]);
 
-  const totalInitial = satds.reduce((s, a) => s + a.montantInitial, 0);
+  // KPIs
+  const totalInitial = satds.reduce((s, a) => s + a.montantGlobal, 0);
   const totalPreleve = satds.reduce((s, a) => s + a.montantPreleve, 0);
   const totalRestant = totalInitial - totalPreleve;
-  const enCours = satds.filter(s => s.statut === "en_cours").length;
+  const enCours = satds.filter(s => s.statut === "en_cours" || s.statut === "emise").length;
   const contestes = satds.filter(s => s.statut === "conteste").length;
+  const tauxRecouvrement = totalInitial > 0 ? (totalPreleve / totalInitial) * 100 : 0;
+  const prescriptionsProches = satds.filter(s => {
+    if (s.statut === "termine" || s.statut === "prescrit" || s.statut === "irrecouv") return false;
+    const d = new Date(s.datePrescription);
+    return d <= new Date(Date.now() + 180 * 24 * 60 * 60 * 1000);
+  }).length;
 
-  // Timeline des prélèvements pour le graphique
-  const timelineData = useMemo(() => {
-    const months: Record<string, number> = {};
-    satds.forEach(s => {
-      s.prelevements.forEach(p => {
-        const month = p.date.substring(0, 7);
-        months[month] = (months[month] || 0) + p.montant;
-      });
-    });
-    return Object.entries(months).sort().map(([month, montant]) => ({
-      mois: month,
-      montant,
-    }));
-  }, [satds]);
+  const handleAddSatd = () => {
+    const count = satds.length + 1;
+    const ref = `SATD-${new Date().getFullYear()}-${String(count).padStart(3, "0")}`;
+    const creance: Creance = {
+      id: `cr${Date.now()}`, compte: form.creanceCompte, libelle: form.creanceLibelle,
+      exercice: Number(form.creanceExercice), montantInitial: Number(form.creanceMontant),
+      montantRecouvre: 0, resteARecouvrer: Number(form.creanceMontant),
+    };
+    const montant = Number(form.creanceMontant);
+    const now = new Date().toISOString().split("T")[0];
+    const prescription = new Date();
+    prescription.setFullYear(prescription.getFullYear() + 4);
 
-  const handleAdd = () => {
-    setSatds([...satds, {
-      id: Date.now().toString(), ...form, montantInitial: Number(form.montantInitial),
-      montantPreleve: 0, prelevements: [], statut: "en_cours",
-    }]);
+    const newSatd: Satd = {
+      id: `s${Date.now()}`, reference: ref,
+      debiteur: form.debiteur, debiteurAdresse: form.debiteurAdresse,
+      debiteurCP: form.debiteurCP, debiteurVille: form.debiteurVille,
+      typeDebiteur: form.typeDebiteur,
+      creances: [creance], montantTotal: montant, fraisPoursuite: 0, majorations: 0, montantGlobal: montant,
+      tiersDetenteurId: form.tiersDetenteurId, tiersDetenteur: null,
+      organisme: "Lycée Victor Hugo", compteBudgetaire: form.compteBudgetaire,
+      iban: "FR76 1007 1130 0000 0020 0390 156", bic: "TRPUFRP1",
+      dateCreation: now, dateReception: "", dateEcheance: "",
+      datePrescription: prescription.toISOString().split("T")[0],
+      etapes: [{ type: "relance1", date: now, commentaire: "Première relance envoyée", documentGenere: true }],
+      statut: "relance", montantPreleve: 0, prelevements: [],
+      motif: form.motif, observations: form.observations,
+      autorisationOrdonnateur: false, dateAutorisation: "", compte416: false,
+    };
+    setSatds([...satds, newSatd]);
     setOpen(false);
-    setForm({ reference: "", debiteur: "", typeDebiteur: "agent", montantInitial: "", dateReception: "", dateEcheance: "", organisme: "", motif: "", compteBudgetaire: "", observations: "" });
+    setForm({ debiteur: "", debiteurAdresse: "", debiteurCP: "", debiteurVille: "", typeDebiteur: "eleve_famille", motif: "", observations: "", tiersDetenteurId: "", compteBudgetaire: "411200", creanceCompte: "4112", creanceLibelle: "", creanceExercice: new Date().getFullYear().toString(), creanceMontant: "" });
+  };
+
+  const handleAddTiers = () => {
+    setTiersDetenteurs([...tiersDetenteurs, { id: `t${Date.now()}`, ...formTiers }]);
+    setOpenTiers(false);
+    setFormTiers({ nom: "", type: "employeur", adresse: "", codePostal: "", ville: "", siret: "", contact: "", email: "", telephone: "" });
   };
 
   const handleAddPrelevement = () => {
@@ -139,21 +123,52 @@ const SATD = () => {
       if (s.id !== selectedSatd.id) return s;
       const updated = {
         ...s,
-        prelevements: [...s.prelevements, { date: newPrelevement.date, montant }],
+        prelevements: [...s.prelevements, { date: newPrelevement.date, montant, reference: newPrelevement.reference, mode: newPrelevement.mode }],
         montantPreleve: s.montantPreleve + montant,
+        etapes: [...s.etapes, { type: "prelevement" as const, date: newPrelevement.date, commentaire: `${formatCurrency(montant)} — ${newPrelevement.reference}`, documentGenere: false }],
       };
-      if (updated.montantPreleve >= updated.montantInitial) updated.statut = "termine";
+      if (updated.montantPreleve >= updated.montantGlobal) {
+        updated.statut = "termine";
+        updated.etapes.push({ type: "solde", date: newPrelevement.date, commentaire: "Procédure soldée", documentGenere: false });
+      }
       return updated;
     }));
-    setNewPrelevement({ date: "", montant: "" });
-    const updatedSatd = satds.find(s => s.id === selectedSatd.id);
-    if (updatedSatd) {
+    // Update selected
+    const up = satds.find(s => s.id === selectedSatd.id);
+    if (up) {
       setSelectedSatd({
-        ...updatedSatd,
-        prelevements: [...updatedSatd.prelevements, { date: newPrelevement.date, montant }],
-        montantPreleve: updatedSatd.montantPreleve + montant,
+        ...up,
+        prelevements: [...up.prelevements, { date: newPrelevement.date, montant, reference: newPrelevement.reference, mode: newPrelevement.mode }],
+        montantPreleve: up.montantPreleve + montant,
       });
     }
+    setNewPrelevement({ date: "", montant: "", reference: "", mode: "virement" });
+  };
+
+  const handleAddEtape = () => {
+    if (!selectedSatd || !newEtape.date) return;
+    const etape: EtapeProcedure = { ...newEtape, documentGenere: false };
+    // Determine new statut based on etape
+    let newStatut = selectedSatd.statut;
+    if (newEtape.type === "avis_poursuites") newStatut = "avis_poursuites";
+    if (newEtape.type === "autorisation_ordonnateur") newStatut = "autorisation";
+    if (newEtape.type === "satd_emission") newStatut = "emise";
+    if (newEtape.type === "satd_reception_ar") newStatut = "en_cours";
+    if (newEtape.type === "contestation") newStatut = "conteste";
+    if (newEtape.type === "suspension") newStatut = "suspendu";
+    if (newEtape.type === "reprise") newStatut = "en_cours";
+
+    setSatds(satds.map(s => s.id === selectedSatd.id ? {
+      ...s, etapes: [...s.etapes, etape], statut: newStatut,
+      autorisationOrdonnateur: newEtape.type === "autorisation_ordonnateur" ? true : s.autorisationOrdonnateur,
+      dateAutorisation: newEtape.type === "autorisation_ordonnateur" ? newEtape.date : s.dateAutorisation,
+    } : s));
+    setSelectedSatd({
+      ...selectedSatd,
+      etapes: [...selectedSatd.etapes, etape],
+      statut: newStatut,
+    });
+    setNewEtape({ type: "relance1", date: "", commentaire: "" });
   };
 
   const handleChangeStatut = (id: string, statut: Satd["statut"]) => {
@@ -166,134 +181,210 @@ const SATD = () => {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold font-display">SATD</h1>
-            <p className="text-sm text-muted-foreground mt-1">Saisies Administratives à Tiers Détenteur — Suivi des prélèvements</p>
+            <p className="text-sm text-muted-foreground mt-1">Saisies Administratives à Tiers Détenteur — Procédures de recouvrement forcé</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="gradient-primary border-0"><Plus className="h-4 w-4 mr-1" /> Nouvelle SATD</Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-2xl">
-              <DialogHeader><DialogTitle>Enregistrer une SATD</DialogTitle></DialogHeader>
-              <div className="space-y-4 pt-2">
-                <div className="grid grid-cols-3 gap-3">
-                  <div><Label>Référence</Label><Input value={form.reference} onChange={(e) => setForm({ ...form, reference: e.target.value })} placeholder="SATD-2024-XXX" /></div>
-                  <div><Label>Débiteur</Label><Input value={form.debiteur} onChange={(e) => setForm({ ...form, debiteur: e.target.value })} /></div>
-                  <div><Label>Type de débiteur</Label>
-                    <Select value={form.typeDebiteur} onValueChange={(v) => setForm({ ...form, typeDebiteur: v as Satd["typeDebiteur"] })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="agent">Agent</SelectItem>
-                        <SelectItem value="fournisseur">Fournisseur</SelectItem>
-                        <SelectItem value="usager">Usager</SelectItem>
-                        <SelectItem value="autre">Autre</SelectItem>
-                      </SelectContent>
-                    </Select>
+          <div className="flex gap-2">
+            <Dialog open={openTiers} onOpenChange={setOpenTiers}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm"><Users className="h-3.5 w-3.5 mr-1" /> Tiers</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-lg">
+                <DialogHeader><DialogTitle>Ajouter un tiers détenteur</DialogTitle></DialogHeader>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="col-span-2"><Label>Nom / Raison sociale</Label><Input value={formTiers.nom} onChange={e => setFormTiers({ ...formTiers, nom: e.target.value })} /></div>
+                    <div><Label>Type</Label>
+                      <Select value={formTiers.type} onValueChange={(v: any) => setFormTiers({ ...formTiers, type: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(TYPE_TIERS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div><Label>SIRET</Label><Input value={formTiers.siret} onChange={e => setFormTiers({ ...formTiers, siret: e.target.value })} /></div>
+                    <div className="col-span-2"><Label>Adresse</Label><Input value={formTiers.adresse} onChange={e => setFormTiers({ ...formTiers, adresse: e.target.value })} /></div>
+                    <div><Label>Code postal</Label><Input value={formTiers.codePostal} onChange={e => setFormTiers({ ...formTiers, codePostal: e.target.value })} /></div>
+                    <div><Label>Ville</Label><Input value={formTiers.ville} onChange={e => setFormTiers({ ...formTiers, ville: e.target.value })} /></div>
+                    <div><Label>Contact</Label><Input value={formTiers.contact} onChange={e => setFormTiers({ ...formTiers, contact: e.target.value })} /></div>
+                    <div><Label>Téléphone</Label><Input value={formTiers.telephone} onChange={e => setFormTiers({ ...formTiers, telephone: e.target.value })} /></div>
+                    <div className="col-span-2"><Label>Email</Label><Input value={formTiers.email} onChange={e => setFormTiers({ ...formTiers, email: e.target.value })} /></div>
                   </div>
-                  <div><Label>Montant initial (€)</Label><Input type="number" value={form.montantInitial} onChange={(e) => setForm({ ...form, montantInitial: e.target.value })} /></div>
-                  <div><Label>Organisme créancier</Label><Input value={form.organisme} onChange={(e) => setForm({ ...form, organisme: e.target.value })} /></div>
-                  <div><Label>Compte budgétaire</Label><Input value={form.compteBudgetaire} onChange={(e) => setForm({ ...form, compteBudgetaire: e.target.value })} placeholder="Ex: 421000" /></div>
-                  <div><Label>Date réception</Label><Input type="date" value={form.dateReception} onChange={(e) => setForm({ ...form, dateReception: e.target.value })} /></div>
-                  <div><Label>Date échéance</Label><Input type="date" value={form.dateEcheance} onChange={(e) => setForm({ ...form, dateEcheance: e.target.value })} /></div>
-                  <div />
-                  <div className="col-span-3"><Label>Motif</Label><Input value={form.motif} onChange={(e) => setForm({ ...form, motif: e.target.value })} placeholder="Ex: Impôt sur le revenu — rôle 2023" /></div>
-                  <div className="col-span-3"><Label>Observations</Label><Textarea value={form.observations} onChange={(e) => setForm({ ...form, observations: e.target.value })} rows={2} /></div>
+                  <Button onClick={handleAddTiers} className="w-full gradient-primary border-0">Ajouter le tiers</Button>
+                  {tiersDetenteurs.length > 0 && (
+                    <div className="mt-4 space-y-1 max-h-[200px] overflow-y-auto">
+                      <p className="text-xs font-semibold text-muted-foreground">Tiers enregistrés ({tiersDetenteurs.length})</p>
+                      {tiersDetenteurs.map(t => (
+                        <div key={t.id} className="flex items-center justify-between text-xs p-2 rounded bg-muted/20">
+                          <span className="font-medium">{t.nom}</span>
+                          <Badge variant="outline" className="text-[9px]">{TYPE_TIERS_LABELS[t.type]}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <Button onClick={handleAdd} className="w-full gradient-primary border-0">Enregistrer</Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+              </DialogContent>
+            </Dialog>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button className="gradient-primary border-0"><Plus className="h-4 w-4 mr-1" /> Nouvelle procédure</Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader><DialogTitle>Engager une procédure de recouvrement</DialogTitle></DialogHeader>
+                <div className="space-y-4 pt-2">
+                  <p className="text-xs text-muted-foreground bg-warning/10 p-2 rounded flex items-center gap-2">
+                    <AlertTriangle className="h-3.5 w-3.5 text-warning" />
+                    Rappel : la SATD ne peut être émise qu'après relances amiables, avis avant poursuites, et autorisation de l'ordonnateur. Les créances doivent être au compte 416.
+                  </p>
+                  {/* Débiteur */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div><Label>Débiteur (nom complet)</Label><Input value={form.debiteur} onChange={e => setForm({ ...form, debiteur: e.target.value })} placeholder="M. / Mme NOM Prénom" /></div>
+                    <div><Label>Type de débiteur</Label>
+                      <Select value={form.typeDebiteur} onValueChange={(v: any) => setForm({ ...form, typeDebiteur: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(TYPE_DEBITEUR_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="col-span-2"><Label>Adresse</Label><Input value={form.debiteurAdresse} onChange={e => setForm({ ...form, debiteurAdresse: e.target.value })} /></div>
+                    <div><Label>Code postal</Label><Input value={form.debiteurCP} onChange={e => setForm({ ...form, debiteurCP: e.target.value })} /></div>
+                    <div><Label>Ville</Label><Input value={form.debiteurVille} onChange={e => setForm({ ...form, debiteurVille: e.target.value })} /></div>
+                  </div>
+                  <Separator />
+                  {/* Créance */}
+                  <div className="grid grid-cols-4 gap-3">
+                    <div><Label>Compte</Label>
+                      <Select value={form.creanceCompte} onValueChange={v => setForm({ ...form, creanceCompte: v })}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="4112">4112 — Familles</SelectItem>
+                          <SelectItem value="4122">4122 — Commensaux</SelectItem>
+                          <SelectItem value="416">416 — Créances douteuses</SelectItem>
+                          <SelectItem value="421">421 — Agents</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div><Label>Libellé créance</Label><Input value={form.creanceLibelle} onChange={e => setForm({ ...form, creanceLibelle: e.target.value })} placeholder="Restauration 2024 T1" /></div>
+                    <div><Label>Exercice</Label><Input value={form.creanceExercice} onChange={e => setForm({ ...form, creanceExercice: e.target.value })} /></div>
+                    <div><Label>Montant (€)</Label><Input type="number" value={form.creanceMontant} onChange={e => setForm({ ...form, creanceMontant: e.target.value })} /></div>
+                  </div>
+                  <Separator />
+                  {/* Tiers */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <Label>Tiers détenteur</Label>
+                      <Select value={form.tiersDetenteurId} onValueChange={v => setForm({ ...form, tiersDetenteurId: v })}>
+                        <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
+                        <SelectContent>
+                          {tiersDetenteurs.map(t => <SelectItem key={t.id} value={t.id}>{t.nom} ({TYPE_TIERS_LABELS[t.type]})</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div><Label>Compte budgétaire</Label><Input value={form.compteBudgetaire} onChange={e => setForm({ ...form, compteBudgetaire: e.target.value })} /></div>
+                  </div>
+                  <div><Label>Motif</Label><Input value={form.motif} onChange={e => setForm({ ...form, motif: e.target.value })} placeholder="Impayés restauration 2024" /></div>
+                  <div><Label>Observations</Label><Textarea value={form.observations} onChange={e => setForm({ ...form, observations: e.target.value })} rows={2} /></div>
+                  <Button onClick={handleAddSatd} disabled={!form.debiteur || !form.creanceMontant} className="w-full gradient-primary border-0">Créer la procédure</Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
       </motion.div>
 
       {/* KPIs */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        <KpiCard title="Montant total" value={formatCurrency(totalInitial)} icon={Gavel} variant="primary" />
-        <KpiCard title="Déjà prélevé" value={formatCurrency(totalPreleve)} subtitle={totalInitial > 0 ? `${((totalPreleve / totalInitial) * 100).toFixed(0)}%` : "—"} icon={CheckCircle2} variant="success" />
-        <KpiCard title="Reste à prélever" value={formatCurrency(totalRestant)} icon={TrendingDown} variant="warning" />
-        <KpiCard title="SATD en cours" value={`${enCours}`} icon={Clock} variant="warning" />
-        <KpiCard title="Contestées" value={`${contestes}`} icon={AlertTriangle} variant="default" />
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        <KpiCard title="Total créances" value={formatCurrency(totalInitial)} icon={Gavel} variant="primary" />
+        <KpiCard title="Recouvré" value={formatCurrency(totalPreleve)} subtitle={`${tauxRecouvrement.toFixed(0)}%`} icon={CheckCircle2} variant="success" />
+        <KpiCard title="Reste à recouvrer" value={formatCurrency(totalRestant)} icon={TrendingDown} variant="warning" />
+        <KpiCard title="En cours" value={`${enCours}`} icon={Clock} variant="warning" />
+        <KpiCard title="Contestées" value={`${contestes}`} icon={AlertTriangle} variant="destructive" />
+        <KpiCard title="Prescriptions ≤6m" value={`${prescriptionsProches}`} icon={Scale} variant={prescriptionsProches > 0 ? "destructive" : "default"} />
       </div>
 
       <Tabs defaultValue="registre">
-        <TabsList>
-          <TabsTrigger value="registre">Registre</TabsTrigger>
-          <TabsTrigger value="suivi">Suivi des prélèvements</TabsTrigger>
+        <TabsList className="flex-wrap">
+          <TabsTrigger value="registre">Registre ({filtered.length})</TabsTrigger>
+          <TabsTrigger value="workflow">Workflow procédure</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="statistiques">Statistiques</TabsTrigger>
         </TabsList>
 
+        {/* === REGISTRE === */}
         <TabsContent value="registre" className="space-y-4 mt-4">
-          {/* Filtres */}
           <div className="flex gap-3 flex-wrap">
             <div className="relative flex-1 min-w-[200px]">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input placeholder="Rechercher par référence ou débiteur..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+              <Input placeholder="Rechercher par référence ou débiteur..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
             </div>
             <Select value={filterStatut} onValueChange={setFilterStatut}>
-              <SelectTrigger className="w-[160px]"><SelectValue placeholder="Statut" /></SelectTrigger>
+              <SelectTrigger className="w-[170px]"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="en_cours">En cours</SelectItem>
-                <SelectItem value="termine">Soldé</SelectItem>
-                <SelectItem value="suspendu">Suspendu</SelectItem>
-                <SelectItem value="conteste">Contesté</SelectItem>
+                {Object.entries(STATUT_SATD_CONFIG).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
 
           <Card className="shadow-card">
-            <CardContent className="pt-4">
+            <CardContent className="pt-4 overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead>Référence</TableHead>
                     <TableHead>Débiteur</TableHead>
-                    <TableHead>Organisme</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Motif</TableHead>
-                    <TableHead>Réception</TableHead>
-                    <TableHead>Échéance</TableHead>
                     <TableHead className="text-right">Montant</TableHead>
                     <TableHead className="text-right">Prélevé</TableHead>
                     <TableHead>Avancement</TableHead>
+                    <TableHead>Prescription</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead>Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filtered.map((s) => {
-                    const StatusIcon = statutConfig[s.statut].icon;
-                    const pct = s.montantInitial > 0 ? (s.montantPreleve / s.montantInitial) * 100 : 0;
+                  {filtered.map(s => {
+                    const pct = s.montantGlobal > 0 ? (s.montantPreleve / s.montantGlobal) * 100 : 0;
+                    const prescDate = new Date(s.datePrescription);
+                    const prescSoon = prescDate <= new Date(Date.now() + 180 * 24 * 60 * 60 * 1000) && s.statut !== "termine";
                     return (
                       <TableRow key={s.id} className="cursor-pointer hover:bg-muted/30" onClick={() => setSelectedSatd(s)}>
                         <TableCell className="font-mono text-sm font-semibold text-primary">{s.reference}</TableCell>
-                        <TableCell className="font-medium">{s.debiteur} <span className="text-xs text-muted-foreground">({s.typeDebiteur})</span></TableCell>
-                        <TableCell className="text-muted-foreground text-sm">{s.organisme}</TableCell>
+                        <TableCell className="font-medium text-sm">{s.debiteur}</TableCell>
+                        <TableCell><Badge variant="outline" className="text-[9px]">{TYPE_DEBITEUR_LABELS[s.typeDebiteur]}</Badge></TableCell>
                         <TableCell className="text-sm text-muted-foreground max-w-[160px] truncate" title={s.motif}>{s.motif}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{s.dateReception}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{s.dateEcheance}</TableCell>
-                        <TableCell className="text-right font-mono text-sm">{formatCurrency(s.montantInitial)}</TableCell>
+                        <TableCell className="text-right font-mono text-sm">{formatCurrency(s.montantGlobal)}</TableCell>
                         <TableCell className="text-right font-mono text-sm">{formatCurrency(s.montantPreleve)}</TableCell>
                         <TableCell className="min-w-[80px]">
                           <Progress value={pct} className="h-2" />
                           <span className="text-[10px] text-muted-foreground">{pct.toFixed(0)}%</span>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="secondary" className={`text-[10px] ${statutConfig[s.statut].class}`}>
-                            <StatusIcon className="h-3 w-3 mr-1" />{statutConfig[s.statut].label}
+                          <span className={`text-xs ${prescSoon ? "text-destructive font-semibold" : "text-muted-foreground"}`}>
+                            {prescDate.toLocaleDateString("fr-FR")}
+                            {prescSoon && " ⚠️"}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className={`text-[10px] ${STATUT_SATD_CONFIG[s.statut].color}`}>
+                            {STATUT_SATD_CONFIG[s.statut].label}
                           </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex gap-1" onClick={e => e.stopPropagation()}>
                             {s.statut === "en_cours" && (
-                              <Button size="sm" variant="ghost" onClick={() => handleChangeStatut(s.id, "suspendu")} className="h-7 px-2 text-xs" title="Suspendre">
+                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleChangeStatut(s.id, "suspendu")} title="Suspendre">
                                 <PauseCircle className="h-3 w-3" />
                               </Button>
                             )}
                             {s.statut === "suspendu" && (
-                              <Button size="sm" variant="ghost" onClick={() => handleChangeStatut(s.id, "en_cours")} className="h-7 px-2 text-xs" title="Reprendre">
+                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0" onClick={() => handleChangeStatut(s.id, "en_cours")} title="Reprendre">
                                 <Play className="h-3 w-3" />
                               </Button>
                             )}
-                            <Button size="sm" variant="ghost" onClick={() => setSatds(satds.filter(x => x.id !== s.id))} className="h-7 w-7 p-0 text-muted-foreground hover:text-destructive">
-                              <Trash2 className="h-3.5 w-3.5" />
+                            <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-muted-foreground hover:text-destructive" onClick={() => setSatds(satds.filter(x => x.id !== s.id))}>
+                              <Trash2 className="h-3 w-3" />
                             </Button>
                           </div>
                         </TableCell>
@@ -306,83 +397,130 @@ const SATD = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="suivi" className="space-y-4 mt-4">
-          {/* Graphique timeline */}
-          <Card className="shadow-card">
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Prélèvements mensuels (toutes SATD)</CardTitle></CardHeader>
-            <CardContent>
-              {timelineData.length > 0 ? (
-                <ResponsiveContainer width="100%" height={250}>
-                  <BarChart data={timelineData}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="mois" tick={{ fontSize: 12 }} />
-                    <YAxis tickFormatter={(v) => formatCurrency(v)} tick={{ fontSize: 11 }} />
-                    <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                    <Bar dataKey="montant" fill="hsl(215, 70%, 45%)" radius={[4, 4, 0, 0]} name="Montant prélevé" />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <p className="text-sm text-muted-foreground text-center py-8">Aucun prélèvement enregistré</p>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Détail SATD sélectionnée */}
+        {/* === WORKFLOW === */}
+        <TabsContent value="workflow" className="space-y-4 mt-4">
           {selectedSatd ? (
-            <Card className="shadow-card">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                  <span>Détail — {selectedSatd.reference}</span>
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedSatd(null)} className="text-xs">Fermer</Button>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div><span className="text-muted-foreground">Débiteur</span><p className="font-medium">{selectedSatd.debiteur}</p></div>
-                  <div><span className="text-muted-foreground">Organisme</span><p className="font-medium">{selectedSatd.organisme}</p></div>
-                  <div><span className="text-muted-foreground">Montant initial</span><p className="font-mono font-semibold">{formatCurrency(selectedSatd.montantInitial)}</p></div>
-                  <div><span className="text-muted-foreground">Reste à prélever</span><p className="font-mono font-semibold text-warning">{formatCurrency(selectedSatd.montantInitial - selectedSatd.montantPreleve)}</p></div>
-                </div>
-                <Separator />
-                <p className="text-xs font-semibold">Historique des prélèvements</p>
-                {selectedSatd.prelevements.length > 0 ? (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Date</TableHead>
-                        <TableHead className="text-right">Montant</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {selectedSatd.prelevements.map((p, i) => (
-                        <TableRow key={i}>
-                          <TableCell className="text-sm">{p.date}</TableCell>
-                          <TableCell className="text-right font-mono text-sm">{formatCurrency(p.montant)}</TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <p className="text-sm text-muted-foreground">Aucun prélèvement enregistré.</p>
-                )}
-                {selectedSatd.statut !== "termine" && (
-                  <div className="flex gap-3 items-end">
-                    <div><Label>Date</Label><Input type="date" value={newPrelevement.date} onChange={(e) => setNewPrelevement({ ...newPrelevement, date: e.target.value })} /></div>
-                    <div><Label>Montant (€)</Label><Input type="number" value={newPrelevement.montant} onChange={(e) => setNewPrelevement({ ...newPrelevement, montant: e.target.value })} /></div>
-                    <Button onClick={handleAddPrelevement} className="gradient-primary border-0">Ajouter</Button>
+            <div className="space-y-4">
+              <Card className="shadow-card">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      {selectedSatd.reference}
+                      <Badge variant="secondary" className={`text-[10px] ${STATUT_SATD_CONFIG[selectedSatd.statut].color}`}>
+                        {STATUT_SATD_CONFIG[selectedSatd.statut].label}
+                      </Badge>
+                    </CardTitle>
+                    <Button variant="ghost" size="sm" onClick={() => setSelectedSatd(null)} className="text-xs">Fermer</Button>
                   </div>
-                )}
-              </CardContent>
-            </Card>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
+                    <div><span className="text-xs text-muted-foreground">Débiteur</span><p className="font-medium">{selectedSatd.debiteur}</p></div>
+                    <div><span className="text-xs text-muted-foreground">Montant total</span><p className="font-mono font-bold">{formatCurrency(selectedSatd.montantGlobal)}</p></div>
+                    <div><span className="text-xs text-muted-foreground">Prélevé</span><p className="font-mono font-bold text-success">{formatCurrency(selectedSatd.montantPreleve)}</p></div>
+                    <div><span className="text-xs text-muted-foreground">Reste</span><p className="font-mono font-bold text-warning">{formatCurrency(selectedSatd.montantGlobal - selectedSatd.montantPreleve)}</p></div>
+                  </div>
+                  <Separator className="my-3" />
+
+                  {/* Timeline des étapes */}
+                  <p className="text-xs font-semibold mb-3">Historique de la procédure</p>
+                  <div className="relative pl-6 space-y-3">
+                    {selectedSatd.etapes.map((e, i) => (
+                      <div key={i} className="relative">
+                        <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-primary border-2 border-background" />
+                        {i < selectedSatd.etapes.length - 1 && <div className="absolute -left-[14px] top-4 w-0.5 h-full bg-border" />}
+                        <div className="bg-muted/20 rounded-lg p-2.5">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-semibold">{ETAPE_LABELS[e.type] || e.type}</span>
+                            <span className="text-[10px] text-muted-foreground">{new Date(e.date).toLocaleDateString("fr-FR")}</span>
+                          </div>
+                          {e.commentaire && <p className="text-xs text-muted-foreground mt-0.5">{e.commentaire}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Ajouter étape */}
+                  {selectedSatd.statut !== "termine" && (
+                    <div className="mt-4 p-3 bg-muted/20 rounded-lg">
+                      <p className="text-xs font-semibold mb-2">Ajouter une étape</p>
+                      <div className="flex gap-2 items-end flex-wrap">
+                        <div>
+                          <Label className="text-[10px]">Type</Label>
+                          <Select value={newEtape.type} onValueChange={(v: any) => setNewEtape({ ...newEtape, type: v })}>
+                            <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(ETAPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div><Label className="text-[10px]">Date</Label><Input type="date" className="h-8 text-xs w-[140px]" value={newEtape.date} onChange={e => setNewEtape({ ...newEtape, date: e.target.value })} /></div>
+                        <div className="flex-1"><Label className="text-[10px]">Commentaire</Label><Input className="h-8 text-xs" value={newEtape.commentaire} onChange={e => setNewEtape({ ...newEtape, commentaire: e.target.value })} /></div>
+                        <Button size="sm" onClick={handleAddEtape} className="h-8 gradient-primary border-0 text-xs">Ajouter</Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Prélèvements */}
+                  <Separator className="my-4" />
+                  <p className="text-xs font-semibold mb-2">Prélèvements ({selectedSatd.prelevements.length})</p>
+                  {selectedSatd.prelevements.length > 0 && (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Date</TableHead>
+                          <TableHead>Référence</TableHead>
+                          <TableHead>Mode</TableHead>
+                          <TableHead className="text-right">Montant</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {selectedSatd.prelevements.map((p, i) => (
+                          <TableRow key={i}>
+                            <TableCell className="text-sm">{new Date(p.date).toLocaleDateString("fr-FR")}</TableCell>
+                            <TableCell className="text-sm font-mono">{p.reference}</TableCell>
+                            <TableCell className="text-sm capitalize">{p.mode}</TableCell>
+                            <TableCell className="text-right font-mono text-sm">{formatCurrency(p.montant)}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                  {selectedSatd.statut !== "termine" && (
+                    <div className="flex gap-2 items-end mt-3 flex-wrap">
+                      <div><Label className="text-[10px]">Date</Label><Input type="date" className="h-8 text-xs w-[130px]" value={newPrelevement.date} onChange={e => setNewPrelevement({ ...newPrelevement, date: e.target.value })} /></div>
+                      <div><Label className="text-[10px]">Montant</Label><Input type="number" className="h-8 text-xs w-[100px]" value={newPrelevement.montant} onChange={e => setNewPrelevement({ ...newPrelevement, montant: e.target.value })} /></div>
+                      <div><Label className="text-[10px]">Réf.</Label><Input className="h-8 text-xs w-[120px]" value={newPrelevement.reference} onChange={e => setNewPrelevement({ ...newPrelevement, reference: e.target.value })} placeholder="VIR-XXX" /></div>
+                      <Button size="sm" onClick={handleAddPrelevement} className="h-8 gradient-primary border-0 text-xs">Enregistrer</Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
           ) : (
             <Card className="shadow-card">
               <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                Cliquez sur une SATD dans l'onglet Registre pour voir le détail et ajouter des prélèvements.
+                Sélectionnez une procédure dans l'onglet <strong>Registre</strong> pour suivre son workflow et ajouter des étapes.
               </CardContent>
             </Card>
           )}
         </TabsContent>
+
+        {/* === DOCUMENTS === */}
+        <TabsContent value="documents" className="mt-4">
+          <SatdDocuments satds={satds} tiers={tiersDetenteurs} />
+        </TabsContent>
+
+        {/* === STATISTIQUES === */}
+        <TabsContent value="statistiques" className="mt-4">
+          <SatdStats satds={satds} tiers={tiersDetenteurs} />
+        </TabsContent>
       </Tabs>
+
+      {/* Detail Dialog when clicking from registre */}
+      <Dialog open={false}>
+        <DialogContent />
+      </Dialog>
     </div>
   );
 };
