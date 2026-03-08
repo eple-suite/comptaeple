@@ -12,6 +12,8 @@ import {
   FileBarChart,
   Shield,
   Settings,
+  Scale,
+  ShieldCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -47,6 +49,11 @@ const toolItems = [
   { title: "Fonds sociaux", url: "/fonds-sociaux", icon: Heart },
   { title: "SATD", url: "/satd", icon: Gavel },
   { title: "Crédit nourriture", url: "/credit-nourriture", icon: UtensilsCrossed },
+];
+
+const pilotageItems = [
+  { title: "Veille juridique", url: "/veille-juridique", icon: Scale },
+  { title: "Contrôle interne", url: "/controle-interne", icon: ShieldCheck },
 ];
 
 export function AppSidebar() {
@@ -104,6 +111,7 @@ export function AppSidebar() {
         {renderGroup("Navigation", mainItems)}
         {renderGroup("Analyses", analysisItems)}
         {renderGroup("Outils métiers", toolItems)}
+        {renderGroup("Pilotage AC", pilotageItems)}
       </SidebarContent>
 
       <SidebarFooter className="p-3">
