@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { FileText, Download, Eye, ChevronRight, ChevronDown, CheckCircle2, AlertTriangle, Clock, Edit3, Save, Plus, Trash2, X } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { FileText, Download, Eye, ChevronRight, ChevronDown, CheckCircle2, AlertTriangle, Clock, Edit3, Save, Plus, Trash2, X, Printer } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,12 +13,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "@/hooks/use-toast";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
-
-/* ─────────────────────────────────────────────
-   Annexe du comptable au compte financier
-   (Instruction codificatrice M9.6 – Tome 3)
-   Document du comptable (≠ rapport de l'ordonnateur)
-   ───────────────────────────────────────────── */
 
 interface FaitMarquant {
   id: string;
@@ -58,10 +52,7 @@ const initialFaitsMarquants: FaitMarquant[] = [
 
 const initialSections: Section[] = [
   {
-    num: 1,
-    titre: "Présentation de l'établissement",
-    sousTitre: "Identité, structure, environnement",
-    status: "ready",
+    num: 1, titre: "Présentation de l'établissement", sousTitre: "Identité, structure, environnement", status: "ready",
     contenu: `L'établissement est un EPLE (Établissement Public Local d'Enseignement) rattaché à la collectivité territoriale de rattachement (Région/Département).
 
 ▪ Type : Lycée polyvalent
@@ -76,20 +67,14 @@ L'établissement est doté d'un budget principal et de budgets annexes pour les 
     editable: true,
   },
   {
-    num: 2,
-    titre: "Faits marquants de l'exercice",
-    sousTitre: "Événements ayant impacté l'exécution budgétaire",
-    status: "warning",
+    num: 2, titre: "Faits marquants de l'exercice", sousTitre: "Événements ayant impacté l'exécution budgétaire", status: "warning",
     contenu: `Cette section recense les événements significatifs survenus au cours de l'exercice qui ont eu un impact sur l'exécution budgétaire. Ces faits sont documentés ci-dessous et analysés dans les sections suivantes du rapport.
 
 [Les faits marquants sont gérés dans l'onglet dédié ci-dessus]`,
-    editable: false, // géré par l'onglet faits marquants
+    editable: false,
   },
   {
-    num: 3,
-    titre: "Exécution budgétaire",
-    sousTitre: "Taux de réalisation des recettes et des dépenses",
-    status: "ready",
+    num: 3, titre: "Exécution budgétaire", sousTitre: "Taux de réalisation des recettes et des dépenses", status: "ready",
     contenu: `L'exécution budgétaire de l'exercice fait apparaître les éléments suivants :
 
 RECETTES (services généraux + spéciaux) :
@@ -109,10 +94,7 @@ SERVICE DE RESTAURATION ET D'HÉBERGEMENT (SRH) :
     editable: true,
   },
   {
-    num: 4,
-    titre: "Analyse du fonds de roulement",
-    sousTitre: "FDR brut, FDR mobilisable, jours de fonctionnement",
-    status: "ready",
+    num: 4, titre: "Analyse du fonds de roulement", sousTitre: "FDR brut, FDR mobilisable, jours de fonctionnement", status: "ready",
     contenu: `Le fonds de roulement s'analyse comme suit :
 
 ▪ FDR brut : 245 832 € soit 42 jours de fonctionnement
@@ -128,10 +110,7 @@ Ce niveau de FDR mobilisable est conforme aux recommandations de la collectivit�
     editable: true,
   },
   {
-    num: 5,
-    titre: "Analyse de la trésorerie",
-    sousTitre: "Trésorerie brute, dettes à court terme, trésorerie propre",
-    status: "ready",
+    num: 5, titre: "Analyse de la trésorerie", sousTitre: "Trésorerie brute, dettes à court terme, trésorerie propre", status: "ready",
     contenu: `La trésorerie de l'établissement se décompose ainsi :
 
 ▪ Trésorerie brute : 167 382 €
@@ -152,10 +131,7 @@ La trésorerie propre est positive, témoignant de l'autonomie financière réel
     editable: true,
   },
   {
-    num: 6,
-    titre: "État des créances et recouvrement",
-    sousTitre: "Créances, admissions en non-valeur, compte 416",
-    status: "warning",
+    num: 6, titre: "État des créances et recouvrement", sousTitre: "Créances, admissions en non-valeur, compte 416", status: "warning",
     contenu: `L'état des créances au 31/12 se présente comme suit :
 
 ▪ Créances sur usagers (411) : 12 500 € — ancienneté < 1 an
@@ -174,10 +150,7 @@ Le compte 416 (3 200 €) devra faire l'objet d'un examen en commission pour év
     editable: true,
   },
   {
-    num: 7,
-    titre: "Subventions et financements (441/443110)",
-    sousTitre: "Subventions reçues, rattachement, reliquats",
-    status: "ready",
+    num: 7, titre: "Subventions et financements (441/443110)", sousTitre: "Subventions reçues, rattachement, reliquats", status: "ready",
     contenu: `Les subventions reçues et à recevoir au cours de l'exercice :
 
 SUBVENTIONS DE LA COLLECTIVITÉ (441) :
@@ -197,10 +170,7 @@ Les reliquats de subventions s'élèvent à 12 300 €. Ils feront l'objet d'un 
     editable: true,
   },
   {
-    num: 8,
-    titre: "Service de restauration et d'hébergement (SRH)",
-    sousTitre: "Crédit nourriture, coût denrées, prévisions",
-    status: "ready",
+    num: 8, titre: "Service de restauration et d'hébergement (SRH)", sousTitre: "Crédit nourriture, coût denrées, prévisions", status: "ready",
     contenu: `Le SRH constitue un service spécial à budget propre :
 
 ▪ Nombre de rationnaires/jour : 750 (dont 180 internes, 520 DP, 50 commensaux)
@@ -221,10 +191,7 @@ Poids du SRH dans les charges : 62,3% — conforme à la moyenne académique.`,
     editable: true,
   },
   {
-    num: 9,
-    titre: "Investissements et immobilisations",
-    sousTitre: "Programme d'investissement, amortissements, sorties d'inventaire",
-    status: "draft",
+    num: 9, titre: "Investissements et immobilisations", sousTitre: "Programme d'investissement, amortissements, sorties d'inventaire", status: "draft",
     contenu: `Les immobilisations de l'établissement :
 
 ▪ Valeur brute des immobilisations : 1 250 000 €
@@ -245,10 +212,7 @@ AMORTISSEMENTS DE L'EXERCICE : 65 000 €`,
     editable: true,
   },
   {
-    num: 10,
-    titre: "Contrats et marchés",
-    sousTitre: "État des marchés en cours, renouvellements, alertes seuils",
-    status: "draft",
+    num: 10, titre: "Contrats et marchés", sousTitre: "État des marchés en cours, renouvellements, alertes seuils", status: "draft",
     contenu: `L'établissement a les marchés et contrats suivants :
 
 MARCHÉS EN COURS :
@@ -265,10 +229,7 @@ Le module Voyages scolaires assure le suivi des seuils de marchés publics par n
     editable: true,
   },
   {
-    num: 11,
-    titre: "Perspectives et orientations N+1",
-    sousTitre: "Prévisions, projets, points de vigilance",
-    status: "draft",
+    num: 11, titre: "Perspectives et orientations N+1", sousTitre: "Prévisions, projets, points de vigilance", status: "draft",
     contenu: `Les perspectives pour l'exercice suivant :
 
 PRÉVISIONS :
@@ -301,15 +262,13 @@ const impactConfig = {
   neutre: { label: "Neutre", class: "bg-muted text-muted-foreground border-0" },
 };
 
-const AccountingAnnex = () => {
+export function AccountingAnnexPanel() {
   const [sections, setSections] = useState<Section[]>(initialSections);
   const [faitsMarquants, setFaitsMarquants] = useState<FaitMarquant[]>(initialFaitsMarquants);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewSection, setPreviewSection] = useState<Section | null>(null);
   const [editingSection, setEditingSection] = useState<number | null>(null);
   const [expandedSection, setExpandedSection] = useState<number | null>(null);
-
-  // Fait marquant form
   const [newFait, setNewFait] = useState({ titre: "", description: "", impact: "neutre" as FaitMarquant["impact"], categorie: categoriesFaits[0] });
   const [faitFormOpen, setFaitFormOpen] = useState(false);
 
@@ -338,36 +297,24 @@ const AccountingAnnex = () => {
     const margin = 20;
     const contentWidth = pw - 2 * margin;
 
-    // — PAGE DE GARDE —
-    doc.setFontSize(24);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(30, 60, 120);
+    doc.setFontSize(24); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 60, 120);
     doc.text("ANNEXE DU COMPTABLE", pw / 2, 60, { align: "center" });
     doc.setFontSize(16);
     doc.text("AU COMPTE FINANCIER", pw / 2, 75, { align: "center" });
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(80, 80, 80);
+    doc.setFontSize(12); doc.setFont("helvetica", "normal"); doc.setTextColor(80, 80, 80);
     doc.text("Exercice N-1 (2023)", pw / 2, 90, { align: "center" });
-    doc.setDrawColor(30, 60, 120);
-    doc.setLineWidth(0.8);
+    doc.setDrawColor(30, 60, 120); doc.setLineWidth(0.8);
     doc.line(margin, 100, pw - margin, 100);
     doc.setFontSize(10);
     doc.text("Instruction codificatrice M9.6 — Tome 3 — Compte financier", pw / 2, 115, { align: "center" });
     doc.text("Établissement Public Local d'Enseignement", pw / 2, 125, { align: "center" });
     doc.text(`Document généré le ${new Date().toLocaleDateString("fr-FR")}`, pw / 2, 140, { align: "center" });
 
-    // — SOMMAIRE —
     doc.addPage();
     let y = 30;
-    doc.setFontSize(16);
-    doc.setFont("helvetica", "bold");
-    doc.setTextColor(30, 60, 120);
-    doc.text("SOMMAIRE", margin, y);
-    y += 15;
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "normal");
-    doc.setTextColor(40, 40, 40);
+    doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 60, 120);
+    doc.text("SOMMAIRE", margin, y); y += 15;
+    doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.setTextColor(40, 40, 40);
     sections.forEach(s => {
       doc.text(`${s.num}. ${s.titre}`, margin + 5, y);
       doc.setTextColor(120, 120, 120);
@@ -376,121 +323,83 @@ const AccountingAnnex = () => {
       y += 7;
     });
 
-    // — SECTIONS —
     sections.forEach((section) => {
-      doc.addPage();
-      y = 30;
+      doc.addPage(); y = 30;
+      doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(30, 60, 120);
+      doc.text(`${section.num}. ${section.titre}`, margin, y); y += 6;
+      doc.setFontSize(9); doc.setFont("helvetica", "italic"); doc.setTextColor(120, 120, 120);
+      doc.text(section.sousTitre, margin, y); y += 10;
 
-      // Section header
-      doc.setFontSize(14);
-      doc.setFont("helvetica", "bold");
-      doc.setTextColor(30, 60, 120);
-      doc.text(`${section.num}. ${section.titre}`, margin, y);
-      y += 6;
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "italic");
-      doc.setTextColor(120, 120, 120);
-      doc.text(section.sousTitre, margin, y);
-      y += 10;
-
-      // For section 2 (faits marquants), insert the actual facts
       if (section.num === 2) {
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(40, 40, 40);
-        doc.setFontSize(10);
-        const intro = "Les événements suivants ont impacté l'exécution budgétaire de l'exercice :";
-        doc.text(intro, margin, y);
-        y += 10;
-
+        doc.setFont("helvetica", "normal"); doc.setTextColor(40, 40, 40); doc.setFontSize(10);
+        doc.text("Les événements suivants ont impacté l'exécution budgétaire de l'exercice :", margin, y); y += 10;
         faitsMarquants.forEach((fait, idx) => {
           if (y > ph - 40) { doc.addPage(); y = 30; }
-          doc.setFont("helvetica", "bold");
-          doc.setFontSize(10);
-          const impactLabel = impactConfig[fait.impact].label;
-          doc.text(`${idx + 1}. ${fait.titre} [${impactLabel}]`, margin + 3, y);
-          y += 5;
-          doc.setFont("helvetica", "normal");
-          doc.setFontSize(9);
-          doc.setTextColor(60, 60, 60);
+          doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+          doc.text(`${idx + 1}. ${fait.titre} [${impactConfig[fait.impact].label}]`, margin + 3, y); y += 5;
+          doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(60, 60, 60);
           const lines = doc.splitTextToSize(fait.description, contentWidth - 10);
-          doc.text(lines, margin + 6, y);
-          y += lines.length * 4.5 + 6;
+          doc.text(lines, margin + 6, y); y += lines.length * 4.5 + 6;
           doc.setTextColor(40, 40, 40);
         });
       } else {
-        // Regular section content
-        doc.setFontSize(10);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(40, 40, 40);
-
-        const paragraphs = section.contenu.split("\n");
-        paragraphs.forEach(para => {
+        doc.setFontSize(10); doc.setFont("helvetica", "normal"); doc.setTextColor(40, 40, 40);
+        section.contenu.split("\n").forEach(para => {
           if (y > ph - 30) { doc.addPage(); y = 30; }
           const trimmed = para.trim();
           if (!trimmed) { y += 3; return; }
-
           if (trimmed.startsWith("▪")) {
             doc.setFont("helvetica", "normal");
             const lines = doc.splitTextToSize(trimmed, contentWidth - 10);
-            doc.text(lines, margin + 5, y);
-            y += lines.length * 4.5 + 2;
+            doc.text(lines, margin + 5, y); y += lines.length * 4.5 + 2;
           } else if (trimmed === trimmed.toUpperCase() && trimmed.length > 3 && !trimmed.startsWith("[")) {
-            // Section sub-header
-            doc.setFont("helvetica", "bold");
-            doc.setFontSize(10);
-            doc.text(trimmed, margin, y);
-            y += 6;
-            doc.setFont("helvetica", "normal");
+            doc.setFont("helvetica", "bold"); doc.setFontSize(10);
+            doc.text(trimmed, margin, y); y += 6; doc.setFont("helvetica", "normal");
           } else {
             const lines = doc.splitTextToSize(trimmed, contentWidth);
-            doc.text(lines, margin, y);
-            y += lines.length * 4.5 + 2;
+            doc.text(lines, margin, y); y += lines.length * 4.5 + 2;
           }
         });
       }
     });
 
-    // — Footers —
     const totalPages = doc.getNumberOfPages();
     for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(150, 150, 150);
+      doc.setPage(i); doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(150, 150, 150);
       doc.text(`Annexe du comptable — Compte financier 2023 — Page ${i}/${totalPages}`, pw / 2, ph - 10, { align: "center" });
-      if (i > 1) {
-        doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.3);
-        doc.line(margin, ph - 15, pw - margin, ph - 15);
-      }
+      if (i > 1) { doc.setDrawColor(200, 200, 200); doc.setLineWidth(0.3); doc.line(margin, ph - 15, pw - margin, ph - 15); }
     }
 
     doc.save("annexe-comptable-2023.pdf");
     toast({ title: "PDF exporté", description: "L'annexe du comptable a été téléchargée." });
   };
 
+  const handlePrint = () => {
+    handleExportPdf();
+  };
+
   const readySections = sections.filter(s => s.status === "ready").length;
   const warningSections = sections.filter(s => s.status === "warning").length;
-  const draftSections = sections.filter(s => s.status === "draft").length;
 
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold font-display">Annexe du comptable</h1>
-            <p className="text-sm text-muted-foreground mt-1">Document du comptable au compte financier — Instruction M9.6 — Exercice 2023</p>
-          </div>
-          <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handlePreviewAll}>
-              <Eye className="h-4 w-4 mr-1" /> Aperçu complet
-            </Button>
-            <Button size="sm" className="gradient-primary border-0" onClick={handleExportPdf}>
-              <Download className="h-4 w-4 mr-1" /> Exporter PDF
-            </Button>
-          </div>
+      {/* Actions */}
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          Document du comptable au compte financier — Instruction M9.6 — Exercice 2023
+        </p>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={handlePreviewAll}>
+            <Eye className="h-4 w-4 mr-1" /> Aperçu complet
+          </Button>
+          <Button variant="outline" size="sm" onClick={handlePrint}>
+            <Printer className="h-4 w-4 mr-1" /> Imprimer
+          </Button>
+          <Button size="sm" className="gradient-primary border-0" onClick={handleExportPdf}>
+            <Download className="h-4 w-4 mr-1" /> Exporter PDF
+          </Button>
         </div>
-      </motion.div>
+      </div>
 
       {/* KPI */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -518,7 +427,6 @@ const AccountingAnnex = () => {
           <TabsTrigger value="faits">Faits marquants ({faitsMarquants.length})</TabsTrigger>
         </TabsList>
 
-        {/* ── ONGLET SECTIONS ── */}
         <TabsContent value="sections" className="space-y-2 mt-4">
           {sections.map((section) => {
             const StatusIcon = statusConfig[section.status].icon;
@@ -526,21 +434,11 @@ const AccountingAnnex = () => {
             const isEditing = editingSection === section.num;
 
             return (
-              <motion.div
-                key={section.num}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: section.num * 0.03 }}
-              >
+              <motion.div key={section.num} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: section.num * 0.03 }}>
                 <Card className="shadow-card">
-                  <div
-                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors"
-                    onClick={() => setExpandedSection(isExpanded ? null : section.num)}
-                  >
+                  <div className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/30 transition-colors" onClick={() => setExpandedSection(isExpanded ? null : section.num)}>
                     <div className="flex items-center gap-4">
-                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-                        {section.num}
-                      </div>
+                      <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">{section.num}</div>
                       <div>
                         <p className="text-sm font-medium">{section.titre}</p>
                         <p className="text-[11px] text-muted-foreground">{section.sousTitre}</p>
@@ -548,34 +446,23 @@ const AccountingAnnex = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       <Badge variant="secondary" className={`text-[10px] ${statusConfig[section.status].class}`}>
-                        <StatusIcon className="h-3 w-3 mr-1" />
-                        {statusConfig[section.status].label}
+                        <StatusIcon className="h-3 w-3 mr-1" />{statusConfig[section.status].label}
                       </Badge>
                       {isExpanded ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
                     </div>
                   </div>
-
                   {isExpanded && (
                     <CardContent className="pt-0 pb-4">
                       <Separator className="mb-4" />
                       {isEditing ? (
                         <div className="space-y-3">
-                          <Textarea
-                            defaultValue={section.contenu}
-                            rows={12}
-                            id={`section-${section.num}`}
-                            className="font-mono text-sm"
-                          />
+                          <Textarea defaultValue={section.contenu} rows={12} id={`section-${section.num}`} className="font-mono text-sm" />
                           <div className="flex gap-2">
                             <Button size="sm" onClick={() => {
                               const el = document.getElementById(`section-${section.num}`) as HTMLTextAreaElement;
                               handleSaveSection(section.num, el.value);
-                            }} className="gradient-primary border-0">
-                              <Save className="h-4 w-4 mr-1" /> Sauvegarder
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => setEditingSection(null)}>
-                              <X className="h-4 w-4 mr-1" /> Annuler
-                            </Button>
+                            }} className="gradient-primary border-0"><Save className="h-4 w-4 mr-1" /> Sauvegarder</Button>
+                            <Button size="sm" variant="outline" onClick={() => setEditingSection(null)}><X className="h-4 w-4 mr-1" /> Annuler</Button>
                           </div>
                         </div>
                       ) : (
@@ -596,13 +483,10 @@ const AccountingAnnex = () => {
           })}
         </TabsContent>
 
-        {/* ── ONGLET FAITS MARQUANTS ── */}
         <TabsContent value="faits" className="space-y-4 mt-4">
           <div className="flex items-center justify-between">
             <p className="text-sm text-muted-foreground">Événements ayant impacté l'exécution budgétaire de l'exercice</p>
-            <Button size="sm" className="gradient-primary border-0" onClick={() => setFaitFormOpen(!faitFormOpen)}>
-              <Plus className="h-4 w-4 mr-1" /> Ajouter
-            </Button>
+            <Button size="sm" className="gradient-primary border-0" onClick={() => setFaitFormOpen(!faitFormOpen)}><Plus className="h-4 w-4 mr-1" /> Ajouter</Button>
           </div>
 
           {faitFormOpen && (
@@ -612,9 +496,7 @@ const AccountingAnnex = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <div><Label>Impact</Label>
                     <select className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm" value={newFait.impact} onChange={(e) => setNewFait({ ...newFait, impact: e.target.value as FaitMarquant["impact"] })}>
-                      <option value="positif">Positif</option>
-                      <option value="negatif">Négatif</option>
-                      <option value="neutre">Neutre</option>
+                      <option value="positif">Positif</option><option value="negatif">Négatif</option><option value="neutre">Neutre</option>
                     </select>
                   </div>
                   <div><Label>Catégorie</Label>
@@ -640,9 +522,7 @@ const AccountingAnnex = () => {
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-semibold">{fait.titre}</span>
-                        <Badge variant="secondary" className={`text-[10px] ${impactConfig[fait.impact].class}`}>
-                          {impactConfig[fait.impact].label}
-                        </Badge>
+                        <Badge variant="secondary" className={`text-[10px] ${impactConfig[fait.impact].class}`}>{impactConfig[fait.impact].label}</Badge>
                         <Badge variant="outline" className="text-[10px]">{fait.categorie}</Badge>
                       </div>
                       <p className="text-sm text-muted-foreground leading-relaxed">{fait.description}</p>
@@ -662,16 +542,13 @@ const AccountingAnnex = () => {
       <Dialog open={previewOpen} onOpenChange={setPreviewOpen}>
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {previewSection ? `${previewSection.num}. ${previewSection.titre}` : "Annexe du comptable — Aperçu complet"}
-            </DialogTitle>
+            <DialogTitle>{previewSection ? `${previewSection.num}. ${previewSection.titre}` : "Annexe du comptable — Aperçu complet"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-6 pt-2">
             {(previewSection ? [previewSection] : sections).map((section) => (
               <div key={section.num}>
                 <h3 className="text-sm font-bold text-primary mb-1">{section.num}. {section.titre}</h3>
                 <p className="text-[11px] text-muted-foreground italic mb-2">{section.sousTitre}</p>
-
                 {section.num === 2 ? (
                   <div className="space-y-3">
                     <p className="text-sm text-muted-foreground">Les événements suivants ont impacté l'exécution budgétaire :</p>
@@ -693,6 +570,4 @@ const AccountingAnnex = () => {
       </Dialog>
     </div>
   );
-};
-
-export default AccountingAnnex;
+}
