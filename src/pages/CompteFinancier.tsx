@@ -14,6 +14,10 @@ import { toast } from "@/hooks/use-toast";
 import {
   mockIndicators, mockDettes, mockFragiliteFDR,
   mockTresorerieDetail, mockCreancesData, mockRepartitionCharges,
+  mockConfrontationSubventions, mockRAR, mockProvisions,
+  mockChargesAPayer, mockProduitsARecevoir, mockCoutRepasSRH,
+  mockDelais, mockCapaciteInvestissement, mockSolvabilite,
+  mockComptesTiers, mockPrelevementFDR,
   formatCurrency, formatPercent,
 } from "@/lib/mockData";
 import {
