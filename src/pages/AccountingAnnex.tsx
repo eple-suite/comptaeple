@@ -15,8 +15,9 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 /* ─────────────────────────────────────────────
-   Structure conforme M9-6 / Rapport de l'ordonnateur
-   (Instruction codificatrice M9.6 – Tome 3 – Compte financier)
+   Annexe du comptable au compte financier
+   (Instruction codificatrice M9.6 – Tome 3)
+   Document du comptable (≠ rapport de l'ordonnateur)
    ───────────────────────────────────────────── */
 
 interface FaitMarquant {
@@ -341,9 +342,9 @@ const AccountingAnnex = () => {
     doc.setFontSize(24);
     doc.setFont("helvetica", "bold");
     doc.setTextColor(30, 60, 120);
-    doc.text("RAPPORT DE L'ORDONNATEUR", pw / 2, 60, { align: "center" });
+    doc.text("ANNEXE DU COMPTABLE", pw / 2, 60, { align: "center" });
     doc.setFontSize(16);
-    doc.text("ANNEXE AU COMPTE FINANCIER", pw / 2, 75, { align: "center" });
+    doc.text("AU COMPTE FINANCIER", pw / 2, 75, { align: "center" });
     doc.setFontSize(12);
     doc.setFont("helvetica", "normal");
     doc.setTextColor(80, 80, 80);
@@ -456,7 +457,7 @@ const AccountingAnnex = () => {
       doc.setFontSize(8);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(150, 150, 150);
-      doc.text(`Rapport de l'ordonnateur — Compte financier 2023 — Page ${i}/${totalPages}`, pw / 2, ph - 10, { align: "center" });
+      doc.text(`Annexe du comptable — Compte financier 2023 — Page ${i}/${totalPages}`, pw / 2, ph - 10, { align: "center" });
       if (i > 1) {
         doc.setDrawColor(200, 200, 200);
         doc.setLineWidth(0.3);
@@ -464,8 +465,8 @@ const AccountingAnnex = () => {
       }
     }
 
-    doc.save("rapport-ordonnateur-2023.pdf");
-    toast({ title: "PDF exporté", description: "Le rapport de l'ordonnateur a été téléchargé." });
+    doc.save("annexe-comptable-2023.pdf");
+    toast({ title: "PDF exporté", description: "L'annexe du comptable a été téléchargée." });
   };
 
   const readySections = sections.filter(s => s.status === "ready").length;
@@ -477,8 +478,8 @@ const AccountingAnnex = () => {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold font-display">Annexe au compte financier</h1>
-            <p className="text-sm text-muted-foreground mt-1">Rapport de l'ordonnateur — Instruction M9.6 — Exercice 2023</p>
+            <h1 className="text-2xl font-bold font-display">Annexe du comptable</h1>
+            <p className="text-sm text-muted-foreground mt-1">Document du comptable au compte financier — Instruction M9.6 — Exercice 2023</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={handlePreviewAll}>
@@ -662,7 +663,7 @@ const AccountingAnnex = () => {
         <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
-              {previewSection ? `${previewSection.num}. ${previewSection.titre}` : "Rapport de l'ordonnateur — Aperçu complet"}
+              {previewSection ? `${previewSection.num}. ${previewSection.titre}` : "Annexe du comptable — Aperçu complet"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-6 pt-2">
