@@ -48,7 +48,7 @@ const SATD = () => {
 
   // Form Tiers
   const [formTiers, setFormTiers] = useState({
-    nom: "", type: "employeur" as TiersDetenteur["type"],
+    nom: "", type: "employeur_prive" as TiersDetenteur["type"],
     adresse: "", codePostal: "", ville: "",
     siret: "", contact: "", email: "", telephone: "",
   });
@@ -114,7 +114,7 @@ const SATD = () => {
   const handleAddTiers = () => {
     setTiersDetenteurs([...tiersDetenteurs, { id: `t${Date.now()}`, ...formTiers }]);
     setOpenTiers(false);
-    setFormTiers({ nom: "", type: "employeur", adresse: "", codePostal: "", ville: "", siret: "", contact: "", email: "", telephone: "" });
+    setFormTiers({ nom: "", type: "employeur_prive", adresse: "", codePostal: "", ville: "", siret: "", contact: "", email: "", telephone: "" });
   };
 
   const handleAddPrelevement = () => {
@@ -306,6 +306,7 @@ const SATD = () => {
       <Tabs defaultValue="registre">
         <TabsList className="flex-wrap">
           <TabsTrigger value="registre">Registre ({filtered.length})</TabsTrigger>
+          <TabsTrigger value="poursuivre" className="text-destructive">⚖️ Poursuivre un débiteur</TabsTrigger>
           <TabsTrigger value="procedure">📋 Procédure & Guide</TabsTrigger>
           <TabsTrigger value="workflow">Workflow procédure</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -395,6 +396,194 @@ const SATD = () => {
                   })}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* === POURSUIVRE UN DÉBITEUR === */}
+        <TabsContent value="poursuivre" className="space-y-4 mt-4">
+          <Card className="shadow-card border-destructive/20">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Gavel className="h-4 w-4 text-destructive" />
+                Poursuivre un débiteur — Actions de recouvrement forcé
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                Sélectionnez un dossier ci-dessous puis lancez l'action de poursuite appropriée selon l'avancement de la procédure.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Dossiers éligibles aux poursuites */}
+              {(() => {
+                const poursuivables = satds.filter(s => s.statut !== "termine" && s.statut !== "prescrit" && s.statut !== "irrecouv");
+                if (poursuivables.length === 0) return (
+                  <p className="text-sm text-muted-foreground text-center py-4">Aucun dossier en cours de recouvrement.</p>
+                );
+                return poursuivables.map(s => {
+                  const etapeTypes = s.etapes.map(e => e.type);
+                  const hasRelance1 = etapeTypes.includes("relance1");
+                  const hasRelance2 = etapeTypes.includes("relance2");
+                  const hasAvis = etapeTypes.includes("avis_poursuites");
+                  const hasAutorisation = etapeTypes.includes("autorisation_ordonnateur");
+                  const hasSatd = etapeTypes.includes("satd_emission");
+                  const hasAR = etapeTypes.includes("satd_reception_ar");
+
+                  // Determine next recommended action
+                  let nextAction = "";
+                  let nextActionKey = "";
+                  let nextActionDescription = "";
+                  let canPursue = true;
+                  let blockedReason = "";
+
+                  if (!hasRelance1) {
+                    nextAction = "Envoyer la 1ère relance amiable";
+                    nextActionKey = "relance1";
+                    nextActionDescription = "Courrier simple rappelant la dette.";
+                  } else if (!hasRelance2) {
+                    nextAction = "Envoyer la 2ème relance (RAR)";
+                    nextActionKey = "relance2";
+                    nextActionDescription = "Courrier recommandé avec accusé de réception — preuve obligatoire.";
+                  } else if (!hasAvis) {
+                    nextAction = "Envoyer l'avis avant poursuites (RAR)";
+                    nextActionKey = "avis_poursuites";
+                    nextActionDescription = "Dernier avertissement avant SATD. Le débiteur a 30 jours pour régulariser.";
+                  } else if (!hasAutorisation) {
+                    nextAction = "Demander l'autorisation de l'ordonnateur";
+                    nextActionKey = "autorisation_ordonnateur";
+                    nextActionDescription = "Le chef d'établissement doit autoriser par écrit la poursuite.";
+                  } else if (!s.tiersDetenteurId) {
+                    nextAction = "Identifier le tiers détenteur (FICOBA si nécessaire)";
+                    nextActionKey = "ficoba";
+                    nextActionDescription = "Consulter FICOBA via la DDFiP pour identifier les comptes bancaires du débiteur.";
+                    canPursue = false;
+                    blockedReason = "Aucun tiers détenteur assigné à ce dossier. Assignez un tiers d'abord.";
+                  } else if (!hasSatd) {
+                    nextAction = "🚨 ÉMETTRE LA SATD";
+                    nextActionKey = "satd_emission";
+                    nextActionDescription = "Envoi simultané de 3 courriers RAR : au tiers détenteur, au débiteur, bordereau récapitulatif. Les 3 doivent partir le MÊME JOUR.";
+                  } else if (!hasAR) {
+                    nextAction = "Attente réception des AR";
+                    nextActionKey = "satd_reception_ar";
+                    nextActionDescription = "Vérifier la réception des 3 accusés de réception.";
+                  } else {
+                    nextAction = "Suivre les prélèvements";
+                    nextActionKey = "prelevement";
+                    nextActionDescription = "Le tiers détenteur a 30 jours pour verser. S'il ne verse pas, il devient personnellement débiteur.";
+                  }
+
+                  const tiers = tiersDetenteurs.find(t => t.id === s.tiersDetenteurId);
+                  const restant = s.montantGlobal - s.montantPreleve;
+
+                  return (
+                    <div key={s.id} className="border rounded-lg p-4 space-y-3 hover:border-primary/30 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-sm font-bold text-primary">{s.reference}</span>
+                            <Badge variant="secondary" className={`text-[10px] ${STATUT_SATD_CONFIG[s.statut].color}`}>
+                              {STATUT_SATD_CONFIG[s.statut].label}
+                            </Badge>
+                          </div>
+                          <p className="text-sm font-semibold mt-1">{s.debiteur}</p>
+                          <p className="text-xs text-muted-foreground">{s.debiteurAdresse}, {s.debiteurCP} {s.debiteurVille}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-muted-foreground">Reste à recouvrer</p>
+                          <p className="font-mono text-lg font-bold text-destructive">{formatCurrency(restant)}</p>
+                        </div>
+                      </div>
+
+                      {/* Progress bar des étapes */}
+                      <div className="flex gap-1">
+                        {[
+                          { key: "relance1", label: "R1", done: hasRelance1 },
+                          { key: "relance2", label: "R2", done: hasRelance2 },
+                          { key: "avis", label: "Avis", done: hasAvis },
+                          { key: "auto", label: "Autori.", done: hasAutorisation },
+                          { key: "satd", label: "SATD", done: hasSatd },
+                          { key: "ar", label: "AR", done: hasAR },
+                        ].map(step => (
+                          <div key={step.key} className={`flex-1 text-center py-1 rounded text-[10px] font-semibold ${
+                            step.done ? "bg-success/20 text-success" : "bg-muted/40 text-muted-foreground"
+                          }`}>
+                            {step.done ? "✓" : ""} {step.label}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Tiers détenteur */}
+                      {tiers ? (
+                        <div className="text-xs bg-muted/20 rounded p-2 flex items-center gap-2">
+                          <Users className="h-3 w-3 text-muted-foreground" />
+                          <span>Tiers : <strong>{tiers.nom}</strong> ({TYPE_TIERS_LABELS[tiers.type]})</span>
+                        </div>
+                      ) : (
+                        <div className="text-xs bg-warning/10 rounded p-2 flex items-center gap-2 text-warning">
+                          <AlertTriangle className="h-3 w-3" />
+                          <span>Aucun tiers détenteur assigné — 
+                            <button className="underline font-semibold ml-1" onClick={() => {
+                              setSelectedSatd(s);
+                              // Scroll or focus tiers selector in new procedure form
+                            }}>Assigner un tiers</button>
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Next action */}
+                      <div className={`rounded-lg p-3 ${canPursue ? "bg-primary/5 border border-primary/20" : "bg-warning/10 border border-warning/20"}`}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <ChevronRight className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-bold">{nextAction}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground ml-6">{nextActionDescription}</p>
+                        {blockedReason && (
+                          <p className="text-xs text-warning font-semibold ml-6 mt-1">⚠️ {blockedReason}</p>
+                        )}
+                        <div className="mt-2 ml-6 flex gap-2 flex-wrap">
+                          {canPursue && (
+                            <>
+                              <Button size="sm" className="text-xs h-7 gradient-primary border-0" onClick={() => {
+                                const now = new Date().toISOString().split("T")[0];
+                                const etape: EtapeProcedure = { type: nextActionKey as any, date: now, commentaire: `Action : ${nextAction}`, documentGenere: nextActionKey === "satd_emission" };
+                                let newStatut = s.statut;
+                                if (nextActionKey === "avis_poursuites") newStatut = "avis_poursuites";
+                                if (nextActionKey === "autorisation_ordonnateur") newStatut = "autorisation";
+                                if (nextActionKey === "satd_emission") newStatut = "emise";
+                                if (nextActionKey === "satd_reception_ar") newStatut = "en_cours";
+                                setSatds(prev => prev.map(x => x.id === s.id ? { ...x, etapes: [...x.etapes, etape], statut: newStatut, autorisationOrdonnateur: nextActionKey === "autorisation_ordonnateur" ? true : x.autorisationOrdonnateur } : x));
+                                if (selectedSatd?.id === s.id) {
+                                  setSelectedSatd({ ...s, etapes: [...s.etapes, etape], statut: newStatut });
+                                }
+                              }}>
+                                <Gavel className="h-3 w-3 mr-1" /> Exécuter cette action
+                              </Button>
+                              {nextActionKey === "satd_emission" && (
+                                <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => {/* future: generate 3 documents */}}>
+                                  <FileText className="h-3 w-3 mr-1" /> Générer les 3 courriers SATD
+                                </Button>
+                              )}
+                            </>
+                          )}
+                          {!s.tiersDetenteurId && (
+                            <Select onValueChange={v => {
+                              setSatds(prev => prev.map(x => x.id === s.id ? { ...x, tiersDetenteurId: v } : x));
+                            }}>
+                              <SelectTrigger className="h-7 text-xs w-[250px]"><SelectValue placeholder="Assigner un tiers détenteur..." /></SelectTrigger>
+                              <SelectContent className="max-h-[300px]">
+                                {tiersDetenteurs.map(t => (
+                                  <SelectItem key={t.id} value={t.id} className="text-xs">
+                                    {t.nom} — {TYPE_TIERS_LABELS[t.type]}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                });
+              })()}
             </CardContent>
           </Card>
         </TabsContent>
