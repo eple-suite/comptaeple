@@ -13,7 +13,6 @@ import BalanceAnalysis from "./pages/BalanceAnalysis";
 import WorkingCapital from "./pages/WorkingCapital";
 import Indicators from "./pages/Indicators";
 import CompteFinancier from "./pages/CompteFinancier";
-
 import Voyages from "./pages/Voyages";
 import FondsSociaux from "./pages/FondsSociaux";
 import SATD from "./pages/SATD";
