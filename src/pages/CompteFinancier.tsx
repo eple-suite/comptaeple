@@ -19,11 +19,14 @@ import {
 } from "@/lib/mockData";
 import {
   BarChart as RBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart as RPieChart, Pie, Cell, LineChart, Line, ReferenceLine, AreaChart, Area
+  PieChart as RPieChart, Pie, Cell, LineChart, Line, ReferenceLine, AreaChart, Area,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
+import { GaugeChart } from "@/components/GaugeChart";
+import { WaterfallChart } from "@/components/WaterfallChart";
 
 /* ─────────────────────────────────────────────
    Indicateurs M9-6 complets (2026)
