@@ -19,11 +19,14 @@ import {
 } from "@/lib/mockData";
 import {
   BarChart as RBarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
-  PieChart as RPieChart, Pie, Cell, LineChart, Line, ReferenceLine, AreaChart, Area
+  PieChart as RPieChart, Pie, Cell, LineChart, Line, ReferenceLine, AreaChart, Area,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
+import { GaugeChart } from "@/components/GaugeChart";
+import { WaterfallChart } from "@/components/WaterfallChart";
 
 /* ─────────────────────────────────────────────
    Indicateurs M9-6 complets (2026)
@@ -89,6 +92,43 @@ const repartitionBilan = [
   { name: "BFR", value: mockIndicators.bfr, fill: "hsl(38, 92%, 50%)" },
   { name: "Trésorerie propre", value: tresoreriePropre, fill: "hsl(var(--success))" },
 ];
+
+// Radar data REPROFI-style
+const radarPerformance = [
+  { subject: "FDR (j)", value: Math.min(mockIndicators.joursFonctionnement / 90 * 100, 100), fullMark: 100 },
+  { subject: "CAF", value: Math.min(caf / 100000 * 100, 100), fullMark: 100 },
+  { subject: "Recouvrement", value: mockIndicators.tauxRecouvrement, fullMark: 100 },
+  { subject: "Autonomie fin.", value: ratioAutonomie, fullMark: 100 },
+  { subject: "Exec. recettes", value: tauxExecutionRecettes, fullMark: 100 },
+  { subject: "Exec. dépenses", value: tauxExecutionDepenses, fullMark: 100 },
+  { subject: "Maîtrise charges", value: Math.max(100 - mockIndicators.poidsCharges, 0), fullMark: 100 },
+];
+
+// Waterfall: Construction du FDR mobilisable
+const waterfallFDR = [
+  { name: "FDR brut", value: mockIndicators.fdr, type: "total" as const },
+  { name: "(-) Stocks", value: -mockFragiliteFDR.stocks, type: "negative" as const },
+  { name: "(-) Créances anc.", value: -mockFragiliteFDR.creancesAnciennes, type: "negative" as const },
+  { name: "(-) Cpt 416", value: -mockFragiliteFDR.compte416, type: "negative" as const },
+  { name: "= FDR mobilisable", value: fdrMobilisable, type: "total" as const },
+];
+
+// Waterfall: Construction de la trésorerie propre
+const waterfallTreso = [
+  { name: "Trésorerie brute", value: mockIndicators.tresorerie, type: "total" as const },
+  { name: "(-) Subventions", value: -mockDettes.subventions, type: "negative" as const },
+  { name: "(-) Reliquats", value: -mockDettes.reliquatsSubventions, type: "negative" as const },
+  { name: "(-) Av. élèves", value: -mockDettes.avancesEleves, type: "negative" as const },
+  { name: "(-) Av. commens.", value: -mockDettes.avancesCommensaux, type: "negative" as const },
+  { name: "= Tréso. propre", value: tresoreriePropre, type: "total" as const },
+];
+
+// Évolution trésorerie en area chart
+const evolutionTreso = mockEvolutionData.map((d, i) => ({
+  ...d,
+  caf: evolutionCAF[i]?.caf || 0,
+  resultat: evolutionCAF[i]?.resultat || 0,
+}));
 
 const statutConfig = {
   ok: { label: "Conforme", class: "bg-success/10 text-success border-0", icon: CheckCircle2 },
@@ -668,13 +708,48 @@ const CompteFinancier = () => {
           </Card>
         </TabsContent>
 
-        {/* ── GRAPHIQUES ── */}
+        {/* ── GRAPHIQUES REPROFI ── */}
         <TabsContent value="graphs" className="space-y-4 mt-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Gauges row */}
+          <Card className="shadow-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Indicateurs synthétiques — Vue REPROFI</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap justify-center gap-6">
+                <GaugeChart value={mockIndicators.joursFonctionnement} max={90} label="Jours FDR" unit=" j" thresholds={{ ok: 30, warning: 15 }} size="lg" />
+                <GaugeChart value={joursMobilisable} max={90} label="Jours mobilisable" unit=" j" thresholds={{ ok: 30, warning: 15 }} size="lg" />
+                <GaugeChart value={mockIndicators.tauxRecouvrement} max={100} label="Recouvrement" unit="%" thresholds={{ ok: 95, warning: 80 }} size="lg" />
+                <GaugeChart value={ratioAutonomie} max={100} label="Autonomie financière" unit="%" thresholds={{ ok: 50, warning: 30 }} size="lg" />
+                <GaugeChart value={tauxExecutionRecettes} max={100} label="Exec. recettes" unit="%" thresholds={{ ok: 90, warning: 75 }} />
+                <GaugeChart value={tauxExecutionDepenses} max={100} label="Exec. dépenses" unit="%" thresholds={{ ok: 90, warning: 75 }} />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Radar REPROFI */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <Card className="shadow-card">
-              <CardHeader><CardTitle className="text-sm">Résultat & CAF — Évolution</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-sm">Profil radar de l'établissement (REPROFI)</CardTitle></CardHeader>
               <CardContent>
-                <div className="h-64">
+                <div className="h-72">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RadarChart data={radarPerformance}>
+                      <PolarGrid stroke="hsl(var(--border))" />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10 }} />
+                      <PolarRadiusAxis tick={{ fontSize: 8 }} domain={[0, 100]} />
+                      <Radar name="Performance" dataKey="value" stroke="hsl(215, 70%, 45%)" fill="hsl(215, 70%, 45%)" fillOpacity={0.35} strokeWidth={2} />
+                      <Tooltip formatter={(v: number) => `${v.toFixed(0)}%`} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card">
+              <CardHeader><CardTitle className="text-sm">Résultat & CAF — Évolution pluriannuelle</CardTitle></CardHeader>
+              <CardContent>
+                <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <RBarChart data={evolutionCAF}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -690,6 +765,46 @@ const CompteFinancier = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Waterfall charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="shadow-card">
+              <CardHeader><CardTitle className="text-sm">Cascade : Construction du FDR mobilisable</CardTitle></CardHeader>
+              <CardContent>
+                <WaterfallChart data={waterfallFDR} height={280} />
+              </CardContent>
+            </Card>
+
+            <Card className="shadow-card">
+              <CardHeader><CardTitle className="text-sm">Cascade : Construction de la trésorerie propre</CardTitle></CardHeader>
+              <CardContent>
+                <WaterfallChart data={waterfallTreso} height={280} />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Évolution + Pie */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <Card className="shadow-card">
+              <CardHeader><CardTitle className="text-sm">Évolution FDR / BFR / Trésorerie (area)</CardTitle></CardHeader>
+              <CardContent>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={evolutionTreso}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+                      <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `${(v / 1000).toFixed(0)}k`} />
+                      <Tooltip formatter={(v: number) => formatCurrency(v)} />
+                      <Legend />
+                      <Area type="monotone" dataKey="fdr" name="FDR" stroke="hsl(215, 70%, 45%)" fill="hsl(215, 70%, 45%)" fillOpacity={0.15} strokeWidth={2} />
+                      <Area type="monotone" dataKey="tresorerie" name="Trésorerie" stroke="hsl(160, 45%, 45%)" fill="hsl(160, 45%, 45%)" fillOpacity={0.15} strokeWidth={2} />
+                      <Area type="monotone" dataKey="bfr" name="BFR" stroke="hsl(38, 92%, 50%)" fill="hsl(38, 92%, 50%)" fillOpacity={0.1} strokeWidth={2} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
             <Card className="shadow-card">
               <CardHeader><CardTitle className="text-sm">Répartition du bilan</CardTitle></CardHeader>
@@ -697,7 +812,7 @@ const CompteFinancier = () => {
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <RPieChart>
-                      <Pie data={repartitionBilan} dataKey="value" cx="50%" cy="50%" outerRadius={90} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      <Pie data={repartitionBilan} dataKey="value" cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={3} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
                         {repartitionBilan.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                       </Pie>
                       <Tooltip formatter={(v: number) => formatCurrency(v)} />
@@ -713,7 +828,7 @@ const CompteFinancier = () => {
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <RPieChart>
-                      <Pie data={mockRepartitionCharges} dataKey="value" cx="50%" cy="50%" outerRadius={90} label={({ name, value }) => `${name} ${value}%`}>
+                      <Pie data={mockRepartitionCharges} dataKey="value" cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={3} label={({ name, value }) => `${name} ${value}%`}>
                         {mockRepartitionCharges.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                       </Pie>
                       <Tooltip />
