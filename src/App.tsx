@@ -12,6 +12,7 @@ import Establishments from "./pages/Establishments";
 import BalanceAnalysis from "./pages/BalanceAnalysis";
 import WorkingCapital from "./pages/WorkingCapital";
 import Indicators from "./pages/Indicators";
+import CompteFinancier from "./pages/CompteFinancier";
 import AccountingAnnex from "./pages/AccountingAnnex";
 import Voyages from "./pages/Voyages";
 import FondsSociaux from "./pages/FondsSociaux";
@@ -67,6 +68,7 @@ const App = () => (
               <Route path="/balance" element={<BalanceAnalysis />} />
               <Route path="/fonds-roulement" element={<WorkingCapital />} />
               <Route path="/indicateurs" element={<Indicators />} />
+              <Route path="/compte-financier" element={<CompteFinancier />} />
               <Route path="/annexe" element={<AccountingAnnex />} />
               <Route path="/voyages" element={<Voyages />} />
               <Route path="/fonds-sociaux" element={<FondsSociaux />} />
