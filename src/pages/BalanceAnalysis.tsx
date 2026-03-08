@@ -486,7 +486,7 @@ const BalanceAnalysis = () => {
                                 <div className="p-4 bg-muted/30 space-y-3">
                                   {acc.messageAnomalie && (
                                     <div className={cn("p-3 rounded-lg text-sm flex items-start gap-2",
-                                      acc.anomalie === "critique" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-amber-800"
+                                      acc.anomalie === "critique" ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning-foreground"
                                     )}>
                                       <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
                                       {acc.messageAnomalie}
