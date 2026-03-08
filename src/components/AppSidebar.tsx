@@ -46,7 +46,6 @@ const analysisItems = [
 
 const toolItems = [
   { title: "Compte financier", url: "/compte-financier", icon: BookOpen },
-  { title: "Annexe du comptable", url: "/annexe", icon: FileText },
   { title: "Voyages scolaires", url: "/voyages", icon: Bus },
   { title: "Fonds sociaux", url: "/fonds-sociaux", icon: Heart },
   { title: "SATD", url: "/satd", icon: Gavel },
