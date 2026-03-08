@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Gavel, Plus, Trash2, AlertTriangle, CheckCircle2, Clock, Euro, FileText, TrendingDown, Search, PauseCircle, Play, Eye, Users, ChevronRight, XCircle, Scale } from "lucide-react";
+import { Gavel, Plus, Trash2, AlertTriangle, CheckCircle2, Clock, Euro, FileText, TrendingDown, Search, PauseCircle, Play, Eye, Users, ChevronRight, XCircle, Scale, Download, Printer } from "lucide-react";
+import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
+import autoTable from "jspdf-autotable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -185,6 +187,44 @@ const SATD = () => {
             <p className="text-sm text-muted-foreground mt-1">Saisies Administratives à Tiers Détenteur — Procédures de recouvrement forcé</p>
           </div>
           <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => {
+              const doc = createStyledPDF({ title: "État des SATD", subtitle: `${satds.length} dossiers — Recouvrement forcé` });
+              autoTable(doc, {
+                startY: 48,
+                head: [["Référence", "Débiteur", "Montant", "Prélevé", "Reste", "Statut"]],
+                body: satds.map(s => [s.reference, s.debiteur, formatCurrency(s.montantGlobal), formatCurrency(s.montantPreleve), formatCurrency(s.montantGlobal - s.montantPreleve), STATUT_SATD_CONFIG[s.statut]?.label || s.statut]),
+                headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+                alternateRowStyles: { fillColor: [240, 244, 248] },
+                margin: { left: 10, right: 10 },
+                columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
+                styles: { fontSize: 8 },
+              });
+              const y = (doc as any).lastAutoTable.finalY + 8;
+              doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+              doc.text(`Total initial : ${formatCurrency(totalInitial)} — Prélevé : ${formatCurrency(totalPreleve)} — Restant : ${formatCurrency(totalRestant)} — Taux : ${tauxRecouvrement.toFixed(1)}%`, 14, y);
+              printPDF(doc);
+            }}>
+              <Printer className="h-3.5 w-3.5 mr-1" /> Imprimer
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => {
+              const doc = createStyledPDF({ title: "État des SATD", subtitle: `${satds.length} dossiers — Recouvrement forcé` });
+              autoTable(doc, {
+                startY: 48,
+                head: [["Référence", "Débiteur", "Montant", "Prélevé", "Reste", "Statut"]],
+                body: satds.map(s => [s.reference, s.debiteur, formatCurrency(s.montantGlobal), formatCurrency(s.montantPreleve), formatCurrency(s.montantGlobal - s.montantPreleve), STATUT_SATD_CONFIG[s.statut]?.label || s.statut]),
+                headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+                alternateRowStyles: { fillColor: [240, 244, 248] },
+                margin: { left: 10, right: 10 },
+                columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
+                styles: { fontSize: 8 },
+              });
+              const y = (doc as any).lastAutoTable.finalY + 8;
+              doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+              doc.text(`Total initial : ${formatCurrency(totalInitial)} — Prélevé : ${formatCurrency(totalPreleve)} — Restant : ${formatCurrency(totalRestant)} — Taux : ${tauxRecouvrement.toFixed(1)}%`, 14, y);
+              savePDF(doc, `SATD_etat_${new Date().toISOString().split("T")[0]}.pdf`);
+            }}>
+              <Download className="h-3.5 w-3.5 mr-1" /> PDF
+            </Button>
             <Dialog open={openTiers} onOpenChange={setOpenTiers}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm"><Users className="h-3.5 w-3.5 mr-1" /> Tiers</Button>

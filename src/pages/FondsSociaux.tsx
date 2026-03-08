@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Heart, Plus, Trash2, Users, Euro, FileText, Search, CheckCircle2, Clock, XCircle, Eye, AlertTriangle, Wallet, Calendar, ChevronDown, ChevronUp } from "lucide-react";
+import { Heart, Plus, Trash2, Users, Euro, FileText, Search, CheckCircle2, Clock, XCircle, Eye, AlertTriangle, Wallet, Calendar, ChevronDown, ChevronUp, Download, Printer } from "lucide-react";
+import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
+import autoTable from "jspdf-autotable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -115,10 +117,45 @@ const FondsSociaux = () => {
             <h1 className="text-2xl font-bold font-display">Fonds sociaux</h1>
             <p className="text-sm text-muted-foreground mt-1">Gestion complète des aides — FSL, FSC, FSE, aides exceptionnelles CE</p>
           </div>
-          <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-              <Button className="gradient-primary border-0"><Plus className="h-4 w-4 mr-1" /> Nouvelle demande</Button>
-            </DialogTrigger>
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={() => {
+              const doc = createStyledPDF({ title: "Fonds sociaux — État des demandes", subtitle: `${demandes.length} demandes — Exercice ${new Date().getFullYear()}` });
+              autoTable(doc, {
+                startY: 48,
+                head: [["Élève", "Type", "Nature", "Demandé", "Accordé", "Statut"]],
+                body: demandes.map(d => [`${d.eleve.nom} ${d.eleve.prenom}`, d.type, d.nature, formatCurrency(d.montantDemande), formatCurrency(d.montantAccorde), STATUT_CONFIG[d.statut]?.label || d.statut]),
+                headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+                alternateRowStyles: { fillColor: [240, 244, 248] },
+                margin: { left: 10, right: 10 },
+                columnStyles: { 3: { halign: "right" }, 4: { halign: "right" } },
+                styles: { fontSize: 8 },
+              });
+              const y = (doc as any).lastAutoTable.finalY + 8;
+              doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+              doc.text(`Total versé : ${formatCurrency(totalVerse)} — En attente : ${formatCurrency(totalEnAttente)} — ${nbBeneficiaires} bénéficiaires — Budget restant : ${formatCurrency(totalReste)}`, 14, y, { maxWidth: 180 });
+              savePDF(doc, `Fonds_sociaux_${new Date().toISOString().split("T")[0]}.pdf`);
+            }}>
+              <Download className="h-3.5 w-3.5 mr-1" /> PDF
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => {
+              const doc = createStyledPDF({ title: "Fonds sociaux — État des demandes", subtitle: `${demandes.length} demandes — Exercice ${new Date().getFullYear()}` });
+              autoTable(doc, {
+                startY: 48,
+                head: [["Élève", "Type", "Nature", "Demandé", "Accordé", "Statut"]],
+                body: demandes.map(d => [`${d.eleve.nom} ${d.eleve.prenom}`, d.type, d.nature, formatCurrency(d.montantDemande), formatCurrency(d.montantAccorde), STATUT_CONFIG[d.statut]?.label || d.statut]),
+                headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+                alternateRowStyles: { fillColor: [240, 244, 248] },
+                margin: { left: 10, right: 10 },
+                styles: { fontSize: 8 },
+              });
+              printPDF(doc);
+            }}>
+              <Printer className="h-3.5 w-3.5 mr-1" /> Imprimer
+            </Button>
+            <Dialog open={open} onOpenChange={setOpen}>
+              <DialogTrigger asChild>
+                <Button className="gradient-primary border-0"><Plus className="h-4 w-4 mr-1" /> Nouvelle demande</Button>
+              </DialogTrigger>
             <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
               <DialogHeader><DialogTitle>Enregistrer une demande d'aide sociale</DialogTitle></DialogHeader>
               <div className="space-y-4 pt-2">

@@ -2,9 +2,12 @@ import { motion } from "framer-motion";
 import { KpiCard } from "@/components/KpiCard";
 import { GaugeChart } from "@/components/GaugeChart";
 import { mockIndicators, formatCurrency, formatPercent } from "@/lib/mockData";
-import { Wallet, ArrowDownUp, Landmark, CalendarDays, TrendingUp, Receipt, BarChart3, Users } from "lucide-react";
+import { Wallet, ArrowDownUp, Landmark, CalendarDays, TrendingUp, Receipt, BarChart3, Users, Download, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
+import autoTable from "jspdf-autotable";
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ReferenceLine,
@@ -36,12 +39,44 @@ const barComparison = [
   { name: "Trésorerie", valeur: mockIndicators.tresorerie, seuil: 50000, fill: "hsl(var(--success))" },
 ];
 
+const exportIndicatorsPDF = (print = false) => {
+  const doc = createStyledPDF({ title: "Indicateurs financiers M9-6", subtitle: "Exercice 2023 — Indicateurs réglementaires" });
+  autoTable(doc, {
+    startY: 48,
+    head: [["Indicateur", "Valeur", "Formule"]],
+    body: indicators.map(i => [i.title, i.value, i.formula]),
+    headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [240, 244, 248] },
+    margin: { left: 14, right: 14 },
+  });
+  const y1 = (doc as any).lastAutoTable.finalY + 10;
+  autoTable(doc, {
+    startY: y1,
+    head: [["Indicateur", "Valeur", "Seuil", "Statut"]],
+    body: barComparison.map(b => [b.name, formatCurrency(b.valeur), formatCurrency(b.seuil), b.valeur >= b.seuil ? "✅ Conforme" : "⚠️ Sous seuil"]),
+    headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+    alternateRowStyles: { fillColor: [240, 244, 248] },
+    margin: { left: 14, right: 14 },
+  });
+  if (print) printPDF(doc); else savePDF(doc, `Indicateurs_M96_${new Date().toISOString().split("T")[0]}.pdf`);
+};
+
 const Indicators = () => {
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <h1 className="text-2xl font-bold font-display">Indicateurs financiers M9-6</h1>
-        <p className="text-sm text-muted-foreground mt-1">Indicateurs réglementaires — Exercice 2023</p>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold font-display">Indicateurs financiers M9-6</h1>
+          <p className="text-sm text-muted-foreground mt-1">Indicateurs réglementaires — Exercice 2023</p>
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => exportIndicatorsPDF(true)}>
+            <Printer className="h-4 w-4 mr-1" /> Imprimer
+          </Button>
+          <Button size="sm" className="gradient-primary border-0" onClick={() => exportIndicatorsPDF(false)}>
+            <Download className="h-4 w-4 mr-1" /> PDF
+          </Button>
+        </div>
       </motion.div>
 
       {/* Gauges row */}
