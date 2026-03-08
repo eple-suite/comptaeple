@@ -89,6 +89,103 @@ export const mockRepartitionCharges = [
   { name: "Investissement", value: 7.0, fill: "hsl(215, 25%, 60%)" },
 ];
 
+// ─── Données supplémentaires REPROFI ───
+
+// Confrontation subventions (sous condition d'emploi)
+export const mockConfrontationSubventions = [
+  { convention: "Bourse nationale", recettes: 315000, depenses: 312000, solde: 3000, statut: "ok" },
+  { convention: "Subvention Région fonct.", recettes: 165230, depenses: 158000, solde: 7230, statut: "ok" },
+  { convention: "Subvention Région invest.", recettes: 42000, depenses: 42000, solde: 0, statut: "ok" },
+  { convention: "Taxe d'apprentissage", recettes: 18500, depenses: 16200, solde: 2300, statut: "ok" },
+  { convention: "Subvention État (PRM)", recettes: 8700, depenses: 9100, solde: -400, statut: "attention" },
+  { convention: "Convention partenariat", recettes: 5000, depenses: 3200, solde: 1800, statut: "ok" },
+];
+
+// Reste à recouvrer (RAR)
+export const mockRAR = [
+  { nature: "Familles (411)", montant: 12500, exercice: "N", anciennete: "< 6 mois" },
+  { nature: "Familles (411)", montant: 3800, exercice: "N-1", anciennete: "6-12 mois" },
+  { nature: "Familles (411)", montant: 1200, exercice: "N-2", anciennete: "> 12 mois" },
+  { nature: "Collectivités (441)", montant: 45000, exercice: "N", anciennete: "< 3 mois" },
+  { nature: "État / bourses (443)", montant: 8700, exercice: "N", anciennete: "< 3 mois" },
+  { nature: "Créances douteuses (416)", montant: 3200, exercice: "N-2", anciennete: "> 12 mois" },
+];
+
+// Provisions
+export const mockProvisions = [
+  { compte: "151800", libelle: "Provisions pour risques", montantDebut: 5200, dotation: 2000, reprise: 0, montantFin: 7200 },
+  { compte: "158100", libelle: "Provisions pour charges (litiges)", montantDebut: 3500, dotation: 0, reprise: 3500, montantFin: 0 },
+  { compte: "491000", libelle: "Dépréciation créances douteuses", montantDebut: 2800, dotation: 1500, reprise: 800, montantFin: 3500 },
+];
+
+// Charges à payer / Produits à recevoir
+export const mockChargesAPayer = [
+  { compte: "408100", libelle: "Fournisseurs — Factures non parvenues", montant: 12300 },
+  { compte: "428600", libelle: "Personnel — Charges à payer", montant: 4500 },
+  { compte: "438600", libelle: "Organismes sociaux — Charges à payer", montant: 2100 },
+  { compte: "448600", libelle: "État — Charges à payer", montant: 1800 },
+];
+
+export const mockProduitsARecevoir = [
+  { compte: "418700", libelle: "Clients — Produits non encore facturés", montant: 8200 },
+  { compte: "448700", libelle: "État — Produits à recevoir", montant: 5100 },
+  { compte: "441870", libelle: "Collectivités — Produits à recevoir", montant: 3800 },
+];
+
+// Coût repas SRH détaillé
+export const mockCoutRepasSRH = {
+  nbRepasEleves: 142000,
+  nbRepasCommensaux: 18500,
+  nbRepasTotal: 160500,
+  chargesAlimentaires: 375000,
+  chargesPersonnel: 280000,
+  chargesFluides: 42000,
+  chargesEntretien: 15000,
+  totalChargesSRH: 712000,
+  recettesSRH: 842000,
+  coutDenreeParRepas: 2.34,
+  coutCompletParRepas: 4.44,
+  prixMoyenFacture: 5.25,
+  margeBrute: 842000 - 712000,
+};
+
+// Délais moyens de paiement / recouvrement
+export const mockDelais = {
+  delaiPaiementFournisseurs: 22, // jours
+  delaiRecouvrementCreances: 35, // jours
+  delaiPaiementN1: 28,
+  delaiRecouvrementN1: 42,
+};
+
+// Capacité d'investissement
+export const mockCapaciteInvestissement = {
+  cafNette: 22230,
+  remboursementEmprunts: 0,
+  capaciteInvestissement: 22230,
+  investissementsRealises: 183000,
+  investissementsFinancesSubventions: 162000,
+  investissementsAutofinances: 21000,
+};
+
+// Ratios de solvabilité
+export const mockSolvabilite = {
+  capitauxPropres: 1250000,
+  totalDettesLT: 0,
+  totalBilan: 2845000,
+  ratioEndettement: 0,
+  ratioSolvabiliteGenerale: 1250000 / 2845000 * 100,
+};
+
+// Analyse comptes de tiers
+export const mockComptesTiers = [
+  { compte: "411", libelle: "Familles", debit: 320000, credit: 307500, solde: 12500 },
+  { compte: "416", libelle: "Créances douteuses", debit: 3200, credit: 0, solde: 3200 },
+  { compte: "401", libelle: "Fournisseurs", debit: 1780000, credit: 1792300, solde: -12300 },
+  { compte: "421", libelle: "Personnel", debit: 712000, credit: 716500, solde: -4500 },
+  { compte: "441", libelle: "Collectivités", debit: 15000, credit: 60000, solde: -45000 },
+  { compte: "443", libelle: "État (bourses)", debit: 305000, credit: 313700, solde: -8700 },
+];
+
 export const formatCurrency = (value: number) =>
   new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(value);
 
