@@ -68,8 +68,8 @@ export function printPDF(doc: jsPDF) {
     try {
       iframe.contentWindow?.print();
     } catch {
-      // Fallback: download the file if print fails
-      savePDF(doc, `impression_${new Date().toISOString().split("T")[0]}.pdf`);
+      // Fallback: download the file directly (footers already added above)
+      doc.save(`impression_${new Date().toISOString().split("T")[0]}.pdf`);
     }
     setTimeout(() => {
       document.body.removeChild(iframe);

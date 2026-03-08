@@ -22,10 +22,13 @@ interface ImportResult {
 }
 
 const importTypes = [
-  { id: "balance", label: "Balance comptable", description: "Balance générale des comptes", icon: FileSpreadsheet },
-  { id: "budget", label: "Exécution budgétaire", description: "Données d'exécution budgétaire", icon: FileSpreadsheet },
-  { id: "immobilisations", label: "Immobilisations", description: "Inventaire des immobilisations", icon: FileSpreadsheet },
-  { id: "creances", label: "Créances & dettes", description: "État des créances et dettes", icon: FileSpreadsheet },
+  { id: "balance", label: "Balance comptable", description: "Balance générale des comptes (Op@le)", icon: FileSpreadsheet, category: "quotidien" },
+  { id: "budget", label: "Exécution budgétaire", description: "Données d'exécution budgétaire", icon: FileSpreadsheet, category: "quotidien" },
+  { id: "immobilisations", label: "Immobilisations", description: "Inventaire des immobilisations", icon: FileSpreadsheet, category: "quotidien" },
+  { id: "creances", label: "Créances & dettes", description: "État des créances et dettes", icon: FileSpreadsheet, category: "quotidien" },
+  { id: "situation_depenses", label: "Situation des dépenses", description: "Situation des dépenses Op@le (Compte financier)", icon: FileSpreadsheet, category: "compte_financier" },
+  { id: "situation_recettes", label: "Situation des recettes", description: "Situation des recettes Op@le (Compte financier)", icon: FileSpreadsheet, category: "compte_financier" },
+  { id: "balance_cf", label: "Balance (Compte financier)", description: "Balance comptable de clôture Op@le (Compte financier)", icon: FileSpreadsheet, category: "compte_financier" },
 ];
 
 const DataImport = () => {
@@ -113,14 +116,20 @@ const DataImport = () => {
         <p className="text-sm text-muted-foreground mt-1">Importez vos données comptables au format CSV ou Excel</p>
       </motion.div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-4 flex-wrap">
         <Select value={selectedType} onValueChange={setSelectedType}>
-          <SelectTrigger className="w-64"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-72"><SelectValue /></SelectTrigger>
           <SelectContent>
-            {importTypes.map((t) => (<SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>))}
+            <p className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Imports quotidiens</p>
+            {importTypes.filter(t => t.category === "quotidien").map((t) => (<SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>))}
+            <p className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-1">Compte financier (Op@le)</p>
+            {importTypes.filter(t => t.category === "compte_financier").map((t) => (<SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>))}
           </SelectContent>
         </Select>
         <Badge variant="outline" className="text-xs">Type : {importTypes.find((t) => t.id === selectedType)?.label}</Badge>
+        {importTypes.find(t => t.id === selectedType)?.category === "compte_financier" && (
+          <Badge className="bg-primary/10 text-primary border-0 text-xs">📊 Compte financier</Badge>
+        )}
       </div>
 
       <Card
