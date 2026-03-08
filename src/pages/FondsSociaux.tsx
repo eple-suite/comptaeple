@@ -23,6 +23,7 @@ import FondsSociauxBudget from "./fonds-sociaux/FondsSociauxBudget";
 import FondsSociauxCommissions from "./fonds-sociaux/FondsSociauxCommissions";
 import FondsSociauxDocuments from "./fonds-sociaux/FondsSociauxDocuments";
 import FondsSociauxStats from "./fonds-sociaux/FondsSociauxStats";
+import FondsSociauxProcedure from "./fonds-sociaux/FondsSociauxProcedure";
 
 const FondsSociaux = () => {
   const [demandes, setDemandes] = useState<DemandeAide[]>(mockDemandes);
@@ -255,6 +256,7 @@ const FondsSociaux = () => {
           <TabsTrigger value="dossiers">Dossiers ({filtered.length})</TabsTrigger>
           <TabsTrigger value="commissions">Commissions ({commissions.length})</TabsTrigger>
           <TabsTrigger value="budget">Suivi budgétaire</TabsTrigger>
+          <TabsTrigger value="procedure">📋 Procédure & Barème</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="statistiques">Statistiques</TabsTrigger>
         </TabsList>
@@ -381,6 +383,11 @@ const FondsSociaux = () => {
         {/* === BUDGET === */}
         <TabsContent value="budget" className="mt-4">
           <FondsSociauxBudget budgets={budgets} demandes={demandes} />
+        </TabsContent>
+
+        {/* === PROCEDURE === */}
+        <TabsContent value="procedure" className="mt-4">
+          <FondsSociauxProcedure demandes={demandes} />
         </TabsContent>
 
         {/* === DOCUMENTS === */}
