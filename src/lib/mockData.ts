@@ -17,6 +17,13 @@ export const mockDettes = {
   avancesCommensaux: 4200,     // Avances des commensaux
 };
 
+// Éléments de fragilité du FDR — à soustraire pour obtenir le FDR mobilisable
+export const mockFragiliteFDR = {
+  stocks: 33000,               // Classe 3 — Stocks
+  creancesAnciennes: 8200,     // Créances > 1 an (hors 416)
+  compte416: 3200,             // Compte 416000 — Créances douteuses
+};
+
 export const mockTresoreriePropreData = {
   tresorerieBrute: 167382,
   totalDettes: 45000 + 12300 + 18500 + 4200, // 80000

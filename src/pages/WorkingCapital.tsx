@@ -7,9 +7,10 @@ import {
   mockPrelevementFDR,
   mockDettes,
   mockTresoreriePropreData,
+  mockFragiliteFDR,
   formatCurrency,
 } from "@/lib/mockData";
-import { Wallet, ArrowDownUp, Landmark, ShieldCheck, Banknote, AlertTriangle, Download } from "lucide-react";
+import { Wallet, ArrowDownUp, Landmark, ShieldCheck, Banknote, AlertTriangle, Download, PackageMinus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -20,44 +21,62 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, ReferenceLine,
   PieChart as RPieChart, Pie, Cell,
 } from "recharts";
-
-const RADIAN = Math.PI / 180;
-const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, name, value, formatFn }: any) => {
-  const radius = outerRadius + 28;
-  const x = cx + radius * Math.cos(-midAngle * RADIAN);
-  const y = cy + radius * Math.sin(-midAngle * RADIAN);
-  return (
-    <text x={x} y={y} fill="hsl(215,25%,35%)" textAnchor={x > cx ? "start" : "end"} dominantBaseline="central" fontSize={11}>
-      {name}: {formatFn ? formatFn(value) : value}
-    </text>
-  );
-};
+import { generateWorkingCapitalPDF } from "@/lib/pdfWorkingCapital";
 
 const WorkingCapital = () => {
   const [montantPrelevement, setMontantPrelevement] = useState(mockPrelevementFDR.montantPrelevement);
   const [prelevementsAutorises, setPrelevementsAutorises] = useState(mockPrelevementFDR.prelevementsAutorises);
 
-  const fdrApres = mockIndicators.fdr - montantPrelevement;
+  // Éléments de fragilité
+  const totalFragilite = mockFragiliteFDR.stocks + mockFragiliteFDR.creancesAnciennes + mockFragiliteFDR.compte416;
+  const fdrMobilisable = mockIndicators.fdr - totalFragilite;
+
+  const fdrApres = fdrMobilisable - montantPrelevement;
   const chargeFonctionnementJour = mockIndicators.fdr / mockIndicators.joursFonctionnement;
   const joursApres = Math.round(fdrApres / chargeFonctionnementJour);
+  const joursMobilisable = Math.round(fdrMobilisable / chargeFonctionnementJour);
 
   // Trésorerie propre
   const totalDettes = mockDettes.subventions + mockDettes.reliquatsSubventions + mockDettes.avancesEleves + mockDettes.avancesCommensaux;
   const tresoreriePropre = mockIndicators.tresorerie - totalDettes;
 
-  // Pie data
+  // Pie data — basé sur FDR mobilisable
   const pieAvant = [
-    { name: "FDR mobilisable", value: mockIndicators.fdr, fill: "hsl(215, 70%, 45%)" },
+    { name: "FDR mobilisable", value: fdrMobilisable, fill: "hsl(215, 70%, 45%)" },
+    { name: "Fragilité", value: totalFragilite, fill: "hsl(280, 50%, 55%)" },
     { name: "BFR", value: mockIndicators.bfr, fill: "hsl(38, 92%, 50%)" },
   ];
 
   const pieApres = [
     { name: "FDR résiduel", value: Math.max(fdrApres, 0), fill: "hsl(160, 45%, 45%)" },
     { name: "Prélèvement", value: montantPrelevement, fill: "hsl(0, 70%, 55%)" },
+    { name: "Fragilité", value: totalFragilite, fill: "hsl(280, 50%, 55%)" },
     { name: "BFR", value: mockIndicators.bfr, fill: "hsl(38, 92%, 50%)" },
   ];
 
   const isPrelevementViable = joursApres >= 30;
+
+  const handlePrint = () => {
+    generateWorkingCapitalPDF({
+      fdr: mockIndicators.fdr,
+      bfr: mockIndicators.bfr,
+      tresorerie: mockIndicators.tresorerie,
+      joursFonctionnement: mockIndicators.joursFonctionnement,
+      tresoreriePropre,
+      totalDettes,
+      dettes: mockDettes,
+      fragiliteFDR: mockFragiliteFDR,
+      totalFragilite,
+      fdrMobilisable,
+      joursMobilisable,
+      montantPrelevement,
+      prelevementsAutorises,
+      fdrApres,
+      joursApres,
+      isPrelevementViable,
+      evolutionData: mockEvolutionData,
+    });
+  };
 
   return (
     <div className="space-y-6">
@@ -66,15 +85,58 @@ const WorkingCapital = () => {
           <h1 className="text-2xl font-bold font-display">Fonds de roulement</h1>
           <p className="text-sm text-muted-foreground mt-1">Analyse FDR / BFR / Trésorerie / Autonomie financière — Exercice 2023</p>
         </div>
+        <Button size="sm" onClick={handlePrint} className="gradient-primary border-0">
+          <Download className="h-4 w-4 mr-1" /> Imprimer PDF
+        </Button>
       </motion.div>
 
       {/* KPIs principaux */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard title="FDR" value={formatCurrency(mockIndicators.fdr)} trend={3.3} icon={Wallet} variant="primary" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <KpiCard title="FDR brut" value={formatCurrency(mockIndicators.fdr)} trend={3.3} icon={Wallet} variant="primary" />
+        <KpiCard title="FDR mobilisable" value={formatCurrency(fdrMobilisable)} subtitle={`${joursMobilisable} jours`} icon={PackageMinus} variant="success" />
         <KpiCard title="BFR" value={formatCurrency(mockIndicators.bfr)} trend={4.6} icon={ArrowDownUp} variant="warning" />
         <KpiCard title="Trésorerie nette" value={formatCurrency(mockIndicators.tresorerie)} trend={2.7} icon={Landmark} variant="success" />
         <KpiCard title="Trésorerie propre" value={formatCurrency(tresoreriePropre)} subtitle="Autonomie financière" icon={ShieldCheck} variant={tresoreriePropre > 0 ? "success" : "warning"} />
       </div>
+
+      {/* FDR mobilisable — détail */}
+      <Card className="shadow-card border-l-4 border-l-purple-500">
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold">FDR mobilisable (utilisé pour le Conseil d'Administration)</CardTitle>
+            <Badge variant="secondary" className="text-xs">Base de décision</Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-xs text-muted-foreground mb-4">
+            FDR mobilisable = FDR brut − Stocks − Créances anciennes − Compte 416000 (créances douteuses)
+          </p>
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-3 text-center">
+            <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">FDR brut</p>
+              <p className="text-lg font-bold text-primary">{formatCurrency(mockIndicators.fdr)}</p>
+            </div>
+            <div className="flex items-center justify-center text-xl text-muted-foreground font-bold">−</div>
+            <div className="bg-purple-50 dark:bg-purple-950/20 rounded-lg p-3 border border-purple-200 dark:border-purple-800">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">Éléments de fragilité</p>
+              <p className="text-lg font-bold text-purple-600">{formatCurrency(totalFragilite)}</p>
+              <div className="text-[9px] text-muted-foreground mt-1 space-y-0.5">
+                <p>Stocks : {formatCurrency(mockFragiliteFDR.stocks)}</p>
+                <p>Créances anciennes : {formatCurrency(mockFragiliteFDR.creancesAnciennes)}</p>
+                <p>Cpt 416000 : {formatCurrency(mockFragiliteFDR.compte416)}</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-center text-xl text-muted-foreground font-bold">=</div>
+            <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3 border border-green-200 dark:border-green-800 col-span-2 md:col-span-2">
+              <p className="text-[10px] text-muted-foreground uppercase tracking-wide">FDR mobilisable</p>
+              <p className={`text-xl font-bold ${fdrMobilisable > 0 ? "text-green-600" : "text-destructive"}`}>
+                {formatCurrency(fdrMobilisable)}
+              </p>
+              <p className="text-[9px] text-muted-foreground mt-1">{joursMobilisable} jours de fonctionnement</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Autonomie financière — détail */}
       <Card className="shadow-card border-l-4 border-l-primary">
@@ -142,7 +204,7 @@ const WorkingCapital = () => {
         </CardContent>
       </Card>
 
-      {/* ═══════════════ ANALYSE DU PRÉLÈVEMENT — Modèle Académie de Marseille ═══════════════ */}
+      {/* ═══════════════ ANALYSE DU PRÉLÈVEMENT ═══════════════ */}
       <Card className="shadow-card border-2 border-primary/20">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
@@ -152,7 +214,7 @@ const WorkingCapital = () => {
                 Analyse du prélèvement sur Fonds de Roulement
               </CardTitle>
               <p className="text-xs text-muted-foreground mt-1">
-                Modèle rectorat — Document d'aide à la décision pour autorisation de prélèvement
+                Base : FDR mobilisable ({formatCurrency(fdrMobilisable)}) — Document d'aide à la décision pour le CA
               </p>
             </div>
             <Badge variant="outline" className="text-xs">Exercice 2023</Badge>
@@ -188,8 +250,8 @@ const WorkingCapital = () => {
           {/* Récapitulatif */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-center">
             <div className="bg-primary/5 rounded-lg p-3 border border-primary/10">
-              <p className="text-[10px] text-muted-foreground uppercase">FDR initial</p>
-              <p className="text-lg font-bold text-primary">{formatCurrency(mockIndicators.fdr)}</p>
+              <p className="text-[10px] text-muted-foreground uppercase">FDR mobilisable</p>
+              <p className="text-lg font-bold text-primary">{formatCurrency(fdrMobilisable)}</p>
             </div>
             <div className="bg-destructive/5 rounded-lg p-3 border border-destructive/10">
               <p className="text-[10px] text-muted-foreground uppercase">Prélèvement demandé</p>
@@ -222,61 +284,36 @@ const WorkingCapital = () => {
 
           <Separator />
 
-          {/* Double camembert — Modèle Marseille */}
+          {/* Double camembert */}
           <div>
             <h3 className="text-sm font-semibold mb-4 text-center">
               Représentation graphique — Avant / Après prélèvement
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Avant */}
               <div className="text-center">
                 <Badge variant="outline" className="mb-2 text-xs">AVANT prélèvement</Badge>
                 <ResponsiveContainer width="100%" height={280}>
                   <RPieChart>
-                    <Pie
-                      data={pieAvant}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={90}
-                      paddingAngle={3}
-                      dataKey="value"
-                      label={({ name, value }) => `${name}\n${formatCurrency(value)}`}
-                      labelLine
-                    >
-                      {pieAvant.map((entry, i) => (
-                        <Cell key={i} fill={entry.fill} />
-                      ))}
+                    <Pie data={pieAvant} cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={3} dataKey="value"
+                      label={({ name, value }) => `${name}\n${formatCurrency(value)}`} labelLine>
+                      {pieAvant.map((entry, i) => (<Cell key={i} fill={entry.fill} />))}
                     </Pie>
                     <Tooltip formatter={(v: number) => formatCurrency(v)} />
                   </RPieChart>
                 </ResponsiveContainer>
                 <p className="text-xs text-muted-foreground mt-1">
-                  FDR : {formatCurrency(mockIndicators.fdr)} — {mockIndicators.joursFonctionnement} jours
+                  FDR mobilisable : {formatCurrency(fdrMobilisable)} — {joursMobilisable} jours
                 </p>
               </div>
-
-              {/* Après */}
               <div className="text-center">
                 <Badge variant={isPrelevementViable ? "default" : "destructive"} className="mb-2 text-xs">
                   APRÈS prélèvement
                 </Badge>
                 <ResponsiveContainer width="100%" height={280}>
                   <RPieChart>
-                    <Pie
-                      data={pieApres}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={90}
-                      paddingAngle={3}
-                      dataKey="value"
-                      label={({ name, value }) => `${name}\n${formatCurrency(value)}`}
-                      labelLine
-                    >
-                      {pieApres.map((entry, i) => (
-                        <Cell key={i} fill={entry.fill} />
-                      ))}
+                    <Pie data={pieApres} cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={3} dataKey="value"
+                      label={({ name, value }) => `${name}\n${formatCurrency(value)}`} labelLine>
+                      {pieApres.map((entry, i) => (<Cell key={i} fill={entry.fill} />))}
                     </Pie>
                     <Tooltip formatter={(v: number) => formatCurrency(v)} />
                   </RPieChart>
@@ -290,7 +327,7 @@ const WorkingCapital = () => {
 
           <Separator />
 
-          {/* Avis / Diagnostic automatique */}
+          {/* Avis */}
           <div className={`p-4 rounded-lg border-l-4 ${isPrelevementViable ? "border-l-green-500 bg-green-50 dark:bg-green-950/20" : "border-l-destructive bg-destructive/5"}`}>
             <h4 className="text-sm font-bold mb-2">
               {isPrelevementViable ? "✅ Avis favorable" : "⚠️ Avis réservé"}
@@ -298,13 +335,13 @@ const WorkingCapital = () => {
             <div className="text-sm text-muted-foreground space-y-1">
               {isPrelevementViable ? (
                 <>
-                  <p>Le prélèvement de <strong className="text-foreground">{formatCurrency(montantPrelevement)}</strong> laisse un FDR résiduel de <strong className="text-foreground">{formatCurrency(fdrApres)}</strong> couvrant <strong className="text-foreground">{joursApres} jours</strong> de fonctionnement (seuil minimal : 30 jours).</p>
-                  <p>La trésorerie propre de l'établissement s'élève à <strong className="text-foreground">{formatCurrency(tresoreriePropre)}</strong>, confirmant une autonomie financière suffisante.</p>
+                  <p>Le prélèvement de <strong className="text-foreground">{formatCurrency(montantPrelevement)}</strong> sur le FDR mobilisable de <strong className="text-foreground">{formatCurrency(fdrMobilisable)}</strong> laisse un FDR résiduel de <strong className="text-foreground">{formatCurrency(fdrApres)}</strong> couvrant <strong className="text-foreground">{joursApres} jours</strong> de fonctionnement (seuil minimal : 30 jours).</p>
+                  <p>La trésorerie propre s'élève à <strong className="text-foreground">{formatCurrency(tresoreriePropre)}</strong>, confirmant une autonomie financière suffisante.</p>
                 </>
               ) : (
                 <>
-                  <p>Le prélèvement de <strong className="text-foreground">{formatCurrency(montantPrelevement)}</strong> ramènerait le FDR à <strong className="text-destructive">{formatCurrency(fdrApres)}</strong>, soit seulement <strong className="text-destructive">{joursApres} jours</strong> de fonctionnement (en-dessous du seuil de 30 jours).</p>
-                  <p>Il est recommandé de <strong>réduire le montant du prélèvement</strong> ou de <strong>différer l'opération</strong> afin de préserver l'équilibre financier.</p>
+                  <p>Le prélèvement de <strong className="text-foreground">{formatCurrency(montantPrelevement)}</strong> ramènerait le FDR mobilisable à <strong className="text-destructive">{formatCurrency(fdrApres)}</strong>, soit seulement <strong className="text-destructive">{joursApres} jours</strong> de fonctionnement (en-dessous du seuil de 30 jours).</p>
+                  <p>Il est recommandé de <strong>réduire le montant du prélèvement</strong> ou de <strong>différer l'opération</strong>.</p>
                 </>
               )}
             </div>
@@ -340,7 +377,8 @@ const WorkingCapital = () => {
           <CardTitle className="text-sm font-semibold">Diagnostic global</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>✅ Le fonds de roulement est <strong className="text-foreground">positif</strong> à {formatCurrency(mockIndicators.fdr)}, couvrant <strong className="text-foreground">{mockIndicators.joursFonctionnement} jours</strong> de fonctionnement.</p>
+          <p>✅ Le fonds de roulement brut est <strong className="text-foreground">positif</strong> à {formatCurrency(mockIndicators.fdr)}, couvrant <strong className="text-foreground">{mockIndicators.joursFonctionnement} jours</strong> de fonctionnement.</p>
+          <p>📊 Après déduction des éléments de fragilité ({formatCurrency(totalFragilite)}), le <strong className="text-foreground">FDR mobilisable</strong> s'établit à <strong className="text-foreground">{formatCurrency(fdrMobilisable)}</strong> ({joursMobilisable} jours).</p>
           <p>✅ La trésorerie nette est positive à {formatCurrency(mockIndicators.tresorerie)}.</p>
           <p>{tresoreriePropre > 0 ? "✅" : "⚠️"} La trésorerie propre (autonomie financière) est de <strong className="text-foreground">{formatCurrency(tresoreriePropre)}</strong> après déduction des dettes ({formatCurrency(totalDettes)}).</p>
           <p>⚠️ Le BFR progresse de +4.6%, surveiller l'évolution des créances sur usagers.</p>
