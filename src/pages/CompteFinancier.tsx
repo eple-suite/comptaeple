@@ -28,11 +28,13 @@ import {
 } from "recharts";
 import { createStyledPDF, savePDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { GaugeChart } from "@/components/GaugeChart";
 import { WaterfallChart } from "@/components/WaterfallChart";
 import { BalanceScale } from "@/components/BalanceScale";
 import { ThermometerChart } from "@/components/ThermometerChart";
 import { HistoricalDataPanel, defaultCurrentYear, defaultHistoricalData, type YearlyFinancialData } from "@/components/HistoricalDataPanel";
+import { AccountingAnnexPanel } from "@/components/AccountingAnnexPanel";
 
 /* ─────────── Calculs M9-6 ─────────── */
 const totalFragilite = mockFragiliteFDR.stocks + mockFragiliteFDR.creancesAnciennes + mockFragiliteFDR.compte416;
