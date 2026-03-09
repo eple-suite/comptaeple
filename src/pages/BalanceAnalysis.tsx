@@ -133,6 +133,9 @@ const BalanceAnalysis = () => {
   const anomaliesCount = enrichedDetailed.filter(c => c.anomalie !== "normal").length;
   const critiquesCount = enrichedDetailed.filter(c => c.anomalie === "critique").length;
 
+  // Validation réglementaire automatique
+  const validationAlertes = useMemo(() => validerBalance(detailedAccounts), []);
+
   // Sources de financement
   const sourcesData = useMemo(() => {
     const sources = classifierParSource(detailedAccounts.filter(a => {
