@@ -39,6 +39,7 @@ const PROCESSUS_CIC = [
   "P6 — Paie (conventions)",
   "P7 — Comptes de tiers",
   "P8 — États financiers",
+  "P9 — Bourses & Aides sociales",
 ];
 
 const FREQUENCE_LABELS: Record<string, string> = {
@@ -76,6 +77,12 @@ const mockControles: PointControle[] = [
   { id: "c10", processus: "P7 — Comptes de tiers", action: "Lettrage des comptes fournisseurs (401)", frequence: "mensuel", responsable: "Fondé de pouvoir", statut: "conforme", dateControle: "2026-02-28", observation: "Lettrage effectué. 2 écarts mineurs identifiés et régularisés.", risque: "faible" },
   { id: "c11", processus: "P8 — États financiers", action: "Contrôle de la balance générale (équilibre)", frequence: "mensuel", responsable: "Agent comptable", statut: "conforme", dateControle: "2026-02-28", observation: "Balance équilibrée.", risque: "faible" },
   { id: "c12", processus: "P3 — Trésorerie", action: "Suivi du respect du plan de trésorerie", frequence: "mensuel", responsable: "Agent comptable", statut: "conforme", dateControle: "2026-02-28", observation: "Trésorerie conforme aux prévisions.", risque: "moyen" },
+  { id: "c13", processus: "P9 — Bourses & Aides sociales", action: "Contrôle du circuit 44311 → 468100 → 4112/4113 (bourses)", frequence: "trimestriel", responsable: "Agent comptable", statut: "conforme", dateControle: "2026-02-28", observation: "Circuit conforme. Solde 44311 créditeur de 8 700 €, 468100 soldé.", risque: "critique" },
+  { id: "c14", processus: "P9 — Bourses & Aides sociales", action: "Rapprochement notifications rectorat / prises en charge bourses", frequence: "trimestriel", responsable: "Fondé de pouvoir", statut: "conforme", dateControle: "2026-01-15", observation: "Montants conformes aux notifications DSDEN.", risque: "eleve" },
+  { id: "c15", processus: "P9 — Bourses & Aides sociales", action: "Vérification distinction État (4438) / fonds propres — fonds sociaux", frequence: "trimestriel", responsable: "Agent comptable", statut: "en_cours", dateControle: "", observation: "Contrôle prévu pour mars.", risque: "eleve" },
+  { id: "c16", processus: "P2 — Dépenses", action: "Contrôle distinction comptes État (4411/7411) / Collectivité (4412/74121)", frequence: "mensuel", responsable: "Agent comptable", statut: "conforme", dateControle: "2026-02-28", observation: "Aucune confusion détectée. Imputations conformes aux notifications.", risque: "critique" },
+  { id: "c17", processus: "P1 — Recettes", action: "Suivi des créances > 4 ans — vérification prescription", frequence: "trimestriel", responsable: "Agent comptable", statut: "anomalie", dateControle: "2026-01-15", observation: "3 créances proches de la prescription 4 ans. SATD à émettre d'urgence.", risque: "critique" },
+  { id: "c18", processus: "P5 — Patrimoine / Inventaire", action: "Contrôle amortissements ≤ valeur brute immobilisations (28 ≤ 21)", frequence: "annuel", responsable: "Agent comptable", statut: "conforme", dateControle: "2025-12-31", observation: "Amort. 120 000 € ≤ Immo brutes 820 000 €. Conforme.", risque: "moyen" },
 ];
 
 const ControleInterne = () => {
