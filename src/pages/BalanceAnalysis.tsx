@@ -134,7 +134,7 @@ const BalanceAnalysis = () => {
   const critiquesCount = enrichedDetailed.filter(c => c.anomalie === "critique").length;
 
   // Validation réglementaire automatique
-  const validationAlertes = useMemo(() => validerBalance(detailedAccounts), []);
+  const validationAlertes = useMemo(() => validerBalance(detailedAccounts.map(a => ({ ...a, libelle: a.label }))), []);
 
   // Sources de financement
   const sourcesData = useMemo(() => {
