@@ -63,7 +63,10 @@ const Voyages = () => {
     }).filter(c => c.niveau !== "ok").length;
   }, [voyagesActifs]);
 
-  const handleAdd = () => {
+  // Évaluation des seuils marchés publics (Code de la commande publique)
+  const alertesMarchesPublics = useMemo(() => evaluerSeuilsMarchesVoyages(voyagesActifs), [voyagesActifs]);
+  const alertesMPCritiques = alertesMarchesPublics.filter(a => a.alerte);
+
     const budget = Number(form.budgetTotal);
     const familles = Number(form.participationFamilles);
     const subvColl = Number(form.subventionCollectivite) || 0;
