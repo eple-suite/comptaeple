@@ -1,5 +1,6 @@
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Wallet, TrendingUp, Landmark, CalendarDays, BarChart3, PieChart, Receipt, Users, Download } from "lucide-react";
+import { Wallet, TrendingUp, Landmark, CalendarDays, BarChart3, PieChart, Receipt, Users, Download, AlertTriangle, CheckCircle2, ShieldAlert, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateFinancialReport } from "@/lib/pdfGenerator";
 import { KpiCard } from "@/components/KpiCard";
@@ -11,6 +12,10 @@ import {
   formatCurrency,
   formatPercent,
 } from "@/lib/mockData";
+import { validerBalance, REGLES_VALIDATION, ENQUETES_RECTORALES, OUTILS_AC } from "@/lib/regulatoryKnowledge";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   BarChart,
   Bar,
@@ -28,7 +33,37 @@ import {
 } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+// Données de validation comptable (depuis la balance détaillée)
+const detailedForValidation = [
+  { numero: "102", libelle: "Dotation", debit: 0, credit: 850000, solde: -850000 },
+  { numero: "106", libelle: "Réserves", debit: 0, credit: 185000, solde: -185000 },
+  { numero: "515", libelle: "Compte au Trésor", debit: 575000, credit: 416580, solde: 158420 },
+  { numero: "531", libelle: "Caisse", debit: 5000, credit: 2650, solde: 2350 },
+  { numero: "4411", libelle: "Subventions État", debit: 165230, credit: 165230, solde: 0 },
+  { numero: "4412", libelle: "Collectivité — Subventions", debit: 0, credit: 0, solde: 0 },
+  { numero: "44311", libelle: "Bourses — Crédit à répartir", debit: 305000, credit: 313700, solde: -8700 },
+  { numero: "4112", libelle: "Familles — DP", debit: 245000, credit: 237500, solde: 7500 },
+  { numero: "416", libelle: "Créances douteuses", debit: 3200, credit: 0, solde: 3200 },
+];
+
 const Dashboard = () => {
+  const alertes = useMemo(() => validerBalance(detailedForValidation), []);
+  const alertesBloquantes = alertes.filter(a => a.gravite === "bloquant");
+  const alertesMajeures = alertes.filter(a => a.gravite === "majeur");
+
+  // Prochaines enquêtes rectorales
+  const now = new Date();
+  const moisActuel = now.getMonth(); // 0-11
+  const prochaines = ENQUETES_RECTORALES.filter(e => {
+    const moisMap: Record<string, number[]> = {
+      "Février-Mars": [1, 2], "Janvier": [0], "Octobre et Mars": [2, 9],
+      "Annuelle (janvier)": [0], "Annuelle (mars)": [2], "Juillet et Décembre": [6, 11],
+    };
+    const mois = moisMap[e.periode];
+    if (!mois) return true; // trimestrielles → toujours afficher
+    return mois.some(m => Math.abs(m - moisActuel) <= 1 || Math.abs(m - moisActuel) >= 11);
+  }).slice(0, 3);
+
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between">
@@ -40,6 +75,43 @@ const Dashboard = () => {
           <Download className="h-4 w-4 mr-1" /> Rapport PDF
         </Button>
       </motion.div>
+
+      {/* Alertes comptables automatiques */}
+      {alertesBloquantes.length > 0 && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>{alertesBloquantes.length} alerte{alertesBloquantes.length > 1 ? "s" : ""} bloquante{alertesBloquantes.length > 1 ? "s" : ""}</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-4 mt-1 space-y-0.5 text-xs">
+              {alertesBloquantes.map(a => (
+                <li key={a.id}><strong>{a.titre}</strong> — {a.message}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {alertesMajeures.length > 0 && (
+        <Alert className="border-warning/50 bg-warning/5">
+          <ShieldAlert className="h-4 w-4 text-warning" />
+          <AlertTitle className="text-warning">{alertesMajeures.length} point{alertesMajeures.length > 1 ? "s" : ""} d'attention</AlertTitle>
+          <AlertDescription>
+            <ul className="list-disc pl-4 mt-1 space-y-0.5 text-xs">
+              {alertesMajeures.map(a => (
+                <li key={a.id}><strong>{a.titre}</strong> — {a.action}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {alertes.length === 0 && (
+        <Alert className="border-success/50 bg-success/5">
+          <CheckCircle2 className="h-4 w-4 text-success" />
+          <AlertTitle className="text-success">Validation comptable OK</AlertTitle>
+          <AlertDescription className="text-xs">Aucune anomalie détectée sur la balance — le compte financier est conforme.</AlertDescription>
+        </Alert>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
