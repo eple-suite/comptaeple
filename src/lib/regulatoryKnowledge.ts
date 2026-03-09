@@ -591,7 +591,7 @@ export function evaluerSeuilsMarchesVoyages(
     } else if (montantHT >= 40000) {
       seuilAtteint = "MAPA simplifié";
       procedureRequise = "3 devis comparatifs minimum";
-      alerte = montantHT >= 35000; // alerte préventive à partir de 35k
+      alerte = true; // seuil MAPA 3 devis atteint
     }
 
     return { categorie: cat, montantCumuleHT: Math.round(montantHT), seuilAtteint, procedureRequise, alerte };

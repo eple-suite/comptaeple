@@ -80,8 +80,9 @@ const detailedAccounts = [
   { numero: "4113", label: "Familles — Internes", debit: 75000, credit: 70000, solde: 5000 },
   { numero: "416", label: "Créances douteuses", debit: 3200, credit: 0, solde: 3200 },
   { numero: "421", label: "Personnel — Rémunérations dues", debit: 712000, credit: 716500, solde: -4500 },
-  { numero: "4411", label: "Région — Subvention fonctionnement", debit: 165230, credit: 165230, solde: 0 },
-  { numero: "4412", label: "Département — Subvention fonctionnement", debit: 0, credit: 0, solde: 0 },
+  { numero: "4411", label: "État — Subventions à recevoir", debit: 165230, credit: 165230, solde: 0 },
+  { numero: "4412", label: "Collectivité de rattachement — Subventions à recevoir", debit: 0, credit: 0, solde: 0 },
+  { numero: "441220", label: "DGF — Dotation globale fonctionnement", debit: 0, credit: 0, solde: 0 },
   { numero: "44311", label: "Bourses nationales — Crédit à répartir", debit: 305000, credit: 313700, solde: -8700 },
   { numero: "44312", label: "Bourses nationales — Part familles", debit: 2500, credit: 1800, solde: 700 },
   { numero: "4438", label: "Fonds sociaux État", debit: 8200, credit: 12000, solde: -3800 },
@@ -102,9 +103,9 @@ const detailedAccounts = [
   // Classe 7
   { numero: "70622", label: "Demi-pension — Élèves", debit: 0, credit: 542000, solde: -542000 },
   { numero: "70623", label: "Internat — Élèves", debit: 0, credit: 185000, solde: -185000 },
-  { numero: "7411", label: "Subventions — Région", debit: 0, credit: 465230, solde: -465230 },
-  { numero: "7412", label: "Subventions — Département", debit: 0, credit: 42000, solde: -42000 },
-  { numero: "744", label: "Subventions — État", debit: 15000, credit: 612000, solde: -597000 },
+  { numero: "7411", label: "Subventions État — Fonctionnement", debit: 0, credit: 612000, solde: -612000 },
+  { numero: "74121", label: "Subventions Région — Fonctionnement", debit: 0, credit: 465230, solde: -465230 },
+  { numero: "74122", label: "Subventions Département — Fonctionnement", debit: 0, credit: 42000, solde: -42000 },
   { numero: "78", label: "Reprises amort./provisions", debit: 0, credit: 9000, solde: -9000 },
 ];
 
