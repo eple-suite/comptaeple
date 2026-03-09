@@ -67,6 +67,7 @@ const Voyages = () => {
   const alertesMarchesPublics = useMemo(() => evaluerSeuilsMarchesVoyages(voyagesActifs), [voyagesActifs]);
   const alertesMPCritiques = alertesMarchesPublics.filter(a => a.alerte);
 
+  const handleAdd = () => {
     const budget = Number(form.budgetTotal);
     const familles = Number(form.participationFamilles);
     const subvColl = Number(form.subventionCollectivite) || 0;
