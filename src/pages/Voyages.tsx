@@ -292,6 +292,47 @@ const Voyages = () => {
             </Card>
           )}
 
+          {/* Cumul marchés publics par catégorie (Code de la commande publique) */}
+          {alertesMarchesPublics.length > 0 && (
+            <Card className="shadow-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 text-primary" />
+                  Cumul annuel par catégorie — Seuils marchés publics (CCP 2026)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Catégorie</TableHead>
+                      <TableHead className="text-right">Cumul HT estimé</TableHead>
+                      <TableHead>Seuil atteint</TableHead>
+                      <TableHead>Procédure requise</TableHead>
+                      <TableHead className="text-center">Alerte</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {alertesMarchesPublics.map(a => (
+                      <TableRow key={a.categorie} className={a.alerte ? "bg-destructive/5" : ""}>
+                        <TableCell className="font-medium text-xs">{a.categorie}</TableCell>
+                        <TableCell className="text-right text-xs">{formatCurrency(a.montantCumuleHT)}</TableCell>
+                        <TableCell><Badge variant={a.alerte ? "destructive" : "secondary"} className="text-[10px]">{a.seuilAtteint}</Badge></TableCell>
+                        <TableCell className="text-xs">{a.procedureRequise}</TableCell>
+                        <TableCell className="text-center">
+                          {a.alerte ? <AlertTriangle className="h-4 w-4 text-destructive mx-auto" /> : <CheckCircle2 className="h-4 w-4 text-success mx-auto" />}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  ⚠️ Les seuils s'apprécient par catégorie homogène de prestations sur l'année civile (art. R2122-8 CCP). Montants HT estimés (TVA 20%).
+                </p>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Liste des voyages avec workflow */}
           <Card className="shadow-card">
             <CardHeader className="pb-2">
