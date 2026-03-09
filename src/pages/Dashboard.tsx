@@ -31,7 +31,6 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 // Données de validation comptable (depuis la balance détaillée)
 const detailedForValidation = [
