@@ -5,6 +5,10 @@ import {
   NOMENCLATURE_M96, trouverCompte, detecterAnomalie, trouverInterconnexions,
   classifierParSource, comptesSubventions, type CompteM96, type SensAnomalie 
 } from "@/lib/m96nomenclature";
+import {
+  validerBalance, SOLDES_ANORMAUX, COMPTES_COLLECTIVITE, COMPTES_ETAT,
+  CIRCUIT_BOURSES, REGLES_VALIDATION, type AlerteComptable,
+} from "@/lib/regulatoryKnowledge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -128,6 +132,9 @@ const BalanceAnalysis = () => {
 
   const anomaliesCount = enrichedDetailed.filter(c => c.anomalie !== "normal").length;
   const critiquesCount = enrichedDetailed.filter(c => c.anomalie === "critique").length;
+
+  // Validation réglementaire automatique
+  const validationAlertes = useMemo(() => validerBalance(detailedAccounts.map(a => ({ ...a, libelle: a.label }))), []);
 
   // Sources de financement
   const sourcesData = useMemo(() => {
@@ -354,7 +361,51 @@ const BalanceAnalysis = () => {
         </Card>
       </div>
 
-      {/* Tabs */}
+      {/* Panneau de validation réglementaire */}
+      {validationAlertes.length > 0 && (
+        <Card className="shadow-card border-warning/40">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 text-warning" />
+              Validation réglementaire automatique — {validationAlertes.length} alerte{validationAlertes.length > 1 ? "s" : ""}
+              <span className="text-[10px] font-normal text-muted-foreground ml-2">
+                M9-6 • Décret 2012-1246 • Circuit bourses • Distinction État/Collectivité
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {validationAlertes.filter(a => a.gravite === "bloquant").map(a => (
+              <div key={a.id} className="flex items-start gap-2 p-2 rounded bg-destructive/5 border border-destructive/20">
+                <AlertTriangle className="h-3.5 w-3.5 text-destructive mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-destructive">{a.titre}</p>
+                  <p className="text-[10px] text-muted-foreground">{a.message}</p>
+                  <p className="text-[10px] text-foreground mt-0.5">→ {a.action}</p>
+                </div>
+              </div>
+            ))}
+            {validationAlertes.filter(a => a.gravite === "majeur").map(a => (
+              <div key={a.id} className="flex items-start gap-2 p-2 rounded bg-warning/5 border border-warning/20">
+                <Info className="h-3.5 w-3.5 text-warning mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold text-warning">{a.titre}</p>
+                  <p className="text-[10px] text-muted-foreground">{a.message}</p>
+                  <p className="text-[10px] text-foreground mt-0.5">→ {a.action}</p>
+                </div>
+              </div>
+            ))}
+            {validationAlertes.filter(a => a.gravite === "info").map(a => (
+              <div key={a.id} className="flex items-start gap-2 p-2 rounded bg-primary/5 border border-primary/20">
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold">{a.titre}</p>
+                  <p className="text-[10px] text-muted-foreground">{a.message}</p>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="vue-globale" className="gap-1 text-xs"><BarChart className="h-3 w-3" />Vue globale</TabsTrigger>

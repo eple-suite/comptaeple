@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Bus, Plus, Users, Euro, CalendarDays, MapPin, Trash2, Edit, Eye, ShieldAlert, FileText, Download, ChevronRight, Clock, CheckCircle2, XCircle, Landmark, Gift, Printer } from "lucide-react";
+import { Bus, Plus, Users, Euro, CalendarDays, MapPin, Trash2, Edit, Eye, ShieldAlert, FileText, Download, ChevronRight, Clock, CheckCircle2, XCircle, Landmark, Gift, Printer, AlertTriangle } from "lucide-react";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/mockData";
 import { KpiCard } from "@/components/KpiCard";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { evaluerSeuilsMarchesVoyages, SEUILS_MARCHES_PUBLICS } from "@/lib/regulatoryKnowledge";
 import { Voyage, initialVoyages, STATUT_CONFIG, SEUILS, CATEGORIES_PRESTATIONS, CHECKLIST_DEFAUT, getRecommandation } from "./voyages/types";
 import { VoyageElevesTab } from "./voyages/VoyageElevesTab";
 import { VoyageMarchesTab } from "./voyages/VoyageMarchesTab";
@@ -60,6 +62,10 @@ const Voyages = () => {
       return getRecommandation(total, cat.label, formatCurrency);
     }).filter(c => c.niveau !== "ok").length;
   }, [voyagesActifs]);
+
+  // Évaluation des seuils marchés publics (Code de la commande publique)
+  const alertesMarchesPublics = useMemo(() => evaluerSeuilsMarchesVoyages(voyagesActifs), [voyagesActifs]);
+  const alertesMPCritiques = alertesMarchesPublics.filter(a => a.alerte);
 
   const handleAdd = () => {
     const budget = Number(form.budgetTotal);
@@ -282,6 +288,47 @@ const Voyages = () => {
                   </div>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Cumul marchés publics par catégorie (Code de la commande publique) */}
+          {alertesMarchesPublics.length > 0 && (
+            <Card className="shadow-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 text-primary" />
+                  Cumul annuel par catégorie — Seuils marchés publics (CCP 2026)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Catégorie</TableHead>
+                      <TableHead className="text-right">Cumul HT estimé</TableHead>
+                      <TableHead>Seuil atteint</TableHead>
+                      <TableHead>Procédure requise</TableHead>
+                      <TableHead className="text-center">Alerte</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {alertesMarchesPublics.map(a => (
+                      <TableRow key={a.categorie} className={a.alerte ? "bg-destructive/5" : ""}>
+                        <TableCell className="font-medium text-xs">{a.categorie}</TableCell>
+                        <TableCell className="text-right text-xs">{formatCurrency(a.montantCumuleHT)}</TableCell>
+                        <TableCell><Badge variant={a.alerte ? "destructive" : "secondary"} className="text-[10px]">{a.seuilAtteint}</Badge></TableCell>
+                        <TableCell className="text-xs">{a.procedureRequise}</TableCell>
+                        <TableCell className="text-center">
+                          {a.alerte ? <AlertTriangle className="h-4 w-4 text-destructive mx-auto" /> : <CheckCircle2 className="h-4 w-4 text-success mx-auto" />}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <p className="text-[10px] text-muted-foreground mt-2">
+                  ⚠️ Les seuils s'apprécient par catégorie homogène de prestations sur l'année civile (art. R2122-8 CCP). Montants HT estimés (TVA 20%).
+                </p>
               </CardContent>
             </Card>
           )}
