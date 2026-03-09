@@ -5,6 +5,10 @@ import {
   NOMENCLATURE_M96, trouverCompte, detecterAnomalie, trouverInterconnexions,
   classifierParSource, comptesSubventions, type CompteM96, type SensAnomalie 
 } from "@/lib/m96nomenclature";
+import {
+  validerBalance, SOLDES_ANORMAUX, COMPTES_COLLECTIVITE, COMPTES_ETAT,
+  CIRCUIT_BOURSES, REGLES_VALIDATION, type AlerteComptable,
+} from "@/lib/regulatoryKnowledge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";

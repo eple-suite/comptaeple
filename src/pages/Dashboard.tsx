@@ -235,6 +235,47 @@ const Dashboard = () => {
           </ResponsiveContainer>
         </CardContent>
       </Card>
+
+      {/* Enquêtes rectorales à venir */}
+      {prochaines.length > 0 && (
+        <Card className="shadow-card">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Info className="h-4 w-4 text-primary" />
+              Enquêtes rectorales à venir
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {prochaines.map((e, i) => (
+                <div key={i} className="p-3 rounded-lg border bg-muted/30">
+                  <p className="text-xs font-semibold">{e.nom}</p>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">{e.periode} — {e.destinataire}</p>
+                  <p className="text-[10px] mt-1">{e.description.slice(0, 100)}...</p>
+                  {e.obligatoire && <Badge variant="outline" className="mt-1 text-[9px]">Obligatoire</Badge>}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Outils de l'agent comptable */}
+      <Card className="shadow-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold">Outils de référence AC</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap gap-2">
+            {OUTILS_AC.map(o => (
+              <Badge key={o.nom} variant="outline" className="text-xs py-1 px-2.5">
+                {o.nom}
+                <span className="ml-1 text-[9px] text-muted-foreground">— {o.description.slice(0, 40)}...</span>
+              </Badge>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
