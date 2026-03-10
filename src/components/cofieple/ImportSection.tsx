@@ -259,6 +259,7 @@ function ImportBox({ slot, loaded, stat, error, securityBlock, onFile }: {
   const inputRef = useRef<HTMLInputElement>(null);
   return (
     <label className={`relative block border-2 border-dashed rounded-xl p-4 cursor-pointer transition-all group ${
+      securityBlock ? 'border-destructive bg-destructive/5 border-solid' :
       error ? 'border-destructive bg-destructive/5' :
       loaded ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/10 border-solid' :
       'border-border bg-muted/30 hover:border-primary hover:bg-primary/5'
@@ -266,7 +267,10 @@ function ImportBox({ slot, loaded, stat, error, securityBlock, onFile }: {
       <input ref={inputRef} type="file" accept=".csv,.txt" className="hidden" onChange={onFile} />
       <div className="flex items-start gap-3">
         <span className="text-2xl shrink-0">
-          {error ? <XCircle className="h-6 w-6 text-destructive" /> : loaded ? <CheckCircle2 className="h-6 w-6 text-emerald-600" /> : <Upload className="h-6 w-6 text-muted-foreground" />}
+          {securityBlock ? <ShieldAlert className="h-6 w-6 text-destructive" /> :
+           error ? <XCircle className="h-6 w-6 text-destructive" /> :
+           loaded ? <CheckCircle2 className="h-6 w-6 text-emerald-600" /> :
+           <Upload className="h-6 w-6 text-muted-foreground" />}
         </span>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-0.5">
@@ -274,13 +278,18 @@ function ImportBox({ slot, loaded, stat, error, securityBlock, onFile }: {
             {!slot.obligatoire && <span className="text-xs text-muted-foreground italic">optionnel</span>}
           </div>
           <div className="text-xs text-muted-foreground mb-2">{slot.sublabel}</div>
+          {securityBlock && (
+            <div className="text-xs text-destructive font-semibold bg-destructive/10 rounded p-2 mb-1">
+              {securityBlock}
+            </div>
+          )}
           {loaded && stat && <div className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold truncate">{stat.rows} lignes — {stat.name}</div>}
           {error && <div className="text-xs text-destructive font-semibold">{error}</div>}
-          {!loaded && !error && <div className="text-xs text-muted-foreground italic">Cliquer pour charger</div>}
+          {!loaded && !error && !securityBlock && <div className="text-xs text-muted-foreground italic">Cliquer pour charger</div>}
           <div className="mt-2 text-xs text-muted-foreground"><strong>Colonnes :</strong> {slot.colonnes}</div>
         </div>
       </div>
-      {loaded && (
+      {(loaded || securityBlock) && (
         <button type="button" className="absolute top-2 right-2 text-muted-foreground hover:text-destructive"
           onClick={e => { e.preventDefault(); e.stopPropagation(); inputRef.current?.click(); }} title="Remplacer">
           <RefreshCw className="h-3 w-3" />
