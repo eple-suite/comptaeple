@@ -1,0 +1,248 @@
+// ═══════════════════════════════════════════════════════════════
+// COFIEPLE — Section Accueil (identification UAI + budgets annexes)
+// Réglementation : Code Éducation Art. L421-1, L423-1 (GRETA),
+//                  Code du travail Art. L6232-1 (CFA)
+// ═══════════════════════════════════════════════════════════════
+
+import { useState, useRef } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Search, Building2, Plus, X, ArrowRight, Loader2, Info } from 'lucide-react';
+import { useCofiepleStore } from '@/store/useCofiepleStore';
+import { rechercherParUAI, validerFormatUAI } from '@/lib/cofieple_uaiApi';
+import type { EtablissementUI } from '@/lib/cofieple_storeTypes';
+
+export function AccueilSection() {
+  const etab = useCofiepleStore(s => s.etablissement);
+  const setEtablissement = useCofiepleStore(s => s.setEtablissement);
+  const addBudgetAnnexe = useCofiepleStore(s => s.addBudgetAnnexe);
+  const removeBudgetAnnexe = useCofiepleStore(s => s.removeBudgetAnnexe);
+  const budgets = useCofiepleStore(s => s.budgets);
+  const uaiLoading = useCofiepleStore(s => s.uaiLoading);
+  const uaiError = useCofiepleStore(s => s.uaiError);
+  const setUAILoading = useCofiepleStore(s => s.setUAILoading);
+  const setUAIError = useCofiepleStore(s => s.setUAIError);
+  const setActiveTab = useCofiepleStore(s => s.setActiveTab);
+
+  const [uaiInput, setUaiInput] = useState(etab.uai || '');
+  const [uaiFeedback, setUaiFeedback] = useState<'found' | 'notfound' | null>(null);
+
+  async function handleUAILookup() {
+    const uai = uaiInput.trim().toUpperCase();
+    if (!uai) return;
+    if (!validerFormatUAI(uai)) {
+      setUAIError('Format invalide. Le code UAI doit comporter 7 chiffres + 1 lettre (ex : 9710746J)');
+      return;
+    }
+    setUAILoading(true);
+    setUAIError(null);
+    setUaiFeedback(null);
+    try {
+      const result = await rechercherParUAI(uai);
+      if (result) {
+        setEtablissement({
+          ...result,
+          exercice: etab.exercice || result.departement ? etab.exercice : new Date().getFullYear() - 1,
+        } as Partial<EtablissementUI>);
+        setUaiInput(uai);
+        setUaiFeedback('found');
+      } else {
+        setUaiFeedback('notfound');
+        setUAIError(`Aucun établissement trouvé pour le code UAI "${uai}"`);
+      }
+    } catch (e: any) {
+      setUAIError(e.message || 'Erreur lors de la recherche');
+    } finally {
+      setUAILoading(false);
+    }
+  }
+
+  const hasBA_GRETA = budgets.some(b => b.type === 'annexe_greta');
+  const hasBA_CFA = budgets.some(b => b.type === 'annexe_cfa');
+
+  return (
+    <div className="space-y-5">
+      {/* Bandeau réglementaire */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="p-4 flex items-start gap-3">
+          <Info className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+          <div className="text-xs text-foreground">
+            <strong>COFIEPLE</strong> — Outil d'analyse du compte financier EPLE. Importez les extractions Op@le
+            (SDE, SDR, Balance) pour obtenir la check-list de cohérence M9-6, les rapports de l'ordonnateur et
+            de l'agent comptable, et le diaporama du conseil d'administration.
+            Prise en charge des <strong>budgets annexes GRETA</strong> et <strong>CFA</strong> (Art. L423-1
+            Code Éducation — M9-6 2026 Titre 3).
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Lookup UAI */}
+      <Card>
+        <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg">
+          <CardTitle className="text-white text-sm flex items-center gap-2">
+            <Search className="h-4 w-4" />
+            Identification de l'établissement
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 space-y-4">
+          <div className="flex gap-3">
+            <div className="flex-1">
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider">Code UAI / RNE</Label>
+              <div className="flex mt-1.5">
+                <Input
+                  value={uaiInput}
+                  onChange={e => setUaiInput(e.target.value.toUpperCase())}
+                  onKeyDown={e => e.key === 'Enter' && handleUAILookup()}
+                  placeholder="Ex : 9710746J"
+                  maxLength={10}
+                  className={`rounded-r-none font-mono font-semibold ${
+                    uaiFeedback === 'found' ? 'border-emerald-400 bg-emerald-50' :
+                    uaiFeedback === 'notfound' ? 'border-destructive bg-destructive/5' : ''
+                  }`}
+                />
+                <Button onClick={handleUAILookup} disabled={uaiLoading || !uaiInput.trim()} className="rounded-l-none">
+                  {uaiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  <span className="ml-2">{uaiLoading ? 'Recherche…' : 'Rechercher'}</span>
+                </Button>
+              </div>
+              {uaiFeedback === 'found' && (
+                <p className="text-emerald-700 text-xs mt-1.5 font-semibold">
+                  ✅ Établissement trouvé — données chargées depuis l'Annuaire Éducation
+                </p>
+              )}
+              {uaiError && <p className="text-destructive text-xs mt-1.5">{uaiError}</p>}
+              <p className="text-muted-foreground text-xs mt-1">Source : data.education.gouv.fr</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <FormField label="Nom de l'établissement" value={etab.nom} onChange={v => setEtablissement({ nom: v })} />
+            <div>
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider">Type</Label>
+              <Select value={etab.type} onValueChange={v => setEtablissement({ type: v })}>
+                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="lycee">Lycée</SelectItem>
+                  <SelectItem value="lycee_pro">Lycée professionnel</SelectItem>
+                  <SelectItem value="legt">LEGT</SelectItem>
+                  <SelectItem value="college">Collège</SelectItem>
+                  <SelectItem value="erea">EREA</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <FormField label="Exercice" value={String(etab.exercice)} onChange={v => setEtablissement({ exercice: parseInt(v) || 2025 })} type="number" />
+            <FormField label="Date d'arrêté" value={etab.dateArrete} onChange={v => setEtablissement({ dateArrete: v })} type="date" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <FormField label="Ordonnateur" value={etab.ordonnateur} onChange={v => setEtablissement({ ordonnateur: v })} placeholder="Prénom NOM" />
+            <FormField label="Agent comptable" value={etab.agentComptable} onChange={v => setEtablissement({ agentComptable: v })} placeholder="Prénom NOM" />
+            <FormField label="Académie" value={etab.academie} onChange={v => setEtablissement({ academie: v })} />
+          </div>
+
+          <Button onClick={() => setActiveTab('import')} className="mt-2">
+            <ArrowRight className="h-4 w-4 mr-2" />
+            Passer aux imports CSV
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Budgets annexes */}
+      <Card>
+        <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg">
+          <CardTitle className="text-white text-sm flex items-center gap-2">
+            <Building2 className="h-4 w-4" />
+            Budgets annexes (GRETA · CFA)
+            <Badge variant="outline" className="ml-auto text-warning border-warning/50 text-xs">
+              Art. L423-1 Code Éducation — M9-6 2026 Titre 3
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 space-y-4">
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Si l'établissement est support d'un <strong>GRETA</strong> (Art. L423-1 Code de l'Éducation) ou d'un{' '}
+            <strong>CFA</strong> (Art. L6232-1 Code du travail), activez le budget annexe correspondant pour
+            obtenir une <strong>consolidation automatique</strong> avec élimination des flux internes (compte 185).
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {!hasBA_GRETA ? (
+              <Button variant="outline" className="border-dashed border-2 border-primary/30" onClick={() => addBudgetAnnexe({ type: 'annexe_greta', libelle: 'GRETA' })}>
+                <Plus className="h-4 w-4 mr-2" /> Budget annexe GRETA
+              </Button>
+            ) : (
+              <Card className="border-primary/30 bg-primary/5 min-w-[280px]">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <Badge className="bg-primary text-primary-foreground">GRETA ACTIVÉ</Badge>
+                      <p className="text-sm font-semibold mt-1">Formation Continue</p>
+                      <p className="text-xs text-muted-foreground">Art. L423-1 Code de l'Éducation</p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => removeBudgetAnnexe('annexe_greta')}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            {!hasBA_CFA ? (
+              <Button variant="outline" className="border-dashed border-2 border-purple-300" onClick={() => addBudgetAnnexe({ type: 'annexe_cfa', libelle: 'CFA' })}>
+                <Plus className="h-4 w-4 mr-2" /> Budget annexe CFA
+              </Button>
+            ) : (
+              <Card className="border-purple-300 bg-purple-50 dark:bg-purple-900/10 min-w-[280px]">
+                <CardContent className="p-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <Badge className="bg-purple-600 text-white">CFA ACTIVÉ</Badge>
+                      <p className="text-sm font-semibold mt-1">Apprentissage</p>
+                      <p className="text-xs text-muted-foreground">Art. L6232-1 Code du travail</p>
+                    </div>
+                    <Button variant="ghost" size="icon" onClick={() => removeBudgetAnnexe('annexe_cfa')}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Références réglementaires */}
+      <Card>
+        <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg">
+          <CardTitle className="text-white text-sm">📖 Références réglementaires</CardTitle>
+        </CardHeader>
+        <CardContent className="p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { titre: 'M9-6 — 2026', desc: 'Instruction codificatrice du 12 février 2026 — Comptabilité des EPLE (5e édition)', color: 'primary' },
+            { titre: 'Décret 2012-1246', desc: 'Règlement général sur la comptabilité publique (RGCP) du 7 novembre 2012', color: 'muted' },
+            { titre: 'Code de l\'Éducation', desc: 'Art. L421-1 à L421-26 (EPLE) — Art. L423-1 (GRETA)', color: 'success' },
+            { titre: 'Code du travail', desc: 'Art. L6232-1 et suivants — CFA — Loi n°2018-771 Avenir Pro', color: 'warning' },
+          ].map(r => (
+            <div key={r.titre} className="rounded-lg border p-4 bg-muted/30">
+              <div className="font-bold text-sm mb-1">{r.titre}</div>
+              <div className="text-xs text-muted-foreground leading-relaxed">{r.desc}</div>
+            </div>
+          ))}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function FormField({ label, value, onChange, placeholder = '', type = 'text' }: {
+  label: string; value: string; onChange: (v: string) => void; placeholder?: string; type?: string;
+}) {
+  return (
+    <div>
+      <Label className="text-xs text-muted-foreground uppercase tracking-wider">{label}</Label>
+      <Input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="mt-1.5" />
+    </div>
+  );
+}
