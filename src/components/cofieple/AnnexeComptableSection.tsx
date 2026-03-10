@@ -51,11 +51,13 @@ interface AuditAnomaly {
   id: string;
   compte: string;
   intitule: string;
-  type: 'solde_atypique' | 'amort_manquant' | 'coherence' | 'provision_absente';
+  type: 'solde_atypique' | 'amort_manquant' | 'coherence' | 'provision_absente' | 'amort_28_68' | 'anciennete_cl4' | 'unite_caisse';
   severity: 'bloquant' | 'anomalie';
   description: string;
   refM96: string;
   justification: string;
+  annexeTarget?: keyof AnnexeTexts; // Section de l'annexe où injecter la justification
+  drilldownPrefix?: string; // Préfixe pour le drill-down Grand Livre
 }
 
 // ── Onglets « Preuve & Contrôle » ────────────────────────────
