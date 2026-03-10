@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 // COFIEPLE — Page Compte Financier (sous-menu Outils Métiers)
-// 13 onglets : Accueil, Import, Check-list, Superviseur,
+// 14 onglets : Accueil, Import, Check-list, Superviseur,
 // Synthèse, Tableaux, Contrôles, Pluriannuel, Indicateurs,
-// Budget Annexe, Rapport Ordo, Rapport AC, Diaporama
+// Budget Annexe, Rapport Ordo, Rapport AC, Annexe, Diaporama
 // Conformité : M9-6 2026 · Décret 2012-1246 · Code Éducation
 // ═══════════════════════════════════════════════════════════════
 
@@ -19,10 +19,11 @@ import { ProgressStepper } from '@/components/cofieple/ProgressStepper';
 import { DashboardOnePage } from '@/components/cofieple/DashboardOnePage';
 import { IndicateursHorsComptables } from '@/components/cofieple/IndicateursHorsComptables';
 import { PluriannuelSection } from '@/components/cofieple/PluriannuelSection';
+import { AnnexeComptableSection } from '@/components/cofieple/AnnexeComptableSection';
 import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
-  History, PenTool
+  History, PenTool, BookOpen
 } from 'lucide-react';
 
 interface NavItem {
@@ -62,6 +63,7 @@ const CompteFinancier = () => {
     { id: 'budget_annexe', label: 'BA', icon: <Building2 className="h-4 w-4" />, badge: hasBA ? 'BA' : undefined, badgeType: 'info' },
     { id: 'rapport_ordo', label: 'Rpt Ordo', icon: <FileText className="h-4 w-4" />, requiresData: true },
     { id: 'rapport_ac', label: 'Rpt AC', icon: <Shield className="h-4 w-4" />, requiresData: true },
+    { id: 'annexe', label: 'Annexe', icon: <BookOpen className="h-4 w-4" />, requiresData: true },
     { id: 'diaporama', label: 'Diaporama', icon: <Monitor className="h-4 w-4" />, requiresData: true },
   ];
 
@@ -86,6 +88,7 @@ const CompteFinancier = () => {
       case 'budget_annexe': return <BudgetAnnexeSection />;
       case 'rapport_ordo': return <RapportOrdoSection />;
       case 'rapport_ac': return <RapportACSection />;
+      case 'annexe': return <AnnexeComptableSection />;
       case 'diaporama': return <DiaporamaSection />;
       default: return <AccueilSection />;
     }
