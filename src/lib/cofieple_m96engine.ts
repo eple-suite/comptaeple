@@ -9,7 +9,7 @@ import type {
   LigneSDE, LigneSDR, LigneBalance, ResultatsM96,
   ServiceData, VerificationM96, CompteBalance,
   SensNormal, StatutVerification, ResultatsBudgetAnnexe, AnomalieBA
-} from '../types';
+} from './cofieple_types';
 
 const EPS = 0.02;
 
