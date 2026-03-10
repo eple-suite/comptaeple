@@ -146,14 +146,16 @@ export type OngletId =
   | 'rapport_ordo' | 'rapport_ac' | 'diaporama';
 
 export interface UAIRecord {
-  identifiant_de_l_uai: string;
+  identifiant_de_l_etablissement: string;
   nom_etablissement: string;
   type_etablissement: string;
   libelle_nature: string;
   adresse_1?: string; adresse_2?: string;
   code_postal: string; nom_commune: string;
   libelle_academie: string;
-  libelle_region_academique: string;
-  nom_departement: string;
+  libelle_region_academique?: string;
+  libelle_region?: string;
+  nom_departement?: string;
+  libelle_departement?: string;
   telephone?: string;
 }
