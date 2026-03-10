@@ -88,6 +88,7 @@ const CompteFinancier = () => {
       case 'budget_annexe': return <BudgetAnnexeSection />;
       case 'rapport_ordo': return <RapportOrdoSection />;
       case 'rapport_ac': return <RapportACSection />;
+      case 'annexe': return <AnnexeComptableSection />;
       case 'diaporama': return <DiaporamaSection />;
       default: return <AccueilSection />;
     }
