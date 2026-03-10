@@ -876,21 +876,42 @@ export function AnnexeComptableSection() {
           ))}
         </TabsList>
 
-        {/* ═══ TAB 0: AUTO-AUDIT ═══ */}
+        {/* ═══ TAB 0: AUTO-AUDIT (Pré-validation) ═══ */}
         <TabsContent value="autoAudit" className="space-y-5 mt-0">
           <Card className={`border-2 ${canGenerateAnnexe ? 'border-emerald-500/30' : 'border-destructive/30'}`}>
             <CardHeader className="py-3 bg-muted/10">
               <CardTitle className="text-sm flex items-center gap-2">
                 <ShieldAlert className="h-5 w-5 text-primary" />
-                Scanner Auto-Audit — Contrôle de cohérence pré-annexe
-                <Badge variant="outline" className="ml-auto text-[10px]">M9-6 § V.3</Badge>
+                Pré-validation Audit — Contrôle de gestion avant annexe
+                <Badge variant="outline" className="ml-auto text-[10px]">M9-6 § V.3 · RGCP 2012-1246</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
               <p className="text-xs text-muted-foreground">
-                Le système analyse la balance pour détecter les anomalies de solde, les ruptures de cohérence et les obligations comptables non remplies.
-                <strong className="text-foreground"> Les anomalies bloquantes doivent être justifiées</strong> avant toute génération de l'annexe.
+                Algorithme de détection : cohérence amortissements (28/68), ancienneté des créances (411/416), unité de caisse (515), provisions, cohérence FDR.
+                <strong className="text-foreground"> Les alertes 🔴 bloquantes nécessitent une justification obligatoire.</strong> Les alertes 🟠 doivent être documentées.
               </p>
+
+              {/* Résumé par type */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { label: 'Amort. 28/68', type: 'amort_28_68', icon: '🔴' },
+                  { label: 'Ancienneté Cl.4', type: 'anciennete_cl4', icon: '🟠' },
+                  { label: 'Unité caisse', type: 'unite_caisse', icon: '🔴' },
+                  { label: 'Autres', type: '_other', icon: '⚡' },
+                ].map(cat => {
+                  const count = cat.type === '_other'
+                    ? auditAnomalies.filter(a => !['amort_28_68', 'anciennete_cl4', 'unite_caisse'].includes(a.type)).length
+                    : auditAnomalies.filter(a => a.type === cat.type).length;
+                  return (
+                    <div key={cat.type} className="bg-muted/20 rounded-lg p-2.5 border border-border/50 text-center">
+                      <div className="text-lg">{count > 0 ? cat.icon : '✅'}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{cat.label}</div>
+                      <div className="font-bold font-mono text-sm">{count}</div>
+                    </div>
+                  );
+                })}
+              </div>
 
               {auditAnomalies.length === 0 && (
                 <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-6 text-center">
@@ -900,7 +921,7 @@ export function AnnexeComptableSection() {
                 </div>
               )}
 
-              {auditAnomalies.map((anomaly, idx) => (
+              {auditAnomalies.map((anomaly) => (
                 <div key={anomaly.id} className={`rounded-lg border p-4 space-y-3 ${
                   anomaly.severity === 'bloquant'
                     ? 'border-destructive/40 bg-destructive/5'
@@ -919,41 +940,81 @@ export function AnnexeComptableSection() {
                         <Badge variant="outline" className={`text-[10px] font-bold ${
                           anomaly.severity === 'bloquant' ? 'border-destructive text-destructive' : 'border-warning text-warning'
                         }`}>
-                          {anomaly.severity === 'bloquant' ? 'BLOQUANT' : 'ANOMALIE'}
+                          {anomaly.severity === 'bloquant' ? '🔴 BLOQUANT' : '🟠 ANOMALIE'}
                         </Badge>
                         <span className="font-mono text-xs font-bold text-foreground">{anomaly.compte}</span>
                         <span className="text-xs text-muted-foreground">{anomaly.intitule}</span>
                         <Badge variant="outline" className="text-[9px] ml-auto">{anomaly.refM96}</Badge>
                       </div>
                       <p className="text-xs text-foreground mt-1 leading-relaxed">{anomaly.description}</p>
+
+                      {/* Action buttons: drilldown + inject */}
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {anomaly.drilldownPrefix && (
+                          <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1 px-2"
+                            onClick={() => setAuditDrilldown(auditDrilldown === anomaly.drilldownPrefix ? null : anomaly.drilldownPrefix!)}>
+                            <Search className="h-3 w-3" />
+                            {auditDrilldown === anomaly.drilldownPrefix ? 'Masquer le Grand Livre' : `Voir Grand Livre ${anomaly.drilldownPrefix}*`}
+                          </Button>
+                        )}
+                        {anomaly.annexeTarget && anomaly.justification.trim() && (
+                          <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1 px-2"
+                            onClick={() => {
+                              const target = anomaly.annexeTarget!;
+                              const sectionLabel = SECTION_META[target]?.label || target;
+                              const prefix = `\n\n**Observation du comptable — ${anomaly.compte} :**\n`;
+                              setTexts(prev => ({
+                                ...prev,
+                                [target]: (prev[target] || '') + prefix + anomaly.justification + '\n',
+                              }));
+                              toast.success(`Justification insérée dans « ${sectionLabel} »`);
+                            }}>
+                            <ArrowRight className="h-3 w-3" />
+                            Insérer dans l'annexe ({SECTION_META[anomaly.annexeTarget]?.label.substring(0, 25) || anomaly.annexeTarget})
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {anomaly.severity === 'bloquant' && (
-                    <div className="ml-8">
-                      <Label className="text-xs font-bold text-foreground flex items-center gap-1.5 mb-1">
-                        <FileText className="h-3 w-3" />
-                        Observations du comptable sur les soldes atypiques
-                        <span className="text-destructive">*</span>
-                      </Label>
-                      <Textarea
-                        value={anomaly.justification}
-                        onChange={e => {
-                          const val = e.target.value;
-                          setAuditAnomalies(prev => prev.map(a =>
-                            a.id === anomaly.id ? { ...a, justification: val } : a
-                          ));
-                        }}
-                        placeholder="Justification obligatoire — Expliquez la cause de cette anomalie et les mesures prises ou prévues…"
-                        className="text-xs min-h-[60px] bg-background"
-                      />
-                      {!anomaly.justification.trim() && (
-                        <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
-                          <Lock className="h-3 w-3" /> Justification obligatoire pour débloquer la génération de l'annexe
-                        </p>
-                      )}
+                  {/* Drilldown: Grand Livre lines for this anomaly */}
+                  {anomaly.drilldownPrefix && auditDrilldown === anomaly.drilldownPrefix && (
+                    <div className="ml-8 mt-2">
+                      <DrilldownTable comptes={getComptesForPrefix(anomaly.drilldownPrefix)} prefix={anomaly.drilldownPrefix} />
                     </div>
                   )}
+
+                  {/* Justification field */}
+                  <div className="ml-8">
+                    <Label className="text-xs font-bold text-foreground flex items-center gap-1.5 mb-1">
+                      <FileText className="h-3 w-3" />
+                      {anomaly.severity === 'bloquant' ? 'Observations du comptable sur les soldes atypiques' : 'Justification (recommandée)'}
+                      {anomaly.severity === 'bloquant' && <span className="text-destructive">*</span>}
+                    </Label>
+                    <Textarea
+                      value={anomaly.justification}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setAuditAnomalies(prev => prev.map(a =>
+                          a.id === anomaly.id ? { ...a, justification: val } : a
+                        ));
+                      }}
+                      placeholder={anomaly.severity === 'bloquant'
+                        ? 'Justification obligatoire — Expliquez la cause de cette anomalie et les mesures prises…'
+                        : 'Facultatif — Documentez cette observation pour le dossier…'}
+                      className="text-xs min-h-[60px] bg-background"
+                    />
+                    {anomaly.severity === 'bloquant' && !anomaly.justification.trim() && (
+                      <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
+                        <Lock className="h-3 w-3" /> Justification obligatoire pour débloquer la génération de l'annexe
+                      </p>
+                    )}
+                    {anomaly.justification.trim() && anomaly.annexeTarget && (
+                      <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                        <ArrowRight className="h-3 w-3" /> Cliquez « Insérer dans l'annexe » pour transférer cette observation dans la section {SECTION_META[anomaly.annexeTarget]?.label || ''}
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))}
 
