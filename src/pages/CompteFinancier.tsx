@@ -72,6 +72,7 @@ const CompteFinancier = () => {
       case 'superviseur': return <SuperviseurSection />;
       case 'synthese': return <SyntheseSection />;
       case 'tableaux': return <TableauxSection />;
+      case 'controles': return <AuditControlesSection />;
       case 'budget_annexe': return <BudgetAnnexeSection />;
       case 'rapport_ordo': return <RapportOrdoSection />;
       case 'rapport_ac': return <RapportACSection />;
