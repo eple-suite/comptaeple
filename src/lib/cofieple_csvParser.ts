@@ -212,8 +212,8 @@ export async function lookupUAI(uai: string): Promise<Partial<Etablissement> | n
     codePostal: rec.code_postal || '',
     commune: rec.nom_commune || '',
     academie: `Académie de ${rec.libelle_academie || ''}`,
-    region: `Région académique ${rec.libelle_region_academique || ''}`,
-    departement: rec.nom_departement || '',
+    region: `Région académique ${rec.libelle_region || rec.libelle_region_academique || ''}`,
+    departement: rec.libelle_departement || rec.nom_departement || '',
     telephone: rec.telephone || '',
   };
 }
