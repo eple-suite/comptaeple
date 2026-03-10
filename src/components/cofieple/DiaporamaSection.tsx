@@ -13,6 +13,7 @@ import { ChevronLeft, ChevronRight, Printer } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState } from './SharedComponents';
+import { GammaPromptSection } from './GammaPromptSection';
 
 export function DiaporamaSection() {
   const etab = useCofiepleStore(s => s.etablissement);
