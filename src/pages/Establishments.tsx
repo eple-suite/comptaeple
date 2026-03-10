@@ -219,8 +219,8 @@ const Establishments = () => {
                     maxLength={6}
                     className="font-mono"
                   />
-                  <p className="text-xs text-muted-foreground">
-                    Ce numéro sera utilisé pour valider les documents Op@le importés.
+                   <p className="text-xs text-destructive/80 font-medium">
+                    ⚠️ Obligatoire — Ce code apparaît dans les en-têtes des exports CSV d'Op@le. Il sert de verrou de sécurité pour l'import des fichiers financiers.
                   </p>
                 </motion.div>
               )}
