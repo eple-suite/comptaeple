@@ -1,20 +1,61 @@
 // ═══════════════════════════════════════════════════════════════
 // COFIEPLE — Rapport Ordonnateur + Rapport Agent Comptable
-// Génération IA via Lovable AI (Gemini 2.5 Flash)
+// Génération IA via Lovable AI — Pré-rempli avec indicateurs
+// hors-comptables (effectifs, boursiers, SRH)
 // Conformité stricte : M9-6 2026, Décret 2012-1246 (RGCP),
 // Code de l'Éducation Art. R421-68 et suivants
 // ═══════════════════════════════════════════════════════════════
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Bot, Printer, Loader2, FileText } from 'lucide-react';
+import { Bot, Printer, Loader2, Users, Utensils } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
 import { supabase } from '@/integrations/supabase/client';
+
+interface Indicators {
+  effectif_eleves: number;
+  effectif_dp: number;
+  effectif_internes: number;
+  effectif_externes: number;
+  effectif_boursiers: number;
+  effectif_personnel: number;
+  montant_fonds_social: number;
+  nb_repas_servis: number;
+  nb_repas_commensaux: number;
+  cout_denrees_repas: number;
+  etp_ressources_propres: number;
+  surface_batiments: number;
+}
+
+function useExtraIndicators() {
+  const etab = useCofiepleStore(s => s.etablissement);
+  const [ind, setInd] = useState<Indicators | null>(null);
+
+  useEffect(() => {
+    if (!etab.uai) return;
+    (async () => {
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        if (!session.session) return;
+        const { data } = await supabase
+          .from('cofieple_extra_indicators')
+          .select('effectif_eleves,effectif_dp,effectif_internes,effectif_externes,effectif_boursiers,effectif_personnel,montant_fonds_social,nb_repas_servis,nb_repas_commensaux,cout_denrees_repas,etp_ressources_propres,surface_batiments')
+          .eq('uai', etab.uai)
+          .eq('exercice', etab.exercice)
+          .eq('user_id', session.session.user.id)
+          .maybeSingle();
+        if (data) setInd(data as Indicators);
+      } catch {}
+    })();
+  }, [etab.uai, etab.exercice]);
+
+  return ind;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // RAPPORT DE L'ORDONNATEUR
@@ -25,6 +66,7 @@ export function RapportOrdoSection() {
   const resultats = useCofiepleStore(s => s.resultats);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
   const R = resultats[activeBudget];
+  const ind = useExtraIndicators();
 
   const [aiText1, setAiText1] = useState('');
   const [aiText3, setAiText3] = useState('');
@@ -33,6 +75,7 @@ export function RapportOrdoSection() {
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'ordonnateur (M9-6 § V.1)." />;
 
   const dateArrete = etab.dateArrete ? new Date(etab.dateArrete).toLocaleDateString('fr-FR') : '—';
+  const tauxBoursiers = ind && ind.effectif_eleves > 0 ? ((ind.effectif_boursiers / ind.effectif_eleves) * 100).toFixed(1) : null;
 
   async function genererIA() {
     setAiLoading(true);
@@ -53,6 +96,7 @@ export function RapportOrdoSection() {
             tauxExecCharges: R.tauxExecCharges,
             tauxExecProduits: R.tauxExecProduits,
           },
+          indicateurs: ind,
         },
       });
       if (error) throw error;
@@ -99,6 +143,19 @@ export function RapportOrdoSection() {
           </p>
 
           <SectionTitre numero="1" title="Présentation de l'établissement" />
+          {/* Indicateurs hors-comptables pré-remplis */}
+          {ind && ind.effectif_eleves > 0 && (
+            <div className="mb-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <IndicatorBadge icon="🎓" label="Élèves" value={`${ind.effectif_eleves}`} />
+              <IndicatorBadge icon="🍽️" label="DP" value={`${ind.effectif_dp}`} />
+              <IndicatorBadge icon="🛏️" label="Internes" value={`${ind.effectif_internes}`} />
+              <IndicatorBadge icon="📚" label="Boursiers" value={`${ind.effectif_boursiers} (${tauxBoursiers} %)`} />
+              {ind.nb_repas_servis > 0 && <IndicatorBadge icon="🍴" label="Repas/an" value={`${ind.nb_repas_servis.toLocaleString('fr-FR')}`} />}
+              {ind.effectif_personnel > 0 && <IndicatorBadge icon="👥" label="Personnel" value={`${ind.effectif_personnel} ETP`} />}
+              {ind.etp_ressources_propres > 0 && <IndicatorBadge icon="💼" label="ETP ress. propres" value={`${ind.etp_ressources_propres}`} />}
+              {ind.surface_batiments > 0 && <IndicatorBadge icon="🏢" label="Surface" value={`${ind.surface_batiments.toLocaleString('fr-FR')} m²`} />}
+            </div>
+          )}
           <Textarea value={aiText1} onChange={e => setAiText1(e.target.value)}
             placeholder="Cliquez sur 'Générer le texte IA' ou saisissez votre texte ici…" rows={4}
             className="mb-4 bg-muted/30 text-sm" />
@@ -110,6 +167,18 @@ export function RapportOrdoSection() {
             <KPICard label="Résultat budg." value={formatEur(R.resultatBudgetaire)} color={R.resultatBudgetaire >= 0 ? 'green' : 'red'} icon="📊" sub={R.resultatBudgetaire >= 0 ? 'Excédent' : 'Déficit'} isText />
             <KPICard label="CAF/IAF" value={formatEur(R.cafBudgetaire)} color={R.cafBudgetaire >= 0 ? 'green' : 'red'} icon="🔄" sub={R.cafBudgetaire >= 0 ? 'Capacité' : 'Insuffisance'} isText />
           </div>
+
+          {/* SRH pre-filled section */}
+          {ind && ind.nb_repas_servis > 0 && (
+            <>
+              <SectionTitre numero="2bis" title="Service de restauration et d'hébergement (SRH)" />
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
+                <IndicatorBadge icon="🍽️" label="Repas élèves" value={ind.nb_repas_servis.toLocaleString('fr-FR')} />
+                {ind.nb_repas_commensaux > 0 && <IndicatorBadge icon="🍴" label="Repas commensaux" value={ind.nb_repas_commensaux.toLocaleString('fr-FR')} />}
+                {ind.cout_denrees_repas > 0 && <IndicatorBadge icon="€" label="Coût denrées/repas" value={`${ind.cout_denrees_repas.toFixed(2)} €`} />}
+              </div>
+            </>
+          )}
 
           <SectionTitre numero="3" title="Situation financière et patrimoniale" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
@@ -123,6 +192,13 @@ export function RapportOrdoSection() {
           <Textarea value={aiText3} onChange={e => setAiText3(e.target.value)}
             placeholder="Cliquez sur 'Générer le texte IA' ou saisissez votre texte ici…" rows={4}
             className="mb-4 bg-muted/30 text-sm" />
+
+          {/* Fonds social */}
+          {ind && ind.montant_fonds_social > 0 && (
+            <div className="mb-4 bg-muted/30 rounded-lg p-3 text-xs">
+              <strong>Fonds social mobilisé :</strong> {formatEur(ind.montant_fonds_social)} — {ind.effectif_boursiers} boursier(s)
+            </div>
+          )}
 
           <div className="flex justify-between mt-8 pt-5 border-t text-xs text-muted-foreground">
             <div>
@@ -152,8 +228,29 @@ export function RapportACSection() {
   const checkItems = useCofiepleStore(s => s.checkItems);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
   const R = resultats[activeBudget];
+  const ind = useExtraIndicators();
   const [aiObs, setAiObs] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [history, setHistory] = useState<any[]>([]);
+
+  // Load 5-year history for FRNG analysis
+  useEffect(() => {
+    if (!etab.uai || !R) return;
+    (async () => {
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        if (!session.session) return;
+        const { data } = await supabase
+          .from('cofieple_exercises')
+          .select('exercice,fdr,bfr,tresorerie,caf,reserves,jours_autonomie')
+          .eq('uai', etab.uai)
+          .eq('user_id', session.session.user.id)
+          .order('exercice', { ascending: false })
+          .limit(5);
+        if (data) setHistory(data);
+      } catch {}
+    })();
+  }, [etab.uai, etab.exercice, R]);
 
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'agent comptable (M9-6 § V.2)." />;
 
@@ -181,6 +278,8 @@ export function RapportACSection() {
           },
           anomalies: nbAnom,
           bloquants: nbBloq,
+          indicateurs: ind,
+          historique: history,
         },
       });
       if (error) throw error;
@@ -224,12 +323,25 @@ export function RapportACSection() {
           <SectionTitre numero="1" title="Déclaration de l'agent comptable" />
           <div className="text-xs leading-relaxed mb-4 bg-muted/30 rounded-lg p-4">
             Je soussigné(e), <strong>{etab.agentComptable || '…………'}</strong>, agent comptable de{' '}
-            <strong>{etab.nom || 'l\'établissement'}</strong> (RNE {etab.uai || '…'}), certifie que le
+            <strong>{etab.nom || "l'établissement"}</strong> (RNE {etab.uai || '…'}), certifie que le
             compte financier de l'exercice <strong>{etab.exercice}</strong> a été établi conformément aux
             dispositions de l'instruction codificatrice M9-6 du 12 février 2026, du décret n°2012-1246
             du 7 novembre 2012 relatif à la gestion budgétaire et comptable publique (RGCP) et des
             articles R421-68 et suivants du code de l'éducation.
           </div>
+
+          {/* Context indicators */}
+          {ind && ind.effectif_eleves > 0 && (
+            <>
+              <SectionTitre numero="1bis" title="Données de contexte" />
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+                <IndicatorBadge icon="🎓" label="Élèves" value={`${ind.effectif_eleves}`} />
+                <IndicatorBadge icon="📚" label="Boursiers" value={`${ind.effectif_boursiers}`} />
+                {ind.nb_repas_servis > 0 && <IndicatorBadge icon="🍽️" label="Repas servis" value={ind.nb_repas_servis.toLocaleString('fr-FR')} />}
+                {ind.effectif_personnel > 0 && <IndicatorBadge icon="👥" label="Personnel" value={`${ind.effectif_personnel}`} />}
+              </div>
+            </>
+          )}
 
           <SectionTitre numero="2" title="Vérifications et rapprochements comptables" />
           <div className="flex gap-3 mb-4 flex-wrap">
@@ -251,6 +363,44 @@ export function RapportACSection() {
             <KPICard label="Résultat comptable" value={formatEur(R.resultatComptable)} color={R.resultatComptable >= 0 ? 'green' : 'red'} icon="📈" isText />
             <KPICard label="Réserves (cpte 1068)" value={formatEur(R.reserves)} color="blue" icon="🏛️" isText />
           </div>
+
+          {/* FRNG 5-year table */}
+          {history.length > 0 && (
+            <>
+              <SectionTitre numero="3bis" title="Évolution pluriannuelle du FRNG (5 ans)" />
+              <div className="overflow-x-auto mb-4">
+                <table className="w-full text-xs border">
+                  <thead>
+                    <tr className="bg-muted/50">
+                      <th className="p-2 text-left font-bold border-r">Indicateur</th>
+                      {history.map(h => (
+                        <th key={h.exercice} className="p-2 text-right font-bold border-r">{h.exercice}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[
+                      { label: 'FRNG (FDR)', key: 'fdr' },
+                      { label: 'BFR', key: 'bfr' },
+                      { label: 'Trésorerie', key: 'tresorerie' },
+                      { label: 'CAF/IAF', key: 'caf' },
+                      { label: 'Réserves', key: 'reserves' },
+                      { label: 'Jours autonomie', key: 'jours_autonomie' },
+                    ].map(row => (
+                      <tr key={row.key} className="border-t">
+                        <td className="p-2 font-medium border-r">{row.label}</td>
+                        {history.map(h => (
+                          <td key={h.exercice} className="p-2 text-right font-mono border-r">
+                            {row.key === 'jours_autonomie' ? Math.round(h[row.key]) : formatEur(h[row.key])}
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
+          )}
 
           <SectionTitre numero="4" title="Observations de l'agent comptable" />
           <Textarea value={aiObs} onChange={e => setAiObs(e.target.value)}
@@ -275,11 +425,23 @@ export function RapportACSection() {
   );
 }
 
-// ── Sous-composant ──────────────────────────────────────────
+// ── Sous-composants ──────────────────────────────────────────
 function SectionTitre({ numero, title }: { numero: string; title: string }) {
   return (
     <h3 className="text-sm font-bold border-l-4 border-warning pl-3 mb-3 mt-5 uppercase tracking-wide">
       {numero}. {title}
     </h3>
+  );
+}
+
+function IndicatorBadge({ icon, label, value }: { icon: string; label: string; value: string }) {
+  return (
+    <div className="bg-muted/30 rounded-lg p-2 text-xs flex items-center gap-2">
+      <span>{icon}</span>
+      <div>
+        <div className="text-muted-foreground">{label}</div>
+        <div className="font-bold">{value}</div>
+      </div>
+    </div>
   );
 }
