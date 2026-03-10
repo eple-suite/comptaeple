@@ -660,7 +660,7 @@ export function AnnexeComptableSection() {
                   canGenerateAnnexe ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'
                 }`}>{blockingAnomalies.length}</span>
               )}
-              {tab.id !== 'autoAudit' && texts[tab.id as keyof AnnexeTexts] && (
+              {tab.id !== 'autoAudit' && texts[tab.id as Exclude<AnnexeSectionId, 'autoAudit'>] && (
                 <CheckCircle2 className="h-3 w-3 text-emerald-500 ml-1" />
               )}
             </TabsTrigger>
