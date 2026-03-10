@@ -8,7 +8,7 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { section, etablissement, resultats, balanceSummary, indicateurs, historique, contexte } = await req.json();
+    const { section, etablissement, resultats, balanceSummary, indicateurs, historique, contexte, chargesComparative, produitsComparative } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -18,112 +18,133 @@ serve(async (req) => {
     const fmtEur = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n || 0);
 
     const indBlock = indicateurs
-      ? `Données de contexte : ${indicateurs.effectif_eleves || 0} élèves (${indicateurs.effectif_dp || 0} DP, ${indicateurs.effectif_internes || 0} internes, ${indicateurs.effectif_externes || 0} externes), ${indicateurs.effectif_boursiers || 0} boursiers, ${indicateurs.nb_repas_servis || 0} repas/an (coût denrées ${indicateurs.cout_denrees_repas || 0} €/repas), ${indicateurs.effectif_personnel || 0} personnel, ${indicateurs.etp_ressources_propres || 0} ETP ressources propres, surface ${indicateurs.surface_batiments || 0} m², eau ${indicateurs.conso_eau || 0} €, gaz ${indicateurs.conso_gaz || 0} €, électricité ${indicateurs.conso_electricite || 0} €.`
+      ? `Données de contexte : ${indicateurs.effectif_eleves || 0} élèves (${indicateurs.effectif_dp || 0} DP, ${indicateurs.effectif_internes || 0} internes), ${indicateurs.effectif_boursiers || 0} boursiers, ${indicateurs.nb_repas_servis || 0} repas/an (coût denrées ${indicateurs.cout_denrees_repas || 0} €/repas), surface ${indicateurs.surface_batiments || 0} m², eau ${indicateurs.conso_eau || 0} €, gaz ${indicateurs.conso_gaz || 0} €, électricité ${indicateurs.conso_electricite || 0} €.`
       : '';
 
     const histBlock = historique && historique.length > 0
-      ? `Historique pluriannuel :\n${historique.map((h: any) => `- ${h.exercice} : Résultat ${fmtEur(h.resultat_budgetaire)}, FDR ${fmtEur(h.fdr)}, BFR ${fmtEur(h.bfr)}, Tréso ${fmtEur(h.tresorerie)}, CAF ${fmtEur(h.caf)}, Réserves ${fmtEur(h.reserves)}, ${Math.round(h.jours_autonomie)} jours`).join('\n')}`
+      ? `Historique pluriannuel :\n${historique.map((h: any) => `- ${h.exercice} : Résultat ${fmtEur(h.resultat_budgetaire)}, FDR ${fmtEur(h.fdr)}, BFR ${fmtEur(h.bfr)}, Tréso ${fmtEur(h.tresorerie)}, CAF ${fmtEur(h.caf)}, Réserves ${fmtEur(h.reserves)}`).join('\n')}`
       : '';
 
     const ctxBlock = contexte ? `Éléments qualitatifs : ${contexte}` : '';
 
-    const balBlock = BS
-      ? `Synthèse balance classe 4 : Débiteurs Cl.4 = ${fmtEur(BS.cl4Debiteurs)}, Créditeurs Cl.4 = ${fmtEur(BS.cl4Crediteurs)}, Solde Cl.5 = ${fmtEur(BS.cl5Solde)}, Créances douteuses (416) = ${fmtEur(BS.creancesDouteuses416)}, Provisions (49*) = ${fmtEur(BS.provisions)}.`
+    const chargesBlock = chargesComparative && chargesComparative.length > 0
+      ? `Détail charges N vs N-1 :\n${chargesComparative.map((c: any) => `- ${c.name} : N=${fmtEur(c.N)}, N-1=${fmtEur(c['N-1'])}, variation=${fmtEur(c.variation)}`).join('\n')}`
+      : '';
+
+    const produitsBlock = produitsComparative && produitsComparative.length > 0
+      ? `Détail produits N vs N-1 :\n${produitsComparative.map((p: any) => `- ${p.name} : N=${fmtEur(p.N)}, N-1=${fmtEur(p['N-1'])}, variation=${fmtEur(p.variation)}`).join('\n')}`
       : '';
 
     const systemPrompt = `Tu es un expert-comptable spécialisé dans la comptabilité publique des EPLE, maîtrisant parfaitement l'instruction M9-6 2026 et le Décret GBCP 2012-1246.
 
-CONTEXTE JURIDIQUE : Tu rédiges l'annexe comptable obligatoire destinée au Rectorat (Dém'act) et au Juge des comptes (Infocentre). Ce document a une valeur probante.
+CONTEXTE : Tu rédiges l'annexe comptable officielle destinée au Rectorat (Dém'act) et au Juge des comptes (Infocentre). Document à valeur probante.
 
-STYLE IMPÉRATIF :
+STYLE :
 - Ton institutionnel, précis et analytique — adapté au contrôle de légalité.
-- Tu ne te contentes pas de citer des chiffres : tu les interprètes, identifies les causes des variations, et signales les points d'attention réglementaires.
-- Tu cites les références M9-6 pertinentes (§ III, IV, V).
-- Si des données de contexte (changement d'ordonnateur, travaux) sont fournies, utilise-les pour justifier les ruptures de séries statistiques.
-- N'invente aucune donnée. Utilise uniquement les chiffres fournis.`;
+- Interprète les chiffres, identifie les causes des variations, signale les points d'attention réglementaires.
+- Cite les références M9-6 pertinentes.
+- N'invente aucune donnée. Utilise uniquement les chiffres fournis.
+- Structure avec des titres markdown (##, ###).`;
 
     const sectionPrompts: Record<string, string> = {
-      presentation: `Rédige la section "I. Présentation générale" de l'annexe comptable.
+      // 1. Faits caractéristiques
+      faitsCaracteristiques: `Rédige « 1. Faits caractéristiques de l'exercice » de l'annexe M9-6.
 ${etab.nom} — UAI ${etab.uai} — ${etab.type} — Exercice ${etab.exercice}
-${etab.academie} — ${etab.regionAcademique || ''}
 Ordonnateur : ${etab.ordonnateur || '—'} — Agent comptable : ${etab.agentComptable || '—'}
-${indBlock}
-${ctxBlock}
-Rédige 2-3 paragraphes : présentation de l'établissement, environnement socio-éducatif, faits marquants. Mentionne les changements de direction s'ils sont fournis, car ils justifient des ruptures de gestion.`,
-
-      execution: `Rédige la section "II. Analyse de l'exécution budgétaire".
-Résultat budgétaire : ${fmtEur(R.resultatBudgetaire)} (${R.resultatBudgetaire >= 0 ? 'excédent' : 'déficit'})
-Mandatements : ${fmtEur(R.totalChargesReel)} — Taux d'exécution charges : ${((R.tauxExecCharges || 0) * 100).toFixed(1)} %
-Recettes : ${fmtEur(R.totalProduitsReel)} — Taux d'exécution produits : ${((R.tauxExecProduits || 0) * 100).toFixed(1)} %
-Crédits ouverts : ${fmtEur(R.totalChargesPrev)} — Prévisions recettes : ${fmtEur(R.totalProduitsPrev)}
-${histBlock}
-${ctxBlock}
-Rédige 2-3 paragraphes : analyse des taux d'exécution, crédits non consommés (reliquats), plus/moins-values de recettes. Compare à N-1 si disponible. Cite M9-6 § IV.1.`,
-
-      patrimoine: `Rédige la section "III. Situation patrimoniale et financière".
-FDR comptable : ${fmtEur(R.fdrComptable)} | BFR : ${fmtEur(R.bfr)} | Trésorerie nette : ${fmtEur(R.tresorerieNette)}
-Jours d'autonomie : ${Math.round(R.joursAutonomie || 0)} jours (seuil prudentiel : 30 jours)
-CAF budgétaire : ${fmtEur(R.cafBudgetaire)} — CAF comptable : ${fmtEur(R.cafComptable)}
-Résultat comptable : ${fmtEur(R.resultatComptable)} | Réserves : ${fmtEur(R.reserves || 0)}
-Immobilisations brutes : ${fmtEur(R.totalImmo || 0)} — Amortissements : ${fmtEur(R.totalAmortissements || 0)}
-Vérification : FDR = BFR + Trésorerie → ${Math.abs((R.fdrComptable || 0) - (R.bfr || 0) - (R.tresorerieNette || 0)) < 1 ? 'Vérifié ✓' : 'Écart ⚠️'}
-${histBlock}
-${ctxBlock}
-Rédige 3-4 paragraphes : construction du FRNG (haut et bas de bilan), analyse du BFR, analyse de la trésorerie (M9-6 § III.1), analyse de la CAF/IAF (M9-6 § IV.3). Interprète les évolutions pluriannuelles.`,
-
-      srh: `Rédige la section "IV. SRH & Viabilisation".
+Résultat budgétaire : ${fmtEur(R.resultatBudgetaire)} | CAF : ${fmtEur(R.cafBudgetaire)} | FDR : ${fmtEur(R.fdrComptable)} | Trésorerie : ${fmtEur(R.tresorerieNette)}
 ${indBlock}
 ${histBlock}
 ${ctxBlock}
-Rédige 2 paragraphes : analyse du SRH (coût denrées, fréquentation), ratios de viabilisation (fluides/m² si surface renseignée). Recommandations si ratios anormaux.`,
+Synthétise les variations majeures de l'exercice : hausse/baisse des subventions, travaux, changements de personnel, événements marquants. 2-3 paragraphes.`,
 
-      perspectives: `Rédige la section "V. Perspectives et recommandations".
-Résultat : ${fmtEur(R.resultatBudgetaire)} | FDR : ${fmtEur(R.fdrComptable)} | Trésorerie : ${fmtEur(R.tresorerieNette)} | ${Math.round(R.joursAutonomie || 0)} jours
-CAF : ${fmtEur(R.cafBudgetaire)} | Réserves : ${fmtEur(R.reserves || 0)}
+      // 2. Principes comptables
+      principesComptables: `Rédige « 2. Principes, règles et méthodes comptables » de l'annexe M9-6.
+${etab.nom} — ${etab.type} — Exercice ${etab.exercice}
+Total immobilisations : ${fmtEur(BS.totalImmo20 + BS.totalImmo21)} | Amortissements : ${fmtEur(BS.totalAmort28)}
+Stocks : ${fmtEur(BS.stocks31 + BS.stocks32)} | Provisions : ${fmtEur(BS.provisions15)}
+Génère un texte standardisé conforme M9-6 que l'utilisateur peut personnaliser :
+- Référentiel comptable applicable (M9-6 2026)
+- Méthode d'amortissement (linéaire, durées par catégorie)
+- Méthode d'évaluation des stocks (PAMP ou FIFO)
+- Principes de provisionnement
+- Rattachement des charges et produits à l'exercice
+2-3 paragraphes.`,
+
+      // 3. Actif immobilisé
+      actifImmobilise: `Rédige « 3. Notes sur l'actif immobilisé et les amortissements » de l'annexe M9-6.
+Immobilisations incorporelles (20*) : ${fmtEur(BS.totalImmo20)}
+Immobilisations corporelles (21*) : ${fmtEur(BS.totalImmo21)}
+Amortissements cumulés (28*) : ${fmtEur(BS.totalAmort28)}
+Valeur nette : ${fmtEur((BS.totalImmo20 || 0) + (BS.totalImmo21 || 0) - (BS.totalAmort28 || 0))}
 ${histBlock}
 ${ctxBlock}
-Rédige 2-3 paragraphes : capacité d'investissement, risques identifiés pour le juge des comptes, recommandations. Conclus sur la soutenabilité financière.`,
+Analyse : mouvements d'entrée/sortie d'actifs, taux d'amortissement, immobilisations en cours. Cite M9-6 § III.3.`,
 
-      restesARecouvrer: `Rédige une note explicative sur les restes à recouvrer (apurement de la classe 4).
-${balBlock}
+      // 4. Stocks
+      stocks: `Rédige « 4. Notes sur les stocks » de l'annexe M9-6.
+Stocks matières (31*) : ${fmtEur(BS.stocks31)} | Stocks marchandises (32*) : ${fmtEur(BS.stocks32)}
+${ctxBlock}
+Analyse : variation de stock, méthode d'évaluation, impact sur le résultat. Si les stocks sont nuls ou très faibles, indique-le. 1-2 paragraphes.`,
+
+      // 5. Créances
+      creances: `Rédige « 5. Notes sur les créances » de l'annexe M9-6.
+Total créances cl.4 débitrices : ${fmtEur(BS.cl4Debiteurs)}
+Créances douteuses (416) : ${fmtEur(BS.creancesDouteuses416)}
+Provisions pour dépréciation (49*) : ${fmtEur(BS.provisions)}
 ${histBlock}
 ${ctxBlock}
-Analyse :
-- L'état des créances débitrices de la classe 4 et l'existence de créances anciennes non mouvementées.
-- Le niveau des créances douteuses (compte 416) et leur provisionnement (compte 49*).
-- Les diligences entreprises par l'agent comptable pour le recouvrement (M9-6 § V.4).
-- Si des créances douteuses existent sans provision, signale l'anomalie.
-Rédige 2-3 paragraphes analytiques à destination du juge des comptes.`,
+Focus sur le compte 411. Génère une analyse par ancienneté : créances courantes vs créances anciennes non mouvementées. Mentionne les diligences de recouvrement et le provisionnement. Cite M9-6 § V.4. 2-3 paragraphes pour le juge des comptes.`,
 
-      reserves: `Rédige une note explicative sur l'utilisation des réserves et les décisions de prélèvements.
-Réserves (cpte 1068) : ${fmtEur(R.reserves || 0)}
-Résultat comptable N : ${fmtEur(R.resultatComptable)}
-FDR : ${fmtEur(R.fdrComptable)} — Jours d'autonomie : ${Math.round(R.joursAutonomie || 0)} j
+      // 6. Dettes
+      dettes: `Rédige « 6. Notes sur les dettes » de l'annexe M9-6.
+Total dettes cl.4 créditrices : ${fmtEur(BS.cl4Crediteurs)}
+${ctxBlock}
+Détail des comptes 401 (fournisseurs) et des dettes fiscales/sociales (43*, 44*). Analyse les dettes anciennes non apurées. 2 paragraphes.`,
+
+      // 7. Financements
+      financements: `Rédige « 7. Notes sur les financements » de l'annexe M9-6.
+Réserves (106*) : ${fmtEur(BS.reserves106)}
+Subventions d'investissement (13*) : ${fmtEur(BS.subvInvest13)}
+FDR : ${fmtEur(R.fdrComptable)} | BFR : ${fmtEur(R.bfr)} | Trésorerie : ${fmtEur(R.tresorerieNette)}
+Jours d'autonomie : ${Math.round(R.joursAutonomie || 0)} j | CAF : ${fmtEur(R.cafBudgetaire)}
 ${histBlock}
 ${ctxBlock}
-Analyse :
-- L'évolution du niveau des réserves sur 5 ans.
-- La justification des prélèvements éventuels (investissement, fonctionnement exceptionnel).
-- Le respect du seuil prudentiel de 30 jours d'autonomie après prélèvement.
-- La conformité des décisions de prélèvement aux actes du Conseil d'Administration.
-Rédige 2 paragraphes à destination du contrôleur rectoral et du juge.`,
+Analyse l'évolution des réserves, les prélèvements éventuels, le respect du seuil de 30 jours. Analyse l'amortissement des subventions d'investissement. 3 paragraphes.`,
 
-      tresorerie: `Rédige une note explicative sur la situation de trésorerie et le respect de l'unité de caisse.
-Trésorerie nette : ${fmtEur(R.tresorerieNette)} — ${Math.round(R.joursAutonomie || 0)} jours d'autonomie
-Solde classe 5 (balance) : ${fmtEur(BS.cl5Solde || 0)}
-FDR : ${fmtEur(R.fdrComptable)} | BFR : ${fmtEur(R.bfr)}
+      // 8. Provisions
+      provisions: `Rédige « 8. Notes sur les provisions » de l'annexe M9-6.
+Provisions pour risques (15*) : ${fmtEur(BS.provisions15)}
+Provisions pour dépréciation créances (49*) : ${fmtEur(BS.provisions)}
+${ctxBlock}
+Si des comptes 15* ou 68* (dotations) sont mouvementés, exige une note de justification juridique : nature du risque provisionné, base juridique, estimation du montant. Si aucune provision, indique-le et recommande si nécessaire. 1-2 paragraphes.`,
+
+      // 9. Charges
+      charges: `Rédige « 9. Notes sur les charges » de l'annexe M9-6.
+Total charges (classe 6) : ${fmtEur(BS.totalCharges6)}
+Mandatements : ${fmtEur(R.totalChargesReel)} — Taux d'exécution : ${((R.tauxExecCharges || 0) * 100).toFixed(1)} %
+${chargesBlock}
 ${histBlock}
 ${ctxBlock}
-Analyse :
-- La cohérence Trésorerie = FDR - BFR (M9-6 § III.1).
-- Le respect du principe d'unité de caisse (pas de fonds hors comptabilité).
-- L'existence de fonds de tiers (comptes 46*) et leur régularité.
-- Les placements éventuels et leur conformité.
-- Si la trésorerie est négative, analyse les causes et les risques.
-Rédige 2-3 paragraphes à destination du juge des comptes.`,
+Analyse comparative N/N-1 des charges : identifie les postes en forte hausse/baisse, explique les causes (hausse énergie, travaux, personnel). Cite M9-6 § IV. 2-3 paragraphes.`,
+
+      // 10. Produits
+      produits: `Rédige « 10. Notes sur les produits » de l'annexe M9-6.
+Total produits (classe 7) : ${fmtEur(BS.totalProduits7)}
+Recettes : ${fmtEur(R.totalProduitsReel)} — Taux d'exécution : ${((R.tauxExecProduits || 0) * 100).toFixed(1)} %
+${produitsBlock}
+${histBlock}
+${ctxBlock}
+Analyse des ressources propres et subventions : ventilation par nature, plus/moins-values de recettes, évolution des dotations. 2-3 paragraphes.`,
+
+      // 11. Autres informations
+      autresInfos: `Rédige « 11. Autres informations » de l'annexe M9-6.
+Engagements hors bilan (classe 8) : ${fmtEur(BS.cl8 || 0)}
+Trésorerie nette : ${fmtEur(R.tresorerieNette)} | Solde classe 5 : ${fmtEur(BS.cl5Solde || 0)}
+${ctxBlock}
+Section libre : engagements hors bilan (marchés notifiés, baux), événements post-clôture (sinistres, litiges), informations complémentaires pour le juge. Mentionne le respect de l'unité de caisse. 1-2 paragraphes.`,
     };
 
-    const userPrompt = sectionPrompts[section] || sectionPrompts.presentation;
+    const userPrompt = sectionPrompts[section] || sectionPrompts.faitsCaracteristiques;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
