@@ -312,8 +312,9 @@ export function AnnexeComptableSection() {
     );
     const amorts = balanceData.filter((b: any) => b.compte?.startsWith('28'));
     return immos.map((b: any) => {
-      const cpteAmort = '28' + b.compte.substring(1);
-      const amort = amorts.find((a: any) => a.compte === cpteAmort);
+      // Match amortization: 21xxx → 281xx, 20xxx → 280xx (use first 4 chars of immo after leading '2')
+      const cpteAmortPrefix = '28' + b.compte.substring(1, 4);
+      const amort = amorts.find((a: any) => a.compte?.startsWith(cpteAmortPrefix));
       const brut = (b.solDbt || 0);
       const cumAmort = amort ? (amort.solCrd || 0) : 0;
       return {
