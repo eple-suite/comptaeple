@@ -192,6 +192,9 @@ export function DiaporamaSection() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Option B — Prompt Gamma.app */}
+      <GammaPromptSection />
     </div>
   );
 }
