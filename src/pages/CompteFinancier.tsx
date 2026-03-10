@@ -49,6 +49,8 @@ const CompteFinancier = () => {
     { id: 'superviseur', label: 'Superviseur', icon: <Search className="h-4 w-4" />, requiresData: true },
     { id: 'synthese', label: 'Synthèse', icon: <ClipboardList className="h-4 w-4" />, requiresData: true },
     { id: 'tableaux', label: 'Tableaux', icon: <BarChart3 className="h-4 w-4" />, requiresData: true },
+    { id: 'controles', label: 'Contrôles', icon: <ShieldCheck className="h-4 w-4" />, requiresData: true,
+      badge: hasData ? (nbBloq > 0 ? '🔴' : nbAnom > 0 ? '🟠' : '🟢') : undefined, badgeType: nbBloq > 0 ? 'error' : nbAnom > 0 ? 'warning' : 'success' },
     { id: 'budget_annexe', label: 'Budget annexe', icon: <Building2 className="h-4 w-4" />, badge: hasBA ? 'BA' : undefined, badgeType: 'info' },
     { id: 'rapport_ordo', label: 'Rapport Ordo.', icon: <FileText className="h-4 w-4" />, requiresData: true },
     { id: 'rapport_ac', label: 'Rapport A.C.', icon: <Shield className="h-4 w-4" />, requiresData: true },
