@@ -550,7 +550,61 @@ export function AnnexeComptableSection() {
         for (const line of lines) { checkNewPage(5); doc.text(line, margin, y); y += 4; }
       }
 
-      // Auto-Audit report
+      // KPI Summary page
+      addFooter(); doc.addPage(); addHeader(doc.getNumberOfPages()); y = 18;
+      doc.setFontSize(11); doc.setTextColor(30);
+      doc.text('Synthèse des indicateurs financiers', margin, y); y += 3;
+      autoTable(doc, {
+        startY: y,
+        head: [['Indicateur', 'Valeur', 'Appréciation']],
+        body: [
+          ['Résultat budgétaire', formatEur(R.resultatBudgetaire), R.resultatBudgetaire >= 0 ? 'Excédentaire' : 'Déficitaire'],
+          ['Résultat comptable', formatEur(R.resultatComptable), R.resultatComptable >= 0 ? 'Excédentaire' : 'Déficitaire'],
+          ['CAF budgétaire', formatEur(R.cafBudgetaire), R.cafBudgetaire >= 0 ? 'Capacité' : 'Insuffisance'],
+          ['FDR comptable', formatEur(R.fdrComptable), R.fdrComptable >= 0 ? 'Positif' : 'NÉGATIF ⚠️'],
+          ['BFR', formatEur(R.bfr), R.bfr <= 0 ? 'Favorable' : 'À surveiller'],
+          ['Trésorerie nette', formatEur(R.tresorerieNette), R.tresorerieNette >= 0 ? 'Positive' : 'NÉGATIVE ⚠️'],
+          ['Jours d\'autonomie', `${Math.round(R.joursAutonomie)} jours`, R.joursAutonomie >= 30 ? '≥ 30 j ✓' : '< 30 j ⚠️'],
+          ['Réserves (1068)', formatEur(R.reserves), ''],
+          ['Taux exéc. dépenses', `${((R.tauxExecCharges || 0) * 100).toFixed(1)} %`, ''],
+          ['Taux exéc. recettes', `${((R.tauxExecProduits || 0) * 100).toFixed(1)} %`, ''],
+          ['Immobilisations nettes', formatEur((R.totalImmo || 0) - (R.totalAmortissements || 0)), ''],
+        ],
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [50, 60, 80], textColor: [255, 255, 255] },
+      });
+
+      // Charges comparative table in PDF
+      if (chargesComparative.length > 0) {
+        addFooter(); doc.addPage(); addHeader(doc.getNumberOfPages()); y = 18;
+        doc.setFontSize(11); doc.setTextColor(30);
+        doc.text('Analyse comparative des charges N / N-1', margin, y); y += 3;
+        autoTable(doc, {
+          startY: y,
+          head: [['Poste', 'Exercice N', 'Exercice N-1', 'Variation']],
+          body: chargesComparative.map(c => [c.name, formatEur(c.N), formatEur(c['N-1']), formatEur(c.variation)]),
+          margin: { left: margin, right: margin },
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [50, 60, 80], textColor: [255, 255, 255] },
+        });
+      }
+
+      // Produits comparative table in PDF
+      if (produitsComparative.length > 0) {
+        y = (doc as any).lastAutoTable?.finalY || y + 10;
+        checkNewPage(40);
+        doc.setFontSize(11); doc.setTextColor(30);
+        doc.text('Analyse comparative des produits N / N-1', margin, y + 8); y += 11;
+        autoTable(doc, {
+          startY: y,
+          head: [['Poste', 'Exercice N', 'Exercice N-1', 'Variation']],
+          body: produitsComparative.map(p => [p.name, formatEur(p.N), formatEur(p['N-1']), formatEur(p.variation)]),
+          margin: { left: margin, right: margin },
+          styles: { fontSize: 8, cellPadding: 2 },
+          headStyles: { fillColor: [50, 60, 80], textColor: [255, 255, 255] },
+        });
+      }
       if (auditAnomalies.length > 0) {
         addFooter(); doc.addPage(); addHeader(doc.getNumberOfPages()); y = 18;
         doc.setFontSize(11); doc.setTextColor(30);
