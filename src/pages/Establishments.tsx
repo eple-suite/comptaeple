@@ -211,7 +211,7 @@ const Establishments = () => {
 
               {lookupResult && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
-                  <Label>Numéro Op@le</Label>
+                  <Label>Identifiant Op@le *</Label>
                   <Input
                     placeholder="Ex: P00804"
                     value={opaleNumber}
