@@ -4,7 +4,7 @@
 //                  Code du travail Art. L6232-1 (CFA)
 // ═══════════════════════════════════════════════════════════════
 
-import { useState, useRef } from 'react';
+import { useEffect } from 'react';
 import { UxChainDiagram } from './UxChainDiagram';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,9 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Building2, Plus, X, ArrowRight, Loader2, Info } from 'lucide-react';
+import { Building2, Plus, X, ArrowRight, Info, Check } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
-import { rechercherParUAI, validerFormatUAI } from '@/lib/cofieple_uaiApi';
+import { useEstablishment } from '@/contexts/EstablishmentContext';
 import type { EtablissementUI } from '@/lib/cofieple_storeTypes';
 
 export function AccueilSection() {
@@ -23,43 +23,31 @@ export function AccueilSection() {
   const addBudgetAnnexe = useCofiepleStore(s => s.addBudgetAnnexe);
   const removeBudgetAnnexe = useCofiepleStore(s => s.removeBudgetAnnexe);
   const budgets = useCofiepleStore(s => s.budgets);
-  const uaiLoading = useCofiepleStore(s => s.uaiLoading);
-  const uaiError = useCofiepleStore(s => s.uaiError);
-  const setUAILoading = useCofiepleStore(s => s.setUAILoading);
-  const setUAIError = useCofiepleStore(s => s.setUAIError);
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
 
-  const [uaiInput, setUaiInput] = useState(etab.uai || '');
-  const [uaiFeedback, setUaiFeedback] = useState<'found' | 'notfound' | null>(null);
+  const { establishments, selectedEstablishment, selectEstablishment } = useEstablishment();
 
-  async function handleUAILookup() {
-    const uai = uaiInput.trim().toUpperCase();
-    if (!uai) return;
-    if (!validerFormatUAI(uai)) {
-      setUAIError('Format invalide. Le code UAI doit comporter 7 chiffres + 1 lettre (ex : 9710746J)');
-      return;
+  // Auto-sync selected establishment into cofieple store
+  useEffect(() => {
+    if (selectedEstablishment && selectedEstablishment.uai !== etab.uai) {
+      const typeMap: Record<string, string> = {
+        'Lycée': 'lycee', 'Lycée professionnel': 'lycee_pro',
+        'LEGT': 'legt', 'Collège': 'college', 'EREA': 'erea',
+      };
+      setEtablissement({
+        uai: selectedEstablishment.uai,
+        nom: selectedEstablishment.name,
+        type: typeMap[selectedEstablishment.type] || 'lycee',
+        commune: selectedEstablishment.city,
+        academie: selectedEstablishment.academy,
+        exercice: etab.exercice || new Date().getFullYear() - 1,
+      });
     }
-    setUAILoading(true);
-    setUAIError(null);
-    setUaiFeedback(null);
-    try {
-      const result = await rechercherParUAI(uai);
-      if (result) {
-        setEtablissement({
-          ...result,
-          exercice: etab.exercice || result.departement ? etab.exercice : new Date().getFullYear() - 1,
-        } as Partial<EtablissementUI>);
-        setUaiInput(uai);
-        setUaiFeedback('found');
-      } else {
-        setUaiFeedback('notfound');
-        setUAIError(`Aucun établissement trouvé pour le code UAI "${uai}"`);
-      }
-    } catch (e: any) {
-      setUAIError(e.message || 'Erreur lors de la recherche');
-    } finally {
-      setUAILoading(false);
-    }
+  }, [selectedEstablishment]);
+
+  function handleSelectEstablishment(id: string) {
+    const est = establishments.find(e => e.id === id);
+    if (est) selectEstablishment(est);
   }
 
   const hasBA_GRETA = budgets.some(b => b.type === 'annexe_greta');
