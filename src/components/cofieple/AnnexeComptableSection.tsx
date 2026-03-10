@@ -121,6 +121,7 @@ export function AnnexeComptableSection() {
   const [auditAnomalies, setAuditAnomalies] = useState<AuditAnomaly[]>([]);
   const [auditValidated, setAuditValidated] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [auditDrilldown, setAuditDrilldown] = useState<string | null>(null);
 
   const completedSections = useMemo(() => {
     return Object.values(texts).filter(t => t.length > 0).length;
