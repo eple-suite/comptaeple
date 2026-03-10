@@ -13,9 +13,10 @@ import { CheckListSection } from '@/components/cofieple/CheckListSection';
 import { SuperviseurSection, SyntheseSection, TableauxSection, BudgetAnnexeSection } from '@/components/cofieple/AnalysisSections';
 import { RapportOrdoSection, RapportACSection } from '@/components/cofieple/RapportSections';
 import { DiaporamaSection } from '@/components/cofieple/DiaporamaSection';
+import { AuditControlesSection } from '@/components/cofieple/AuditControlesSection';
 import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
-  BarChart3, Building2, FileText, Monitor, Shield
+  BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck
 } from 'lucide-react';
 
 interface NavItem {
