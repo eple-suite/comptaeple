@@ -2,6 +2,7 @@
 // COFIEPLE — Section Import CSV Op@le
 // Formats attendus : SDE, SDR, Balance (IMPORT BAL)
 // Conformité : M9-6 2026 — Extraction Op@le standard
+// Verrou de sécurité : concordance UAI/Op@le fichier ↔ établissement
 // ═══════════════════════════════════════════════════════════════
 
 import { useRef, useState } from 'react';
@@ -10,8 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { Info, Upload, Play, Loader2, CheckCircle2, XCircle, RefreshCw } from 'lucide-react';
+import { Info, Upload, Play, Loader2, CheckCircle2, XCircle, RefreshCw, ShieldAlert, ShieldCheck } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
+import { useEstablishment } from '@/contexts/EstablishmentContext';
 import { parserSDE, parserSDR, parserBalance } from '@/lib/cofieple_calculations';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 
@@ -38,6 +40,66 @@ function getSlots(budgets: { type: TypeBudget; libelle: string }[]): FileSlot[] 
   return slots;
 }
 
+/** Extrait l'identifiant UAI/RNE présent dans les données CSV */
+function extractCsvIdentifier(rows: Record<string, string>[]): { uai: string | null; opale: string | null } {
+  let uai: string | null = null;
+  let opale: string | null = null;
+  // Chercher dans les premières lignes
+  for (const row of rows.slice(0, 20)) {
+    for (const [key, val] of Object.entries(row)) {
+      const v = String(val || '').trim().toUpperCase();
+      const k = key.toLowerCase();
+      // UAI/RNE : 7 chiffres + 1 lettre
+      if (!uai && (k.includes('rne') || k.includes('uai') || k.includes('etablissement'))) {
+        if (/^[0-9]{7}[A-Z]$/.test(v)) uai = v;
+      }
+      // Op@le : P + 5 chiffres
+      if (!opale && (k.includes('opale') || k.includes('op@le') || k.includes('identifiant'))) {
+        if (/^P\d{5}$/.test(v)) opale = v;
+      }
+      // Also check values directly
+      if (!uai && /^[0-9]{7}[A-Z]$/.test(v)) uai = v;
+      if (!opale && /^P\d{5}$/.test(v)) opale = v;
+    }
+    if (uai) break; // Found in first rows
+  }
+  return { uai, opale };
+}
+
+/** Vérifie la concordance entre le fichier CSV et l'établissement sélectionné */
+function checkConcordance(
+  rows: Record<string, string>[],
+  selectedUai: string,
+  selectedOpale: string
+): { ok: boolean; message?: string; fileUai?: string; fileOpale?: string } {
+  const { uai: fileUai, opale: fileOpale } = extractCsvIdentifier(rows);
+
+  // Si aucun identifiant détecté dans le fichier, on laisse passer avec avertissement
+  if (!fileUai && !fileOpale) {
+    return { ok: true, fileUai: fileUai || undefined, fileOpale: fileOpale || undefined };
+  }
+
+  // Vérification UAI
+  if (fileUai && selectedUai && fileUai !== selectedUai.toUpperCase()) {
+    return {
+      ok: false,
+      message: `🔒 Alerte de sécurité : Le fichier importé appartient à l'établissement UAI ${fileUai}, mais l'établissement sélectionné est ${selectedUai}. Veuillez vérifier votre export Op@le.`,
+      fileUai, fileOpale: fileOpale || undefined,
+    };
+  }
+
+  // Vérification Op@le
+  if (fileOpale && selectedOpale && fileOpale !== selectedOpale.toUpperCase()) {
+    return {
+      ok: false,
+      message: `🔒 Alerte de sécurité : Le fichier importé contient l'identifiant Op@le ${fileOpale}, mais l'établissement sélectionné utilise ${selectedOpale}. Veuillez vérifier votre export Op@le.`,
+      fileUai: fileUai || undefined, fileOpale,
+    };
+  }
+
+  return { ok: true, fileUai: fileUai || undefined, fileOpale: fileOpale || undefined };
+}
+
 export function ImportSection() {
   const budgets = useCofiepleStore(s => s.budgets);
   const fichierCharge = useCofiepleStore(s => s.fichierCharge);
@@ -50,9 +112,11 @@ export function ImportSection() {
   const lancerAnalyse = useCofiepleStore(s => s.lancerAnalyse);
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
   const analysisRunning = useCofiepleStore(s => s.analysisRunning);
+  const { selectedEstablishment } = useEstablishment();
 
   const [fileStats, setFileStats] = useState<Record<string, { rows: number; name: string }>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [securityBlocks, setSecurityBlocks] = useState<Record<string, string>>({});
 
   const slots = getSlots(budgets);
   const obligatoires = slots.filter(s => s.obligatoire);
@@ -70,6 +134,23 @@ export function ImportSection() {
           return;
         }
         const rows = results.data as Record<string, string>[];
+
+        // ── VERROU DE SÉCURITÉ : concordance établissement ──
+        if (selectedEstablishment) {
+          const concordance = checkConcordance(
+            rows,
+            selectedEstablishment.uai,
+            selectedEstablishment.opale_number
+          );
+          if (!concordance.ok) {
+            setSecurityBlocks(prev => ({ ...prev, [slot.key]: concordance.message! }));
+            setErrors(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
+            return; // IMPORT BLOQUÉ
+          }
+          // Clear any previous security block
+          setSecurityBlocks(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
+        }
+
         setFileStats(prev => ({ ...prev, [slot.key]: { rows: rows.length, name: file.name } }));
         setErrors(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
         try {
