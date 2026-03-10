@@ -187,7 +187,7 @@ export async function lookupUAI(uai: string): Promise<Partial<Etablissement> | n
     throw new Error(`Format UAI invalide : "${uai}". Le format attendu est 7 chiffres suivis d'une lettre (ex: 9710746J).`);
   }
 
-  const url = `https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-annuaire-education/records?where=identifiant_de_l_uai%3D%22${uaiClean}%22&limit=1`;
+  const url = `https://data.education.gouv.fr/api/explore/v2.1/catalog/datasets/fr-en-annuaire-education/records?where=identifiant_de_l_etablissement%3D%22${uaiClean}%22&limit=1`;
 
   const resp = await fetch(url);
   if (!resp.ok) throw new Error(`Erreur API Éducation nationale : ${resp.status}`);
@@ -212,8 +212,8 @@ export async function lookupUAI(uai: string): Promise<Partial<Etablissement> | n
     codePostal: rec.code_postal || '',
     commune: rec.nom_commune || '',
     academie: `Académie de ${rec.libelle_academie || ''}`,
-    region: `Région académique ${rec.libelle_region_academique || ''}`,
-    departement: rec.nom_departement || '',
+    region: `Région académique ${rec.libelle_region || rec.libelle_region_academique || ''}`,
+    departement: rec.libelle_departement || rec.nom_departement || '',
     telephone: rec.telephone || '',
   };
 }
