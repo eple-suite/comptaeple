@@ -4,7 +4,7 @@
 //                  Code du travail Art. L6232-1 (CFA)
 // ═══════════════════════════════════════════════════════════════
 
-import { useState, useRef } from 'react';
+import { useEffect } from 'react';
 import { UxChainDiagram } from './UxChainDiagram';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -12,9 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Building2, Plus, X, ArrowRight, Loader2, Info } from 'lucide-react';
+import { Building2, Plus, X, ArrowRight, Info, Check } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
-import { rechercherParUAI, validerFormatUAI } from '@/lib/cofieple_uaiApi';
+import { useEstablishment } from '@/contexts/EstablishmentContext';
 import type { EtablissementUI } from '@/lib/cofieple_storeTypes';
 
 export function AccueilSection() {
@@ -23,43 +23,31 @@ export function AccueilSection() {
   const addBudgetAnnexe = useCofiepleStore(s => s.addBudgetAnnexe);
   const removeBudgetAnnexe = useCofiepleStore(s => s.removeBudgetAnnexe);
   const budgets = useCofiepleStore(s => s.budgets);
-  const uaiLoading = useCofiepleStore(s => s.uaiLoading);
-  const uaiError = useCofiepleStore(s => s.uaiError);
-  const setUAILoading = useCofiepleStore(s => s.setUAILoading);
-  const setUAIError = useCofiepleStore(s => s.setUAIError);
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
 
-  const [uaiInput, setUaiInput] = useState(etab.uai || '');
-  const [uaiFeedback, setUaiFeedback] = useState<'found' | 'notfound' | null>(null);
+  const { establishments, selectedEstablishment, selectEstablishment } = useEstablishment();
 
-  async function handleUAILookup() {
-    const uai = uaiInput.trim().toUpperCase();
-    if (!uai) return;
-    if (!validerFormatUAI(uai)) {
-      setUAIError('Format invalide. Le code UAI doit comporter 7 chiffres + 1 lettre (ex : 9710746J)');
-      return;
+  // Auto-sync selected establishment into cofieple store
+  useEffect(() => {
+    if (selectedEstablishment && selectedEstablishment.uai !== etab.uai) {
+      const typeMap: Record<string, string> = {
+        'Lycée': 'lycee', 'Lycée professionnel': 'lycee_pro',
+        'LEGT': 'legt', 'Collège': 'college', 'EREA': 'erea',
+      };
+      setEtablissement({
+        uai: selectedEstablishment.uai,
+        nom: selectedEstablishment.name,
+        type: typeMap[selectedEstablishment.type] || 'lycee',
+        commune: selectedEstablishment.city,
+        academie: selectedEstablishment.academy,
+        exercice: etab.exercice || new Date().getFullYear() - 1,
+      });
     }
-    setUAILoading(true);
-    setUAIError(null);
-    setUaiFeedback(null);
-    try {
-      const result = await rechercherParUAI(uai);
-      if (result) {
-        setEtablissement({
-          ...result,
-          exercice: etab.exercice || result.departement ? etab.exercice : new Date().getFullYear() - 1,
-        } as Partial<EtablissementUI>);
-        setUaiInput(uai);
-        setUaiFeedback('found');
-      } else {
-        setUaiFeedback('notfound');
-        setUAIError(`Aucun établissement trouvé pour le code UAI "${uai}"`);
-      }
-    } catch (e: any) {
-      setUAIError(e.message || 'Erreur lors de la recherche');
-    } finally {
-      setUAILoading(false);
-    }
+  }, [selectedEstablishment]);
+
+  function handleSelectEstablishment(id: string) {
+    const est = establishments.find(e => e.id === id);
+    if (est) selectEstablishment(est);
   }
 
   const hasBA_GRETA = budgets.some(b => b.type === 'annexe_greta');
@@ -81,42 +69,50 @@ export function AccueilSection() {
         </CardContent>
       </Card>
 
-      {/* Lookup UAI */}
+      {/* Sélection de l'établissement */}
       <Card>
         <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg">
           <CardTitle className="text-white text-sm flex items-center gap-2">
-            <Search className="h-4 w-4" />
+            <Building2 className="h-4 w-4" />
             Identification de l'établissement
           </CardTitle>
         </CardHeader>
         <CardContent className="p-5 space-y-4">
           <div className="flex gap-3">
             <div className="flex-1">
-              <Label className="text-xs text-muted-foreground uppercase tracking-wider">Code UAI / RNE</Label>
-              <div className="flex mt-1.5">
-                <Input
-                  value={uaiInput}
-                  onChange={e => setUaiInput(e.target.value.toUpperCase())}
-                  onKeyDown={e => e.key === 'Enter' && handleUAILookup()}
-                  placeholder="Ex : 9710746J"
-                  maxLength={10}
-                  className={`rounded-r-none font-mono font-semibold ${
-                    uaiFeedback === 'found' ? 'border-emerald-400 bg-emerald-50' :
-                    uaiFeedback === 'notfound' ? 'border-destructive bg-destructive/5' : ''
-                  }`}
-                />
-                <Button onClick={handleUAILookup} disabled={uaiLoading || !uaiInput.trim()} className="rounded-l-none">
-                  {uaiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  <span className="ml-2">{uaiLoading ? 'Recherche…' : 'Rechercher'}</span>
-                </Button>
-              </div>
-              {uaiFeedback === 'found' && (
-                <p className="text-emerald-700 text-xs mt-1.5 font-semibold">
-                  ✅ Établissement trouvé — données chargées depuis l'Annuaire Éducation
+              <Label className="text-xs text-muted-foreground uppercase tracking-wider">Établissement</Label>
+              {establishments.length > 0 ? (
+                <Select value={selectedEstablishment?.id || ''} onValueChange={handleSelectEstablishment}>
+                  <SelectTrigger className="mt-1.5 font-semibold">
+                    <SelectValue placeholder="Sélectionnez un établissement" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {establishments.map(est => (
+                      <SelectItem key={est.id} value={est.id}>
+                        <span className="font-mono text-primary mr-2">{est.uai}</span>
+                        {est.name}
+                        {est.city && <span className="text-muted-foreground ml-1">— {est.city}</span>}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <div className="mt-1.5 p-3 rounded-md border border-dashed border-muted-foreground/30 bg-muted/30">
+                  <p className="text-sm text-muted-foreground">
+                    Aucun établissement enregistré.{' '}
+                    <Button variant="link" className="p-0 h-auto text-primary" onClick={() => window.location.href = '/etablissements'}>
+                      Ajouter un établissement
+                    </Button>
+                  </p>
+                </div>
+              )}
+              {selectedEstablishment && (
+                <p className="text-xs mt-1.5 flex items-center gap-1 text-emerald-600 font-medium">
+                  <Check className="h-3 w-3" />
+                  Données chargées depuis le menu Établissements
                 </p>
               )}
-              {uaiError && <p className="text-destructive text-xs mt-1.5">{uaiError}</p>}
-              <p className="text-muted-foreground text-xs mt-1">Source : data.education.gouv.fr</p>
+              <p className="text-muted-foreground text-xs mt-1">Source : menu Établissements de l'application</p>
             </div>
           </div>
 
