@@ -57,17 +57,22 @@ ${histBlock}
 ${ctxBlock}
 Synthétise les variations majeures de l'exercice : hausse/baisse des subventions, travaux, changements de personnel, événements marquants. 2-3 paragraphes.`,
 
-      // 2. Principes comptables
+      // 2. Principes comptables — DYNAMIQUE: s'adapte aux réalités de la balance
       principesComptables: `Rédige « 2. Principes, règles et méthodes comptables » de l'annexe M9-6.
 ${etab.nom} — ${etab.type} — Exercice ${etab.exercice}
-Total immobilisations : ${fmtEur(BS.totalImmo20 + BS.totalImmo21)} | Amortissements : ${fmtEur(BS.totalAmort28)}
-Stocks : ${fmtEur(BS.stocks31 + BS.stocks32)} | Provisions : ${fmtEur(BS.provisions15)}
-Génère un texte standardisé conforme M9-6 que l'utilisateur peut personnaliser :
-- Référentiel comptable applicable (M9-6 2026)
-- Méthode d'amortissement (linéaire, durées par catégorie)
-- Méthode d'évaluation des stocks (PAMP ou FIFO)
-- Principes de provisionnement
+Total immobilisations : ${fmtEur((BS.totalImmo20 || 0) + (BS.totalImmo21 || 0))} | Amortissements : ${fmtEur(BS.totalAmort28 || 0)}
+Stocks : ${fmtEur((BS.stocks31 || 0) + (BS.stocks32 || 0))} | Provisions : ${fmtEur(BS.provisions15 || 0)}
+
+CONSIGNE DYNAMIQUE — Adapte le contenu aux réalités de la balance :
+${(BS.totalImmo20 || 0) + (BS.totalImmo21 || 0) > 0 ? '- IMMOBILISATIONS PRÉSENTES : détaille la méthode d\'amortissement linéaire et les durées par catégorie (mobilier 10 ans, matériel informatique 3-5 ans, véhicules 5 ans, bâtiments 25-50 ans).' : '- PAS D\'IMMOBILISATIONS : ne mentionne pas les méthodes d\'amortissement.'}
+${(BS.stocks31 || 0) + (BS.stocks32 || 0) > 0 ? '- STOCKS PRÉSENTS : détaille la méthode d\'évaluation des stocks (PAMP ou coût moyen pondéré) et l\'inventaire physique.' : '- PAS DE STOCKS (comptes 31/32 à zéro) : ne mentionne PAS les méthodes de stock.'}
+${(BS.provisions15 || 0) > 0 ? '- PROVISIONS PRÉSENTES : détaille les principes de provisionnement (risques et charges, dépréciations).' : '- PAS DE PROVISIONS : mentionne simplement qu\'aucune provision n\'a été constituée.'}
+${(BS.cl8 || 0) > 0 ? '- ENGAGEMENTS HORS BILAN (classe 8) présents : mentionne les engagements et leur traitement.' : ''}
+
+Génère un texte conforme M9-6 incluant :
+- Référentiel comptable applicable (M9-6 2026, RGCP 2012-1246)
 - Rattachement des charges et produits à l'exercice
+- UNIQUEMENT les méthodes pertinentes selon les données ci-dessus
 2-3 paragraphes.`,
 
       // 3. Actif immobilisé
