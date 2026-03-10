@@ -70,8 +70,11 @@ const Establishments = () => {
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!lookupResult) return;
+      if (!opaleNumber.trim()) {
+        throw new Error("L'identifiant Op@le est obligatoire. Il se trouve dans les en-têtes des exports CSV d'Op@le (format : P + 5 chiffres, ex: P00804).");
+      }
       const opaleRegex = /^P\d{5}$/;
-      if (opaleNumber && !opaleRegex.test(opaleNumber.toUpperCase())) {
+      if (!opaleRegex.test(opaleNumber.toUpperCase())) {
         throw new Error("Le numéro Op@le doit être au format P00804 (P suivi de 5 chiffres)");
       }
       const { data, error } = await supabase.from("establishments").insert({
