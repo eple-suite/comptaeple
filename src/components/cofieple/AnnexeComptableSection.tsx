@@ -51,11 +51,13 @@ interface AuditAnomaly {
   id: string;
   compte: string;
   intitule: string;
-  type: 'solde_atypique' | 'amort_manquant' | 'coherence' | 'provision_absente';
+  type: 'solde_atypique' | 'amort_manquant' | 'coherence' | 'provision_absente' | 'amort_28_68' | 'anciennete_cl4' | 'unite_caisse';
   severity: 'bloquant' | 'anomalie';
   description: string;
   refM96: string;
   justification: string;
+  annexeTarget?: keyof AnnexeTexts; // Section de l'annexe où injecter la justification
+  drilldownPrefix?: string; // Préfixe pour le drill-down Grand Livre
 }
 
 // ── Onglets « Preuve & Contrôle » ────────────────────────────
@@ -119,6 +121,7 @@ export function AnnexeComptableSection() {
   const [auditAnomalies, setAuditAnomalies] = useState<AuditAnomaly[]>([]);
   const [auditValidated, setAuditValidated] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [auditDrilldown, setAuditDrilldown] = useState<string | null>(null);
 
   const completedSections = useMemo(() => {
     return Object.values(texts).filter(t => t.length > 0).length;
@@ -149,6 +152,11 @@ export function AnnexeComptableSection() {
   // ── AUTO-AUDIT: scan balance for anomalies ─────────────────
   const balanceData = useMemo(() => balance[activeBudget] || [], [balance, activeBudget]);
 
+  const balance1Data = useMemo(() => balance[activeBudget === 'principal' ? 'principal' : activeBudget] || [], [balance, activeBudget]);
+  // We use balance1 (N-1) from the store for aging analysis
+  const balance1Store = useCofiepleStore(s => s.balance1);
+  const balance1DataN1 = useMemo(() => balance1Store[activeBudget] || [], [balance1Store, activeBudget]);
+
   useEffect(() => {
     if (!R || balanceData.length === 0) return;
     const anomalies: AuditAnomaly[] = [];
@@ -165,6 +173,8 @@ export function AnnexeComptableSection() {
           description: `Solde ${a.sensAttendu === 'débiteur' ? 'créditeur' : 'débiteur'} anormal. ${a.conseqM96}`,
           refM96: a.conseqM96.includes('§') ? a.conseqM96.split('(').pop()?.replace(')', '') || 'M9-6' : 'M9-6 Plan comptable',
           justification: '',
+          annexeTarget: 'patrimoine',
+          drilldownPrefix: a.compte.substring(0, 3),
         });
       });
 
@@ -186,6 +196,8 @@ export function AnnexeComptableSection() {
           description: `Immobilisation au débit (${formatEur(immo.solDbt || 0)}) sans dotation aux amortissements correspondante (${cpteAmort}*). L'absence d'amortissement fausse le bilan et le résultat.`,
           refM96: 'M9-6 § III.3',
           justification: '',
+          annexeTarget: 'patrimoine',
+          drilldownPrefix: immo.compte.substring(0, 3),
         });
       }
     });
@@ -207,6 +219,8 @@ export function AnnexeComptableSection() {
         description: `Créances douteuses (416) de ${formatEur(totalDouteux)} sans aucune provision (491*). Obligation de provisionner selon M9-6 § V.4.`,
         refM96: 'M9-6 § V.4',
         justification: '',
+        annexeTarget: 'restesARecouvrer',
+        drilldownPrefix: '416',
       });
     }
 
@@ -220,12 +234,112 @@ export function AnnexeComptableSection() {
         description: `Écart de ${formatEur(ecartFdr)} dans l'équation FDR (${formatEur(R.fdrComptable)}) ≠ BFR (${formatEur(R.bfr)}) + Trésorerie (${formatEur(R.tresorerieNette)}). Vérifier les écritures d'inventaire.`,
         refM96: 'M9-6 § III.1',
         justification: '',
+        annexeTarget: 'patrimoine',
+      });
+    }
+
+    // ═══ 5. COHÉRENCE AMORTISSEMENTS 28/68 ═══
+    // Le total des dotations au bilan (crédit 28*) doit correspondre
+    // au total des charges (débit 68*) sauf sorties d'actifs (cessions/mises au rebut)
+    const totalDotBilan28 = balanceData
+      .filter((b: any) => b.compte?.startsWith('28'))
+      .reduce((s: number, b: any) => s + (b.crd || 0), 0);
+    const totalDotResultat68 = balanceData
+      .filter((b: any) => b.compte?.startsWith('68'))
+      .reduce((s: number, b: any) => s + (b.dbt || 0), 0);
+    const sortiesActifs = balanceData
+      .filter((b: any) => b.compte?.startsWith('28') && (b.dbt || 0) > 0)
+      .reduce((s: number, b: any) => s + (b.dbt || 0), 0);
+    const ecartAmort = Math.abs(totalDotBilan28 - sortiesActifs - totalDotResultat68);
+    if (ecartAmort > 10 && (totalDotBilan28 > 0 || totalDotResultat68 > 0)) {
+      anomalies.push({
+        id: `amort28_68_${idx++}`,
+        compte: '28*/68*', intitule: 'Cohérence Amortissements Bilan / Résultat',
+        type: 'amort_28_68', severity: 'bloquant',
+        description: `Écart de ${formatEur(ecartAmort)} entre les dotations au bilan (Crédit 28* = ${formatEur(totalDotBilan28)}, hors sorties ${formatEur(sortiesActifs)}) et les charges d'amortissement au résultat (Débit 68* = ${formatEur(totalDotResultat68)}). L'écart ne correspond pas aux sorties d'actifs.`,
+        refM96: 'M9-6 § III.3 / § IV.3',
+        justification: '',
+        annexeTarget: 'patrimoine',
+        drilldownPrefix: '28',
+      });
+    }
+
+    // ═══ 6. ANCIENNETÉ CLASSE 4 (411, 416) ═══
+    // Identifie les soldes 411/416 qui n'ont pas bougé depuis N-1
+    // (antérieur > 0 mais aucun mouvement en N)
+    const comptesAnciens = balanceData.filter((b: any) => {
+      if (!b.compte?.startsWith('411') && !b.compte?.startsWith('416')) return false;
+      const solde = (b.solDbt || 0) - (b.solCrd || 0);
+      if (solde <= 0) return false;
+      // Pas de mouvement en N : débit et crédit = 0
+      const pasMouvement = (b.dbt || 0) === 0 && (b.crd || 0) === 0;
+      // Ou vérifier via la balance N-1 si disponible
+      if (pasMouvement) return true;
+      // Si balance N-1 disponible, vérifier que le solde est identique
+      if (balance1DataN1.length > 0) {
+        const compteN1 = balance1DataN1.find((bn1: any) => bn1.compte === b.compte);
+        if (compteN1) {
+          const soldeN1 = (compteN1.solDbt || 0) - (compteN1.solCrd || 0);
+          if (Math.abs(solde - soldeN1) < 1 && soldeN1 > 0) return true;
+        }
+      }
+      return false;
+    });
+
+    comptesAnciens.forEach((b: any) => {
+      anomalies.push({
+        id: `ancien_${idx++}`,
+        compte: b.compte, intitule: b.intituleReduit || '',
+        type: 'anciennete_cl4', severity: 'anomalie',
+        description: `Solde débiteur de ${formatEur((b.solDbt || 0) - (b.solCrd || 0))} inchangé depuis N-1. Créance non mouvementée — absence de diligences de recouvrement ou créance à admettre en non-valeur.`,
+        refM96: 'M9-6 § V.4',
+        justification: '',
+        annexeTarget: 'restesARecouvrer',
+        drilldownPrefix: b.compte.substring(0, 3),
+      });
+    });
+
+    // ═══ 7. UNITÉ DE CAISSE — Cohérence compte 515 (Trésor) ═══
+    const cpte515 = balanceData.filter((b: any) => b.compte?.startsWith('515'));
+    const solde515 = cpte515.reduce((s: number, b: any) => s + (b.solDbt || 0) - (b.solCrd || 0), 0);
+    const cpte512 = balanceData.filter((b: any) => b.compte?.startsWith('512'));
+    const solde512 = cpte512.reduce((s: number, b: any) => s + (b.solDbt || 0) - (b.solCrd || 0), 0);
+    const cpte531 = balanceData.filter((b: any) => b.compte?.startsWith('531'));
+    const solde531 = cpte531.reduce((s: number, b: any) => s + (b.solDbt || 0) - (b.solCrd || 0), 0);
+    const totalDispo = solde515 + solde512 + solde531;
+    
+    // Vérification : pas de fonds hors comptabilité (comptes 46* avec solde anormal)
+    const fonds46 = balanceData.filter((b: any) => b.compte?.startsWith('46'));
+    const soldeFonds46 = fonds46.reduce((s: number, b: any) => s + Math.abs((b.solDbt || 0) - (b.solCrd || 0)), 0);
+    
+    if (solde515 < 0) {
+      anomalies.push({
+        id: `caisse_515_${idx++}`,
+        compte: '515', intitule: 'Compte Trésor Public',
+        type: 'unite_caisse', severity: 'bloquant',
+        description: `Le compte 515 (Trésor) présente un solde créditeur de ${formatEur(Math.abs(solde515))}. Le compte au Trésor ne peut être débiteur que dans des cas exceptionnels (avances). Vérifier la concordance avec le relevé DFT et l'absence d'opérations de trésorerie non comptabilisées.`,
+        refM96: 'M9-6 § IV.2 / RGCP Art. 28',
+        justification: '',
+        annexeTarget: 'tresorerie',
+        drilldownPrefix: '515',
+      });
+    }
+    if (soldeFonds46 > 5000) {
+      anomalies.push({
+        id: `fonds46_${idx++}`,
+        compte: '46*', intitule: 'Fonds de tiers',
+        type: 'unite_caisse', severity: 'anomalie',
+        description: `Soldes sur comptes de tiers (46*) de ${formatEur(soldeFonds46)}. Vérifier la régularité de ces fonds et le respect du principe d'unité de caisse. Aucun fonds ne doit être détenu hors de la comptabilité de l'EPLE.`,
+        refM96: 'RGCP Art. 47 / M9-6 § V.6',
+        justification: '',
+        annexeTarget: 'tresorerie',
+        drilldownPrefix: '46',
       });
     }
 
     setAuditAnomalies(anomalies);
     setAuditValidated(anomalies.filter(a => a.severity === 'bloquant').length === 0);
-  }, [R, balanceData, anomaliesBalance]);
+  }, [R, balanceData, anomaliesBalance, balance1DataN1]);
 
   const blockingAnomalies = useMemo(() => auditAnomalies.filter(a => a.severity === 'bloquant'), [auditAnomalies]);
   const unjustifiedBlocking = useMemo(() => blockingAnomalies.filter(a => !a.justification.trim()), [blockingAnomalies]);
@@ -762,21 +876,42 @@ export function AnnexeComptableSection() {
           ))}
         </TabsList>
 
-        {/* ═══ TAB 0: AUTO-AUDIT ═══ */}
+        {/* ═══ TAB 0: AUTO-AUDIT (Pré-validation) ═══ */}
         <TabsContent value="autoAudit" className="space-y-5 mt-0">
           <Card className={`border-2 ${canGenerateAnnexe ? 'border-emerald-500/30' : 'border-destructive/30'}`}>
             <CardHeader className="py-3 bg-muted/10">
               <CardTitle className="text-sm flex items-center gap-2">
                 <ShieldAlert className="h-5 w-5 text-primary" />
-                Scanner Auto-Audit — Contrôle de cohérence pré-annexe
-                <Badge variant="outline" className="ml-auto text-[10px]">M9-6 § V.3</Badge>
+                Pré-validation Audit — Contrôle de gestion avant annexe
+                <Badge variant="outline" className="ml-auto text-[10px]">M9-6 § V.3 · RGCP 2012-1246</Badge>
               </CardTitle>
             </CardHeader>
             <CardContent className="p-4 space-y-3">
               <p className="text-xs text-muted-foreground">
-                Le système analyse la balance pour détecter les anomalies de solde, les ruptures de cohérence et les obligations comptables non remplies.
-                <strong className="text-foreground"> Les anomalies bloquantes doivent être justifiées</strong> avant toute génération de l'annexe.
+                Algorithme de détection : cohérence amortissements (28/68), ancienneté des créances (411/416), unité de caisse (515), provisions, cohérence FDR.
+                <strong className="text-foreground"> Les alertes 🔴 bloquantes nécessitent une justification obligatoire.</strong> Les alertes 🟠 doivent être documentées.
               </p>
+
+              {/* Résumé par type */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { label: 'Amort. 28/68', type: 'amort_28_68', icon: '🔴' },
+                  { label: 'Ancienneté Cl.4', type: 'anciennete_cl4', icon: '🟠' },
+                  { label: 'Unité caisse', type: 'unite_caisse', icon: '🔴' },
+                  { label: 'Autres', type: '_other', icon: '⚡' },
+                ].map(cat => {
+                  const count = cat.type === '_other'
+                    ? auditAnomalies.filter(a => !['amort_28_68', 'anciennete_cl4', 'unite_caisse'].includes(a.type)).length
+                    : auditAnomalies.filter(a => a.type === cat.type).length;
+                  return (
+                    <div key={cat.type} className="bg-muted/20 rounded-lg p-2.5 border border-border/50 text-center">
+                      <div className="text-lg">{count > 0 ? cat.icon : '✅'}</div>
+                      <div className="text-[10px] text-muted-foreground uppercase tracking-wider">{cat.label}</div>
+                      <div className="font-bold font-mono text-sm">{count}</div>
+                    </div>
+                  );
+                })}
+              </div>
 
               {auditAnomalies.length === 0 && (
                 <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-6 text-center">
@@ -786,7 +921,7 @@ export function AnnexeComptableSection() {
                 </div>
               )}
 
-              {auditAnomalies.map((anomaly, idx) => (
+              {auditAnomalies.map((anomaly) => (
                 <div key={anomaly.id} className={`rounded-lg border p-4 space-y-3 ${
                   anomaly.severity === 'bloquant'
                     ? 'border-destructive/40 bg-destructive/5'
@@ -805,41 +940,81 @@ export function AnnexeComptableSection() {
                         <Badge variant="outline" className={`text-[10px] font-bold ${
                           anomaly.severity === 'bloquant' ? 'border-destructive text-destructive' : 'border-warning text-warning'
                         }`}>
-                          {anomaly.severity === 'bloquant' ? 'BLOQUANT' : 'ANOMALIE'}
+                          {anomaly.severity === 'bloquant' ? '🔴 BLOQUANT' : '🟠 ANOMALIE'}
                         </Badge>
                         <span className="font-mono text-xs font-bold text-foreground">{anomaly.compte}</span>
                         <span className="text-xs text-muted-foreground">{anomaly.intitule}</span>
                         <Badge variant="outline" className="text-[9px] ml-auto">{anomaly.refM96}</Badge>
                       </div>
                       <p className="text-xs text-foreground mt-1 leading-relaxed">{anomaly.description}</p>
+
+                      {/* Action buttons: drilldown + inject */}
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {anomaly.drilldownPrefix && (
+                          <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1 px-2"
+                            onClick={() => setAuditDrilldown(auditDrilldown === anomaly.drilldownPrefix ? null : anomaly.drilldownPrefix!)}>
+                            <Search className="h-3 w-3" />
+                            {auditDrilldown === anomaly.drilldownPrefix ? 'Masquer le Grand Livre' : `Voir Grand Livre ${anomaly.drilldownPrefix}*`}
+                          </Button>
+                        )}
+                        {anomaly.annexeTarget && anomaly.justification.trim() && (
+                          <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1 px-2"
+                            onClick={() => {
+                              const target = anomaly.annexeTarget!;
+                              const sectionLabel = SECTION_META[target]?.label || target;
+                              const prefix = `\n\n**Observation du comptable — ${anomaly.compte} :**\n`;
+                              setTexts(prev => ({
+                                ...prev,
+                                [target]: (prev[target] || '') + prefix + anomaly.justification + '\n',
+                              }));
+                              toast.success(`Justification insérée dans « ${sectionLabel} »`);
+                            }}>
+                            <ArrowRight className="h-3 w-3" />
+                            Insérer dans l'annexe ({SECTION_META[anomaly.annexeTarget]?.label.substring(0, 25) || anomaly.annexeTarget})
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
 
-                  {anomaly.severity === 'bloquant' && (
-                    <div className="ml-8">
-                      <Label className="text-xs font-bold text-foreground flex items-center gap-1.5 mb-1">
-                        <FileText className="h-3 w-3" />
-                        Observations du comptable sur les soldes atypiques
-                        <span className="text-destructive">*</span>
-                      </Label>
-                      <Textarea
-                        value={anomaly.justification}
-                        onChange={e => {
-                          const val = e.target.value;
-                          setAuditAnomalies(prev => prev.map(a =>
-                            a.id === anomaly.id ? { ...a, justification: val } : a
-                          ));
-                        }}
-                        placeholder="Justification obligatoire — Expliquez la cause de cette anomalie et les mesures prises ou prévues…"
-                        className="text-xs min-h-[60px] bg-background"
-                      />
-                      {!anomaly.justification.trim() && (
-                        <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
-                          <Lock className="h-3 w-3" /> Justification obligatoire pour débloquer la génération de l'annexe
-                        </p>
-                      )}
+                  {/* Drilldown: Grand Livre lines for this anomaly */}
+                  {anomaly.drilldownPrefix && auditDrilldown === anomaly.drilldownPrefix && (
+                    <div className="ml-8 mt-2">
+                      <DrilldownTable comptes={getComptesForPrefix(anomaly.drilldownPrefix)} prefix={anomaly.drilldownPrefix} />
                     </div>
                   )}
+
+                  {/* Justification field */}
+                  <div className="ml-8">
+                    <Label className="text-xs font-bold text-foreground flex items-center gap-1.5 mb-1">
+                      <FileText className="h-3 w-3" />
+                      {anomaly.severity === 'bloquant' ? 'Observations du comptable sur les soldes atypiques' : 'Justification (recommandée)'}
+                      {anomaly.severity === 'bloquant' && <span className="text-destructive">*</span>}
+                    </Label>
+                    <Textarea
+                      value={anomaly.justification}
+                      onChange={e => {
+                        const val = e.target.value;
+                        setAuditAnomalies(prev => prev.map(a =>
+                          a.id === anomaly.id ? { ...a, justification: val } : a
+                        ));
+                      }}
+                      placeholder={anomaly.severity === 'bloquant'
+                        ? 'Justification obligatoire — Expliquez la cause de cette anomalie et les mesures prises…'
+                        : 'Facultatif — Documentez cette observation pour le dossier…'}
+                      className="text-xs min-h-[60px] bg-background"
+                    />
+                    {anomaly.severity === 'bloquant' && !anomaly.justification.trim() && (
+                      <p className="text-[10px] text-destructive mt-1 flex items-center gap-1">
+                        <Lock className="h-3 w-3" /> Justification obligatoire pour débloquer la génération de l'annexe
+                      </p>
+                    )}
+                    {anomaly.justification.trim() && anomaly.annexeTarget && (
+                      <p className="text-[10px] text-muted-foreground mt-1 flex items-center gap-1">
+                        <ArrowRight className="h-3 w-3" /> Cliquez « Insérer dans l'annexe » pour transférer cette observation dans la section {SECTION_META[anomaly.annexeTarget]?.label || ''}
+                      </p>
+                    )}
+                  </div>
                 </div>
               ))}
 
