@@ -2,7 +2,7 @@
 // COFIEPLE — Parseur CSV Op@le + Lookup UAI
 // ═══════════════════════════════════════════════════════════════════
 
-import type { LigneSDE, LigneSDR, LigneBalance, UAIRecord, Etablissement } from '../types';
+import type { LigneSDE, LigneSDR, LigneBalance, UAIRecord, Etablissement } from './cofieple_types';
 
 // ── Utilitaires ──────────────────────────────────────────────────────
 function toNum(v: unknown): number {
