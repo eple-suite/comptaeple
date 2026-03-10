@@ -2,6 +2,7 @@
 // COFIEPLE — Diaporama Conseil d'Administration
 // Présentation du compte financier aux instances
 // Conformité : M9-6 2026 · Décret 2012-1246
+// Terminologie stricte M9-6 / GBCP
 // ═══════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
@@ -41,17 +42,18 @@ export function DiaporamaSection() {
         Agent comptable : {etab.agentComptable || '—'}<br />
         Arrêté au : {dateArrete}
       </p>
+      <p className="text-slate-500 text-xs mt-4">Instruction codificatrice M9-6 du 12 février 2026 — Décret 2012-1246 (RGCP)</p>
     </div>,
 
-    // Slide 1 — Résultats clés
+    // Slide 1 — Résultats de l'exercice
     <div key="1" className="flex flex-col h-full p-10 bg-slate-900 rounded-xl">
-      <div className="text-warning text-xs font-bold uppercase tracking-widest mb-2">01 — Résultats clés</div>
-      <h2 className="text-white text-2xl font-black mb-6">Résultats de l'exercice {etab.exercice}</h2>
+      <div className="text-warning text-xs font-bold uppercase tracking-widest mb-2">01 — Résultats de l'exercice</div>
+      <h2 className="text-white text-2xl font-black mb-6">Exécution budgétaire — Section de fonctionnement</h2>
       <div className="grid grid-cols-3 gap-5 flex-1">
         {[
-          { label: 'Résultat budgétaire', value: resBudg, sub: resBudg >= 0 ? 'Excédent' : 'Déficit' },
-          { label: 'Charges réalisées', value: R.totalChargesReel, sub: `Taux : ${(R.totalChargesReel / Math.max(R.totalChargesPrev, 1) * 100).toFixed(1)} %` },
-          { label: 'Produits encaissés', value: R.totalProduitsReel, sub: `Prév. : ${formatEur(R.totalProduitsPrev)}` },
+          { label: 'Résultat budgétaire', value: resBudg, sub: resBudg >= 0 ? 'Excédent de fonctionnement' : 'Déficit de fonctionnement' },
+          { label: 'Mandatements (charges)', value: R.totalChargesReel, sub: `Taux d'exécution : ${(R.tauxExecCharges * 100).toFixed(1)} %` },
+          { label: 'Recettes comptabilisées', value: R.totalProduitsReel, sub: `Prévisions : ${formatEur(R.totalProduitsPrev)}` },
         ].map((item, i) => (
           <div key={i} className={`rounded-xl p-5 border-t-4 ${i === 0 ? (resBudg >= 0 ? 'bg-emerald-900/40 border-emerald-400' : 'bg-red-900/40 border-red-400') : 'bg-white/5 border-blue-400'}`}>
             <div className="text-xs text-slate-400 uppercase tracking-wider mb-2">{item.label}</div>
@@ -64,15 +66,15 @@ export function DiaporamaSection() {
       </div>
     </div>,
 
-    // Slide 2 — Santé financière
+    // Slide 2 — Santé financière (FDR/BFR/Trésorerie)
     <div key="2" className="flex flex-col h-full p-10 bg-slate-900 rounded-xl">
       <div className="text-warning text-xs font-bold uppercase tracking-widest mb-2">02 — Santé financière</div>
-      <h2 className="text-white text-2xl font-black mb-6">Situation financière au 31/12/{etab.exercice}</h2>
+      <h2 className="text-white text-2xl font-black mb-6">Situation patrimoniale au 31/12/{etab.exercice}</h2>
       <div className="grid grid-cols-3 gap-5 flex-1">
         {[
-          { label: 'Fonds de roulement', value: fdr, sub: fdr >= 0 ? 'Ressources permanentes suffisantes' : '⚠️ Ressources insuffisantes', ok: fdr >= 0 },
-          { label: 'Besoin en FDR', value: R.bfr, sub: 'Créances - Dettes d\'exploitation', ok: true },
-          { label: 'Trésorerie nette', value: treso, sub: 'Disponibilités DFT', ok: treso >= 0 },
+          { label: 'Fonds de roulement', value: fdr, sub: fdr >= 0 ? 'Ressources permanentes suffisantes' : '⚠️ Ressources permanentes insuffisantes', ok: fdr >= 0 },
+          { label: 'Besoin en fonds de roulement', value: R.bfr, sub: 'Créances − Dettes d\'exploitation', ok: true },
+          { label: 'Trésorerie nette', value: treso, sub: `Disponibilités DFT — ${Math.round(R.joursAutonomie)} jours d'autonomie`, ok: treso >= 0 },
         ].map((item, i) => (
           <div key={i} className={`rounded-xl p-5 border-t-4 bg-white/5 ${item.ok ? 'border-emerald-400' : 'border-red-400'}`}>
             <div className="text-xs text-slate-400 uppercase tracking-wider mb-2">{item.label}</div>
@@ -81,12 +83,41 @@ export function DiaporamaSection() {
           </div>
         ))}
       </div>
+      <div className="mt-5 bg-white/5 rounded-xl p-4 text-center">
+        <span className="text-slate-300 text-sm">Équation d'équilibre : </span>
+        <span className="text-emerald-300 font-mono font-bold">FDR = BFR + Trésorerie</span>
+        <span className={`ml-3 text-sm font-bold ${Math.abs(fdr - R.bfr - treso) < 0.05 ? 'text-emerald-400' : 'text-red-400'}`}>
+          {Math.abs(fdr - R.bfr - treso) < 0.05 ? '✅' : '❌'}
+        </span>
+      </div>
     </div>,
 
-    // Slide 3 — Services
+    // Slide 3 — CAF/IAF
     <div key="3" className="flex flex-col h-full p-10 bg-slate-900 rounded-xl">
-      <div className="text-warning text-xs font-bold uppercase tracking-widest mb-2">03 — Exécution par service</div>
-      <h2 className="text-white text-2xl font-black mb-6">Taux d'exécution budgétaire</h2>
+      <div className="text-warning text-xs font-bold uppercase tracking-widest mb-2">03 — Autofinancement</div>
+      <h2 className="text-white text-2xl font-black mb-6">CAF/IAF — Capacité d'autofinancement (M9-6 § IV.3)</h2>
+      <div className="grid grid-cols-2 gap-5 flex-1">
+        <div className={`rounded-xl p-6 border-t-4 bg-white/5 ${R.cafBudgetaire >= 0 ? 'border-emerald-400' : 'border-red-400'}`}>
+          <div className="text-xs text-slate-400 uppercase tracking-wider mb-2">CAF/IAF budgétaire</div>
+          <div className={`text-3xl font-black font-mono mb-2 ${R.cafBudgetaire >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+            {formatEur(R.cafBudgetaire)}
+          </div>
+          <div className="text-xs text-slate-400">
+            {R.cafBudgetaire >= 0 ? 'L\'établissement dégage une capacité d\'autofinancement' : 'Insuffisance d\'autofinancement — prélèvement sur le FDR'}
+          </div>
+        </div>
+        <div className="rounded-xl p-6 border-t-4 bg-white/5 border-blue-400">
+          <div className="text-xs text-slate-400 uppercase tracking-wider mb-2">Réserves disponibles</div>
+          <div className="text-3xl font-black font-mono mb-2 text-white">{formatEur(R.reserves)}</div>
+          <div className="text-xs text-slate-400">Compte 1068 — Réserves de l'établissement</div>
+        </div>
+      </div>
+    </div>,
+
+    // Slide 4 — Exécution par service
+    <div key="4" className="flex flex-col h-full p-10 bg-slate-900 rounded-xl">
+      <div className="text-warning text-xs font-bold uppercase tracking-widest mb-2">04 — Exécution par service</div>
+      <h2 className="text-white text-2xl font-black mb-6">Taux d'exécution budgétaire par service</h2>
       <div className="space-y-4 flex-1">
         {Object.entries(R.parService).map(([svc, d]: [string, any]) => {
           const tx = d.chargesPrev > 0 ? d.chargesReel / d.chargesPrev : 0;
@@ -109,8 +140,8 @@ export function DiaporamaSection() {
       </div>
     </div>,
 
-    // Slide 4 — Conclusion
-    <div key="4" className="flex flex-col items-center justify-center h-full text-center p-12 bg-gradient-to-br from-blue-900 to-slate-900 rounded-xl">
+    // Slide 5 — Conclusion
+    <div key="5" className="flex flex-col items-center justify-center h-full text-center p-12 bg-gradient-to-br from-blue-900 to-slate-900 rounded-xl">
       <div className="text-5xl mb-5">🏫</div>
       <h2 className="text-white text-3xl font-black mb-3">Merci pour votre attention</h2>
       <p className="text-blue-300 text-base mb-6">{etab.nom} · RNE {etab.uai}</p>
@@ -119,6 +150,10 @@ export function DiaporamaSection() {
         Ordonnateur : {etab.ordonnateur || '—'}<br />
         Agent comptable : {etab.agentComptable || '—'}
       </div>
+      <p className="text-slate-600 text-xs mt-6">
+        Document établi conformément à l'instruction M9-6 du 12/02/2026<br />
+        et au décret n°2012-1246 du 07/11/2012 (RGCP)
+      </p>
     </div>,
   ];
 

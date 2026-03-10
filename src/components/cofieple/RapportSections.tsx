@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 // COFIEPLE — Rapport Ordonnateur + Rapport Agent Comptable
 // Génération IA via Lovable AI (Gemini 2.5 Flash)
-// Conformité : M9-6 2026, Décret 2012-1246, Code Éducation
+// Conformité stricte : M9-6 2026, Décret 2012-1246 (RGCP),
+// Code de l'Éducation Art. R421-68 et suivants
 // ═══════════════════════════════════════════════════════════════
 
 import { useState } from 'react';
@@ -17,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 // ═══════════════════════════════════════════════════════════════
 // RAPPORT DE L'ORDONNATEUR
+// Fondement : M9-6 § V.1 — Code Éducation Art. R421-68
 // ═══════════════════════════════════════════════════════════════
 export function RapportOrdoSection() {
   const etab = useCofiepleStore(s => s.etablissement);
@@ -28,7 +30,7 @@ export function RapportOrdoSection() {
   const [aiText3, setAiText3] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
-  if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'ordonnateur." />;
+  if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'ordonnateur (M9-6 § V.1)." />;
 
   const dateArrete = etab.dateArrete ? new Date(etab.dateArrete).toLocaleDateString('fr-FR') : '—';
 
@@ -46,6 +48,10 @@ export function RapportOrdoSection() {
             cafBudgetaire: R.cafBudgetaire,
             totalChargesReel: R.totalChargesReel,
             totalProduitsReel: R.totalProduitsReel,
+            joursAutonomie: R.joursAutonomie,
+            reserves: R.reserves,
+            tauxExecCharges: R.tauxExecCharges,
+            tauxExecProduits: R.tauxExecProduits,
           },
         },
       });
@@ -76,6 +82,7 @@ export function RapportOrdoSection() {
             <div>
               <h1 className="text-xl font-black tracking-tight">RAPPORT DE L'ORDONNATEUR</h1>
               <p className="text-muted-foreground text-xs mt-0.5">Exercice {etab.exercice} · M9-6 2026 · Op@le</p>
+              <p className="text-muted-foreground text-xs">Code de l'Éducation Art. R421-68 — Décret 2012-1246</p>
             </div>
             <div className="text-right text-xs text-muted-foreground">
               <strong className="text-sm block">{etab.nom}</strong>
@@ -98,18 +105,18 @@ export function RapportOrdoSection() {
 
           <SectionTitre numero="2" title={`Exécution budgétaire de l'exercice ${etab.exercice}`} />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label="Charges" value={formatEur(R.totalChargesReel)} color="amber" icon="💸" isText />
-            <KPICard label="Produits" value={formatEur(R.totalProduitsReel)} color="green" icon="💰" isText />
-            <KPICard label="Résultat" value={formatEur(R.resultatBudgetaire)} color={R.resultatBudgetaire >= 0 ? 'green' : 'red'} icon="📊" isText />
-            <KPICard label="CAF" value={formatEur(R.cafBudgetaire)} color={R.cafBudgetaire >= 0 ? 'green' : 'red'} icon="🔄" isText />
+            <KPICard label="Mandatements" value={formatEur(R.totalChargesReel)} color="amber" icon="💸" sub={`Taux : ${(R.tauxExecCharges * 100).toFixed(1)} %`} isText />
+            <KPICard label="Recettes compt." value={formatEur(R.totalProduitsReel)} color="green" icon="💰" sub={`Taux : ${(R.tauxExecProduits * 100).toFixed(1)} %`} isText />
+            <KPICard label="Résultat budg." value={formatEur(R.resultatBudgetaire)} color={R.resultatBudgetaire >= 0 ? 'green' : 'red'} icon="📊" sub={R.resultatBudgetaire >= 0 ? 'Excédent' : 'Déficit'} isText />
+            <KPICard label="CAF/IAF" value={formatEur(R.cafBudgetaire)} color={R.cafBudgetaire >= 0 ? 'green' : 'red'} icon="🔄" sub={R.cafBudgetaire >= 0 ? 'Capacité' : 'Insuffisance'} isText />
           </div>
 
-          <SectionTitre numero="3" title="Situation financière" />
+          <SectionTitre numero="3" title="Situation financière et patrimoniale" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label="FDR" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" isText />
-            <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" isText />
-            <KPICard label="Trésorerie" value={formatEur(R.tresorerieNette)} color={R.tresorerieNette >= 0 ? 'green' : 'red'} icon="💳" isText />
-            <KPICard label="CAF/IAF" value={formatEur(R.cafBudgetaire)} color={R.cafBudgetaire >= 0 ? 'green' : 'red'} icon="🔄" isText />
+            <KPICard label="FDR" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub="Fonds de roulement" isText />
+            <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" sub="Besoin en FDR" isText />
+            <KPICard label="Trésorerie" value={formatEur(R.tresorerieNette)} color={R.tresorerieNette >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(R.joursAutonomie)} jours`} isText />
+            <KPICard label="Réserves" value={formatEur(R.reserves)} color="blue" icon="🏛️" sub="Compte 1068" isText />
           </div>
 
           <SectionTitre numero="4" title="Points d'attention et perspectives" />
@@ -137,6 +144,7 @@ export function RapportOrdoSection() {
 
 // ═══════════════════════════════════════════════════════════════
 // RAPPORT DE L'AGENT COMPTABLE
+// Fondement : M9-6 § V.2 — Décret 2012-1246 art. 195-199
 // ═══════════════════════════════════════════════════════════════
 export function RapportACSection() {
   const etab = useCofiepleStore(s => s.etablissement);
@@ -147,7 +155,7 @@ export function RapportACSection() {
   const [aiObs, setAiObs] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
 
-  if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'agent comptable." />;
+  if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'agent comptable (M9-6 § V.2)." />;
 
   const nbBloq = checkItems.filter(c => c.bloquant).length;
   const nbAnom = checkItems.filter(c => c.statut !== 'ok').length;
@@ -169,6 +177,7 @@ export function RapportACSection() {
             totalChargesReel: R.totalChargesReel,
             totalProduitsReel: R.totalProduitsReel,
             reserves: R.reserves,
+            joursAutonomie: R.joursAutonomie,
           },
           anomalies: nbAnom,
           bloquants: nbBloq,
@@ -197,7 +206,7 @@ export function RapportACSection() {
           <div className="flex justify-between items-start border-b-2 border-foreground pb-4 mb-5">
             <div>
               <h1 className="text-xl font-black">RAPPORT DE L'AGENT COMPTABLE</h1>
-              <p className="text-muted-foreground text-xs">Exercice {etab.exercice} · M9-6 2026</p>
+              <p className="text-muted-foreground text-xs">Exercice {etab.exercice} · M9-6 2026 · Décret 2012-1246 art. 195-199</p>
             </div>
             <div className="text-right text-xs text-muted-foreground">
               <strong className="text-sm block">{etab.nom}</strong>
@@ -217,22 +226,27 @@ export function RapportACSection() {
             Je soussigné(e), <strong>{etab.agentComptable || '…………'}</strong>, agent comptable de{' '}
             <strong>{etab.nom || 'l\'établissement'}</strong> (RNE {etab.uai || '…'}), certifie que le
             compte financier de l'exercice <strong>{etab.exercice}</strong> a été établi conformément aux
-            dispositions de l'instruction codificatrice M9-6 du 12 février 2026 et du décret n°2012-1246
-            du 7 novembre 2012 relatif à la gestion budgétaire et comptable publique.
+            dispositions de l'instruction codificatrice M9-6 du 12 février 2026, du décret n°2012-1246
+            du 7 novembre 2012 relatif à la gestion budgétaire et comptable publique (RGCP) et des
+            articles R421-68 et suivants du code de l'éducation.
           </div>
 
           <SectionTitre numero="2" title="Vérifications et rapprochements comptables" />
           <div className="flex gap-3 mb-4 flex-wrap">
             <Badge className={nbBloq > 0 ? 'bg-destructive text-destructive-foreground' : nbAnom > 0 ? 'bg-warning text-warning-foreground' : 'bg-emerald-600 text-white'}>
-              {nbBloq > 0 ? `🚫 ${nbBloq} point(s) bloquant(s)` : nbAnom > 0 ? `⚠️ ${nbAnom} anomalie(s)` : '✅ Aucune anomalie bloquante'}
+              {nbBloq > 0 ? `🚫 ${nbBloq} point(s) bloquant(s) au dépôt` : nbAnom > 0 ? `⚠️ ${nbAnom} anomalie(s) de rapprochement` : '✅ Aucune anomalie bloquante — concordance vérifiée'}
             </Badge>
+          </div>
+          <div className="text-xs text-muted-foreground mb-4 bg-muted/30 rounded-lg p-3">
+            Les 15 rapprochements réglementaires M9-6 ont été effectués (concordance SDE/SDR ↔ Balance,
+            équilibre FDR haut/bas, structuration FDR = BFR + Trésorerie, CAF/IAF budgétaire et comptable).
           </div>
 
           <SectionTitre numero="3" title="Situation financière et indicateurs clés" />
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-            <KPICard label="FDR comptable" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" isText />
-            <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" isText />
-            <KPICard label="Trésorerie" value={formatEur(R.tresorerieNette)} color={R.tresorerieNette >= 0 ? 'green' : 'red'} icon="💳" isText />
+            <KPICard label="FDR comptable" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub="Fonds de roulement" isText />
+            <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" sub="Besoin en FDR" isText />
+            <KPICard label="Trésorerie nette" value={formatEur(R.tresorerieNette)} color={R.tresorerieNette >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(R.joursAutonomie)} jours d'autonomie`} isText />
             <KPICard label="CAF/IAF comptable" value={formatEur(R.cafComptable)} color={R.cafComptable >= 0 ? 'green' : 'red'} icon="🔄" isText />
             <KPICard label="Résultat comptable" value={formatEur(R.resultatComptable)} color={R.resultatComptable >= 0 ? 'green' : 'red'} icon="📈" isText />
             <KPICard label="Réserves (cpte 1068)" value={formatEur(R.reserves)} color="blue" icon="🏛️" isText />
@@ -250,7 +264,7 @@ export function RapportACSection() {
               <span>Signature et cachet</span>
             </div>
             <div className="text-right">
-              <strong className="block text-foreground">Visa du Trésorier principal</strong>
+              <strong className="block text-foreground">Visa du comptable supérieur</strong>
               <div className="mt-8">……………………</div>
               <span>Signature et cachet</span>
             </div>

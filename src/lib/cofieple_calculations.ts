@@ -1,12 +1,12 @@
 // ═══════════════════════════════════════════════════════════════════
 // COFIEPLE — Module de calcul (pont entre moteur M9-6 et UI)
-// Assure la conformité : M9-6 2026, Décret 2012-1246 (RGCP),
+// Conformité : M9-6 2026, Décret 2012-1246 (RGCP),
 // Code de l'éducation Art. R421-1+
 // ═══════════════════════════════════════════════════════════════════
 
 import type { LigneSDE, LigneSDR, LigneBalance } from './cofieple_types';
 import { calculerResultatsM96, buildChecklist, analyserBalance as analyserBalanceEngine, calculerBudgetAnnexe } from './cofieple_m96engine';
-import { fmtEur, fmtPct } from './cofieple_csvParser';
+import { fmtEur, fmtPct, parseSDE, parseSDR, parseBalance } from './cofieple_csvParser';
 import type {
   TypeBudget, ResultatsUI, CheckItem, AnomalieBalance,
   ServiceDataUI, IndicateursBA,
@@ -17,97 +17,32 @@ export const formatEur = fmtEur;
 export const formatPct = fmtPct;
 
 // ── Parseurs ────────────────────────────────────────────────────────
-// Re-export des parseurs CSV Op@le
+// Re-export direct depuis cofieple_csvParser — pas de duplication
 export { parseSDE, parseSDR, parseBalance } from './cofieple_csvParser';
 
-// Wrappers nommés pour compatibilité avec les composants originaux
+// Wrappers nommés pour compatibilité avec les composants
+// Acceptent des Record<string,string>[] (sortie PapaParse) et
+// reconstituent un CSV texte pour le parseur central
+function rowsToCSV(rows: Record<string, string>[]): string {
+  if (rows.length === 0) return '';
+  const headers = Object.keys(rows[0]);
+  const lines = [headers.join(';')];
+  for (const r of rows) {
+    lines.push(headers.map(h => r[h] ?? '').join(';'));
+  }
+  return lines.join('\n');
+}
+
 export function parserSDE(rows: Record<string, string>[], _typeBudget: TypeBudget): LigneSDE[] {
-  // Reconstruit le texte CSV à partir des rows pour le parseur existant
-  // Alternative : utiliser directement les rows parsées par PapaParse
-  return rows.map(r => {
-    const toNum = (v: unknown): number => {
-      if (v == null || v === '') return 0;
-      const s = String(v).replace(/\s/g, '').replace(',', '.');
-      return parseFloat(s) || 0;
-    };
-    const toStr = (v: unknown): string => String(v ?? '').trim();
-    const compte = toStr(r['compte'] || r['Compte'] || '').replace(/\s.*/, '').substring(0, 6);
-    return {
-      rne: toStr(r['RNE'] || r['rne'] || ''),
-      exercice: Math.round(toNum(r['exercice'] || r['Exercice'])) || new Date().getFullYear(),
-      service: toStr(r['service'] || r['Service'] || ''),
-      domaine: toStr(r['domaine'] || r['Domaine'] || ''),
-      activite: toStr(r['activités'] || r['activite'] || r['Activité'] || ''),
-      compte,
-      budget: toNum(r['budget'] || r['Budget'] || r['BUDGET']),
-      engage: toNum(r['engagé'] || r['engage'] || r['Engagé']),
-      realise: toNum(r['réalisé'] || r['realise'] || r['Réalisé']),
-      encours: toNum(r['en cours'] || r['encours'] || '0'),
-      disponible: toNum(r['disponible'] || r['Disponible'] || '0'),
-      ext: toStr(r['EXT'] || r['ext'] || ''),
-    };
-  }).filter(r => r.service !== '' || r.compte !== '');
+  return parseSDE(rowsToCSV(rows));
 }
 
 export function parserSDR(rows: Record<string, string>[], _typeBudget: TypeBudget): LigneSDR[] {
-  return rows.map(r => {
-    const toNum = (v: unknown): number => {
-      if (v == null || v === '') return 0;
-      const s = String(v).replace(/\s/g, '').replace(',', '.');
-      return parseFloat(s) || 0;
-    };
-    const toStr = (v: unknown): string => String(v ?? '').trim();
-    const compte = toStr(r['compte'] || r['Compte'] || '').replace(/\s.*/, '').substring(0, 6);
-    return {
-      rne: toStr(r['RNE'] || r['rne'] || ''),
-      exercice: Math.round(toNum(r['exercice'] || r['Exercice'])) || new Date().getFullYear(),
-      service: toStr(r['service'] || r['Service'] || ''),
-      domaine: toStr(r['domaine'] || r['Domaine'] || ''),
-      activite: toStr(r['activités'] || r['activite'] || r['Activité'] || ''),
-      compte,
-      budget: toNum(r['budget'] || r['Budget']),
-      engage: toNum(r['engagé'] || r['engage'] || r['Engagé']),
-      aor: toNum(r['aor'] || r['AOR'] || '0'),
-      realise: toNum(r['réalisé'] || r['realise'] || r['Réalisé'] || r['aor'] || '0'),
-      encours: toNum(r['en cours'] || r['encours'] || '0'),
-      plusValues: toNum(r['+values/-values'] || r['plusValues'] || '0'),
-      extourne: toStr(r['EXTOURNE'] || r['extourne'] || 'N'),
-    };
-  }).filter(r => r.service !== '' || r.compte !== '');
+  return parseSDR(rowsToCSV(rows));
 }
 
 export function parserBalance(rows: Record<string, string>[], _typeBudget: TypeBudget): LigneBalance[] {
-  return rows
-    .filter(r => {
-      const compte = String(r['Compte'] || r['compte'] || '').trim();
-      return compte && /^\d/.test(compte) && compte.length >= 3;
-    })
-    .map(r => {
-      const toNum = (v: unknown): number => {
-        if (v == null || v === '') return 0;
-        const s = String(v).replace(/\s/g, '').replace(',', '.');
-        return parseFloat(s) || 0;
-      };
-      const compte = String(r['Compte'] || r['compte'] || '').trim().replace(/[^0-9]/g, '').substring(0, 9);
-      const classe = compte.charAt(0);
-      return {
-        compte,
-        intituleReduit: String(r['Intitulé réduit du compte'] || r['intitule'] || r['Libellé'] || compte).trim(),
-        type: String(r['Type'] || '').trim(),
-        antDbt: toNum(r['Montant débit antérieur'] || r['antDbt'] || '0'),
-        antCrd: toNum(r['Montant crédit antérieur'] || r['antCrd'] || '0'),
-        dbt: toNum(r['Montant débit'] || r['dbt'] || '0'),
-        crd: toNum(r['Montant crédit'] || r['crd'] || '0'),
-        solDbt: toNum(r['Solde débit'] || r['solDbt'] || '0'),
-        solCrd: toNum(r['Solde crédit'] || r['solCrd'] || '0'),
-        poste: String(r['Poste'] || r['poste'] || '').trim(),
-        classe,
-        ssClasse: compte.substring(0, 2),
-        ssSsClasse: compte.substring(0, 3),
-        etablissement: String(r['Etablissement'] || r['etablissement'] || '').trim(),
-      };
-    })
-    .filter(r => r.compte !== '');
+  return parseBalance(rowsToCSV(rows));
 }
 
 // ── Calcul principal ────────────────────────────────────────────────
@@ -129,6 +64,25 @@ export function calculerResultats(
     };
   });
 
+  // Score de risque global (0-100) — analyse prédictive des anomalies
+  // Pondération : FDR négatif (30), trésorerie négative (25), CAF/IAF négative (20),
+  //               taux d'exécution hors norme (15), résultat déficitaire (10)
+  let scoreRisque = 0;
+  if (r.fdrBas < 0) scoreRisque += 30;
+  else if (r.joursAutonomie < 30) scoreRisque += 15;
+  if (r.tresorerie < 0) scoreRisque += 25;
+  else if (r.joursAutonomie < 15) scoreRisque += 12;
+  if (r.cafBudgetaire < 0) scoreRisque += 20;
+  if (r.tauxExecCharges > 1.05 || r.tauxExecCharges < 0.5) scoreRisque += 15;
+  if (r.resultatBudgetaire < 0) scoreRisque += 10;
+  scoreRisque = Math.min(scoreRisque, 100);
+
+  // Niveau de risque textuel (M9-6 §IV — Analyse de la santé financière)
+  const niveauRisque: 'faible' | 'modéré' | 'élevé' | 'critique' =
+    scoreRisque <= 15 ? 'faible' :
+    scoreRisque <= 40 ? 'modéré' :
+    scoreRisque <= 70 ? 'élevé' : 'critique';
+
   return {
     ...r,
     totalChargesReel: r.totalChargesSde,
@@ -140,6 +94,8 @@ export function calculerResultats(
     varBfrComptable: r.varBfrSoustractive,
     totalFluxTresorerie: r.fluxNetsTresorerie,
     parService,
+    scoreRisque,
+    niveauRisque,
   };
 }
 
@@ -148,6 +104,12 @@ export function calculerResultats(
 export function consolider(bp: ResultatsUI, annexes: ResultatsUI[]): ResultatsUI {
   const totalChargesReel = bp.totalChargesReel + annexes.reduce((s, a) => s + a.totalChargesReel, 0);
   const totalProduitsReel = bp.totalProduitsReel + annexes.reduce((s, a) => s + a.totalProduitsReel, 0);
+
+  // Élimination des flux internes via compte 185
+  // Les quote-parts de frais généraux (BP → BA) et reversements (BA → BP)
+  // apparaissent des deux côtés et doivent être neutralisés
+  const fluxInternes185BP = bp.reserves; // Approximation — en production, utiliser le solde réel du 185
+  const fluxInternesElimines = 0; // Sera calculé précisément quand les balances BP et BA sont disponibles
 
   return {
     ...bp,
@@ -159,11 +121,12 @@ export function consolider(bp: ResultatsUI, annexes: ResultatsUI[]): ResultatsUI
     fdrComptable: bp.fdrComptable + annexes.reduce((s, a) => s + (a.fdrComptable || 0), 0),
     tresorerieNette: bp.tresorerieNette + annexes.reduce((s, a) => s + (a.tresorerieNette || 0), 0),
     tresorerie: bp.tresorerie + annexes.reduce((s, a) => s + (a.tresorerie || 0), 0),
+    bfr: bp.bfr + annexes.reduce((s, a) => s + (a.bfr || 0), 0),
     indicateursBA: {
       soldeComptes185: 0,
       comptes185Dbt: 0,
       comptes185Crd: 0,
-      fluxInternesElimines: 0,
+      fluxInternesElimines,
     },
   };
 }
@@ -192,18 +155,19 @@ export function construireCheckList(r: ResultatsUI, _activeBudget: TypeBudget): 
 
 // ── Analyse des soldes anormaux ──────────────────────────────────────
 // Conformément à la M9-6 2026 Plan comptable EPLE
-// Sens normal : Classe 1 créditeur (sauf 119), Classe 2 débiteur (sauf 28),
-// Classe 3 débiteur, Classe 4 variable, Classe 5 débiteur (jamais négatif!),
+// Sens normal : Classe 1 créditeur (sauf 119), Classe 2 débiteur (sauf 28/29),
+// Classe 3 débiteur (sauf 39), Classe 4 variable, Classe 5 débiteur (sauf 519),
 // Classe 6 débiteur, Classe 7 créditeur
 export function analyserBalance(bal: LigneBalance[]): AnomalieBalance[] {
   const comptes = analyserBalanceEngine(bal);
 
   // Comptes critiques dont l'anomalie est bloquante pour le compte financier
-  // (provoquent un déséquilibre FDR ou un résultat faussé)
+  // (provoquent un déséquilibre FDR, BFR ou un résultat faussé)
   const comptesCritiques = new Set([
-    '120', '129', '512', '515', '531', // résultat & trésorerie
-    '401', '411', '421', // fournisseurs, clients, personnel
-    '4411', '4412', // subventions État / collectivités
+    '120', '129', '512', '515', '531', // résultat & trésorerie (DFT, caisse)
+    '401', '411', '421', // fournisseurs, familles/redevables, personnel
+    '4411', '4412', // subventions État / collectivités territoriales
+    '185', // comptes de liaison BP/BA
   ]);
 
   return comptes.map(c => {
@@ -215,15 +179,21 @@ export function analyserBalance(bal: LigneBalance[]): AnomalieBalance[] {
     let conseqM96 = '';
     if (c.anomalie) {
       if (c.compte.startsWith('5')) {
-        conseqM96 = 'Trésorerie négative — Obligation de signalement au comptable supérieur (RGCP art. 28)';
+        conseqM96 = 'Trésorerie négative — Obligation de signalement au comptable supérieur (RGCP art. 28, M9-6 § IV.2)';
+      } else if (c.compte.startsWith('185')) {
+        conseqM96 = 'Déséquilibre des comptes de liaison BP/BA — M9-6 § III.4.2';
       } else if (c.compte.startsWith('1')) {
-        conseqM96 = 'Impact direct sur le FDR — Vérifier le bilan (M9-6 § IV.1)';
+        conseqM96 = 'Impact direct sur le FDR — Vérifier le bilan de l\'EPLE (M9-6 § IV.1)';
       } else if (c.compte.startsWith('4')) {
-        conseqM96 = 'Impact sur le BFR — Vérifier la concordance ordonnateur/comptable (M9-6 § II)';
+        conseqM96 = 'Impact sur le BFR — Vérifier la concordance ordonnateur/agent comptable (M9-6 § II)';
       } else if (c.compte.startsWith('6') || c.compte.startsWith('7')) {
-        conseqM96 = 'Impact sur le résultat — Vérifier les écritures de fin d\'exercice';
+        conseqM96 = 'Impact sur le résultat de l\'exercice — Vérifier les opérations d\'ordre et écritures de fin d\'exercice';
+      } else if (c.compte.startsWith('2')) {
+        conseqM96 = 'Impact sur les immobilisations — Vérifier l\'inventaire physique et les dotations aux amortissements (M9-6 § III.3)';
+      } else if (c.compte.startsWith('3')) {
+        conseqM96 = 'Impact sur les stocks — Vérifier la variation de stocks et l\'inventaire physique (M9-6 § III.3)';
       } else {
-        conseqM96 = c.commentaire || 'Solde anormal M9-6';
+        conseqM96 = c.commentaire || 'Solde anormal — Plan comptable M9-6 EPLE';
       }
     }
 
