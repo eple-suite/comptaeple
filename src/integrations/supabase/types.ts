@@ -154,17 +154,25 @@ export type Database = {
           commentaire_fdr: string | null
           commentaire_general: string | null
           commentaire_tresorerie: string | null
+          conso_eau: number | null
+          conso_electricite: number | null
+          conso_gaz: number | null
           cout_denrees_repas: number | null
           created_at: string
           effectif_boursiers: number | null
           effectif_dp: number | null
           effectif_eleves: number | null
+          effectif_externes: number | null
           effectif_internes: number | null
           effectif_personnel: number | null
+          etp_ressources_propres: number | null
           exercice: number
           id: string
+          montant_fonds_social: number | null
+          nb_repas_commensaux: number | null
           nb_repas_servis: number | null
           prix_moyen_repas: number | null
+          surface_batiments: number | null
           tarif_internat: number | null
           taux_occupation_internat: number | null
           taux_passage: number | null
@@ -178,17 +186,25 @@ export type Database = {
           commentaire_fdr?: string | null
           commentaire_general?: string | null
           commentaire_tresorerie?: string | null
+          conso_eau?: number | null
+          conso_electricite?: number | null
+          conso_gaz?: number | null
           cout_denrees_repas?: number | null
           created_at?: string
           effectif_boursiers?: number | null
           effectif_dp?: number | null
           effectif_eleves?: number | null
+          effectif_externes?: number | null
           effectif_internes?: number | null
           effectif_personnel?: number | null
+          etp_ressources_propres?: number | null
           exercice: number
           id?: string
+          montant_fonds_social?: number | null
+          nb_repas_commensaux?: number | null
           nb_repas_servis?: number | null
           prix_moyen_repas?: number | null
+          surface_batiments?: number | null
           tarif_internat?: number | null
           taux_occupation_internat?: number | null
           taux_passage?: number | null
@@ -202,17 +218,25 @@ export type Database = {
           commentaire_fdr?: string | null
           commentaire_general?: string | null
           commentaire_tresorerie?: string | null
+          conso_eau?: number | null
+          conso_electricite?: number | null
+          conso_gaz?: number | null
           cout_denrees_repas?: number | null
           created_at?: string
           effectif_boursiers?: number | null
           effectif_dp?: number | null
           effectif_eleves?: number | null
+          effectif_externes?: number | null
           effectif_internes?: number | null
           effectif_personnel?: number | null
+          etp_ressources_propres?: number | null
           exercice?: number
           id?: string
+          montant_fonds_social?: number | null
+          nb_repas_commensaux?: number | null
           nb_repas_servis?: number | null
           prix_moyen_repas?: number | null
+          surface_batiments?: number | null
           tarif_internat?: number | null
           taux_occupation_internat?: number | null
           taux_passage?: number | null
