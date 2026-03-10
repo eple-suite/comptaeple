@@ -58,6 +58,171 @@ export type Database = {
           },
         ]
       }
+      cofieple_exercises: {
+        Row: {
+          bfr: number
+          caf: number
+          created_at: string
+          exercice: number
+          fdr: number
+          id: string
+          jours_autonomie: number
+          niveau_risque: string | null
+          reserves: number
+          reserves_srh: number
+          reserves_ss_specialite: number
+          resultat_budgetaire: number
+          resultat_comptable: number
+          score_risque: number | null
+          taux_exec_charges: number
+          taux_exec_produits: number
+          total_amortissements: number
+          total_charges_prev: number
+          total_charges_reel: number
+          total_immo: number
+          total_produits_prev: number
+          total_produits_reel: number
+          tresorerie: number
+          type_budget: string
+          uai: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          bfr?: number
+          caf?: number
+          created_at?: string
+          exercice: number
+          fdr?: number
+          id?: string
+          jours_autonomie?: number
+          niveau_risque?: string | null
+          reserves?: number
+          reserves_srh?: number
+          reserves_ss_specialite?: number
+          resultat_budgetaire?: number
+          resultat_comptable?: number
+          score_risque?: number | null
+          taux_exec_charges?: number
+          taux_exec_produits?: number
+          total_amortissements?: number
+          total_charges_prev?: number
+          total_charges_reel?: number
+          total_immo?: number
+          total_produits_prev?: number
+          total_produits_reel?: number
+          tresorerie?: number
+          type_budget?: string
+          uai: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          bfr?: number
+          caf?: number
+          created_at?: string
+          exercice?: number
+          fdr?: number
+          id?: string
+          jours_autonomie?: number
+          niveau_risque?: string | null
+          reserves?: number
+          reserves_srh?: number
+          reserves_ss_specialite?: number
+          resultat_budgetaire?: number
+          resultat_comptable?: number
+          score_risque?: number | null
+          taux_exec_charges?: number
+          taux_exec_produits?: number
+          total_amortissements?: number
+          total_charges_prev?: number
+          total_charges_reel?: number
+          total_immo?: number
+          total_produits_prev?: number
+          total_produits_reel?: number
+          tresorerie?: number
+          type_budget?: string
+          uai?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      cofieple_extra_indicators: {
+        Row: {
+          commentaire_caf: string | null
+          commentaire_fdr: string | null
+          commentaire_general: string | null
+          commentaire_tresorerie: string | null
+          cout_denrees_repas: number | null
+          created_at: string
+          effectif_boursiers: number | null
+          effectif_dp: number | null
+          effectif_eleves: number | null
+          effectif_internes: number | null
+          effectif_personnel: number | null
+          exercice: number
+          id: string
+          nb_repas_servis: number | null
+          prix_moyen_repas: number | null
+          tarif_internat: number | null
+          taux_occupation_internat: number | null
+          taux_passage: number | null
+          taux_reussite_bac: number | null
+          uai: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          commentaire_caf?: string | null
+          commentaire_fdr?: string | null
+          commentaire_general?: string | null
+          commentaire_tresorerie?: string | null
+          cout_denrees_repas?: number | null
+          created_at?: string
+          effectif_boursiers?: number | null
+          effectif_dp?: number | null
+          effectif_eleves?: number | null
+          effectif_internes?: number | null
+          effectif_personnel?: number | null
+          exercice: number
+          id?: string
+          nb_repas_servis?: number | null
+          prix_moyen_repas?: number | null
+          tarif_internat?: number | null
+          taux_occupation_internat?: number | null
+          taux_passage?: number | null
+          taux_reussite_bac?: number | null
+          uai: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          commentaire_caf?: string | null
+          commentaire_fdr?: string | null
+          commentaire_general?: string | null
+          commentaire_tresorerie?: string | null
+          cout_denrees_repas?: number | null
+          created_at?: string
+          effectif_boursiers?: number | null
+          effectif_dp?: number | null
+          effectif_eleves?: number | null
+          effectif_internes?: number | null
+          effectif_personnel?: number | null
+          exercice?: number
+          id?: string
+          nb_repas_servis?: number | null
+          prix_moyen_repas?: number | null
+          tarif_internat?: number | null
+          taux_occupation_internat?: number | null
+          taux_passage?: number | null
+          taux_reussite_bac?: number | null
+          uai?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       establishments: {
         Row: {
           academy: string

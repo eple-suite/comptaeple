@@ -1,7 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 // COFIEPLE — Page Compte Financier (sous-menu Outils Métiers)
-// 10 onglets : Accueil, Import, Check-list, Superviseur,
-// Synthèse, Tableaux, Budget Annexe, Rapport Ordo, Rapport AC, Diaporama
+// 13 onglets : Accueil, Import, Check-list, Superviseur,
+// Synthèse, Tableaux, Contrôles, Pluriannuel, Indicateurs,
+// Budget Annexe, Rapport Ordo, Rapport AC, Diaporama
 // Conformité : M9-6 2026 · Décret 2012-1246 · Code Éducation
 // ═══════════════════════════════════════════════════════════════
 
@@ -14,9 +15,14 @@ import { SuperviseurSection, SyntheseSection, TableauxSection, BudgetAnnexeSecti
 import { RapportOrdoSection, RapportACSection } from '@/components/cofieple/RapportSections';
 import { DiaporamaSection } from '@/components/cofieple/DiaporamaSection';
 import { AuditControlesSection } from '@/components/cofieple/AuditControlesSection';
+import { ProgressStepper } from '@/components/cofieple/ProgressStepper';
+import { DashboardOnePage } from '@/components/cofieple/DashboardOnePage';
+import { IndicateursHorsComptables } from '@/components/cofieple/IndicateursHorsComptables';
+import { PluriannuelSection } from '@/components/cofieple/PluriannuelSection';
 import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
-  BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck
+  BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
+  History, PenTool
 } from 'lucide-react';
 
 interface NavItem {
@@ -42,7 +48,7 @@ const CompteFinancier = () => {
 
   const items: NavItem[] = [
     { id: 'accueil', label: 'Accueil', icon: <Home className="h-4 w-4" /> },
-    { id: 'import', label: 'Imports CSV', icon: <Upload className="h-4 w-4" />, badge: `${nbFichiers}`, badgeType: nbFichiers >= 3 ? 'success' : 'info' },
+    { id: 'import', label: 'Imports', icon: <Upload className="h-4 w-4" />, badge: `${nbFichiers}`, badgeType: nbFichiers >= 3 ? 'success' : 'info' },
     { id: 'checklist', label: 'Check-List', icon: <CheckCircle2 className="h-4 w-4" />,
       badge: hasData ? (nbBloq > 0 ? `${nbBloq} BLOQ` : nbAnom > 0 ? `${nbAnom}` : 'OK') : undefined,
       badgeType: hasData ? (nbBloq > 0 ? 'error' : nbAnom > 0 ? 'warning' : 'success') : undefined, requiresData: true },
@@ -51,10 +57,12 @@ const CompteFinancier = () => {
     { id: 'tableaux', label: 'Tableaux', icon: <BarChart3 className="h-4 w-4" />, requiresData: true },
     { id: 'controles', label: 'Contrôles', icon: <ShieldCheck className="h-4 w-4" />, requiresData: true,
       badge: hasData ? (nbBloq > 0 ? '🔴' : nbAnom > 0 ? '🟠' : '🟢') : undefined, badgeType: nbBloq > 0 ? 'error' : nbAnom > 0 ? 'warning' : 'success' },
-    { id: 'budget_annexe', label: 'Budget annexe', icon: <Building2 className="h-4 w-4" />, badge: hasBA ? 'BA' : undefined, badgeType: 'info' },
-    { id: 'rapport_ordo', label: 'Rapport Ordo.', icon: <FileText className="h-4 w-4" />, requiresData: true },
-    { id: 'rapport_ac', label: 'Rapport A.C.', icon: <Shield className="h-4 w-4" />, requiresData: true },
-    { id: 'diaporama', label: 'Diaporama CA', icon: <Monitor className="h-4 w-4" />, requiresData: true },
+    { id: 'pluriannuel', label: 'N à N-4', icon: <History className="h-4 w-4" /> },
+    { id: 'indicateurs', label: 'Indicateurs', icon: <PenTool className="h-4 w-4" /> },
+    { id: 'budget_annexe', label: 'BA', icon: <Building2 className="h-4 w-4" />, badge: hasBA ? 'BA' : undefined, badgeType: 'info' },
+    { id: 'rapport_ordo', label: 'Rpt Ordo', icon: <FileText className="h-4 w-4" />, requiresData: true },
+    { id: 'rapport_ac', label: 'Rpt AC', icon: <Shield className="h-4 w-4" />, requiresData: true },
+    { id: 'diaporama', label: 'Diaporama', icon: <Monitor className="h-4 w-4" />, requiresData: true },
   ];
 
   const badgeColors: Record<string, string> = {
@@ -73,6 +81,8 @@ const CompteFinancier = () => {
       case 'synthese': return <SyntheseSection />;
       case 'tableaux': return <TableauxSection />;
       case 'controles': return <AuditControlesSection />;
+      case 'pluriannuel': return <PluriannuelSection />;
+      case 'indicateurs': return <IndicateursHorsComptables />;
       case 'budget_annexe': return <BudgetAnnexeSection />;
       case 'rapport_ordo': return <RapportOrdoSection />;
       case 'rapport_ac': return <RapportACSection />;
@@ -126,6 +136,9 @@ const CompteFinancier = () => {
         </div>
       </div>
 
+      {/* Progress Stepper — Assistant mode */}
+      <ProgressStepper />
+
       {/* Navigation */}
       <nav className="bg-slate-800 border-b border-slate-700 sticky top-0 z-40 rounded-none">
         <div className="px-2">
@@ -135,7 +148,7 @@ const CompteFinancier = () => {
               const disabled = item.requiresData && !hasData;
               return (
                 <button key={item.id} onClick={() => !disabled && setActiveTab(item.id)} disabled={disabled}
-                  className={`flex items-center gap-1.5 px-4 py-3 text-xs font-semibold whitespace-nowrap border-b-2 transition-all shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all shrink-0 ${
                     active ? 'border-warning text-warning bg-white/5' :
                     disabled ? 'border-transparent text-slate-600 cursor-not-allowed' :
                     'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5'
@@ -155,6 +168,13 @@ const CompteFinancier = () => {
           </div>
         </div>
       </nav>
+
+      {/* Dashboard One-Page (visible quand données disponibles et sur accueil) */}
+      {hasData && activeTab === 'accueil' && (
+        <div className="p-5 pb-0">
+          <DashboardOnePage />
+        </div>
+      )}
 
       {/* Content */}
       <div className="p-5">
