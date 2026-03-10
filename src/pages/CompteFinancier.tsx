@@ -1,8 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 // COFIEPLE — Page Compte Financier (sous-menu Outils Métiers)
-// 13 onglets : Accueil, Import, Check-list, Superviseur,
+// 14 onglets : Accueil, Import, Check-list, Superviseur,
 // Synthèse, Tableaux, Contrôles, Pluriannuel, Indicateurs,
-// Budget Annexe, Rapport Ordo, Rapport AC, Diaporama
+// Budget Annexe, Rapport Ordo, Rapport AC, Annexe, Diaporama
 // Conformité : M9-6 2026 · Décret 2012-1246 · Code Éducation
 // ═══════════════════════════════════════════════════════════════
 
@@ -19,10 +19,11 @@ import { ProgressStepper } from '@/components/cofieple/ProgressStepper';
 import { DashboardOnePage } from '@/components/cofieple/DashboardOnePage';
 import { IndicateursHorsComptables } from '@/components/cofieple/IndicateursHorsComptables';
 import { PluriannuelSection } from '@/components/cofieple/PluriannuelSection';
+import { AnnexeComptableSection } from '@/components/cofieple/AnnexeComptableSection';
 import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
-  History, PenTool
+  History, PenTool, BookOpen
 } from 'lucide-react';
 
 interface NavItem {
