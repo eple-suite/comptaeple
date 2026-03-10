@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════════
 // COFIEPLE — Types additionnels pour le Store et les composants UI
 // Complète cofieple_types.ts avec les interfaces spécifiques à l'UI
+// Conformité : M9-6 2026, Décret 2012-1246 (RGCP)
 // ═══════════════════════════════════════════════════════════════════
 
 import type { ResultatsM96, VerificationM96, CompteBalance, ServiceData } from './cofieple_types';
@@ -38,28 +39,31 @@ export interface ResultatsUI extends ResultatsM96 {
   // Alias pour les composants
   totalChargesReel: number;
   totalProduitsReel: number;
-  plusMoinsValues: number;
-  reliquatsCharges: number;
-  tresorerieNette: number;
-  varFdrDepuisCaf: number;
-  varBfrComptable: number;
-  totalFluxTresorerie: number;
+  plusMoinsValues: number;        // Plus ou moins-values de recettes vs prévisions
+  reliquatsCharges: number;      // Crédits non consommés (charges)
+  tresorerieNette: number;       // Solde net classe 5
+  varFdrDepuisCaf: number;       // Variation FDR à partir de la CAF/IAF
+  varBfrComptable: number;       // Variation BFR soustractive
+  totalFluxTresorerie: number;   // Flux nets de trésorerie
   parService: Record<string, ServiceDataUI>;
   indicateursBA?: IndicateursBA;
+  // Analyse prédictive (dépassement REPROFI)
+  scoreRisque?: number;          // 0-100, score de risque global
+  niveauRisque?: 'faible' | 'modéré' | 'élevé' | 'critique';
 }
 
 export interface ServiceDataUI extends ServiceData {
   tauxExecution: number;
-  plusMoinsValues: number;
+  plusMoinsValues: number;       // Plus ou moins-values de recettes
 }
 
 export interface IndicateursBA {
-  soldeComptes185: number;
+  soldeComptes185: number;       // Solde net des comptes de liaison 185
   comptes185Dbt: number;
   comptes185Crd: number;
-  fluxInternesElimines: number;
+  fluxInternesElimines: number;  // Montant des flux internes neutralisés
   // GRETA spécifique
-  chiffreAffairesFc?: number;
+  chiffreAffairesFc?: number;    // Chiffre d'affaires formation continue
   chargesPersonnelFc?: number;
   chargesDirectesFc?: number;
   subventionsPubliquesFc?: number;
@@ -72,7 +76,7 @@ export interface IndicateursBA {
 export interface CheckItem {
   id: string;
   titre: string;
-  regleM96: string;
+  regleM96: string;              // Référence réglementaire (M9-6, RGCP)
   variable1Label: string;
   variable1: number;
   variable2Label: string;
@@ -80,7 +84,7 @@ export interface CheckItem {
   ecart: number;
   statut: 'ok' | 'warn' | 'erreur' | 'bloquant';
   bloquant: boolean;
-  piste: string;
+  piste: string;                 // Piste de correction
 }
 
 // ── Anomalie balance pour l'UI ──────────────────────────────────────
@@ -88,12 +92,12 @@ export interface AnomalieBalance {
   compte: string;
   intitule: string;
   classe: string;
-  sensAttendu: string;
+  sensAttendu: string;           // Sens normal du solde (M9-6 Plan comptable)
   solDbt: number;
   solCrd: number;
   anomalie: boolean;
   gravite: 'normal' | 'anomalie' | 'bloquant';
-  conseqM96: string;
+  conseqM96: string;             // Conséquence réglementaire
 }
 
 // ── État global COFIEPLE ────────────────────────────────────────────
