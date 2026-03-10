@@ -175,7 +175,7 @@ export function separerBalanceBPBA(raw: Record<string, string>[]): LigneBalance[
       budgetScope,
       codeAnnexe,
     };
-  }).filter((b): b is LigneBalance => b !== null);
+  }).filter((b): b is LigneBalance => b !== null) as LigneBalance[];
 }
 
 // ── Lookup UAI (API Éducation nationale) ──────────────────────────────
