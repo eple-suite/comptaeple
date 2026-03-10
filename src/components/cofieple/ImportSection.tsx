@@ -252,9 +252,9 @@ export function ImportSection() {
   );
 }
 
-function ImportBox({ slot, loaded, stat, error, onFile }: {
+function ImportBox({ slot, loaded, stat, error, securityBlock, onFile }: {
   slot: FileSlot; loaded: boolean; stat?: { rows: number; name: string }; error?: string;
-  onFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  securityBlock?: string; onFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   return (
