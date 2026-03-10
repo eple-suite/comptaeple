@@ -245,3 +245,14 @@ function FormField({ label, value, onChange, placeholder = '', type = 'text' }: 
     </div>
   );
 }
+
+function ReadOnlyField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div>
+      <Label className="text-xs text-muted-foreground uppercase tracking-wider">{label}</Label>
+      <div className={`mt-1.5 px-3 py-2 rounded-md bg-muted/50 border border-border text-sm ${mono ? 'font-mono font-semibold text-primary' : ''}`}>
+        {value || <span className="text-muted-foreground italic">—</span>}
+      </div>
+    </div>
+  );
+}
