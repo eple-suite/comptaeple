@@ -233,6 +233,9 @@ export function AccueilSection() {
           ))}
         </CardContent>
       </Card>
+
+      {/* Chaîne de valeur UX */}
+      <UxChainDiagram />
     </div>
   );
 }
