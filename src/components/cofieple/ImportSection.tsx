@@ -173,6 +173,33 @@ export function ImportSection() {
 
   return (
     <div className="space-y-5">
+      {/* Bandeau de sécurité concordance */}
+      {selectedEstablishment ? (
+        <Card className="border-emerald-500/30 bg-emerald-500/5">
+          <CardContent className="p-4 flex items-start gap-3">
+            <ShieldCheck className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+            <div className="text-xs">
+              <strong>Verrou de sécurité actif</strong> — Les fichiers importés seront vérifiés contre l'établissement
+              sélectionné : <span className="font-mono font-semibold text-primary">{selectedEstablishment.uai}</span>
+              {selectedEstablishment.opale_number && (
+                <> · Op@le <span className="font-mono font-semibold">{selectedEstablishment.opale_number}</span></>
+              )}
+              . Tout fichier ne correspondant pas sera bloqué.
+            </div>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-destructive/30 bg-destructive/5">
+          <CardContent className="p-4 flex items-start gap-3">
+            <ShieldAlert className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
+            <div className="text-xs text-destructive">
+              <strong>Aucun établissement sélectionné</strong> — Sélectionnez un établissement dans le menu principal
+              avant d'importer des fichiers. Le verrou de sécurité ne peut pas fonctionner sans référence.
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="p-4 flex items-start gap-3">
           <Info className="h-5 w-5 text-primary mt-0.5 shrink-0" />
@@ -199,7 +226,9 @@ export function ImportSection() {
           <CardContent className="p-5 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
             {bSlots.map(slot => (
               <ImportBox key={slot.key} slot={slot} loaded={!!fichierCharge[slot.key]}
-                stat={fileStats[slot.key]} error={errors[slot.key]} onFile={e => handleFile(e, slot)} />
+                stat={fileStats[slot.key]} error={errors[slot.key]}
+                securityBlock={securityBlocks[slot.key]}
+                onFile={e => handleFile(e, slot)} />
             ))}
           </CardContent>
         </Card>
