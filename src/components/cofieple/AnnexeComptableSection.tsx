@@ -587,12 +587,12 @@ export function AnnexeComptableSection() {
     setExportingPdf(false);
   }
 
-  if (!R) return <EmptyState msg="Lancez l'analyse pour générer l'annexe comptable réglementaire (M9-6 § V.3)." />;
-
   // ── Trend data for charges/produits charts ─────────────────
   const trendData = useMemo(() => history.map(h => ({
     exercice: h.exercice, FDR: h.fdr, Trésorerie: h.tresorerie, BFR: h.bfr, CAF: h.caf,
   })).reverse(), [history]);
+
+  if (!R) return <EmptyState msg="Lancez l'analyse pour générer l'annexe comptable réglementaire (M9-6 § V.3)." />;
 
   return (
     <div className="space-y-5">
