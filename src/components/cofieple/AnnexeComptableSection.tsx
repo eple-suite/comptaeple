@@ -45,7 +45,11 @@ const ANNEXE_SECTION_IDS = [
 type AnnexeSectionId = typeof ANNEXE_SECTION_IDS[number];
 
 // Sections that have AI-generated text
-const AI_SECTIONS = ANNEXE_SECTION_IDS.filter(s => s !== 'autoAudit') as AnnexeSectionId[];
+const AI_SECTIONS: Exclude<AnnexeSectionId, 'autoAudit'>[] = [
+  'faitsCaracteristiques', 'principesComptables', 'actifImmobilise',
+  'stocks', 'creances', 'dettes', 'financements',
+  'provisions', 'charges', 'produits', 'autresInfos',
+];
 
 type AnnexeTexts = Record<Exclude<AnnexeSectionId, 'autoAudit'>, string>;
 
