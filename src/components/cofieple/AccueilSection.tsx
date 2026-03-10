@@ -116,29 +116,28 @@ export function AccueilSection() {
             </div>
           </div>
 
+          {/* Champs identitaires — LECTURE SEULE depuis le référentiel Établissements */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <FormField label="Nom de l'établissement" value={etab.nom} onChange={v => setEtablissement({ nom: v })} />
-            <div>
-              <Label className="text-xs text-muted-foreground uppercase tracking-wider">Type</Label>
-              <Select value={etab.type} onValueChange={v => setEtablissement({ type: v })}>
-                <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="lycee">Lycée</SelectItem>
-                  <SelectItem value="lycee_pro">Lycée professionnel</SelectItem>
-                  <SelectItem value="legt">LEGT</SelectItem>
-                  <SelectItem value="college">Collège</SelectItem>
-                  <SelectItem value="erea">EREA</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <FormField label="Exercice" value={String(etab.exercice)} onChange={v => setEtablissement({ exercice: parseInt(v) || 2025 })} type="number" />
-            <FormField label="Date d'arrêté" value={etab.dateArrete} onChange={v => setEtablissement({ dateArrete: v })} type="date" />
+            <ReadOnlyField label="Nom de l'établissement" value={etab.nom} />
+            <ReadOnlyField label="Type" value={etab.type} />
+            <ReadOnlyField label="UAI / RNE" value={etab.uai} mono />
+            <ReadOnlyField label="Commune" value={etab.commune} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <ReadOnlyField label="Académie" value={etab.academie} />
+            <ReadOnlyField label="Région académique" value={etab.regionAcademique} />
+            <ReadOnlyField label="Département" value={etab.departement || ''} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <FormField label="Ordonnateur" value={etab.ordonnateur} onChange={v => setEtablissement({ ordonnateur: v })} placeholder="Prénom NOM" />
-            <FormField label="Agent comptable" value={etab.agentComptable} onChange={v => setEtablissement({ agentComptable: v })} placeholder="Prénom NOM" />
-            <FormField label="Académie" value={etab.academie} onChange={v => setEtablissement({ academie: v })} />
+          {/* Champs éditables spécifiques au Compte Financier */}
+          <div className="pt-2 border-t border-border">
+            <p className="text-xs text-muted-foreground font-medium mb-3 uppercase tracking-wider">Paramètres du compte financier</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <FormField label="Exercice" value={String(etab.exercice)} onChange={v => setEtablissement({ exercice: parseInt(v) || 2025 })} type="number" />
+              <FormField label="Date d'arrêté" value={etab.dateArrete} onChange={v => setEtablissement({ dateArrete: v })} type="date" />
+              <FormField label="Ordonnateur" value={etab.ordonnateur} onChange={v => setEtablissement({ ordonnateur: v })} placeholder="Prénom NOM" />
+              <FormField label="Agent comptable" value={etab.agentComptable} onChange={v => setEtablissement({ agentComptable: v })} placeholder="Prénom NOM" />
+            </div>
           </div>
 
           <Button onClick={() => setActiveTab('import')} className="mt-2">
@@ -243,6 +242,17 @@ function FormField({ label, value, onChange, placeholder = '', type = 'text' }: 
     <div>
       <Label className="text-xs text-muted-foreground uppercase tracking-wider">{label}</Label>
       <Input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="mt-1.5" />
+    </div>
+  );
+}
+
+function ReadOnlyField({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
+  return (
+    <div>
+      <Label className="text-xs text-muted-foreground uppercase tracking-wider">{label}</Label>
+      <div className={`mt-1.5 px-3 py-2 rounded-md bg-muted/50 border border-border text-sm ${mono ? 'font-mono font-semibold text-primary' : ''}`}>
+        {value || <span className="text-muted-foreground italic">—</span>}
+      </div>
     </div>
   );
 }

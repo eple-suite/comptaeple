@@ -1,8 +1,31 @@
 // ═══════════════════════════════════════════════════════════════════
-// COFIEPLE — Parseur CSV Op@le + Lookup UAI
+// COFIEPLE — Parseur CSV Op@le + Validation M9-6
 // ═══════════════════════════════════════════════════════════════════
 
 import type { LigneSDE, LigneSDR, LigneBalance, UAIRecord, Etablissement } from './cofieple_types';
+import { NOMENCLATURE_M96 } from './m96nomenclature';
+
+// ── Cache des préfixes M9-6 autorisés ────────────────────────────────
+const _m96Prefixes = new Set(NOMENCLATURE_M96.map(c => c.numero));
+
+/** Vérifie qu'un numéro de compte correspond à un préfixe M9-6 autorisé */
+export function isCompteM96Valide(compte: string): boolean {
+  if (!compte || compte.length < 2) return false;
+  // Check prefixes from 2 to 6 chars
+  for (let len = Math.min(compte.length, 6); len >= 2; len--) {
+    if (_m96Prefixes.has(compte.substring(0, len))) return true;
+  }
+  return false;
+}
+
+/** Valide les lignes importées et retourne les comptes non reconnus */
+export function validerComptesImportes(lignes: { compte: string }[]): string[] {
+  const invalides = new Set<string>();
+  for (const l of lignes) {
+    if (l.compte && !isCompteM96Valide(l.compte)) invalides.add(l.compte);
+  }
+  return Array.from(invalides).sort();
+}
 
 // ── Utilitaires ──────────────────────────────────────────────────────
 function toNum(v: unknown): number {
