@@ -1,6 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 // COFIEPLE — Saisie des indicateurs hors-comptables
-// Effectifs, boursiers, restauration, commentaires pour annexes
+// Effectifs, boursiers, restauration, RH, patrimoine, commentaires
+// Conformité M9-6 2026 § V — Décret 2012-1246
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useEffect } from 'react';
@@ -12,22 +13,30 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
-import { Users, Utensils, BedDouble, MessageSquare, Save, Loader2, CheckCircle2 } from 'lucide-react';
+import { Users, Utensils, BedDouble, MessageSquare, Save, Loader2, CheckCircle2, Building, Zap, Briefcase, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ExtraIndicators {
   effectif_eleves: number;
   effectif_internes: number;
   effectif_dp: number;
+  effectif_externes: number;
   effectif_boursiers: number;
   effectif_personnel: number;
   taux_reussite_bac: number;
   taux_passage: number;
+  montant_fonds_social: number;
   nb_repas_servis: number;
+  nb_repas_commensaux: number;
   cout_denrees_repas: number;
   prix_moyen_repas: number;
   tarif_internat: number;
   taux_occupation_internat: number;
+  etp_ressources_propres: number;
+  surface_batiments: number;
+  conso_eau: number;
+  conso_gaz: number;
+  conso_electricite: number;
   commentaire_fdr: string;
   commentaire_tresorerie: string;
   commentaire_caf: string;
@@ -35,11 +44,15 @@ interface ExtraIndicators {
 }
 
 const DEFAULTS: ExtraIndicators = {
-  effectif_eleves: 0, effectif_internes: 0, effectif_dp: 0,
+  effectif_eleves: 0, effectif_internes: 0, effectif_dp: 0, effectif_externes: 0,
   effectif_boursiers: 0, effectif_personnel: 0,
   taux_reussite_bac: 0, taux_passage: 0,
-  nb_repas_servis: 0, cout_denrees_repas: 0, prix_moyen_repas: 0,
+  montant_fonds_social: 0,
+  nb_repas_servis: 0, nb_repas_commensaux: 0,
+  cout_denrees_repas: 0, prix_moyen_repas: 0,
   tarif_internat: 0, taux_occupation_internat: 0,
+  etp_ressources_propres: 0,
+  surface_batiments: 0, conso_eau: 0, conso_gaz: 0, conso_electricite: 0,
   commentaire_fdr: '', commentaire_tresorerie: '',
   commentaire_caf: '', commentaire_general: '',
 };
@@ -51,7 +64,6 @@ export function IndicateursHorsComptables() {
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Load existing data
   useEffect(() => {
     if (!etab.uai) { setLoading(false); return; }
     (async () => {
@@ -66,59 +78,42 @@ export function IndicateursHorsComptables() {
           .eq('user_id', session.session.user.id)
           .maybeSingle();
         if (existing) {
-          setData({
-            effectif_eleves: existing.effectif_eleves || 0,
-            effectif_internes: existing.effectif_internes || 0,
-            effectif_dp: existing.effectif_dp || 0,
-            effectif_boursiers: existing.effectif_boursiers || 0,
-            effectif_personnel: existing.effectif_personnel || 0,
-            taux_reussite_bac: existing.taux_reussite_bac || 0,
-            taux_passage: existing.taux_passage || 0,
-            nb_repas_servis: existing.nb_repas_servis || 0,
-            cout_denrees_repas: existing.cout_denrees_repas || 0,
-            prix_moyen_repas: existing.prix_moyen_repas || 0,
-            tarif_internat: existing.tarif_internat || 0,
-            taux_occupation_internat: existing.taux_occupation_internat || 0,
-            commentaire_fdr: existing.commentaire_fdr || '',
-            commentaire_tresorerie: existing.commentaire_tresorerie || '',
-            commentaire_caf: existing.commentaire_caf || '',
-            commentaire_general: existing.commentaire_general || '',
-          });
+          const d: ExtraIndicators = { ...DEFAULTS };
+          for (const k of Object.keys(DEFAULTS) as (keyof ExtraIndicators)[]) {
+            if (existing[k] != null) (d as any)[k] = existing[k];
+          }
+          setData(d);
         }
       } catch {} finally { setLoading(false); }
     })();
   }, [etab.uai, etab.exercice]);
 
   async function handleSave() {
-    if (!etab.uai) { toast.error('Identifiez d\'abord l\'établissement (code UAI)'); return; }
+    if (!etab.uai) { toast.error("Identifiez d'abord l'établissement (code UAI)"); return; }
     setSaving(true);
     try {
       const { data: session } = await supabase.auth.getSession();
       if (!session.session) { toast.error('Connectez-vous pour sauvegarder'); return; }
-
-      const payload = {
-        user_id: session.session.user.id,
-        uai: etab.uai,
-        exercice: etab.exercice,
-        ...data,
-      };
-
-      const { error } = await supabase.from('cofieple_extra_indicators').upsert(payload, {
-        onConflict: 'user_id,uai,exercice',
-      });
+      const payload = { user_id: session.session.user.id, uai: etab.uai, exercice: etab.exercice, ...data };
+      const { error } = await supabase.from('cofieple_extra_indicators').upsert(payload, { onConflict: 'user_id,uai,exercice' });
       if (error) throw error;
       setSaved(true);
       toast.success('Indicateurs sauvegardés');
       setTimeout(() => setSaved(false), 3000);
-    } catch (e: any) {
-      toast.error(e.message || 'Erreur de sauvegarde');
-    } finally { setSaving(false); }
+    } catch (e: any) { toast.error(e.message || 'Erreur de sauvegarde'); }
+    finally { setSaving(false); }
   }
 
   function setField<K extends keyof ExtraIndicators>(key: K, value: ExtraIndicators[K]) {
     setData(prev => ({ ...prev, [key]: value }));
     setSaved(false);
   }
+
+  // Calculs automatiques
+  const tauxBoursiers = data.effectif_eleves > 0 ? ((data.effectif_boursiers / data.effectif_eleves) * 100).toFixed(1) : '—';
+  const ratioEau = data.surface_batiments > 0 ? (data.conso_eau / data.surface_batiments).toFixed(2) : '—';
+  const ratioElec = data.surface_batiments > 0 ? (data.conso_electricite / data.surface_batiments).toFixed(2) : '—';
+  const ratioGaz = data.surface_batiments > 0 ? (data.conso_gaz / data.surface_batiments).toFixed(2) : '—';
 
   if (loading) return <div className="text-center py-8 text-muted-foreground text-sm">Chargement…</div>;
 
@@ -127,48 +122,106 @@ export function IndicateursHorsComptables() {
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="p-4 text-xs">
           <strong>Indicateurs hors-comptables</strong> — Ces données complètent l'analyse financière avec des
-          informations de contexte (effectifs, restauration, hébergement). Elles sont utilisées pour pré-remplir
+          informations de contexte (effectifs, SRH, patrimoine, RH). Elles sont utilisées pour pré-remplir
           les annexes du rapport de gestion et permettent l'analyse pluriannuelle (M9-6 § V).
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Effectifs */}
+        {/* Démographie scolaire */}
         <Card>
           <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg py-3">
             <CardTitle className="text-white text-sm flex items-center gap-2">
-              <Users className="h-4 w-4" /> Effectifs — Exercice {etab.exercice}
+              <Users className="h-4 w-4" /> Démographie scolaire — Ex. {etab.exercice}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 grid grid-cols-2 gap-3">
-            <NumField label="Élèves" value={data.effectif_eleves} onChange={v => setField('effectif_eleves', v)} placeholder="Ex: 1200" />
-            <NumField label="Internes" value={data.effectif_internes} onChange={v => setField('effectif_internes', v)} />
+            <NumField label="Élèves (total)" value={data.effectif_eleves} onChange={v => setField('effectif_eleves', v)} placeholder="Ex: 1200" />
             <NumField label="Demi-pensionnaires" value={data.effectif_dp} onChange={v => setField('effectif_dp', v)} />
-            <NumField label="Boursiers" value={data.effectif_boursiers} onChange={v => setField('effectif_boursiers', v)} />
-            <NumField label="Personnel" value={data.effectif_personnel} onChange={v => setField('effectif_personnel', v)} />
+            <NumField label="Internes" value={data.effectif_internes} onChange={v => setField('effectif_internes', v)} />
+            <NumField label="Externes" value={data.effectif_externes} onChange={v => setField('effectif_externes', v)} />
+            <NumField label="Personnel (ETP total)" value={data.effectif_personnel} onChange={v => setField('effectif_personnel', v)} />
             <NumField label="Taux réussite BAC (%)" value={data.taux_reussite_bac} onChange={v => setField('taux_reussite_bac', v)} step={0.1} />
+            <NumField label="Taux passage (%)" value={data.taux_passage} onChange={v => setField('taux_passage', v)} step={0.1} />
           </CardContent>
         </Card>
 
-        {/* Restauration / Hébergement */}
+        {/* Aide sociale */}
         <Card>
           <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg py-3">
             <CardTitle className="text-white text-sm flex items-center gap-2">
-              <Utensils className="h-4 w-4" /> Restauration & Hébergement
+              <Heart className="h-4 w-4" /> Aide sociale & Boursiers
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 grid grid-cols-2 gap-3">
-            <NumField label="Repas servis (année)" value={data.nb_repas_servis} onChange={v => setField('nb_repas_servis', v)} />
+            <NumField label="Boursiers" value={data.effectif_boursiers} onChange={v => setField('effectif_boursiers', v)} />
+            <div>
+              <Label className="text-xs text-muted-foreground">Taux de boursiers</Label>
+              <div className="mt-1 h-10 flex items-center px-3 bg-muted rounded-md font-mono text-sm">{tauxBoursiers} %</div>
+            </div>
+            <NumField label="Fonds social mobilisé (€)" value={data.montant_fonds_social} onChange={v => setField('montant_fonds_social', v)} step={0.01} />
+          </CardContent>
+        </Card>
+
+        {/* SRH */}
+        <Card>
+          <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg py-3">
+            <CardTitle className="text-white text-sm flex items-center gap-2">
+              <Utensils className="h-4 w-4" /> SRH — Restauration & Hébergement
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 grid grid-cols-2 gap-3">
+            <NumField label="Repas servis élèves (année)" value={data.nb_repas_servis} onChange={v => setField('nb_repas_servis', v)} />
+            <NumField label="Repas commensaux (année)" value={data.nb_repas_commensaux} onChange={v => setField('nb_repas_commensaux', v)} />
             <NumField label="Coût denrées / repas (€)" value={data.cout_denrees_repas} onChange={v => setField('cout_denrees_repas', v)} step={0.01} />
             <NumField label="Prix moyen repas (€)" value={data.prix_moyen_repas} onChange={v => setField('prix_moyen_repas', v)} step={0.01} />
-            <NumField label="Tarif internat (€)" value={data.tarif_internat} onChange={v => setField('tarif_internat', v)} step={0.01} />
+            <NumField label="Tarif internat (€/an)" value={data.tarif_internat} onChange={v => setField('tarif_internat', v)} step={0.01} />
             <NumField label="Taux occupation internat (%)" value={data.taux_occupation_internat} onChange={v => setField('taux_occupation_internat', v)} step={0.1} />
-            <NumField label="Taux passage (%)" value={data.taux_passage} onChange={v => setField('taux_passage', v)} step={0.1} />
+          </CardContent>
+        </Card>
+
+        {/* RH Ressources propres */}
+        <Card>
+          <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg py-3">
+            <CardTitle className="text-white text-sm flex items-center gap-2">
+              <Briefcase className="h-4 w-4" /> Ressources Humaines (ressources propres)
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 grid grid-cols-2 gap-3">
+            <NumField label="ETP sur ressources propres" value={data.etp_ressources_propres} onChange={v => setField('etp_ressources_propres', v)} step={0.5} />
+            <div className="col-span-2 text-xs text-muted-foreground bg-muted/30 rounded p-2">
+              Contrats aidés, AED sur fonds propres, assistants d'éducation, personnels GRETA/CFA financés sur budget annexe.
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Patrimoine & Viabilisation */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg py-3">
+            <CardTitle className="text-white text-sm flex items-center gap-2">
+              <Building className="h-4 w-4" /> Patrimoine & Viabilisation
+              <Badge variant="outline" className="ml-auto text-warning border-warning/50 text-xs">Ratios automatiques</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+              <NumField label="Surface bâtiments (m²)" value={data.surface_batiments} onChange={v => setField('surface_batiments', v)} />
+              <NumField label="Eau (m³/an)" value={data.conso_eau} onChange={v => setField('conso_eau', v)} />
+              <NumField label="Gaz (kWh/an)" value={data.conso_gaz} onChange={v => setField('conso_gaz', v)} />
+              <NumField label="Électricité (kWh/an)" value={data.conso_electricite} onChange={v => setField('conso_electricite', v)} />
+            </div>
+            {data.surface_batiments > 0 && (
+              <div className="grid grid-cols-3 gap-3">
+                <RatioDisplay label="Eau / m²" value={`${ratioEau} m³/m²`} />
+                <RatioDisplay label="Gaz / m²" value={`${ratioGaz} kWh/m²`} />
+                <RatioDisplay label="Électricité / m²" value={`${ratioElec} kWh/m²`} />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Commentaires pour pré-remplissage des annexes */}
+      {/* Commentaires */}
       <Card>
         <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg py-3">
           <CardTitle className="text-white text-sm flex items-center gap-2">
@@ -179,7 +232,6 @@ export function IndicateursHorsComptables() {
         <CardContent className="p-4 space-y-4">
           <p className="text-xs text-muted-foreground">
             Ces commentaires sont intégrés automatiquement dans les rapports de l'ordonnateur et de l'agent comptable.
-            L'IA peut les compléter si une variation atypique est détectée.
           </p>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <TextAreaField label="Commentaire FDR" value={data.commentaire_fdr} onChange={v => setField('commentaire_fdr', v)}
@@ -206,6 +258,8 @@ export function IndicateursHorsComptables() {
   );
 }
 
+// ── Sous-composants ─────────────────────────────────────────
+
 function NumField({ label, value, onChange, placeholder = '', step = 1 }: {
   label: string; value: number; onChange: (v: number) => void; placeholder?: string; step?: number;
 }) {
@@ -226,6 +280,15 @@ function TextAreaField({ label, value, onChange, placeholder }: {
       <Label className="text-xs text-muted-foreground">{label}</Label>
       <Textarea value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
         className="mt-1 text-xs min-h-[80px]" />
+    </div>
+  );
+}
+
+function RatioDisplay({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-muted/30 rounded-lg p-3 text-center">
+      <div className="text-xs text-muted-foreground mb-1">{label}</div>
+      <div className="font-mono text-sm font-bold">{value}</div>
     </div>
   );
 }
