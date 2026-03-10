@@ -249,7 +249,9 @@ function getSensNormal(compte: string): SensNormal {
   if (COMPTES_TOUJOURS_DEBITEURS.has(ss)) return 'debiteur';
   if (COMPTES_TOUJOURS_CREDITEURS.has(ss)) return 'crediteur';
   if (cl === '4') return COMPTES_4_CREDITEURS.has(ss) ? 'crediteur' : 'debiteur';
-  if (cl === '5' && (compte.startsWith('512') || compte.startsWith('519'))) return 'crediteur';
+  // Seuls les concours bancaires (519) sont normalement créditeurs en classe 5
+  // Le compte 512 (Banque/DFT) est normalement DÉBITEUR
+  if (compte.startsWith('519')) return 'crediteur';
   return SENS_PAR_CLASSE[cl] || 'debiteur';
 }
 
