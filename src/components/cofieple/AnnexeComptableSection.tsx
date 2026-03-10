@@ -151,6 +151,11 @@ export function AnnexeComptableSection() {
   // ── AUTO-AUDIT: scan balance for anomalies ─────────────────
   const balanceData = useMemo(() => balance[activeBudget] || [], [balance, activeBudget]);
 
+  const balance1Data = useMemo(() => balance[activeBudget === 'principal' ? 'principal' : activeBudget] || [], [balance, activeBudget]);
+  // We use balance1 (N-1) from the store for aging analysis
+  const balance1Store = useCofiepleStore(s => s.balance1);
+  const balance1DataN1 = useMemo(() => balance1Store[activeBudget] || [], [balance1Store, activeBudget]);
+
   useEffect(() => {
     if (!R || balanceData.length === 0) return;
     const anomalies: AuditAnomaly[] = [];
@@ -167,6 +172,8 @@ export function AnnexeComptableSection() {
           description: `Solde ${a.sensAttendu === 'débiteur' ? 'créditeur' : 'débiteur'} anormal. ${a.conseqM96}`,
           refM96: a.conseqM96.includes('§') ? a.conseqM96.split('(').pop()?.replace(')', '') || 'M9-6' : 'M9-6 Plan comptable',
           justification: '',
+          annexeTarget: 'patrimoine',
+          drilldownPrefix: a.compte.substring(0, 3),
         });
       });
 
@@ -188,6 +195,8 @@ export function AnnexeComptableSection() {
           description: `Immobilisation au débit (${formatEur(immo.solDbt || 0)}) sans dotation aux amortissements correspondante (${cpteAmort}*). L'absence d'amortissement fausse le bilan et le résultat.`,
           refM96: 'M9-6 § III.3',
           justification: '',
+          annexeTarget: 'patrimoine',
+          drilldownPrefix: immo.compte.substring(0, 3),
         });
       }
     });
@@ -209,6 +218,8 @@ export function AnnexeComptableSection() {
         description: `Créances douteuses (416) de ${formatEur(totalDouteux)} sans aucune provision (491*). Obligation de provisionner selon M9-6 § V.4.`,
         refM96: 'M9-6 § V.4',
         justification: '',
+        annexeTarget: 'restesARecouvrer',
+        drilldownPrefix: '416',
       });
     }
 
@@ -222,12 +233,112 @@ export function AnnexeComptableSection() {
         description: `Écart de ${formatEur(ecartFdr)} dans l'équation FDR (${formatEur(R.fdrComptable)}) ≠ BFR (${formatEur(R.bfr)}) + Trésorerie (${formatEur(R.tresorerieNette)}). Vérifier les écritures d'inventaire.`,
         refM96: 'M9-6 § III.1',
         justification: '',
+        annexeTarget: 'patrimoine',
+      });
+    }
+
+    // ═══ 5. COHÉRENCE AMORTISSEMENTS 28/68 ═══
+    // Le total des dotations au bilan (crédit 28*) doit correspondre
+    // au total des charges (débit 68*) sauf sorties d'actifs (cessions/mises au rebut)
+    const totalDotBilan28 = balanceData
+      .filter((b: any) => b.compte?.startsWith('28'))
+      .reduce((s: number, b: any) => s + (b.crd || 0), 0);
+    const totalDotResultat68 = balanceData
+      .filter((b: any) => b.compte?.startsWith('68'))
+      .reduce((s: number, b: any) => s + (b.dbt || 0), 0);
+    const sortiesActifs = balanceData
+      .filter((b: any) => b.compte?.startsWith('28') && (b.dbt || 0) > 0)
+      .reduce((s: number, b: any) => s + (b.dbt || 0), 0);
+    const ecartAmort = Math.abs(totalDotBilan28 - sortiesActifs - totalDotResultat68);
+    if (ecartAmort > 10 && (totalDotBilan28 > 0 || totalDotResultat68 > 0)) {
+      anomalies.push({
+        id: `amort28_68_${idx++}`,
+        compte: '28*/68*', intitule: 'Cohérence Amortissements Bilan / Résultat',
+        type: 'amort_28_68', severity: 'bloquant',
+        description: `Écart de ${formatEur(ecartAmort)} entre les dotations au bilan (Crédit 28* = ${formatEur(totalDotBilan28)}, hors sorties ${formatEur(sortiesActifs)}) et les charges d'amortissement au résultat (Débit 68* = ${formatEur(totalDotResultat68)}). L'écart ne correspond pas aux sorties d'actifs.`,
+        refM96: 'M9-6 § III.3 / § IV.3',
+        justification: '',
+        annexeTarget: 'patrimoine',
+        drilldownPrefix: '28',
+      });
+    }
+
+    // ═══ 6. ANCIENNETÉ CLASSE 4 (411, 416) ═══
+    // Identifie les soldes 411/416 qui n'ont pas bougé depuis N-1
+    // (antérieur > 0 mais aucun mouvement en N)
+    const comptesAnciens = balanceData.filter((b: any) => {
+      if (!b.compte?.startsWith('411') && !b.compte?.startsWith('416')) return false;
+      const solde = (b.solDbt || 0) - (b.solCrd || 0);
+      if (solde <= 0) return false;
+      // Pas de mouvement en N : débit et crédit = 0
+      const pasMouvement = (b.dbt || 0) === 0 && (b.crd || 0) === 0;
+      // Ou vérifier via la balance N-1 si disponible
+      if (pasMouvement) return true;
+      // Si balance N-1 disponible, vérifier que le solde est identique
+      if (balance1DataN1.length > 0) {
+        const compteN1 = balance1DataN1.find((bn1: any) => bn1.compte === b.compte);
+        if (compteN1) {
+          const soldeN1 = (compteN1.solDbt || 0) - (compteN1.solCrd || 0);
+          if (Math.abs(solde - soldeN1) < 1 && soldeN1 > 0) return true;
+        }
+      }
+      return false;
+    });
+
+    comptesAnciens.forEach((b: any) => {
+      anomalies.push({
+        id: `ancien_${idx++}`,
+        compte: b.compte, intitule: b.intituleReduit || '',
+        type: 'anciennete_cl4', severity: 'anomalie',
+        description: `Solde débiteur de ${formatEur((b.solDbt || 0) - (b.solCrd || 0))} inchangé depuis N-1. Créance non mouvementée — absence de diligences de recouvrement ou créance à admettre en non-valeur.`,
+        refM96: 'M9-6 § V.4',
+        justification: '',
+        annexeTarget: 'restesARecouvrer',
+        drilldownPrefix: b.compte.substring(0, 3),
+      });
+    });
+
+    // ═══ 7. UNITÉ DE CAISSE — Cohérence compte 515 (Trésor) ═══
+    const cpte515 = balanceData.filter((b: any) => b.compte?.startsWith('515'));
+    const solde515 = cpte515.reduce((s: number, b: any) => s + (b.solDbt || 0) - (b.solCrd || 0), 0);
+    const cpte512 = balanceData.filter((b: any) => b.compte?.startsWith('512'));
+    const solde512 = cpte512.reduce((s: number, b: any) => s + (b.solDbt || 0) - (b.solCrd || 0), 0);
+    const cpte531 = balanceData.filter((b: any) => b.compte?.startsWith('531'));
+    const solde531 = cpte531.reduce((s: number, b: any) => s + (b.solDbt || 0) - (b.solCrd || 0), 0);
+    const totalDispo = solde515 + solde512 + solde531;
+    
+    // Vérification : pas de fonds hors comptabilité (comptes 46* avec solde anormal)
+    const fonds46 = balanceData.filter((b: any) => b.compte?.startsWith('46'));
+    const soldeFonds46 = fonds46.reduce((s: number, b: any) => s + Math.abs((b.solDbt || 0) - (b.solCrd || 0)), 0);
+    
+    if (solde515 < 0) {
+      anomalies.push({
+        id: `caisse_515_${idx++}`,
+        compte: '515', intitule: 'Compte Trésor Public',
+        type: 'unite_caisse', severity: 'bloquant',
+        description: `Le compte 515 (Trésor) présente un solde créditeur de ${formatEur(Math.abs(solde515))}. Le compte au Trésor ne peut être débiteur que dans des cas exceptionnels (avances). Vérifier la concordance avec le relevé DFT et l'absence d'opérations de trésorerie non comptabilisées.`,
+        refM96: 'M9-6 § IV.2 / RGCP Art. 28',
+        justification: '',
+        annexeTarget: 'tresorerie',
+        drilldownPrefix: '515',
+      });
+    }
+    if (soldeFonds46 > 5000) {
+      anomalies.push({
+        id: `fonds46_${idx++}`,
+        compte: '46*', intitule: 'Fonds de tiers',
+        type: 'unite_caisse', severity: 'anomalie',
+        description: `Soldes sur comptes de tiers (46*) de ${formatEur(soldeFonds46)}. Vérifier la régularité de ces fonds et le respect du principe d'unité de caisse. Aucun fonds ne doit être détenu hors de la comptabilité de l'EPLE.`,
+        refM96: 'RGCP Art. 47 / M9-6 § V.6',
+        justification: '',
+        annexeTarget: 'tresorerie',
+        drilldownPrefix: '46',
       });
     }
 
     setAuditAnomalies(anomalies);
     setAuditValidated(anomalies.filter(a => a.severity === 'bloquant').length === 0);
-  }, [R, balanceData, anomaliesBalance]);
+  }, [R, balanceData, anomaliesBalance, balance1DataN1]);
 
   const blockingAnomalies = useMemo(() => auditAnomalies.filter(a => a.severity === 'bloquant'), [auditAnomalies]);
   const unjustifiedBlocking = useMemo(() => blockingAnomalies.filter(a => !a.justification.trim()), [blockingAnomalies]);
