@@ -17,6 +17,7 @@ import { ProgressRing } from "@/components/ProgressRing";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { evaluerSeuilsMarchesVoyages } from "@/lib/regulatoryKnowledge";
 import { Voyage, initialVoyages, STATUT_CONFIG, CATEGORIES_PRESTATIONS, getRecommandation, calculerPointMort } from "./voyages/types";
+import { cumulerSeuils, evaluerSeuilCCP, SEUIL_CCP } from "@/lib/voyageBudgetEngine";
 import { VoyageCard } from "./voyages/VoyageCard";
 import { VoyageCreationWizard } from "./voyages/VoyageCreationWizard";
 import { VoyageBudgetWidget } from "./voyages/VoyageBudgetWidget";
