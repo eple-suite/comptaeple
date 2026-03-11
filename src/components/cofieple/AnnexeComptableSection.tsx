@@ -499,7 +499,134 @@ export function AnnexeComptableSection() {
       toast.error('Justifiez d\'abord les anomalies bloquantes.');
       setActiveTab('autoAudit');
       return;
+  }
+
+  // ── Log manual edits (on blur) ─────────────────────────────
+  const logEditRef = useRef<Record<string, boolean>>({});
+  const handleEditBlur = useCallback((sectionId: string) => {
+    if (!etab.uai || logEditRef.current[sectionId]) return;
+    logEditRef.current[sectionId] = true;
+    logAction({
+      action_type: 'edit_note', uai: etab.uai, exercice: etab.exercice,
+      section_id: sectionId,
+      action_detail: `Modification manuelle de « ${SECTION_META[sectionId]?.label || sectionId} »`,
+    });
+    // Reset after 10s to allow re-logging
+    setTimeout(() => { logEditRef.current[sectionId] = false; }, 10000);
+  }, [etab.uai, etab.exercice, logAction]);
+
+  // ── Generate compliance certificate PDF ────────────────────
+  async function exportComplianceCertificate() {
+    setExportingPdf(true);
+    try {
+      const auditLogs = await getAuditHistory(etab.uai, etab.exercice);
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      let y = 20;
+
+      // Header
+      doc.setFontSize(8); doc.setTextColor(100);
+      doc.text('RAPPORT DE CONFORMITÉ ET DE TRAÇABILITÉ', pageW / 2, y, { align: 'center' }); y += 5;
+      doc.setFontSize(6); doc.setTextColor(130);
+      doc.text(`${etab.nom} — RNE ${etab.uai} — Exercice ${etab.exercice}`, pageW / 2, y, { align: 'center' }); y += 3;
+      doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, pageW / 2, y, { align: 'center' }); y += 10;
+
+      // Section 1: Triple Verrou
+      doc.setFontSize(11); doc.setTextColor(30);
+      doc.text('§1 — Validité des fichiers importés (Triple Verrou)', margin, y); y += 7;
+      const importLogs = auditLogs.filter((l: any) => l.action_type === 'import');
+      if (importLogs.length > 0) {
+        autoTable(doc, {
+          startY: y,
+          head: [['Date', 'Fichier', 'Résultat']],
+          body: importLogs.slice(0, 20).map((l: any) => [
+            new Date(l.created_at).toLocaleString('fr-FR'),
+            (l.metadata as any)?.file_name || l.action_detail,
+            (l.metadata as any)?.result || '✓',
+          ]),
+          margin: { left: margin, right: margin },
+          styles: { fontSize: 7, cellPadding: 2 },
+          headStyles: { fillColor: [50, 60, 80], textColor: [255, 255, 255] },
+        });
+        y = (doc as any).lastAutoTable?.finalY + 8 || y + 20;
+      } else {
+        doc.setFontSize(8); doc.setTextColor(80);
+        doc.text('Aucun import enregistré dans le journal d\'audit.', margin, y); y += 8;
+      }
+
+      // Section 2: Completeness of 11 notes
+      doc.setFontSize(11); doc.setTextColor(30);
+      doc.text('§2 — Exhaustivité des 11 notes réglementaires', margin, y); y += 7;
+      autoTable(doc, {
+        startY: y,
+        head: [['Note', 'Statut', 'Dernière modification']],
+        body: AI_SECTIONS.map(s => {
+          const meta = SECTION_META[s];
+          const filled = texts[s]?.length > 0;
+          const mod = lastMods[s];
+          return [
+            meta?.label || s,
+            filled ? '✅ Renseignée' : '❌ Vide',
+            mod ? `${mod.user_name} — ${new Date(mod.created_at).toLocaleString('fr-FR')}` : '—',
+          ];
+        }),
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 7, cellPadding: 2 },
+        headStyles: { fillColor: [50, 60, 80], textColor: [255, 255, 255] },
+      });
+      y = (doc as any).lastAutoTable?.finalY + 8 || y + 40;
+
+      // Section 3: Audit trail history
+      if (y > 240) { doc.addPage(); y = 20; }
+      doc.setFontSize(11); doc.setTextColor(30);
+      doc.text('§3 — Historique des actions (Audit Trail)', margin, y); y += 7;
+      if (auditLogs.length > 0) {
+        autoTable(doc, {
+          startY: y,
+          head: [['Date/Heure', 'Utilisateur', 'Action', 'Détail']],
+          body: auditLogs.slice(0, 50).map((l: any) => [
+            new Date(l.created_at).toLocaleString('fr-FR'),
+            l.user_name,
+            l.action_type,
+            (l.action_detail || '').substring(0, 60),
+          ]),
+          margin: { left: margin, right: margin },
+          styles: { fontSize: 6.5, cellPadding: 1.5 },
+          headStyles: { fillColor: [50, 60, 80], textColor: [255, 255, 255] },
+          columnStyles: { 3: { cellWidth: 50 } },
+        });
+        y = (doc as any).lastAutoTable?.finalY + 8 || y + 40;
+      }
+
+      // Signatures
+      if (y > 220) { doc.addPage(); y = 30; }
+      doc.setFontSize(8); doc.setTextColor(80);
+      doc.text(`Fait à ${etab.commune || '………………'}, le ${new Date().toLocaleDateString('fr-FR')}`, pageW / 2, y, { align: 'center' }); y += 15;
+      doc.setFontSize(9); doc.setTextColor(30);
+      doc.text('L\'ordonnateur', margin + 25, y, { align: 'center' });
+      doc.text('L\'agent comptable', pageW - margin - 25, y, { align: 'center' });
+      y += 20;
+      doc.setFontSize(7); doc.setTextColor(80);
+      doc.text(etab.ordonnateur || '……………………', margin + 25, y, { align: 'center' });
+      doc.text(etab.agentComptable || '……………………', pageW - margin - 25, y, { align: 'center' });
+
+      // Footer
+      const pageH = doc.internal.pageSize.getHeight();
+      doc.setFontSize(5); doc.setTextColor(150);
+      doc.text('Ce document est généré automatiquement par COFIEPLE — Certificat de conformité Op@le-Standard', margin, pageH - 5);
+
+      doc.save(`Certificat_Conformite_${etab.uai}_${etab.exercice}.pdf`);
+      await logAction({
+        action_type: 'export_pdf', uai: etab.uai, exercice: etab.exercice,
+        action_detail: 'Export Certificat de Conformité et de Traçabilité',
+      });
+      toast.success('Certificat de conformité exporté');
+    } catch (e: any) {
+      toast.error('Erreur d\'export : ' + (e.message || ''));
     }
+    setExportingPdf(false);
+  }
     for (const s of AI_SECTIONS) {
       await genererSection(s);
     }
