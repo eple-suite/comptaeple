@@ -1017,7 +1017,8 @@ export function AnnexeComptableSection() {
           </div>
           <NarrativeSection sectionId="faitsCaracteristiques" text={texts.faitsCaracteristiques}
             onTextChange={v => setTexts(p => ({ ...p, faitsCaracteristiques: v }))}
-            onGenerate={() => genererSection('faitsCaracteristiques')} loading={loadingSection === 'faitsCaracteristiques'} />
+            onGenerate={() => genererSection('faitsCaracteristiques')} loading={loadingSection === 'faitsCaracteristiques'}
+            lastMod={lastMods['faitsCaracteristiques']} onBlur={() => handleEditBlur('faitsCaracteristiques')} />
         </TabsContent>
 
         {/* ═══ 2. PRINCIPES COMPTABLES ═══ */}
