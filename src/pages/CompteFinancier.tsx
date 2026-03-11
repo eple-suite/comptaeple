@@ -20,6 +20,7 @@ import { DashboardOnePage } from '@/components/cofieple/DashboardOnePage';
 import { IndicateursHorsComptables } from '@/components/cofieple/IndicateursHorsComptables';
 import { PluriannuelSection } from '@/components/cofieple/PluriannuelSection';
 import { AnnexeComptableSection } from '@/components/cofieple/AnnexeComptableSection';
+import { ImportHistorySection } from '@/components/cofieple/ImportHistorySection';
 import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,

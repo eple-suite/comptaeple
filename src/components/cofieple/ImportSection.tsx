@@ -212,6 +212,7 @@ export function ImportSection() {
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
   const analysisRunning = useCofiepleStore(s => s.analysisRunning);
   const { selectedEstablishment } = useEstablishment();
+  const { user } = useAuth();
   const exerciceTravail = useCofiepleStore(s => s.etablissement.exercice);
 
   const [fileStats, setFileStats] = useState<Record<string, { rows: number; name: string }>>({});
@@ -224,6 +225,35 @@ export function ImportSection() {
   const nbObligCharge = obligatoires.filter(s => fichierCharge[s.key]).length;
   const canAnalyse = nbObligCharge >= 3;
 
+  /** Consigne une tentative d'import dans le journal d'audit */
+  async function logImport(params: {
+    fileName: string; fileType: string; budgetType: string; rowsCount: number;
+    result: string; rejectReason?: string;
+    fileUai?: string | null; fileOpale?: string | null; fileExercice?: number | null; fileTypeDetected?: string | null;
+  }) {
+    if (!user || !selectedEstablishment) return;
+    try {
+      await supabase.from('cofieple_import_logs').insert({
+        user_id: user.id,
+        uai: selectedEstablishment.uai,
+        opale_number: selectedEstablishment.opale_number || '',
+        exercice: exerciceTravail,
+        file_name: params.fileName,
+        file_type: params.fileType,
+        budget_type: params.budgetType,
+        rows_count: params.rowsCount,
+        result: params.result,
+        reject_reason: params.rejectReason || null,
+        file_uai_detected: params.fileUai || null,
+        file_opale_detected: params.fileOpale || null,
+        file_exercice_detected: params.fileExercice ?? null,
+        file_type_detected: params.fileTypeDetected || null,
+      });
+    } catch (e) {
+      console.error('Erreur journalisation import:', e);
+    }
+  }
+
   function handleFile(e: React.ChangeEvent<HTMLInputElement>, slot: FileSlot) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -232,26 +262,25 @@ export function ImportSection() {
       complete: (results) => {
         if (!results.data || results.data.length === 0) {
           setErrors(prev => ({ ...prev, [slot.key]: 'Fichier vide ou format non reconnu' }));
+          logImport({ fileName: file.name, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: 0, result: 'error', rejectReason: 'Fichier vide ou format non reconnu' });
           return;
         }
         const rows = results.data as Record<string, string>[];
         const headers = results.meta?.fields || Object.keys(rows[0] || {});
+        const { uai: csvUai, opale: csvOpale } = extractCsvIdentifier(rows);
+        const csvExercice = extractExercice(rows);
+        const csvDocType = detectDocumentType(headers);
 
         // ── TRIPLE VERROU DE SÉCURITÉ ──
         if (selectedEstablishment) {
-          const lock = tripleLockCheck(
-            rows,
-            headers,
-            slot.type,
-            selectedEstablishment.uai,
-            selectedEstablishment.opale_number || '',
-            exerciceTravail,
-          );
+          const lock = tripleLockCheck(rows, headers, slot.type, selectedEstablishment.uai, selectedEstablishment.opale_number || '', exerciceTravail);
           if (!lock.ok) {
+            const resultCode = lock.type === 'opale' ? 'blocked_opale' : lock.type === 'exercice' ? 'blocked_exercice' : 'blocked_colonnes';
             setSecurityBlocks(prev => ({ ...prev, [slot.key]: lock.message || 'Import bloqué' }));
             setErrors(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
             setLockAlert({ ...lock, slotLabel: slot.label });
-            return; // IMPORT BLOQUÉ
+            logImport({ fileName: file.name, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: resultCode, rejectReason: lock.message, fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
+            return;
           }
           setSecurityBlocks(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
         }
@@ -265,9 +294,17 @@ export function ImportSection() {
           else if (slot.type === 'sdr1') setSDR1(parserSDR(rows, slot.typeBudget), slot.typeBudget);
           else if (slot.type === 'bal') setBalance(parserBalance(rows, slot.typeBudget), slot.typeBudget);
           else if (slot.type === 'bal1') setBalance1(parserBalance(rows, slot.typeBudget), slot.typeBudget);
+          // Log succès
+          logImport({ fileName: file.name, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: 'success', fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
         } catch (err: any) {
           setErrors(prev => ({ ...prev, [slot.key]: err.message || 'Erreur de parsing' }));
+          logImport({ fileName: file.name, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: 'error', rejectReason: err.message, fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
         }
+      },
+      error: (err) => { setErrors(prev => ({ ...prev, [slot.key]: err.message })); },
+    });
+    e.target.value = '';
+  }
       },
       error: (err) => { setErrors(prev => ({ ...prev, [slot.key]: err.message })); },
     });
