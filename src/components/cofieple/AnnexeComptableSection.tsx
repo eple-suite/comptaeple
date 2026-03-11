@@ -1242,9 +1242,6 @@ function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading, 
     </Card>
   );
 }
-    </Card>
-  );
-}
 
 function RegulatoryTable({ title, refM96, columns, rows, onDrilldown, totalLabel, totalValue }: {
   title: string; refM96: string; columns: string[];
