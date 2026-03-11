@@ -166,8 +166,9 @@ export const VoyageElevesTab = ({ voyage, onUpdateVoyage }: Props) => {
             <TableBody>
               {filtered.map(e => {
                 const paye = e.paiements.reduce((s, p) => s + p.montant, 0);
-                const reste = e.participationDue - paye;
-                const pct = e.participationDue > 0 ? (paye / e.participationDue) * 100 : 0;
+                const fondsSocial = (e as any).fondsSocial || 0;
+                const reste = calculerResteApayer(e.participationDue, paye, fondsSocial);
+                const pct = e.participationDue > 0 ? ((paye + fondsSocial) / e.participationDue) * 100 : 0;
                 return (
                   <TableRow key={e.id}>
                     <TableCell className="font-medium text-sm">{e.nom} {e.prenom}</TableCell>
@@ -179,7 +180,13 @@ export const VoyageElevesTab = ({ voyage, onUpdateVoyage }: Props) => {
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs">{formatCurrency(e.participationDue)}</TableCell>
                     <TableCell className="text-right font-mono text-xs">{formatCurrency(paye)}</TableCell>
-                    <TableCell className={`text-right font-mono text-xs font-semibold ${reste <= 0 ? "text-success" : reste > 0 ? "text-destructive" : ""}`}>
+                    {/* Fonds social deduction */}
+                    <TableCell className="text-right font-mono text-xs">
+                      {fondsSocial > 0 ? (
+                        <span className="text-primary font-semibold">-{formatCurrency(fondsSocial)}</span>
+                      ) : "—"}
+                    </TableCell>
+                    <TableCell className={`text-right font-mono text-xs font-semibold ${reste <= 0 ? "text-success" : "text-destructive"}`}>
                       {reste <= 0 ? "Soldé" : formatCurrency(reste)}
                     </TableCell>
                     <TableCell className="min-w-[80px]">
