@@ -45,61 +45,157 @@ function getSlots(budgets: { type: TypeBudget; libelle: string }[]): FileSlot[] 
 function extractCsvIdentifier(rows: Record<string, string>[]): { uai: string | null; opale: string | null } {
   let uai: string | null = null;
   let opale: string | null = null;
-  // Chercher dans les premières lignes
   for (const row of rows.slice(0, 20)) {
     for (const [key, val] of Object.entries(row)) {
       const v = String(val || '').trim().toUpperCase();
       const k = key.toLowerCase();
-      // UAI/RNE : 7 chiffres + 1 lettre
       if (!uai && (k.includes('rne') || k.includes('uai') || k.includes('etablissement'))) {
         if (/^[0-9]{7}[A-Z]$/.test(v)) uai = v;
       }
-      // Op@le : P + 5 chiffres
       if (!opale && (k.includes('opale') || k.includes('op@le') || k.includes('identifiant'))) {
         if (/^P\d{5}$/.test(v)) opale = v;
       }
-      // Also check values directly
       if (!uai && /^[0-9]{7}[A-Z]$/.test(v)) uai = v;
       if (!opale && /^P\d{5}$/.test(v)) opale = v;
     }
-    if (uai) break; // Found in first rows
+    if (uai) break;
   }
   return { uai, opale };
 }
 
-/** Vérifie la concordance entre le fichier CSV et l'établissement sélectionné */
-function checkConcordance(
-  rows: Record<string, string>[],
-  selectedUai: string,
-  selectedOpale: string
-): { ok: boolean; message?: string; fileUai?: string; fileOpale?: string } {
-  const { uai: fileUai, opale: fileOpale } = extractCsvIdentifier(rows);
-
-  // Si aucun identifiant détecté dans le fichier, on laisse passer avec avertissement
-  if (!fileUai && !fileOpale) {
-    return { ok: true, fileUai: fileUai || undefined, fileOpale: fileOpale || undefined };
+/** Extrait l'exercice comptable depuis les données CSV */
+function extractExercice(rows: Record<string, string>[]): number | null {
+  for (const row of rows.slice(0, 20)) {
+    for (const [key, val] of Object.entries(row)) {
+      const k = key.toLowerCase();
+      const v = String(val || '').trim();
+      if (k.includes('exercice') || k.includes('année') || k.includes('annee')) {
+        const year = parseInt(v, 10);
+        if (year >= 2000 && year <= 2099) return year;
+      }
+    }
   }
+  // Fallback: check any numeric column value that looks like a year
+  for (const row of rows.slice(0, 5)) {
+    for (const val of Object.values(row)) {
+      const v = String(val || '').trim();
+      const m = v.match(/\b(20[0-9]{2})\b/);
+      if (m) return parseInt(m[1], 10);
+    }
+  }
+  return null;
+}
 
-  // Vérification UAI
+// ── Colonnes attendues par type de document ──────────────────────────
+const COLONNES_ATTENDUES: Record<string, string[]> = {
+  sde: ['service', 'domaine', 'compte', 'budget', 'réalisé', 'disponible', 'realise', 'engagé', 'engage'],
+  sdr: ['service', 'domaine', 'compte', 'budget', 'réalisé', 'aor', 'realise', 'engagé', 'engage'],
+  bal: ['compte', 'intitulé', 'débit', 'crédit', 'solde', 'montant', 'poste', 'type'],
+};
+
+/** Détecte le type de document CSV à partir de ses colonnes */
+function detectDocumentType(headers: string[]): 'sde' | 'sdr' | 'bal' | null {
+  const lowerHeaders = headers.map(h => h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+  // Balance: has 'solde' or both 'debit anterieur' and 'credit anterieur'
+  const hasPoste = lowerHeaders.some(h => h.includes('poste'));
+  const hasSolde = lowerHeaders.some(h => h.includes('solde'));
+  const hasAnterieur = lowerHeaders.some(h => h.includes('anterieur'));
+  if ((hasSolde && hasAnterieur) || (hasPoste && hasSolde)) return 'bal';
+  // SDR: has 'aor' or '+values'
+  const hasAor = lowerHeaders.some(h => h.includes('aor'));
+  const hasPlusValues = lowerHeaders.some(h => h.includes('values') || h.includes('extourne'));
+  if (hasAor || hasPlusValues) return 'sdr';
+  // SDE: has 'disponible' or 'en cours'
+  const hasDispo = lowerHeaders.some(h => h.includes('disponible'));
+  const hasEncours = lowerHeaders.some(h => h.includes('en cours') || h.includes('encours'));
+  const hasExt = lowerHeaders.some(h => h.includes('ext'));
+  if (hasDispo || hasEncours || hasExt) return 'sde';
+  return null;
+}
+
+/** Vérifie que les colonnes du fichier correspondent au type de slot attendu */
+function validateColumns(headers: string[], slotType: string): { ok: boolean; detected: string | null; message?: string } {
+  const baseType = slotType.replace('1', ''); // sde1 → sde
+  const detected = detectDocumentType(headers);
+  if (!detected) {
+    return { ok: false, detected: null, message: `Structure de colonnes non reconnue. Le fichier ne correspond à aucun format Op@le connu (SDE, SDR, Balance).` };
+  }
+  if (detected !== baseType) {
+    const labels: Record<string, string> = { sde: 'Situation des Dépenses (SDE)', sdr: 'Situation des Recettes (SDR)', bal: 'Balance (IMPORT BAL)' };
+    return {
+      ok: false, detected,
+      message: `Ce fichier semble être une ${labels[detected] || detected}, mais vous l'importez dans l'emplacement ${labels[baseType] || baseType}.`,
+    };
+  }
+  return { ok: true, detected };
+}
+
+interface TripleLockResult {
+  ok: boolean;
+  type: 'opale' | 'exercice' | 'colonnes' | null;
+  title?: string;
+  message?: string;
+  details?: string;
+}
+
+/** Triple verrou de sécurité : Op@le + Exercice + Nature du flux */
+function tripleLockCheck(
+  rows: Record<string, string>[],
+  headers: string[],
+  slotType: string,
+  selectedUai: string,
+  selectedOpale: string,
+  exerciceTravail: number,
+): TripleLockResult {
+  // ── VERROU 1 : Code Op@le / UAI ──
+  const { uai: fileUai, opale: fileOpale } = extractCsvIdentifier(rows);
   if (fileUai && selectedUai && fileUai !== selectedUai.toUpperCase()) {
     return {
-      ok: false,
-      message: `🔒 Alerte de sécurité : Le fichier importé appartient à l'établissement UAI ${fileUai}, mais l'établissement sélectionné est ${selectedUai}. Veuillez vérifier votre export Op@le.`,
-      fileUai, fileOpale: fileOpale || undefined,
+      ok: false, type: 'opale',
+      title: 'Erreur de concordance — Établissement',
+      message: `Le fichier importé appartient à l'établissement UAI ${fileUai}, mais l'établissement sélectionné est ${selectedUai}.`,
+      details: 'Veuillez vérifier que vous avez sélectionné le bon établissement ou que votre export Op@le correspond.',
     };
   }
-
-  // Vérification Op@le
   if (fileOpale && selectedOpale && fileOpale !== selectedOpale.toUpperCase()) {
     return {
-      ok: false,
-      message: `🔒 Alerte de sécurité : Le fichier importé contient l'identifiant Op@le ${fileOpale}, mais l'établissement sélectionné utilise ${selectedOpale}. Veuillez vérifier votre export Op@le.`,
-      fileUai: fileUai || undefined, fileOpale,
+      ok: false, type: 'opale',
+      title: 'Erreur de concordance — Identifiant Op@le',
+      message: `Le fichier contient l'identifiant Op@le ${fileOpale}, mais l'établissement sélectionné utilise ${selectedOpale}.`,
+      details: 'Veuillez vérifier votre export Op@le ou l'identifiant technique de l'établissement.',
     };
   }
 
-  return { ok: true, fileUai: fileUai || undefined, fileOpale: fileOpale || undefined };
+  // ── VERROU 2 : Exercice comptable ──
+  const fileExercice = extractExercice(rows);
+  if (fileExercice && exerciceTravail && fileExercice !== exerciceTravail) {
+    // Allow N-1 files in N-1 slots
+    const isN1Slot = slotType.endsWith('1');
+    const expectedYear = isN1Slot ? exerciceTravail - 1 : exerciceTravail;
+    if (fileExercice !== expectedYear) {
+      return {
+        ok: false, type: 'exercice',
+        title: 'Erreur de concordance — Exercice comptable',
+        message: `Vous tentez d'importer un fichier de l'exercice ${fileExercice} alors que vous travaillez sur l'exercice ${exerciceTravail}${isN1Slot ? ` (N-1 attendu : ${expectedYear})` : ''}.`,
+        details: `L'exercice du fichier (${fileExercice}) ne correspond pas à l'exercice de travail. Veuillez vérifier votre export Op@le.`,
+      };
+    }
+  }
+
+  // ── VERROU 3 : Nature du flux (colonnes) ──
+  const colCheck = validateColumns(headers, slotType);
+  if (!colCheck.ok) {
+    return {
+      ok: false, type: 'colonnes',
+      title: 'Erreur de concordance — Type de document',
+      message: colCheck.message || 'Format de colonnes non reconnu.',
+      details: `Colonnes détectées : ${headers.slice(0, 8).join(', ')}${headers.length > 8 ? '…' : ''}`,
+    };
+  }
+
+  return { ok: true, type: null };
 }
+
 
 export function ImportSection() {
   const budgets = useCofiepleStore(s => s.budgets);
