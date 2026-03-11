@@ -831,6 +831,10 @@ export function AnnexeComptableSection() {
               {exportingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
               Export Dém'act (PDF)
             </Button>
+            <Button variant="outline" onClick={exportComplianceCertificate} disabled={exportingPdf} className="gap-2 text-xs">
+              <Shield className="h-3 w-3" />
+              Certificat de conformité
+            </Button>
           </div>
         </div>
         <div className="mt-4 flex items-center gap-3">
