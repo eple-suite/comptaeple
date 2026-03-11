@@ -23,8 +23,9 @@ export const VoyageBudgetWidget = ({ voyage }: Props) => {
   const pm = useMemo(() => calculerPointMort(v), [v]);
 
   // Validation budgétaire stricte
-  const validation = useMemo(() => validerEquilibreBudgetaire({
+  const budgetData = useMemo(() => ({
     nbEleves: v.nbEleves,
+    nbAccompagnateurs: v.nbAccompagnateurs,
     participationFamilles: v.participationFamilles,
     subventionCollectivite: v.subventionCollectivite,
     subventionEtat: v.subventionEtat,
@@ -39,21 +40,9 @@ export const VoyageBudgetWidget = ({ voyage }: Props) => {
     regieAvances,
   }), [v, regieAvances]);
 
-  const participationSuggestion = useMemo(() => calculerParticipationEquilibre({
-    nbEleves: v.nbEleves,
-    participationFamilles: v.participationFamilles,
-    subventionCollectivite: v.subventionCollectivite,
-    subventionEtat: v.subventionEtat,
-    subventionAutre: v.subventionAutre,
-    autofinancement: v.autofinancement,
-    transport: v.transport,
-    hebergement: v.hebergement,
-    restauration: v.restauration,
-    activites: v.activites,
-    assurance: v.assurance,
-    divers: v.divers,
-    regieAvances,
-  }), [v, regieAvances]);
+  const validation = useMemo(() => validerEquilibreBudgetaire(budgetData), [budgetData]);
+  const participationSuggestion = useMemo(() => calculerParticipationEquilibre(budgetData), [budgetData]);
+  const coutParticipant = useMemo(() => calculerCoutParParticipant(budgetData), [budgetData]);
 
   const postes = [
     ...CATEGORIES_PRESTATIONS.map((cat, i) => ({
