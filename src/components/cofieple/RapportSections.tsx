@@ -275,6 +275,7 @@ export function RapportACSection() {
             totalProduitsReel: R.totalProduitsReel,
             reserves: R.reserves,
             joursAutonomie: R.joursAutonomie,
+            prelevementsReserves: R.prelevementsReserves,
           },
           anomalies: nbAnom,
           bloquants: nbBloq,
