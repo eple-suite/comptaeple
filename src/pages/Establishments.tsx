@@ -205,6 +205,11 @@ const Establishments = () => {
                     <CheckCircle2 className="h-5 w-5" />
                     <span className="font-semibold text-sm">Établissement trouvé</span>
                   </div>
+                  {existingLocal && (
+                    <div className="rounded-md bg-warning/10 border border-warning/30 p-2 text-xs text-warning">
+                      ⚠️ Cet UAI est déjà dans votre liste. La fiche sera mise à jour (notamment le code Op@le).
+                    </div>
+                  )}
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
                       <span className="text-muted-foreground text-xs">Nom</span>
