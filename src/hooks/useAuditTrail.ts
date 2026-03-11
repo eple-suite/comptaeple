@@ -52,7 +52,7 @@ export function useAuditTrail() {
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
-      return data as { user_name: string; created_at: string } | null;
+      return data as unknown as { user_name: string; created_at: string } | null;
     } catch {
       return null;
     }
