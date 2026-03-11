@@ -77,23 +77,7 @@ export const VoyageCreationWizard = ({ open, onOpenChange, onCreateVoyage }: Pro
   const budgetValidation = useMemo(() => validerEquilibreBudgetaire(budgetData), [budgetData]);
   const coutParticipant = useMemo(() => calculerCoutParParticipant(budgetData), [budgetData]);
 
-  const participationSuggestion = useMemo(() => {
-    return calculerParticipationEquilibre({
-      nbEleves: Number(form.nbEleves) || 0,
-      participationFamilles: Number(form.participationFamilles) || 0,
-      subventionCollectivite: Number(form.subventionCollectivite) || 0,
-      subventionEtat: Number(form.subventionEtat) || 0,
-      subventionAutre: Number(form.subventionAutre) || 0,
-      autofinancement: Number(form.autofinancement) || 0,
-      transport: Number(form.transport) || 0,
-      hebergement: Number(form.hebergement) || 0,
-      restauration: Number(form.restauration) || 0,
-      activites: Number(form.activites) || 0,
-      assurance: Number(form.assurance) || 0,
-      divers: Number(form.divers) || 0,
-      regieAvances: Number(form.regieAvances) || 0,
-    });
-  }, [form]);
+  const participationSuggestion = useMemo(() => calculerParticipationEquilibre(budgetData), [budgetData]);
 
   const handleCreate = () => {
     // Block if profit on families (recettes > dépenses)
