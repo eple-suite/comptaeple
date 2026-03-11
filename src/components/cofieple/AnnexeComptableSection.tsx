@@ -1025,7 +1025,8 @@ export function AnnexeComptableSection() {
         <TabsContent value="principesComptables" className="space-y-5 mt-0">
           <NarrativeSection sectionId="principesComptables" text={texts.principesComptables}
             onTextChange={v => setTexts(p => ({ ...p, principesComptables: v }))}
-            onGenerate={() => genererSection('principesComptables')} loading={loadingSection === 'principesComptables'} />
+            onGenerate={() => genererSection('principesComptables')} loading={loadingSection === 'principesComptables'}
+            lastMod={lastMods['principesComptables']} onBlur={() => handleEditBlur('principesComptables')} />
         </TabsContent>
 
         {/* ═══ 3. ACTIF IMMOBILISÉ ═══ */}
