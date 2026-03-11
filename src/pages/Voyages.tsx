@@ -491,7 +491,14 @@ const Voyages = () => {
 
         {/* TAB: Marchés publics */}
         <TabsContent value="marches-publics">
-          <VoyageMarchesMoniteur voyages={voyages} exercice={new Date().getFullYear()} />
+          <VoyageMarchesMoniteur
+            voyages={voyages}
+            exercice={new Date().getFullYear()}
+            mobilitesErasmus={mobilitesErasmus}
+            onMobilitesChange={setMobilitesErasmus}
+            voyageModes={voyageModes}
+            onModeChange={handleModeChange}
+          />
         </TabsContent>
 
         {/* TAB: Actes CA */}
