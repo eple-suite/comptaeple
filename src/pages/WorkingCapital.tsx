@@ -40,6 +40,9 @@ import { useCofiepleStore } from "@/store/useCofiepleStore";
 
 const WorkingCapital = () => {
   const { selectedEstablishment } = useEstablishment();
+  const resultats = useCofiepleStore(s => s.resultats);
+  const activeBudget = useCofiepleStore(s => s.activeBudget);
+  const cofiepleR = resultats[activeBudget];
 
   // Données financières (mock pour l'instant — sera connecté au m96engine)
   const [donnees] = useState<DonneesFinancieres>({
