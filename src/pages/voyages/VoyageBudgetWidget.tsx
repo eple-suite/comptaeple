@@ -43,12 +43,18 @@ export const VoyageBudgetWidget = ({ voyage }: Props) => {
   const participationSuggestion = useMemo(() => calculerParticipationEquilibre(budgetData), [budgetData]);
   const coutParticipant = useMemo(() => calculerCoutParParticipant(budgetData), [budgetData]);
 
+  // Part EPLE = coût des accompagnateurs gratuits
+  const partEPLE = coutParticipant.partEtablissementAccomp;
+  const totalDepenses = totalDepensesBase + partEPLE;
+  const totalRecettes = v.participationFamilles + v.subventions + v.autofinancement + partEPLE;
+
   const postes = [
     ...CATEGORIES_PRESTATIONS.map((cat, i) => ({
       label: cat.label, icon: cat.icon,
       montant: (v as any)[cat.key] || 0, color: BAR_COLORS[i],
     })),
     ...(regieAvances > 0 ? [{ label: "Régie d'avances", icon: "💳", montant: regieAvances, color: "bg-primary/40" }] : []),
+    ...(partEPLE > 0 ? [{ label: "Part EPLE (accomp.)", icon: "🏫", montant: partEPLE, color: "bg-info/60" }] : []),
   ].filter(p => p.montant > 0);
 
   const totalPostes = postes.reduce((s, p) => s + p.montant, 0);
