@@ -482,6 +482,11 @@ export function AnnexeComptableSection() {
       });
       if (error) throw error;
       setTexts(prev => ({ ...prev, [sectionId]: data?.text || '' }));
+      await logAction({
+        action_type: 'generate_ai', uai: etab.uai, exercice: etab.exercice,
+        section_id: sectionId,
+        action_detail: `Génération IA de « ${SECTION_META[sectionId]?.label || sectionId} »`,
+      });
       toast.success(`Section "${SECTION_META[sectionId]?.label}" générée`);
     } catch (e: any) {
       toast.error(e.message || 'Erreur de génération IA');
