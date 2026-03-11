@@ -631,10 +631,6 @@ export function AnnexeComptableSection() {
     }
     setExportingPdf(false);
   }
-    for (const s of AI_SECTIONS) {
-      await genererSection(s);
-    }
-  }
 
   // ── EXPORT PDF DÉM'ACT ────────────────────────────────────
   async function exportDemact() {
