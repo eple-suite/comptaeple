@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Voyage, CHECKLIST_DEFAUT, TransportType, TypeVoyage } from "./types";
-import { validerEquilibreBudgetaire, calculerParticipationEquilibre } from "@/lib/voyageBudgetEngine";
+import { validerEquilibreBudgetaire, calculerParticipationEquilibre, calculerCoutParParticipant } from "@/lib/voyageBudgetEngine";
 
 interface Props {
   open: boolean;
