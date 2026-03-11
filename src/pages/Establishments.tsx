@@ -259,7 +259,7 @@ const Establishments = () => {
                 disabled={!lookupResult || addMutation.isPending}
                 onClick={() => addMutation.mutate()}
               >
-                {addMutation.isPending ? "Ajout..." : "Ajouter l'établissement"}
+                {addMutation.isPending ? "En cours..." : existingLocal ? "Mettre à jour" : "Ajouter l'établissement"}
               </Button>
             </DialogFooter>
           </DialogContent>
