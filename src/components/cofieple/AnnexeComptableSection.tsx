@@ -4,7 +4,7 @@
 // Conformité : M9-6 2026 · Décret 2012-1246 · Code Éducation
 // ═══════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,6 +18,7 @@ import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
+import { useAuditTrail } from '@/hooks/useAuditTrail';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
@@ -119,6 +120,7 @@ export function AnnexeComptableSection() {
   const balance = useCofiepleStore(s => s.balance);
   const anomaliesBalance = useCofiepleStore(s => s.anomaliesBalance);
   const R = resultats[activeBudget];
+  const { logAction, getLastModification, getAuditHistory } = useAuditTrail();
 
   const [activeTab, setActiveTab] = useState<AnnexeSectionId>('autoAudit');
   const [texts, setTexts] = useState<AnnexeTexts>({ ...INITIAL_TEXTS });
@@ -134,6 +136,7 @@ export function AnnexeComptableSection() {
   const [auditAnomalies, setAuditAnomalies] = useState<AuditAnomaly[]>([]);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [auditDrilldown, setAuditDrilldown] = useState<string | null>(null);
+  const [lastMods, setLastMods] = useState<Record<string, { user_name: string; created_at: string } | null>>({});
 
   const completedSections = useMemo(() => Object.values(texts).filter(t => t.length > 0).length, [texts]);
   const progressPct = Math.round((completedSections / AI_SECTIONS.length) * 100);
@@ -144,7 +147,7 @@ export function AnnexeComptableSection() {
 
   const hasMultipleBudgets = budgets.length > 1;
 
-  // ── Load indicators and history ────────────────────────────
+  // ── Load indicators, history, and last modifications ────
   useEffect(() => {
     if (!etab.uai || !R) return;
     (async () => {
@@ -164,6 +167,18 @@ export function AnnexeComptableSection() {
       } catch {}
     })();
   }, [etab.uai, etab.exercice, R]);
+
+  // Fetch last modification info for each section
+  useEffect(() => {
+    if (!etab.uai || !etab.exercice) return;
+    (async () => {
+      const mods: Record<string, { user_name: string; created_at: string } | null> = {};
+      for (const s of AI_SECTIONS) {
+        mods[s] = await getLastModification(etab.uai, etab.exercice, s);
+      }
+      setLastMods(mods);
+    })();
+  }, [etab.uai, etab.exercice, texts, getLastModification]);
 
   // ── AUTO-AUDIT ─────────────────────────────────────────────
   useEffect(() => {
@@ -467,6 +482,11 @@ export function AnnexeComptableSection() {
       });
       if (error) throw error;
       setTexts(prev => ({ ...prev, [sectionId]: data?.text || '' }));
+      await logAction({
+        action_type: 'generate_ai', uai: etab.uai, exercice: etab.exercice,
+        section_id: sectionId,
+        action_detail: `Génération IA de « ${SECTION_META[sectionId]?.label || sectionId} »`,
+      });
       toast.success(`Section "${SECTION_META[sectionId]?.label}" générée`);
     } catch (e: any) {
       toast.error(e.message || 'Erreur de génération IA');
@@ -483,6 +503,133 @@ export function AnnexeComptableSection() {
     for (const s of AI_SECTIONS) {
       await genererSection(s);
     }
+  }
+
+  // ── Log manual edits (on blur) ─────────────────────────────
+  const logEditRef = useRef<Record<string, boolean>>({});
+  const handleEditBlur = useCallback((sectionId: string) => {
+    if (!etab.uai || logEditRef.current[sectionId]) return;
+    logEditRef.current[sectionId] = true;
+    logAction({
+      action_type: 'edit_note', uai: etab.uai, exercice: etab.exercice,
+      section_id: sectionId,
+      action_detail: `Modification manuelle de « ${SECTION_META[sectionId]?.label || sectionId} »`,
+    });
+    // Reset after 10s to allow re-logging
+    setTimeout(() => { logEditRef.current[sectionId] = false; }, 10000);
+  }, [etab.uai, etab.exercice, logAction]);
+
+  // ── Generate compliance certificate PDF ────────────────────
+  async function exportComplianceCertificate() {
+    setExportingPdf(true);
+    try {
+      const auditLogs = await getAuditHistory(etab.uai, etab.exercice);
+      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const pageW = doc.internal.pageSize.getWidth();
+      const margin = 15;
+      let y = 20;
+
+      // Header
+      doc.setFontSize(8); doc.setTextColor(100);
+      doc.text('RAPPORT DE CONFORMITÉ ET DE TRAÇABILITÉ', pageW / 2, y, { align: 'center' }); y += 5;
+      doc.setFontSize(6); doc.setTextColor(130);
+      doc.text(`${etab.nom} — RNE ${etab.uai} — Exercice ${etab.exercice}`, pageW / 2, y, { align: 'center' }); y += 3;
+      doc.text(`Généré le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}`, pageW / 2, y, { align: 'center' }); y += 10;
+
+      // Section 1: Triple Verrou
+      doc.setFontSize(11); doc.setTextColor(30);
+      doc.text('§1 — Validité des fichiers importés (Triple Verrou)', margin, y); y += 7;
+      const importLogs = auditLogs.filter((l: any) => l.action_type === 'import');
+      if (importLogs.length > 0) {
+        autoTable(doc, {
+          startY: y,
+          head: [['Date', 'Fichier', 'Résultat']],
+          body: importLogs.slice(0, 20).map((l: any) => [
+            new Date(l.created_at).toLocaleString('fr-FR'),
+            (l.metadata as any)?.file_name || l.action_detail,
+            (l.metadata as any)?.result || '✓',
+          ]),
+          margin: { left: margin, right: margin },
+          styles: { fontSize: 7, cellPadding: 2 },
+          headStyles: { fillColor: [50, 60, 80], textColor: [255, 255, 255] },
+        });
+        y = (doc as any).lastAutoTable?.finalY + 8 || y + 20;
+      } else {
+        doc.setFontSize(8); doc.setTextColor(80);
+        doc.text('Aucun import enregistré dans le journal d\'audit.', margin, y); y += 8;
+      }
+
+      // Section 2: Completeness of 11 notes
+      doc.setFontSize(11); doc.setTextColor(30);
+      doc.text('§2 — Exhaustivité des 11 notes réglementaires', margin, y); y += 7;
+      autoTable(doc, {
+        startY: y,
+        head: [['Note', 'Statut', 'Dernière modification']],
+        body: AI_SECTIONS.map(s => {
+          const meta = SECTION_META[s];
+          const filled = texts[s]?.length > 0;
+          const mod = lastMods[s];
+          return [
+            meta?.label || s,
+            filled ? '✅ Renseignée' : '❌ Vide',
+            mod ? `${mod.user_name} — ${new Date(mod.created_at).toLocaleString('fr-FR')}` : '—',
+          ];
+        }),
+        margin: { left: margin, right: margin },
+        styles: { fontSize: 7, cellPadding: 2 },
+        headStyles: { fillColor: [50, 60, 80], textColor: [255, 255, 255] },
+      });
+      y = (doc as any).lastAutoTable?.finalY + 8 || y + 40;
+
+      // Section 3: Audit trail history
+      if (y > 240) { doc.addPage(); y = 20; }
+      doc.setFontSize(11); doc.setTextColor(30);
+      doc.text('§3 — Historique des actions (Audit Trail)', margin, y); y += 7;
+      if (auditLogs.length > 0) {
+        autoTable(doc, {
+          startY: y,
+          head: [['Date/Heure', 'Utilisateur', 'Action', 'Détail']],
+          body: auditLogs.slice(0, 50).map((l: any) => [
+            new Date(l.created_at).toLocaleString('fr-FR'),
+            l.user_name,
+            l.action_type,
+            (l.action_detail || '').substring(0, 60),
+          ]),
+          margin: { left: margin, right: margin },
+          styles: { fontSize: 6.5, cellPadding: 1.5 },
+          headStyles: { fillColor: [50, 60, 80], textColor: [255, 255, 255] },
+          columnStyles: { 3: { cellWidth: 50 } },
+        });
+        y = (doc as any).lastAutoTable?.finalY + 8 || y + 40;
+      }
+
+      // Signatures
+      if (y > 220) { doc.addPage(); y = 30; }
+      doc.setFontSize(8); doc.setTextColor(80);
+      doc.text(`Fait à ${etab.commune || '………………'}, le ${new Date().toLocaleDateString('fr-FR')}`, pageW / 2, y, { align: 'center' }); y += 15;
+      doc.setFontSize(9); doc.setTextColor(30);
+      doc.text('L\'ordonnateur', margin + 25, y, { align: 'center' });
+      doc.text('L\'agent comptable', pageW - margin - 25, y, { align: 'center' });
+      y += 20;
+      doc.setFontSize(7); doc.setTextColor(80);
+      doc.text(etab.ordonnateur || '……………………', margin + 25, y, { align: 'center' });
+      doc.text(etab.agentComptable || '……………………', pageW - margin - 25, y, { align: 'center' });
+
+      // Footer
+      const pageH = doc.internal.pageSize.getHeight();
+      doc.setFontSize(5); doc.setTextColor(150);
+      doc.text('Ce document est généré automatiquement par COFIEPLE — Certificat de conformité Op@le-Standard', margin, pageH - 5);
+
+      doc.save(`Certificat_Conformite_${etab.uai}_${etab.exercice}.pdf`);
+      await logAction({
+        action_type: 'export_pdf', uai: etab.uai, exercice: etab.exercice,
+        action_detail: 'Export Certificat de Conformité et de Traçabilité',
+      });
+      toast.success('Certificat de conformité exporté');
+    } catch (e: any) {
+      toast.error('Erreur d\'export : ' + (e.message || ''));
+    }
+    setExportingPdf(false);
   }
 
   // ── EXPORT PDF DÉM'ACT ────────────────────────────────────
@@ -639,6 +786,10 @@ export function AnnexeComptableSection() {
       addFooter();
 
       doc.save(`Annexe_CF_${etab.uai}_${etab.exercice}.pdf`);
+      await logAction({
+        action_type: 'export_pdf', uai: etab.uai, exercice: etab.exercice,
+        action_detail: `Export PDF Dém'act — Annexe Compte Financier ${etab.exercice}`,
+      });
       toast.success('PDF Dém\'act exporté');
     } catch (e: any) {
       toast.error('Erreur d\'export PDF : ' + (e.message || ''));
@@ -679,6 +830,10 @@ export function AnnexeComptableSection() {
             <Button variant="default" onClick={exportDemact} disabled={exportingPdf || !canGenerateAnnexe} className="gap-2 text-xs bg-primary">
               {exportingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
               Export Dém'act (PDF)
+            </Button>
+            <Button variant="outline" onClick={exportComplianceCertificate} disabled={exportingPdf} className="gap-2 text-xs">
+              <Shield className="h-3 w-3" />
+              Certificat de conformité
             </Button>
           </div>
         </div>
@@ -858,14 +1013,16 @@ export function AnnexeComptableSection() {
           </div>
           <NarrativeSection sectionId="faitsCaracteristiques" text={texts.faitsCaracteristiques}
             onTextChange={v => setTexts(p => ({ ...p, faitsCaracteristiques: v }))}
-            onGenerate={() => genererSection('faitsCaracteristiques')} loading={loadingSection === 'faitsCaracteristiques'} />
+            onGenerate={() => genererSection('faitsCaracteristiques')} loading={loadingSection === 'faitsCaracteristiques'}
+            lastMod={lastMods['faitsCaracteristiques']} onBlur={() => handleEditBlur('faitsCaracteristiques')} />
         </TabsContent>
 
         {/* ═══ 2. PRINCIPES COMPTABLES ═══ */}
         <TabsContent value="principesComptables" className="space-y-5 mt-0">
           <NarrativeSection sectionId="principesComptables" text={texts.principesComptables}
             onTextChange={v => setTexts(p => ({ ...p, principesComptables: v }))}
-            onGenerate={() => genererSection('principesComptables')} loading={loadingSection === 'principesComptables'} />
+            onGenerate={() => genererSection('principesComptables')} loading={loadingSection === 'principesComptables'}
+            lastMod={lastMods['principesComptables']} onBlur={() => handleEditBlur('principesComptables')} />
         </TabsContent>
 
         {/* ═══ 3. ACTIF IMMOBILISÉ ═══ */}
@@ -884,7 +1041,8 @@ export function AnnexeComptableSection() {
           )}
           <NarrativeSection sectionId="actifImmobilise" text={texts.actifImmobilise}
             onTextChange={v => setTexts(p => ({ ...p, actifImmobilise: v }))}
-            onGenerate={() => genererSection('actifImmobilise')} loading={loadingSection === 'actifImmobilise'} />
+            onGenerate={() => genererSection('actifImmobilise')} loading={loadingSection === 'actifImmobilise'}
+            lastMod={lastMods['actifImmobilise']} onBlur={() => handleEditBlur('actifImmobilise')} />
         </TabsContent>
 
         {/* ═══ 4. STOCKS ═══ */}
@@ -905,7 +1063,8 @@ export function AnnexeComptableSection() {
           )}
           <NarrativeSection sectionId="stocks" text={texts.stocks}
             onTextChange={v => setTexts(p => ({ ...p, stocks: v }))}
-            onGenerate={() => genererSection('stocks')} loading={loadingSection === 'stocks'} />
+            onGenerate={() => genererSection('stocks')} loading={loadingSection === 'stocks'}
+            lastMod={lastMods['stocks']} onBlur={() => handleEditBlur('stocks')} />
         </TabsContent>
 
         {/* ═══ 5. CRÉANCES ═══ */}
@@ -921,7 +1080,8 @@ export function AnnexeComptableSection() {
             onDrilldown={setDrilldownCompte} />
           <NarrativeSection sectionId="creances" text={texts.creances}
             onTextChange={v => setTexts(p => ({ ...p, creances: v }))}
-            onGenerate={() => genererSection('creances')} loading={loadingSection === 'creances'} />
+            onGenerate={() => genererSection('creances')} loading={loadingSection === 'creances'}
+            lastMod={lastMods['creances']} onBlur={() => handleEditBlur('creances')} />
         </TabsContent>
 
         {/* ═══ 6. DETTES ═══ */}
@@ -935,7 +1095,8 @@ export function AnnexeComptableSection() {
             onDrilldown={setDrilldownCompte} />
           <NarrativeSection sectionId="dettes" text={texts.dettes}
             onTextChange={v => setTexts(p => ({ ...p, dettes: v }))}
-            onGenerate={() => genererSection('dettes')} loading={loadingSection === 'dettes'} />
+            onGenerate={() => genererSection('dettes')} loading={loadingSection === 'dettes'}
+            lastMod={lastMods['dettes']} onBlur={() => handleEditBlur('dettes')} />
         </TabsContent>
 
         {/* ═══ 7. FINANCEMENTS ═══ */}
@@ -985,7 +1146,8 @@ export function AnnexeComptableSection() {
           )}
           <NarrativeSection sectionId="financements" text={texts.financements}
             onTextChange={v => setTexts(p => ({ ...p, financements: v }))}
-            onGenerate={() => genererSection('financements')} loading={loadingSection === 'financements'} />
+            onGenerate={() => genererSection('financements')} loading={loadingSection === 'financements'}
+            lastMod={lastMods['financements']} onBlur={() => handleEditBlur('financements')} />
         </TabsContent>
 
         {/* ═══ 8. PROVISIONS ═══ */}
@@ -1003,7 +1165,8 @@ export function AnnexeComptableSection() {
           )}
           <NarrativeSection sectionId="provisions" text={texts.provisions}
             onTextChange={v => setTexts(p => ({ ...p, provisions: v }))}
-            onGenerate={() => genererSection('provisions')} loading={loadingSection === 'provisions'} />
+            onGenerate={() => genererSection('provisions')} loading={loadingSection === 'provisions'}
+            lastMod={lastMods['provisions']} onBlur={() => handleEditBlur('provisions')} />
         </TabsContent>
 
         {/* ═══ 9. CHARGES ═══ */}
@@ -1044,7 +1207,8 @@ export function AnnexeComptableSection() {
           )}
           <NarrativeSection sectionId="charges" text={texts.charges}
             onTextChange={v => setTexts(p => ({ ...p, charges: v }))}
-            onGenerate={() => genererSection('charges')} loading={loadingSection === 'charges'} />
+            onGenerate={() => genererSection('charges')} loading={loadingSection === 'charges'}
+            lastMod={lastMods['charges']} onBlur={() => handleEditBlur('charges')} />
         </TabsContent>
 
         {/* ═══ 10. PRODUITS ═══ */}
@@ -1085,7 +1249,8 @@ export function AnnexeComptableSection() {
           )}
           <NarrativeSection sectionId="produits" text={texts.produits}
             onTextChange={v => setTexts(p => ({ ...p, produits: v }))}
-            onGenerate={() => genererSection('produits')} loading={loadingSection === 'produits'} />
+            onGenerate={() => genererSection('produits')} loading={loadingSection === 'produits'}
+            lastMod={lastMods['produits']} onBlur={() => handleEditBlur('produits')} />
         </TabsContent>
 
         {/* ═══ 11. AUTRES INFORMATIONS ═══ */}
@@ -1127,7 +1292,8 @@ export function AnnexeComptableSection() {
           </Card>
           <NarrativeSection sectionId="autresInfos" text={texts.autresInfos}
             onTextChange={v => setTexts(p => ({ ...p, autresInfos: v }))}
-            onGenerate={() => genererSection('autresInfos')} loading={loadingSection === 'autresInfos'} />
+            onGenerate={() => genererSection('autresInfos')} loading={loadingSection === 'autresInfos'}
+            lastMod={lastMods['autresInfos']} onBlur={() => handleEditBlur('autresInfos')} />
         </TabsContent>
       </Tabs>
 
@@ -1160,9 +1326,11 @@ export function AnnexeComptableSection() {
 // SOUS-COMPOSANTS
 // ═══════════════════════════════════════════════════════════════
 
-function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading }: {
+function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading, lastMod, onBlur }: {
   sectionId: string; text: string; onTextChange: (v: string) => void;
   onGenerate: () => void; loading: boolean;
+  lastMod?: { user_name: string; created_at: string } | null;
+  onBlur?: () => void;
 }) {
   const [editMode, setEditMode] = useState(false);
   const meta = SECTION_META[sectionId];
@@ -1189,6 +1357,7 @@ function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading }
         {text ? (
           editMode ? (
             <Textarea value={text} onChange={e => onTextChange(e.target.value)}
+              onBlur={onBlur}
               className="text-sm min-h-[120px] bg-muted/5 leading-relaxed" />
           ) : (
             <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground">
@@ -1201,6 +1370,14 @@ function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading }
             <p className="text-xs text-muted-foreground">
               Cliquez sur <strong>Générer l'analyse</strong> pour que l'IA rédige cette note.
             </p>
+          </div>
+        )}
+        {lastMod && (
+          <div className="mt-3 pt-2 border-t border-border/50 text-[10px] text-muted-foreground flex items-center gap-1">
+            <Eye className="h-3 w-3" />
+            Dernière modification par <strong className="text-foreground">{lastMod.user_name}</strong> le{' '}
+            {new Date(lastMod.created_at).toLocaleDateString('fr-FR')} à{' '}
+            {new Date(lastMod.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
           </div>
         )}
       </CardContent>
