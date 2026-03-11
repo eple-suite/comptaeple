@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Info, MapPin, Users, Euro, Check, ArrowRight, Plane, Bus, Train, Ship, AlertTriangle, Scale } from "lucide-react";
+import { Info, MapPin, Users, Euro, Check, ArrowRight, Plane, Bus, Train, Ship, AlertTriangle, Scale, TrendingDown, TrendingUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
