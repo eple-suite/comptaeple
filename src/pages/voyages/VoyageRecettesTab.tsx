@@ -84,13 +84,42 @@ function validateCodeActivite(code: string, compteNum: string): { valid: boolean
   return { valid: true, message: "" };
 }
 
+// ─── Mapping comptable M9-6 (Recettes) ───
+// JSON mapping: code_7 → code_4 (débit) selon la source de financement
+
+const MAPPING_DEBIT_RECETTES: Record<string, { code4: string; libelle: string }> = {
+  // Familles → 411100
+  "706700": { code4: "411100", libelle: "Familles — Créances sur élèves" },
+  "706880": { code4: "411100", libelle: "Familles — Créances sur élèves" },
+  // État (74xxxx) → 441100
+  "741100": { code4: "441100", libelle: "État — Subventions à recevoir" },
+  // Collectivités (744xxx) → 441900
+  "744200": { code4: "441900", libelle: "Collectivités — Subventions à recevoir" },
+  "744300": { code4: "441900", libelle: "Collectivités — Subventions à recevoir" },
+  "744400": { code4: "441900", libelle: "Collectivités — Subventions à recevoir" },
+  "747800": { code4: "441900", libelle: "Collectivités — Autres organismes à recevoir" },
+  // FSE/AS → 467100
+  "754110": { code4: "467100", libelle: "FSE/AS — Autres comptes débiteurs" },
+  // Dons/Privé → 467100 (par défaut)
+  "754000": { code4: "467100", libelle: "Dons — Autres comptes débiteurs" },
+  "748100": { code4: "467100", libelle: "Taxe d'apprentissage — Débiteurs divers" },
+  "758000": { code4: "467100", libelle: "Produits divers — Débiteurs divers" },
+};
+
+// ─── Mapping comptable M9-6 (Dépenses) ───
+
+export const MAPPING_DEPENSES_M96 = {
+  acompte: { code4: "409100", libelle: "Fournisseurs — Avances et acomptes versés", ctrl: "check_delib_CA" },
+  solde: { code4: "401100", libelle: "Fournisseurs — Dettes fournisseurs", comptes6: ["604", "624"] },
+} as const;
+
 // ─── Écriture comptable automatique ───
 
 function genererEcritureComptable(ligne: LigneRecette): EcritureComptable {
   const compte = ALL_COMPTES.find(c => c.compte === ligne.compteComptable);
-  // Débit: 411xxx pour familles, 44xxxx pour tiers publics
-  const compteDebit = compte?.categorie === "familles" ? "411000" : "441000";
-  const libelleDebit = compte?.categorie === "familles" ? "Familles — Créances" : "Collectivités — Subventions à recevoir";
+  const mapping = MAPPING_DEBIT_RECETTES[ligne.compteComptable];
+  const compteDebit = mapping?.code4 || "411100";
+  const libelleDebit = mapping?.libelle || "Créances — Tiers";
   return {
     id: `ecr-${ligne.id}`,
     dateEcriture: new Date().toISOString().split("T")[0],
