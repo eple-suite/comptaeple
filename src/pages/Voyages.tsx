@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Bus, Plus, Users, Euro, CalendarDays, MapPin, Trash2, Eye, ShieldAlert, Download, ChevronRight, CheckCircle2, XCircle, Landmark, Gift, Printer, AlertTriangle, Target, LayoutGrid, List } from "lucide-react";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
@@ -17,7 +17,7 @@ import { KpiCard } from "@/components/KpiCard";
 import { ProgressRing } from "@/components/ProgressRing";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { evaluerSeuilsMarchesVoyages } from "@/lib/regulatoryKnowledge";
-import { Voyage, initialVoyages, STATUT_CONFIG, CATEGORIES_PRESTATIONS, getRecommandation, calculerPointMort } from "./voyages/types";
+import { Voyage, initialVoyages, STATUT_CONFIG, CATEGORIES_PRESTATIONS, getRecommandation, calculerPointMort, ModePassation, MobiliteErasmus } from "./voyages/types";
 import { cumulerSeuils, evaluerSeuilCCP, SEUIL_CCP } from "@/lib/voyageBudgetEngine";
 import { VoyageCard } from "./voyages/VoyageCard";
 import { VoyageCreationWizard } from "./voyages/VoyageCreationWizard";
@@ -39,6 +39,12 @@ const Voyages = () => {
   const [selectedVoyageId, setSelectedVoyageId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("tableau-bord");
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [voyageModes, setVoyageModes] = useState<Record<string, ModePassation>>({});
+  const [mobilitesErasmus, setMobilitesErasmus] = useState<MobiliteErasmus[]>([]);
+
+  const handleModeChange = useCallback((voyageId: string, mode: ModePassation) => {
+    setVoyageModes(prev => ({ ...prev, [voyageId]: mode }));
+  }, []);
 
   const voyagesActifs = voyages.filter(v => v.statut !== "annule");
   const selectedVoyage = voyages.find(v => v.id === selectedVoyageId) || null;
@@ -485,7 +491,14 @@ const Voyages = () => {
 
         {/* TAB: Marchés publics */}
         <TabsContent value="marches-publics">
-          <VoyageMarchesMoniteur voyages={voyages} exercice={new Date().getFullYear()} />
+          <VoyageMarchesMoniteur
+            voyages={voyages}
+            exercice={new Date().getFullYear()}
+            mobilitesErasmus={mobilitesErasmus}
+            onMobilitesChange={setMobilitesErasmus}
+            voyageModes={voyageModes}
+            onModeChange={handleModeChange}
+          />
         </TabsContent>
 
         {/* TAB: Actes CA */}

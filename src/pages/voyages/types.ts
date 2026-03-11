@@ -129,6 +129,22 @@ export interface Devis {
 
 export type TransportType = 'bus' | 'avion' | 'train' | 'bateau' | 'mixte';
 export type TypeVoyage = 'pedagogique' | 'linguistique' | 'sportif' | 'culturel' | 'ski' | 'erasmus';
+export type ModePassation = 'globale' | 'directe';
+
+// ─── Mobilités Erasmus+ ───
+
+export interface MobiliteErasmus {
+  id: string;
+  intitule: string;
+  pays: string;
+  nbParticipants: number;
+  forfaitAppuiOrganisationnel: number;
+  forfaitVoyage: number;
+  forfaitSejour: number;
+  dateDebut: string;
+  dateFin: string;
+  observations: string;
+}
 
 export interface Voyage {
   id: string;
@@ -188,6 +204,8 @@ export interface Voyage {
   intitule?: string;
   codeActiviteGFC?: string;
   dateValidationCA?: string;
+  // Mode de passation marchés
+  modePassation?: ModePassation;
 }
 
 export const STATUT_CONFIG: Record<Voyage["statut"], { label: string; class: string; step: number }> = {
