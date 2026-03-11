@@ -58,6 +58,45 @@ export type Database = {
           },
         ]
       }
+      cofieple_audit_trail: {
+        Row: {
+          action_detail: string
+          action_type: string
+          created_at: string
+          exercice: number
+          id: string
+          metadata: Json | null
+          section_id: string | null
+          uai: string
+          user_id: string
+          user_name: string
+        }
+        Insert: {
+          action_detail?: string
+          action_type: string
+          created_at?: string
+          exercice: number
+          id?: string
+          metadata?: Json | null
+          section_id?: string | null
+          uai: string
+          user_id: string
+          user_name?: string
+        }
+        Update: {
+          action_detail?: string
+          action_type?: string
+          created_at?: string
+          exercice?: number
+          id?: string
+          metadata?: Json | null
+          section_id?: string | null
+          uai?: string
+          user_id?: string
+          user_name?: string
+        }
+        Relationships: []
+      }
       cofieple_exercises: {
         Row: {
           bfr: number
