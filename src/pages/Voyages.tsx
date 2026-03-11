@@ -458,6 +458,15 @@ const Voyages = () => {
           )}
         </TabsContent>
 
+        {/* TAB: Documents juridiques */}
+        <TabsContent value="documents">
+          {selectedVoyage ? (
+            <VoyageDocumentsJuridiqueTab voyage={selectedVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour accéder au pack juridique.</p>
+          )}
+        </TabsContent>
+
         {/* TAB: Bilan */}
         <TabsContent value="bilan">
           {selectedVoyage ? (
