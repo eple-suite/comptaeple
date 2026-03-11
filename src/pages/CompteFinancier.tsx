@@ -51,6 +51,7 @@ const CompteFinancier = () => {
   const items: NavItem[] = [
     { id: 'accueil', label: 'Accueil', icon: <Home className="h-4 w-4" /> },
     { id: 'import', label: 'Imports', icon: <Upload className="h-4 w-4" />, badge: `${nbFichiers}`, badgeType: nbFichiers >= 3 ? 'success' : 'info' },
+    { id: 'journal', label: 'Journal', icon: <ScrollText className="h-4 w-4" /> },
     { id: 'checklist', label: 'Check-List', icon: <CheckCircle2 className="h-4 w-4" />,
       badge: hasData ? (nbBloq > 0 ? `${nbBloq} BLOQ` : nbAnom > 0 ? `${nbAnom}` : 'OK') : undefined,
       badgeType: hasData ? (nbBloq > 0 ? 'error' : nbAnom > 0 ? 'warning' : 'success') : undefined, requiresData: true },
