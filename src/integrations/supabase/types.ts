@@ -699,6 +699,119 @@ export type Database = {
           },
         ]
       }
+      voyage_templates: {
+        Row: {
+          activites: number
+          assurance: number
+          autofinancement: number
+          classe: string | null
+          code_activite_gfc: string | null
+          compte_classe7: string | null
+          created_at: string
+          description: string | null
+          destination: string
+          divers: number
+          domaine: string | null
+          echeances: Json | null
+          establishment_id: string
+          hebergement: number
+          id: string
+          nb_accompagnateurs: number
+          nb_eleves: number
+          nom: string
+          objectif_pedagogique: string | null
+          participation_familles: number
+          pays: string
+          regie_avances: number
+          restauration: number
+          service_ap: string | null
+          subvention_autre: number
+          subvention_collectivite: number
+          subvention_etat: number
+          transport: number
+          transport_type: string | null
+          type_voyage: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          activites?: number
+          assurance?: number
+          autofinancement?: number
+          classe?: string | null
+          code_activite_gfc?: string | null
+          compte_classe7?: string | null
+          created_at?: string
+          description?: string | null
+          destination?: string
+          divers?: number
+          domaine?: string | null
+          echeances?: Json | null
+          establishment_id: string
+          hebergement?: number
+          id?: string
+          nb_accompagnateurs?: number
+          nb_eleves?: number
+          nom: string
+          objectif_pedagogique?: string | null
+          participation_familles?: number
+          pays?: string
+          regie_avances?: number
+          restauration?: number
+          service_ap?: string | null
+          subvention_autre?: number
+          subvention_collectivite?: number
+          subvention_etat?: number
+          transport?: number
+          transport_type?: string | null
+          type_voyage?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          activites?: number
+          assurance?: number
+          autofinancement?: number
+          classe?: string | null
+          code_activite_gfc?: string | null
+          compte_classe7?: string | null
+          created_at?: string
+          description?: string | null
+          destination?: string
+          divers?: number
+          domaine?: string | null
+          echeances?: Json | null
+          establishment_id?: string
+          hebergement?: number
+          id?: string
+          nb_accompagnateurs?: number
+          nb_eleves?: number
+          nom?: string
+          objectif_pedagogique?: string | null
+          participation_familles?: number
+          pays?: string
+          regie_avances?: number
+          restauration?: number
+          service_ap?: string | null
+          subvention_autre?: number
+          subvention_collectivite?: number
+          subvention_etat?: number
+          transport?: number
+          transport_type?: string | null
+          type_voyage?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voyage_templates_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       voyages: {
         Row: {
           activites: number
