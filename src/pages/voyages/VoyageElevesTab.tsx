@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Voyage, Eleve, MODES_PAIEMENT } from "./types";
+import { calculerResteApayer } from "@/lib/voyageBudgetEngine";
 import { formatCurrency } from "@/lib/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import jsPDF from "jspdf";
 
 interface Props {
