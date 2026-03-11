@@ -380,7 +380,7 @@ const Voyages = () => {
 
         {/* TAB: Marchés publics */}
         <TabsContent value="marches-publics">
-          <VoyageMarchesTab voyages={voyages} />
+          <VoyageMarchesMoniteur voyages={voyages} exercice={new Date().getFullYear()} />
         </TabsContent>
 
         {/* TAB: Actes CA */}
