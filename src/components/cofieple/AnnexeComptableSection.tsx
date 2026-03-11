@@ -18,6 +18,7 @@ import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
 import { supabase } from '@/integrations/supabase/client';
 import ReactMarkdown from 'react-markdown';
+import { useAuditTrail } from '@/hooks/useAuditTrail';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
