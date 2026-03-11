@@ -1150,7 +1150,8 @@ export function AnnexeComptableSection() {
           )}
           <NarrativeSection sectionId="financements" text={texts.financements}
             onTextChange={v => setTexts(p => ({ ...p, financements: v }))}
-            onGenerate={() => genererSection('financements')} loading={loadingSection === 'financements'} />
+            onGenerate={() => genererSection('financements')} loading={loadingSection === 'financements'}
+            lastMod={lastMods['financements']} onBlur={() => handleEditBlur('financements')} />
         </TabsContent>
 
         {/* ═══ 8. PROVISIONS ═══ */}
