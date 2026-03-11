@@ -45,16 +45,23 @@ const Establishments = () => {
   const { establishments, selectedEstablishment, selectEstablishment, isLoading, refetch } = useEstablishment();
   const { user } = useAuth();
 
-  const handleLookup = async () => {
-    if (uaiInput.length < 7) {
-      setLookupError("Le code UAI doit contenir au moins 7 caractères");
-      return;
+  const uaiInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Auto-focus UAI field when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      setTimeout(() => uaiInputRef.current?.focus(), 100);
     }
+  }, [open]);
+
+  const handleLookup = async (value?: string) => {
+    const uai = (value || uaiInput).trim().toUpperCase();
+    if (uai.length < 7) return;
     setLookupLoading(true);
     setLookupError("");
     setLookupResult(null);
     try {
-      const result = await fetchEstablishmentByUAI(uaiInput);
+      const result = await fetchEstablishmentByUAI(uai);
       if (result) {
         setLookupResult(result);
       } else {
@@ -64,6 +71,17 @@ const Establishments = () => {
       setLookupError("Erreur lors de la recherche. Vérifiez votre connexion.");
     } finally {
       setLookupLoading(false);
+    }
+  };
+
+  // Auto-search when UAI format is valid (7 digits + 1 letter)
+  const handleUaiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toUpperCase();
+    setUaiInput(val);
+    setLookupResult(null);
+    setLookupError("");
+    if (/^[0-9]{7}[A-Z]$/i.test(val)) {
+      handleLookup(val);
     }
   };
 
