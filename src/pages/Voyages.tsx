@@ -460,6 +460,15 @@ const Voyages = () => {
           )}
         </TabsContent>
 
+        {/* TAB: Recettes Op@le */}
+        <TabsContent value="recettes">
+          {selectedVoyage ? (
+            <VoyageRecettesTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour gérer les recettes.</p>
+          )}
+        </TabsContent>
+
         {/* TAB: Documents juridiques */}
         <TabsContent value="documents">
           {selectedVoyage ? (
