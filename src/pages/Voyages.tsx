@@ -39,6 +39,12 @@ const Voyages = () => {
   const [selectedVoyageId, setSelectedVoyageId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("tableau-bord");
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid");
+  const [voyageModes, setVoyageModes] = useState<Record<string, ModePassation>>({});
+  const [mobilitesErasmus, setMobilitesErasmus] = useState<MobiliteErasmus[]>([]);
+
+  const handleModeChange = useCallback((voyageId: string, mode: ModePassation) => {
+    setVoyageModes(prev => ({ ...prev, [voyageId]: mode }));
+  }, []);
 
   const voyagesActifs = voyages.filter(v => v.statut !== "annule");
   const selectedVoyage = voyages.find(v => v.id === selectedVoyageId) || null;
