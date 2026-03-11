@@ -154,6 +154,7 @@ export const VoyageElevesTab = ({ voyage, onUpdateVoyage }: Props) => {
                 <TableHead>Régime</TableHead>
                 <TableHead className="text-right">Dû</TableHead>
                 <TableHead className="text-right">Payé</TableHead>
+                <TableHead className="text-right" title="Aide fonds social (déduction auto)">Fonds social</TableHead>
                 <TableHead className="text-right">Reste</TableHead>
                 <TableHead className="text-center">Paiement</TableHead>
                 <TableHead className="text-center" title="Autorisation parentale">AP</TableHead>
