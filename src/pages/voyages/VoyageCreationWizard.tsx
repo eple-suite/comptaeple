@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Info, MapPin, Users, Euro, Check, ArrowRight, Plane, Bus, Train, Ship, AlertTriangle, Scale } from "lucide-react";
+import { Info, MapPin, Users, Euro, Check, ArrowRight, Plane, Bus, Train, Ship, AlertTriangle, Scale, TrendingDown, TrendingUp } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Voyage, CHECKLIST_DEFAUT, TransportType, TypeVoyage } from "./types";
-import { validerEquilibreBudgetaire, calculerParticipationEquilibre } from "@/lib/voyageBudgetEngine";
+import { validerEquilibreBudgetaire, calculerParticipationEquilibre, calculerCoutParParticipant } from "@/lib/voyageBudgetEngine";
 
 interface Props {
   open: boolean;
@@ -57,43 +57,27 @@ export const VoyageCreationWizard = ({ open, onOpenChange, onCreateVoyage }: Pro
   const update = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }));
 
   // Budget validation in real-time
-  const budgetValidation = useMemo(() => {
-    const nbEleves = Number(form.nbEleves) || 0;
-    const data = {
-      nbEleves,
-      participationFamilles: Number(form.participationFamilles) || 0,
-      subventionCollectivite: Number(form.subventionCollectivite) || 0,
-      subventionEtat: Number(form.subventionEtat) || 0,
-      subventionAutre: Number(form.subventionAutre) || 0,
-      autofinancement: Number(form.autofinancement) || 0,
-      transport: Number(form.transport) || 0,
-      hebergement: Number(form.hebergement) || 0,
-      restauration: Number(form.restauration) || 0,
-      activites: Number(form.activites) || 0,
-      assurance: Number(form.assurance) || 0,
-      divers: Number(form.divers) || 0,
-      regieAvances: Number(form.regieAvances) || 0,
-    };
-    return validerEquilibreBudgetaire(data);
-  }, [form]);
+  const budgetData = useMemo(() => ({
+    nbEleves: Number(form.nbEleves) || 0,
+    nbAccompagnateurs: Number(form.nbAccompagnateurs) || 0,
+    participationFamilles: Number(form.participationFamilles) || 0,
+    subventionCollectivite: Number(form.subventionCollectivite) || 0,
+    subventionEtat: Number(form.subventionEtat) || 0,
+    subventionAutre: Number(form.subventionAutre) || 0,
+    autofinancement: Number(form.autofinancement) || 0,
+    transport: Number(form.transport) || 0,
+    hebergement: Number(form.hebergement) || 0,
+    restauration: Number(form.restauration) || 0,
+    activites: Number(form.activites) || 0,
+    assurance: Number(form.assurance) || 0,
+    divers: Number(form.divers) || 0,
+    regieAvances: Number(form.regieAvances) || 0,
+  }), [form]);
 
-  const participationSuggestion = useMemo(() => {
-    return calculerParticipationEquilibre({
-      nbEleves: Number(form.nbEleves) || 0,
-      participationFamilles: Number(form.participationFamilles) || 0,
-      subventionCollectivite: Number(form.subventionCollectivite) || 0,
-      subventionEtat: Number(form.subventionEtat) || 0,
-      subventionAutre: Number(form.subventionAutre) || 0,
-      autofinancement: Number(form.autofinancement) || 0,
-      transport: Number(form.transport) || 0,
-      hebergement: Number(form.hebergement) || 0,
-      restauration: Number(form.restauration) || 0,
-      activites: Number(form.activites) || 0,
-      assurance: Number(form.assurance) || 0,
-      divers: Number(form.divers) || 0,
-      regieAvances: Number(form.regieAvances) || 0,
-    });
-  }, [form]);
+  const budgetValidation = useMemo(() => validerEquilibreBudgetaire(budgetData), [budgetData]);
+  const coutParticipant = useMemo(() => calculerCoutParParticipant(budgetData), [budgetData]);
+
+  const participationSuggestion = useMemo(() => calculerParticipationEquilibre(budgetData), [budgetData]);
 
   const handleCreate = () => {
     // Block if profit on families (recettes > dépenses)
@@ -357,10 +341,26 @@ export const VoyageCreationWizard = ({ open, onOpenChange, onCreateVoyage }: Pro
                 <div><Label>Autres subventions (€)</Label><Input type="number" value={form.subventionAutre} onChange={e => update("subventionAutre", e.target.value)} /></div>
               </div>
 
-              {/* Budget validation feedback */}
+              {/* ═══ TOTAUX PERMANENTS ═══ */}
               {budgetValidation.totalDepenses > 0 && (
                 <div className="space-y-2">
-                  {/* Equilibrium status */}
+                  {/* Masses globales */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-2.5 text-center">
+                      <div className="flex items-center justify-center gap-1 text-destructive text-[10px] font-medium mb-0.5">
+                        <TrendingDown className="h-3 w-3" /> TOTAL DÉPENSES
+                      </div>
+                      <div className="text-base font-bold font-mono text-destructive">{formatEuro(budgetValidation.totalDepenses)}</div>
+                    </div>
+                    <div className="bg-success/5 border border-success/20 rounded-lg p-2.5 text-center">
+                      <div className="flex items-center justify-center gap-1 text-success text-[10px] font-medium mb-0.5">
+                        <TrendingUp className="h-3 w-3" /> TOTAL RECETTES
+                      </div>
+                      <div className="text-base font-bold font-mono text-success">{formatEuro(budgetValidation.totalRecettes)}</div>
+                    </div>
+                  </div>
+
+                  {/* Delta d'équilibre */}
                   <div className={`rounded-lg p-3 text-xs border ${
                     budgetValidation.equilibre
                       ? "bg-success/5 border-success/30"
@@ -368,37 +368,53 @@ export const VoyageCreationWizard = ({ open, onOpenChange, onCreateVoyage }: Pro
                         ? "bg-destructive/5 border-destructive/30"
                         : "bg-warning/5 border-warning/30"
                   }`}>
-                    <div className="flex items-center gap-2 font-semibold mb-1">
-                      {budgetValidation.equilibre ? (
-                        <><Check className="h-3.5 w-3.5 text-success" /> <span className="text-success">Budget équilibré — Recettes = Dépenses</span></>
-                      ) : budgetValidation.erreurs.length > 0 ? (
-                        <><AlertTriangle className="h-3.5 w-3.5 text-destructive" /> <span className="text-destructive">Blocage : {budgetValidation.erreurs[0]}</span></>
-                      ) : (
-                        <><Scale className="h-3.5 w-3.5 text-warning" /> <span className="text-warning">Budget déséquilibré (solde : {formatEuro(budgetValidation.solde)})</span></>
-                      )}
-                    </div>
-                    <div className="flex gap-6 text-muted-foreground">
-                      <span>Dépenses : <strong className="font-mono">{formatEuro(budgetValidation.totalDepenses)}</strong></span>
-                      <span>Recettes : <strong className="font-mono">{formatEuro(budgetValidation.totalRecettes)}</strong></span>
-                    </div>
-                  </div>
-
-                  {/* Point mort preview */}
-                  {Number(form.nbEleves) > 0 && (
-                    <div className="bg-muted/50 rounded-lg p-3 text-xs">
-                      <div className="flex items-center gap-2 font-semibold text-foreground mb-1">
-                        🎯 Analyse rapide
-                      </div>
-                      <div className="text-muted-foreground">
-                        Coût par élève : <span className="font-mono font-semibold text-foreground">
-                          {formatEuro(budgetValidation.totalDepenses / Number(form.nbEleves))}
-                        </span>
-                        {Number(form.participationFamilles) > 0 && (
-                          <> — Participation / élève : <span className="font-mono font-semibold text-foreground">
-                            {formatEuro(Number(form.participationFamilles) / Number(form.nbEleves))}
-                          </span></>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2 font-semibold">
+                        {budgetValidation.equilibre ? (
+                          <><Check className="h-3.5 w-3.5 text-success" /> <span className="text-success">Budget équilibré</span></>
+                        ) : budgetValidation.erreurs.length > 0 ? (
+                          <><AlertTriangle className="h-3.5 w-3.5 text-destructive" /> <span className="text-destructive">Blocage budgétaire</span></>
+                        ) : (
+                          <><Scale className="h-3.5 w-3.5 text-warning" /> <span className="text-warning">Budget déséquilibré</span></>
                         )}
                       </div>
+                      {!budgetValidation.equilibre && (
+                        <span className={`font-mono font-bold text-sm ${budgetValidation.solde > 0 ? "text-destructive" : "text-warning"}`}>
+                          Δ {budgetValidation.solde > 0 ? "+" : ""}{formatEuro(budgetValidation.solde)}
+                        </span>
+                      )}
+                    </div>
+                    {budgetValidation.erreurs.length > 0 && (
+                      <p className="text-destructive/80 mt-1">{budgetValidation.erreurs[0]}</p>
+                    )}
+                  </div>
+
+                  {/* Coût par participant (élèves + accompagnateurs) */}
+                  {coutParticipant.totalParticipants > 0 && (
+                    <div className="bg-muted/50 rounded-lg p-3 text-xs space-y-1">
+                      <div className="flex items-center gap-2 font-semibold text-foreground">
+                        🎯 Répartition par participant
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-muted-foreground">
+                        <div>
+                          Coût / participant : <span className="font-mono font-semibold text-foreground">
+                            {formatEuro(coutParticipant.coutParParticipant)}
+                          </span>
+                          <span className="text-[9px] block">({coutParticipant.totalParticipants} pers. = {budgetData.nbEleves} él. + {budgetData.nbAccompagnateurs} acc.)</span>
+                        </div>
+                        {coutParticipant.partFamilles > 0 && (
+                          <div>
+                            Participation / élève : <span className="font-mono font-semibold text-foreground">
+                              {formatEuro(coutParticipant.partFamilles)}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                      {coutParticipant.partEtablissementAccomp > 0 && (
+                        <div className="text-[10px] text-primary font-medium border-t border-border pt-1 mt-1">
+                          💼 Part accompagnateurs à charge de l'établissement : <span className="font-mono font-semibold">{formatEuro(coutParticipant.partEtablissementAccomp)}</span>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

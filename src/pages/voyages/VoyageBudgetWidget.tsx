@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Voyage, CATEGORIES_PRESTATIONS, calculerPointMort } from "./types";
-import { validerEquilibreBudgetaire, calculerParticipationEquilibre } from "@/lib/voyageBudgetEngine";
+import { validerEquilibreBudgetaire, calculerParticipationEquilibre, calculerCoutParParticipant } from "@/lib/voyageBudgetEngine";
 import { formatCurrency } from "@/lib/mockData";
 import { Target, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Scale, Banknote } from "lucide-react";
 
@@ -23,8 +23,9 @@ export const VoyageBudgetWidget = ({ voyage }: Props) => {
   const pm = useMemo(() => calculerPointMort(v), [v]);
 
   // Validation budgétaire stricte
-  const validation = useMemo(() => validerEquilibreBudgetaire({
+  const budgetData = useMemo(() => ({
     nbEleves: v.nbEleves,
+    nbAccompagnateurs: v.nbAccompagnateurs,
     participationFamilles: v.participationFamilles,
     subventionCollectivite: v.subventionCollectivite,
     subventionEtat: v.subventionEtat,
@@ -39,21 +40,9 @@ export const VoyageBudgetWidget = ({ voyage }: Props) => {
     regieAvances,
   }), [v, regieAvances]);
 
-  const participationSuggestion = useMemo(() => calculerParticipationEquilibre({
-    nbEleves: v.nbEleves,
-    participationFamilles: v.participationFamilles,
-    subventionCollectivite: v.subventionCollectivite,
-    subventionEtat: v.subventionEtat,
-    subventionAutre: v.subventionAutre,
-    autofinancement: v.autofinancement,
-    transport: v.transport,
-    hebergement: v.hebergement,
-    restauration: v.restauration,
-    activites: v.activites,
-    assurance: v.assurance,
-    divers: v.divers,
-    regieAvances,
-  }), [v, regieAvances]);
+  const validation = useMemo(() => validerEquilibreBudgetaire(budgetData), [budgetData]);
+  const participationSuggestion = useMemo(() => calculerParticipationEquilibre(budgetData), [budgetData]);
+  const coutParticipant = useMemo(() => calculerCoutParParticipant(budgetData), [budgetData]);
 
   const postes = [
     ...CATEGORIES_PRESTATIONS.map((cat, i) => ({
@@ -140,25 +129,48 @@ export const VoyageBudgetWidget = ({ voyage }: Props) => {
         <div className="grid grid-cols-2 gap-3">
           <div className="bg-destructive/5 rounded-lg p-3">
             <div className="flex items-center gap-1 text-destructive text-xs mb-0.5">
-              <TrendingDown className="h-3 w-3" /> Dépenses
+              <TrendingDown className="h-3 w-3" /> TOTAL DÉPENSES
             </div>
             <div className="text-lg font-bold font-mono text-destructive">{formatCurrency(totalDepenses)}</div>
           </div>
           <div className="bg-success/5 rounded-lg p-3">
             <div className="flex items-center gap-1 text-success text-xs mb-0.5">
-              <TrendingUp className="h-3 w-3" /> Recettes
+              <TrendingUp className="h-3 w-3" /> TOTAL RECETTES
             </div>
             <div className="text-lg font-bold font-mono text-success">{formatCurrency(totalRecettes)}</div>
           </div>
         </div>
 
-        {/* Solde */}
+        {/* Delta d'équilibre précis */}
         <div className="flex items-center justify-between text-sm border-t border-border pt-2">
-          <span className="font-medium">Solde prévisionnel</span>
-          <span className={`font-mono font-bold ${validation.equilibre ? "text-success" : validation.solde > 0 ? "text-destructive" : "text-warning"}`}>
-            {formatCurrency(validation.solde)}
+          <span className="font-medium">Delta d'équilibre</span>
+          <span className={`font-mono font-bold text-base ${validation.equilibre ? "text-success" : validation.solde > 0 ? "text-destructive" : "text-warning"}`}>
+            {validation.equilibre ? "= 0,00 €" : `Déséquilibre : ${validation.solde > 0 ? "+" : ""}${formatCurrency(validation.solde)}`}
           </span>
         </div>
+
+        {/* Coût par participant (élèves + accompagnateurs) */}
+        {coutParticipant.totalParticipants > 0 && (
+          <div className="bg-muted/50 rounded-lg p-2.5 text-xs space-y-1">
+            <div className="font-semibold text-foreground">Répartition par participant</div>
+            <div className="flex justify-between text-muted-foreground">
+              <span>Coût / participant ({coutParticipant.totalParticipants} pers. = {v.nbEleves} él. + {v.nbAccompagnateurs} acc.)</span>
+              <span className="font-mono font-semibold text-foreground">{formatCurrency(coutParticipant.coutParParticipant)}</span>
+            </div>
+            {coutParticipant.partFamilles > 0 && (
+              <div className="flex justify-between text-muted-foreground">
+                <span>Participation / élève</span>
+                <span className="font-mono font-semibold text-foreground">{formatCurrency(coutParticipant.partFamilles)}</span>
+              </div>
+            )}
+            {coutParticipant.partEtablissementAccomp > 0 && (
+              <div className="flex justify-between text-primary font-medium">
+                <span>Part accompagnateurs à charge étab.</span>
+                <span className="font-mono font-semibold">{formatCurrency(coutParticipant.partEtablissementAccomp)}</span>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Régie d'avances */}
         {regieAvances > 0 && (
@@ -187,7 +199,7 @@ export const VoyageBudgetWidget = ({ voyage }: Props) => {
           <div className="bg-primary/5 border border-primary/20 rounded-lg p-2.5 text-xs">
             <p className="font-semibold text-primary">💡 Participation suggérée pour l'équilibre :</p>
             <p className="font-mono font-bold text-primary text-sm mt-0.5">
-              {formatCurrency(participationSuggestion)} / élève × {v.nbEleves} = {formatCurrency(participationSuggestion * v.nbEleves)}
+              {formatCurrency(participationSuggestion)} / participant × {coutParticipant.totalParticipants} = {formatCurrency(participationSuggestion * coutParticipant.totalParticipants)}
             </p>
           </div>
         )}

@@ -25,6 +25,7 @@ import { VoyageDocumentsChecklist } from "./voyages/VoyageDocumentsChecklist";
 import { VoyageElevesTab } from "./voyages/VoyageElevesTab";
 import { VoyageMarchesMoniteur } from "./voyages/VoyageMarchesMoniteur";
 import { VoyageBilanTab } from "./voyages/VoyageBilanTab";
+import { VoyageDocumentsJuridiqueTab } from "./voyages/VoyageDocumentsJuridiqueTab";
 import { VoyageActesCATab } from "./voyages/VoyageActesCATab";
 import { VoyageSubventionsTab } from "./voyages/VoyageSubventionsTab";
 import { VoyageParticipantsTab } from "./voyages/VoyageParticipantsTab";
@@ -201,6 +202,7 @@ const Voyages = () => {
           {selectedVoyage && <TabsTrigger value="participants">👥 Participants</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="eleves">🎒 Élèves & Paiements</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="subventions">💰 Subventions & Dons</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="documents">📄 Documents juridiques</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="bilan">📋 Bilan financier</TabsTrigger>}
         </TabsList>
 
@@ -453,6 +455,15 @@ const Voyages = () => {
             <VoyageSubventionsTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
           ) : (
             <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
+          )}
+        </TabsContent>
+
+        {/* TAB: Documents juridiques */}
+        <TabsContent value="documents">
+          {selectedVoyage ? (
+            <VoyageDocumentsJuridiqueTab voyage={selectedVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour accéder au pack juridique.</p>
           )}
         </TabsContent>
 
