@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Progress } from "@/components/ui/progress";
 import { Voyage, Eleve, MODES_PAIEMENT } from "./types";
+import { calculerResteApayer } from "@/lib/voyageBudgetEngine";
 import { formatCurrency } from "@/lib/mockData";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import jsPDF from "jspdf";
 
 interface Props {
@@ -152,6 +154,7 @@ export const VoyageElevesTab = ({ voyage, onUpdateVoyage }: Props) => {
                 <TableHead>Régime</TableHead>
                 <TableHead className="text-right">Dû</TableHead>
                 <TableHead className="text-right">Payé</TableHead>
+                <TableHead className="text-right" title="Aide fonds social (déduction auto)">Fonds social</TableHead>
                 <TableHead className="text-right">Reste</TableHead>
                 <TableHead className="text-center">Paiement</TableHead>
                 <TableHead className="text-center" title="Autorisation parentale">AP</TableHead>
@@ -164,8 +167,9 @@ export const VoyageElevesTab = ({ voyage, onUpdateVoyage }: Props) => {
             <TableBody>
               {filtered.map(e => {
                 const paye = e.paiements.reduce((s, p) => s + p.montant, 0);
-                const reste = e.participationDue - paye;
-                const pct = e.participationDue > 0 ? (paye / e.participationDue) * 100 : 0;
+                const fondsSocial = (e as any).fondsSocial || 0;
+                const reste = calculerResteApayer(e.participationDue, paye, fondsSocial);
+                const pct = e.participationDue > 0 ? ((paye + fondsSocial) / e.participationDue) * 100 : 0;
                 return (
                   <TableRow key={e.id}>
                     <TableCell className="font-medium text-sm">{e.nom} {e.prenom}</TableCell>
@@ -177,7 +181,13 @@ export const VoyageElevesTab = ({ voyage, onUpdateVoyage }: Props) => {
                     </TableCell>
                     <TableCell className="text-right font-mono text-xs">{formatCurrency(e.participationDue)}</TableCell>
                     <TableCell className="text-right font-mono text-xs">{formatCurrency(paye)}</TableCell>
-                    <TableCell className={`text-right font-mono text-xs font-semibold ${reste <= 0 ? "text-success" : reste > 0 ? "text-destructive" : ""}`}>
+                    {/* Fonds social deduction */}
+                    <TableCell className="text-right font-mono text-xs">
+                      {fondsSocial > 0 ? (
+                        <span className="text-primary font-semibold">-{formatCurrency(fondsSocial)}</span>
+                      ) : "—"}
+                    </TableCell>
+                    <TableCell className={`text-right font-mono text-xs font-semibold ${reste <= 0 ? "text-success" : "text-destructive"}`}>
                       {reste <= 0 ? "Soldé" : formatCurrency(reste)}
                     </TableCell>
                     <TableCell className="min-w-[80px]">
@@ -232,13 +242,23 @@ export const VoyageElevesTab = ({ voyage, onUpdateVoyage }: Props) => {
                               </Table>
                             )}
                             {(() => {
-                              const r = e.participationDue - e.paiements.reduce((s, p) => s + p.montant, 0);
+                              const totalPaye = e.paiements.reduce((s, p) => s + p.montant, 0);
+                              const fondsSoc = (e as any).fondsSocial || 0;
+                              const r = calculerResteApayer(e.participationDue, totalPaye, fondsSoc);
                               return (
-                                <div className="flex justify-between text-sm font-semibold pt-2">
-                                  <span>Reste à payer :</span>
-                                  <span className={r <= 0 ? "text-success" : "text-destructive"}>
-                                    {r <= 0 ? "Soldé" : formatCurrency(r)}
-                                  </span>
+                                <div className="space-y-1 pt-2">
+                                  {fondsSoc > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-primary font-medium">Aide fonds social :</span>
+                                      <span className="font-mono font-semibold text-primary">-{formatCurrency(fondsSoc)}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between text-sm font-semibold">
+                                    <span>Reste à payer :</span>
+                                    <span className={r <= 0 ? "text-success" : "text-destructive"}>
+                                      {r <= 0 ? "Soldé" : formatCurrency(r)}
+                                    </span>
+                                  </div>
                                 </div>
                               );
                             })()}
