@@ -25,6 +25,7 @@ import { VoyageDocumentsChecklist } from "./voyages/VoyageDocumentsChecklist";
 import { VoyageElevesTab } from "./voyages/VoyageElevesTab";
 import { VoyageMarchesMoniteur } from "./voyages/VoyageMarchesMoniteur";
 import { VoyageBilanTab } from "./voyages/VoyageBilanTab";
+import { VoyageDocumentsJuridiqueTab } from "./voyages/VoyageDocumentsJuridiqueTab";
 import { VoyageActesCATab } from "./voyages/VoyageActesCATab";
 import { VoyageSubventionsTab } from "./voyages/VoyageSubventionsTab";
 import { VoyageParticipantsTab } from "./voyages/VoyageParticipantsTab";
