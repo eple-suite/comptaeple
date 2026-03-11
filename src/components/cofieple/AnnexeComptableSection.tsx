@@ -1099,7 +1099,8 @@ export function AnnexeComptableSection() {
             onDrilldown={setDrilldownCompte} />
           <NarrativeSection sectionId="dettes" text={texts.dettes}
             onTextChange={v => setTexts(p => ({ ...p, dettes: v }))}
-            onGenerate={() => genererSection('dettes')} loading={loadingSection === 'dettes'} />
+            onGenerate={() => genererSection('dettes')} loading={loadingSection === 'dettes'}
+            lastMod={lastMods['dettes']} onBlur={() => handleEditBlur('dettes')} />
         </TabsContent>
 
         {/* ═══ 7. FINANCEMENTS ═══ */}
