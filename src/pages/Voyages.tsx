@@ -60,6 +60,16 @@ const Voyages = () => {
 
   const alertesMarchesPublics = useMemo(() => evaluerSeuilsMarchesVoyages(voyagesActifs), [voyagesActifs]);
 
+  // CCP cumul annuel — bannière permanente
+  const seuilsCCP = useMemo(() => {
+    const cumuls = cumulerSeuils(voyagesActifs);
+    const alertes = Object.entries(cumuls)
+      .map(([cat, montant]) => ({ cat, montant, ...evaluerSeuilCCP(montant) }))
+      .filter(a => a.niveau !== 'ok');
+    const totalGeneral = Object.values(cumuls).reduce((s, v) => s + v, 0);
+    return { alertes, totalGeneral, seuilGlobalFranchi: totalGeneral >= SEUIL_CCP.SANS_PUBLICITE };
+  }, [voyagesActifs]);
+
   // Collecte globale familles
   const collecteGlobale = useMemo(() => {
     const totalRecu = voyagesActifs.reduce((s, v) => s + v.eleves.reduce((ss, e) => ss + e.paiements.reduce((sss, p) => sss + p.montant, 0), 0), 0);
