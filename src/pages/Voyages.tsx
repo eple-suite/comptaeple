@@ -161,6 +161,32 @@ const Voyages = () => {
 
       <VoyageCreationWizard open={wizardOpen} onOpenChange={setWizardOpen} onCreateVoyage={handleCreateVoyage} />
 
+      {/* ═══ BANNIÈRE PERMANENTE CCP — Seuils marchés publics ═══ */}
+      {seuilsCCP.alertes.length > 0 && (
+        <Alert variant="destructive" className="border-destructive/60 bg-destructive/10">
+          <ShieldAlert className="h-5 w-5" />
+          <AlertTitle className="font-bold text-sm">
+            ⚖️ ALERTE MARCHÉS PUBLICS — Seuil de procédure formalisée atteint
+          </AlertTitle>
+          <AlertDescription className="text-sm space-y-1">
+            <p>
+              Le cumul annuel des prestations ({formatCurrency(seuilsCCP.totalGeneral)} HT) franchit un ou plusieurs seuils du Code de la Commande Publique.
+            </p>
+            <div className="flex flex-wrap gap-2 mt-1">
+              {seuilsCCP.alertes.map(a => (
+                <Badge key={a.cat} variant="destructive" className="text-xs">
+                  {a.cat} : {formatCurrency(a.montant)} — {a.label}
+                </Badge>
+              ))}
+            </div>
+            <p className="text-xs mt-1 font-semibold">
+              Préconisation : Allotissement obligatoire ou mise en concurrence spécifique.
+              Informez le Secrétaire Général et l'Agent Comptable.
+            </p>
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Navigation par onglets */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
