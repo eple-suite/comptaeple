@@ -153,8 +153,12 @@ Analyse des ressources propres et subventions : ventilation par nature, plus/moi
       autresInfos: `Rédige « 11. Autres informations » de l'annexe M9-6.
 Engagements hors bilan (classe 8) : ${fmtEur(BS.cl8 || 0)}
 Trésorerie nette : ${fmtEur(R.tresorerieNette)} | Solde classe 5 : ${fmtEur(BS.cl5Solde || 0)}
+${R.prelevementsReserves && R.prelevementsReserves.totalPrelevements > 0 ? `
+PRÉLÈVEMENTS SUR RÉSERVES RÉALISÉS DURANT L'EXERCICE :
+Total : ${fmtEur(R.prelevementsReserves.totalPrelevements)} (investissement : ${fmtEur(R.prelevementsReserves.prelevementsInvestissement)}, fonctionnement : ${fmtEur(R.prelevementsReserves.prelevementsFonctionnement)})
+` : ''}
 ${ctxBlock}
-Section libre : engagements hors bilan (marchés notifiés, baux), événements post-clôture (sinistres, litiges), informations complémentaires pour le juge. Mentionne le respect de l'unité de caisse. 1-2 paragraphes.`,
+Section libre : engagements hors bilan (marchés notifiés, baux), événements post-clôture (sinistres, litiges), informations complémentaires pour le juge. Mentionne le respect de l'unité de caisse. Si des prélèvements sur réserves ont eu lieu, inclus la synthèse. 1-2 paragraphes.`,
     };
 
     const userPrompt = sectionPrompts[section] || sectionPrompts.faitsCaracteristiques;

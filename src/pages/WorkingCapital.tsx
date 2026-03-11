@@ -311,6 +311,16 @@ const WorkingCapital = () => {
           {/* Structure bilan fonctionnel */}
           <StructureBilan donnees={donnees} analyse={analyse} />
 
+          {/* Tableau de financement — Prélèvements sur réserves */}
+          {cofiepleR?.prelevementsReserves && (
+            <TableauFinancement
+              prelevements={cofiepleR.prelevementsReserves}
+              varFdrBas={cofiepleR.varFdrBas || 0}
+              exercice={cofiepleR.resultatBudgetaire ? (selectedEstablishment?.uai ? new Date().getFullYear() - 1 : 2025) : 2025}
+              nomEtablissement={selectedEstablishment?.name || ''}
+            />
+          )}
+
           {/* Équilibre financier */}
           <Card>
             <CardHeader className="pb-2">
