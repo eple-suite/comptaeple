@@ -474,6 +474,7 @@ export function AnnexeComptableSection() {
             tauxExecCharges: R.tauxExecCharges, tauxExecProduits: R.tauxExecProduits,
             joursAutonomie: R.joursAutonomie, reserves: R.reserves,
             totalImmo: R.totalImmo, totalAmortissements: R.totalAmortissements,
+            prelevementsReserves: R.prelevementsReserves,
           },
           balanceSummary: buildBalanceSummary(),
           indicateurs: indicators, historique: history, contexte: buildContextString(),
