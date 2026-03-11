@@ -162,7 +162,7 @@ function tripleLockCheck(
       ok: false, type: 'opale',
       title: 'Erreur de concordance — Identifiant Op@le',
       message: `Le fichier contient l'identifiant Op@le ${fileOpale}, mais l'établissement sélectionné utilise ${selectedOpale}.`,
-      details: 'Veuillez vérifier votre export Op@le ou l'identifiant technique de l'établissement.',
+      details: "Veuillez vérifier votre export Op@le ou l\u2019identifiant technique de l\u2019établissement.",
     };
   }
 
