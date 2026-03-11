@@ -30,6 +30,7 @@ import { VoyageActesCATab } from "./voyages/VoyageActesCATab";
 import { VoyageSubventionsTab } from "./voyages/VoyageSubventionsTab";
 import { VoyageParticipantsTab } from "./voyages/VoyageParticipantsTab";
 import { VoyageRecettesTab } from "./voyages/VoyageRecettesTab";
+import { VoyageTemplatesTab } from "./voyages/VoyageTemplatesTab";
 
 const Voyages = () => {
   const [voyages, setVoyages] = useState<Voyage[]>(initialVoyages);
