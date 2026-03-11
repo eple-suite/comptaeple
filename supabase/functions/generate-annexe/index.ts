@@ -112,9 +112,17 @@ Réserves (106*) : ${fmtEur(BS.reserves106)}
 Subventions d'investissement (13*) : ${fmtEur(BS.subvInvest13)}
 FDR : ${fmtEur(R.fdrComptable)} | BFR : ${fmtEur(R.bfr)} | Trésorerie : ${fmtEur(R.tresorerieNette)}
 Jours d'autonomie : ${Math.round(R.joursAutonomie || 0)} j | CAF : ${fmtEur(R.cafBudgetaire)}
+${R.prelevementsReserves ? `
+PRÉLÈVEMENTS SUR RÉSERVES (DONNÉE DE PILOTAGE CRITIQUE) :
+- Total prélèvements (mvt débiteurs 106*) : ${fmtEur(R.prelevementsReserves.totalPrelevements)}
+- Dont investissement (section d'opérations en capital) : ${fmtEur(R.prelevementsReserves.prelevementsInvestissement)}
+- Dont fonctionnement exceptionnel : ${fmtEur(R.prelevementsReserves.prelevementsFonctionnement)}
+- Variation des réserves N vs N-1 : ${fmtEur(R.prelevementsReserves.variationReserves)}
+- Cohérence FRNG/prélèvements : ${R.prelevementsReserves.coherent ? 'OK' : 'ÉCART DÉTECTÉ (' + fmtEur(R.prelevementsReserves.ecartFrngVsPrelevements) + ')'}
+` : ''}
 ${histBlock}
 ${ctxBlock}
-Analyse l'évolution des réserves, les prélèvements éventuels, le respect du seuil de 30 jours. Analyse l'amortissement des subventions d'investissement. 3 paragraphes.`,
+Analyse l'évolution des réserves, les prélèvements effectués et leur destination (investissement vs fonctionnement), le respect du seuil de 30 jours. Analyse l'amortissement des subventions d'investissement. Mentionne la phrase de synthèse sur les prélèvements. 3 paragraphes.`,
 
       // 8. Provisions
       provisions: `Rédige « 8. Notes sur les provisions » de l'annexe M9-6.
