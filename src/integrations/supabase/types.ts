@@ -247,6 +247,63 @@ export type Database = {
         }
         Relationships: []
       }
+      cofieple_import_logs: {
+        Row: {
+          budget_type: string
+          created_at: string
+          exercice: number
+          file_exercice_detected: number | null
+          file_name: string
+          file_opale_detected: string | null
+          file_type: string
+          file_type_detected: string | null
+          file_uai_detected: string | null
+          id: string
+          opale_number: string | null
+          reject_reason: string | null
+          result: string
+          rows_count: number
+          uai: string
+          user_id: string
+        }
+        Insert: {
+          budget_type?: string
+          created_at?: string
+          exercice: number
+          file_exercice_detected?: number | null
+          file_name: string
+          file_opale_detected?: string | null
+          file_type: string
+          file_type_detected?: string | null
+          file_uai_detected?: string | null
+          id?: string
+          opale_number?: string | null
+          reject_reason?: string | null
+          result: string
+          rows_count?: number
+          uai: string
+          user_id: string
+        }
+        Update: {
+          budget_type?: string
+          created_at?: string
+          exercice?: number
+          file_exercice_detected?: number | null
+          file_name?: string
+          file_opale_detected?: string | null
+          file_type?: string
+          file_type_detected?: string | null
+          file_uai_detected?: string | null
+          id?: string
+          opale_number?: string | null
+          reject_reason?: string | null
+          result?: string
+          rows_count?: number
+          uai?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       establishments: {
         Row: {
           academy: string

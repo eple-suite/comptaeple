@@ -20,10 +20,11 @@ import { DashboardOnePage } from '@/components/cofieple/DashboardOnePage';
 import { IndicateursHorsComptables } from '@/components/cofieple/IndicateursHorsComptables';
 import { PluriannuelSection } from '@/components/cofieple/PluriannuelSection';
 import { AnnexeComptableSection } from '@/components/cofieple/AnnexeComptableSection';
+import { ImportHistorySection } from '@/components/cofieple/ImportHistorySection';
 import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
-  History, PenTool, BookOpen
+  History, PenTool, BookOpen, ScrollText
 } from 'lucide-react';
 
 interface NavItem {
@@ -50,6 +51,7 @@ const CompteFinancier = () => {
   const items: NavItem[] = [
     { id: 'accueil', label: 'Accueil', icon: <Home className="h-4 w-4" /> },
     { id: 'import', label: 'Imports', icon: <Upload className="h-4 w-4" />, badge: `${nbFichiers}`, badgeType: nbFichiers >= 3 ? 'success' : 'info' },
+    { id: 'journal', label: 'Journal', icon: <ScrollText className="h-4 w-4" /> },
     { id: 'checklist', label: 'Check-List', icon: <CheckCircle2 className="h-4 w-4" />,
       badge: hasData ? (nbBloq > 0 ? `${nbBloq} BLOQ` : nbAnom > 0 ? `${nbAnom}` : 'OK') : undefined,
       badgeType: hasData ? (nbBloq > 0 ? 'error' : nbAnom > 0 ? 'warning' : 'success') : undefined, requiresData: true },
@@ -78,6 +80,7 @@ const CompteFinancier = () => {
     switch (activeTab) {
       case 'accueil': return <AccueilSection />;
       case 'import': return <ImportSection />;
+      case 'journal': return <ImportHistorySection />;
       case 'checklist': return <CheckListSection />;
       case 'superviseur': return <SuperviseurSection />;
       case 'synthese': return <SyntheseSection />;
