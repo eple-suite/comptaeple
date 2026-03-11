@@ -14,6 +14,7 @@ import {
 import {
   Wallet, ArrowDownUp, Landmark, ShieldCheck, PackageMinus,
   Download, AlertTriangle, CheckCircle, Banknote, Info, Sparkles,
+  ArrowDown, ArrowUp, Scale,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
