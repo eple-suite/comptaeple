@@ -136,6 +136,31 @@ export function calculerResultatsM96(
   const reservesSsSpeciaux = sumBal(bal, c => c === '106840', 'solCrd');
   const reservesSRH = sumBal(bal, c => c === '106870', 'solCrd');
 
+  // ── Prélèvements sur réserves (mvt débiteurs classe 106) ──────────
+  // Un prélèvement = mouvement au débit du compte 106 durant l'exercice
+  const comptes106 = bal.filter(b => b.compte.startsWith('106'));
+  const totalPrelevements106 = comptes106.reduce((s, b) => s + (b.dbt || 0), 0);
+  const detailPrelevements = comptes106
+    .filter(b => (b.dbt || 0) > 0)
+    .map(b => ({ compte: b.compte, intitule: b.intituleReduit, montant: b.dbt || 0 }));
+
+  // Distinction investissement vs fonctionnement :
+  // - Investissement = prélèvements finançant des acquisitions (classe 2 au SDE)
+  // - Fonctionnement = le reste (dépenses exceptionnelles de fonctionnement)
+  const investSDE = sde.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const prelevementsInvestissement = Math.min(totalPrelevements106, investSDE);
+  const prelevementsFonctionnement = totalPrelevements106 - prelevementsInvestissement;
+
+  // Variation des réserves N vs N-1
+  const reservesN = sumBal(bal, c => c.startsWith('106'), 'solCrd');
+  const reservesN1 = sumBal(bal, c => c.startsWith('106'), 'antCrd');
+  const variationReserves = reservesN - reservesN1;
+
+  // Contrôle de cohérence : la variation du FRNG devrait correspondre aux prélèvements
+  // (aux ajustements comptables près)
+  const ecartFrngVsPrelevements = Math.abs(variationReserves + totalPrelevements106);
+  const coherentPrelevements = ecartFrngVsPrelevements < 100; // seuil de tolérance 100€
+
   // ── Immobilisations ────────────────────────────────────────────────
   const totalImmo = sumBal(bal, c => c.charAt(0) === '2' && !c.startsWith('28') && !c.startsWith('29'), 'solDbt');
   const totalAmortissements = sumBal(bal, c => c.startsWith('28'), 'solCrd');
@@ -198,6 +223,15 @@ export function calculerResultatsM96(
     services, chargesNature, produitsOrigine,
     ressourcesPropres, recettesAutogenerees,
     tauxExecCharges, tauxExecProduits, joursAutonomie, ratioFdrBfr,
+    prelevementsReserves: {
+      totalPrelevements: totalPrelevements106,
+      prelevementsInvestissement,
+      prelevementsFonctionnement,
+      detailParCompte: detailPrelevements,
+      variationReserves,
+      ecartFrngVsPrelevements,
+      coherent: coherentPrelevements,
+    },
   };
 }
 

@@ -275,6 +275,7 @@ export function RapportACSection() {
             totalProduitsReel: R.totalProduitsReel,
             reserves: R.reserves,
             joursAutonomie: R.joursAutonomie,
+            prelevementsReserves: R.prelevementsReserves,
           },
           anomalies: nbAnom,
           bloquants: nbBloq,
@@ -363,6 +364,28 @@ export function RapportACSection() {
             <KPICard label="Résultat comptable" value={formatEur(R.resultatComptable)} color={R.resultatComptable >= 0 ? 'green' : 'red'} icon="📈" isText />
             <KPICard label="Réserves (cpte 1068)" value={formatEur(R.reserves)} color="blue" icon="🏛️" isText />
           </div>
+
+          {/* Prélèvements sur réserves */}
+          {R.prelevementsReserves && R.prelevementsReserves.totalPrelevements > 0 && (
+            <>
+              <SectionTitre numero="3ter" title="Prélèvements sur réserves (classe 106)" />
+              <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 mb-4 text-xs leading-relaxed">
+                <p className="font-semibold text-foreground mb-2">
+                  Au cours de l'exercice {etab.exercice}, l'établissement a procédé à un prélèvement total sur ses réserves
+                  de <strong className="text-destructive">{formatEur(R.prelevementsReserves.totalPrelevements)}</strong>, dont :
+                </p>
+                <ul className="list-disc ml-4 space-y-1 text-muted-foreground">
+                  <li><strong className="text-foreground">{formatEur(R.prelevementsReserves.prelevementsInvestissement)}</strong> pour le financement d'investissements (section d'opérations en capital)</li>
+                  <li><strong className="text-foreground">{formatEur(R.prelevementsReserves.prelevementsFonctionnement)}</strong> pour couvrir des dépenses exceptionnelles de fonctionnement</li>
+                </ul>
+                {!R.prelevementsReserves.coherent && (
+                  <div className="mt-3 p-2 bg-destructive/10 border border-destructive/30 rounded text-destructive">
+                    ⚠️ Écart de cohérence détecté ({formatEur(R.prelevementsReserves.ecartFrngVsPrelevements)}) entre les prélèvements et la variation du FRNG.
+                  </div>
+                )}
+              </div>
+            </>
+          )}
 
           {/* FRNG 5-year table */}
           {history.length > 0 && (

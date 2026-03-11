@@ -69,6 +69,16 @@ export interface ServiceData {
   solde: number;
 }
 
+export interface PrelevementsReserves {
+  totalPrelevements: number;         // Total mvt débiteurs sur 106*
+  prelevementsInvestissement: number; // Part allant à la section d'investissement (classe 2)
+  prelevementsFonctionnement: number; // Part pour fonctionnement exceptionnel
+  detailParCompte: { compte: string; intitule: string; montant: number }[];
+  variationReserves: number;         // Solde N - Solde N-1 (négatif = diminution)
+  ecartFrngVsPrelevements: number;   // Écart cohérence : varFDR vs prélèvements
+  coherent: boolean;                 // true si écart < seuil
+}
+
 export interface ResultatsM96 {
   resultatBudgetaire: number; resultatComptable: number;
   excedent: number; deficit: number;
@@ -92,6 +102,7 @@ export interface ResultatsM96 {
   ressourcesPropres: number; recettesAutogenerees: number;
   tauxExecCharges: number; tauxExecProduits: number;
   joursAutonomie: number; ratioFdrBfr: number;
+  prelevementsReserves: PrelevementsReserves;
 }
 
 export interface ResultatsBudgetAnnexe {

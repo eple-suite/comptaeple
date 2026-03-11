@@ -14,6 +14,7 @@ import {
 import {
   Wallet, ArrowDownUp, Landmark, ShieldCheck, PackageMinus,
   Download, AlertTriangle, CheckCircle, Banknote, Info, Sparkles,
+  ArrowDown, ArrowUp, Scale,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,13 +31,18 @@ import { StructureBilan } from "./working-capital/FdrStructureBilan";
 import { SimulateurPrelevement } from "./working-capital/FdrSimulateur";
 import { TableauPrelevements } from "./working-capital/FdrPrelevements";
 import { FdrHistorique } from "./working-capital/FdrHistorique";
+import { TableauFinancement } from "./working-capital/FdrTableauFinancement";
 import {
   type DonneesFinancieres, type Prelevement, type ResultatAnalyse,
   calculerAnalyse, SEUIL_CRITIQUE_JOURS,
 } from "./working-capital/types";
+import { useCofiepleStore } from "@/store/useCofiepleStore";
 
 const WorkingCapital = () => {
   const { selectedEstablishment } = useEstablishment();
+  const resultats = useCofiepleStore(s => s.resultats);
+  const activeBudget = useCofiepleStore(s => s.activeBudget);
+  const cofiepleR = resultats[activeBudget];
 
   // Données financières (mock pour l'instant — sera connecté au m96engine)
   const [donnees] = useState<DonneesFinancieres>({
@@ -304,6 +310,16 @@ const WorkingCapital = () => {
 
           {/* Structure bilan fonctionnel */}
           <StructureBilan donnees={donnees} analyse={analyse} />
+
+          {/* Tableau de financement — Prélèvements sur réserves */}
+          {cofiepleR?.prelevementsReserves && (
+            <TableauFinancement
+              prelevements={cofiepleR.prelevementsReserves}
+              varFdrBas={cofiepleR.varFdrBas || 0}
+              exercice={cofiepleR.resultatBudgetaire ? (selectedEstablishment?.uai ? new Date().getFullYear() - 1 : 2025) : 2025}
+              nomEtablissement={selectedEstablishment?.name || ''}
+            />
+          )}
 
           {/* Équilibre financier */}
           <Card>
