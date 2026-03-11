@@ -242,13 +242,23 @@ export const VoyageElevesTab = ({ voyage, onUpdateVoyage }: Props) => {
                               </Table>
                             )}
                             {(() => {
-                              const r = e.participationDue - e.paiements.reduce((s, p) => s + p.montant, 0);
+                              const totalPaye = e.paiements.reduce((s, p) => s + p.montant, 0);
+                              const fondsSoc = (e as any).fondsSocial || 0;
+                              const r = calculerResteApayer(e.participationDue, totalPaye, fondsSoc);
                               return (
-                                <div className="flex justify-between text-sm font-semibold pt-2">
-                                  <span>Reste à payer :</span>
-                                  <span className={r <= 0 ? "text-success" : "text-destructive"}>
-                                    {r <= 0 ? "Soldé" : formatCurrency(r)}
-                                  </span>
+                                <div className="space-y-1 pt-2">
+                                  {fondsSoc > 0 && (
+                                    <div className="flex justify-between text-sm">
+                                      <span className="text-primary font-medium">Aide fonds social :</span>
+                                      <span className="font-mono font-semibold text-primary">-{formatCurrency(fondsSoc)}</span>
+                                    </div>
+                                  )}
+                                  <div className="flex justify-between text-sm font-semibold">
+                                    <span>Reste à payer :</span>
+                                    <span className={r <= 0 ? "text-success" : "text-destructive"}>
+                                      {r <= 0 ? "Soldé" : formatCurrency(r)}
+                                    </span>
+                                  </div>
                                 </div>
                               );
                             })()}
