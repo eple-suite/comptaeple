@@ -1045,7 +1045,8 @@ export function AnnexeComptableSection() {
           )}
           <NarrativeSection sectionId="actifImmobilise" text={texts.actifImmobilise}
             onTextChange={v => setTexts(p => ({ ...p, actifImmobilise: v }))}
-            onGenerate={() => genererSection('actifImmobilise')} loading={loadingSection === 'actifImmobilise'} />
+            onGenerate={() => genererSection('actifImmobilise')} loading={loadingSection === 'actifImmobilise'}
+            lastMod={lastMods['actifImmobilise']} onBlur={() => handleEditBlur('actifImmobilise')} />
         </TabsContent>
 
         {/* ═══ 4. STOCKS ═══ */}
