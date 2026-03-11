@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Voyage, CATEGORIES_PRESTATIONS, calculerPointMort } from "./types";
-import { validerEquilibreBudgetaire, calculerParticipationEquilibre } from "@/lib/voyageBudgetEngine";
+import { validerEquilibreBudgetaire, calculerParticipationEquilibre, calculerCoutParParticipant } from "@/lib/voyageBudgetEngine";
 import { formatCurrency } from "@/lib/mockData";
 import { Target, TrendingUp, TrendingDown, AlertTriangle, CheckCircle2, Scale, Banknote } from "lucide-react";
 
