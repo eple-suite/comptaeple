@@ -18,8 +18,7 @@ const BAR_COLORS = [
 export const VoyageBudgetWidget = ({ voyage }: Props) => {
   const v = voyage;
   const regieAvances = (v as any).regieAvances || 0;
-  const totalDepenses = v.transport + v.hebergement + v.restauration + v.activites + v.assurance + v.divers + regieAvances;
-  const totalRecettes = v.participationFamilles + v.subventions + v.autofinancement;
+  const totalDepensesBase = v.transport + v.hebergement + v.restauration + v.activites + v.assurance + v.divers + regieAvances;
   const pm = useMemo(() => calculerPointMort(v), [v]);
 
   // Validation budgétaire stricte
@@ -44,12 +43,18 @@ export const VoyageBudgetWidget = ({ voyage }: Props) => {
   const participationSuggestion = useMemo(() => calculerParticipationEquilibre(budgetData), [budgetData]);
   const coutParticipant = useMemo(() => calculerCoutParParticipant(budgetData), [budgetData]);
 
+  // Part EPLE = coût des accompagnateurs gratuits
+  const partEPLE = coutParticipant.partEtablissementAccomp;
+  const totalDepenses = totalDepensesBase + partEPLE;
+  const totalRecettes = v.participationFamilles + v.subventions + v.autofinancement + partEPLE;
+
   const postes = [
     ...CATEGORIES_PRESTATIONS.map((cat, i) => ({
       label: cat.label, icon: cat.icon,
       montant: (v as any)[cat.key] || 0, color: BAR_COLORS[i],
     })),
     ...(regieAvances > 0 ? [{ label: "Régie d'avances", icon: "💳", montant: regieAvances, color: "bg-primary/40" }] : []),
+    ...(partEPLE > 0 ? [{ label: "Part EPLE (accomp.)", icon: "🏫", montant: partEPLE, color: "bg-info/60" }] : []),
   ].filter(p => p.montant > 0);
 
   const totalPostes = postes.reduce((s, p) => s + p.montant, 0);
@@ -212,9 +217,10 @@ export const VoyageBudgetWidget = ({ voyage }: Props) => {
             { label: "État", value: v.subventionEtat },
             { label: "Autres subv.", value: v.subventionAutre },
             { label: "Autofinancement", value: v.autofinancement },
+            { label: "🏫 Part EPLE (accomp.)", value: partEPLE, highlight: true },
           ].filter(r => r.value > 0).map(r => (
-            <div key={r.label} className="flex justify-between">
-              <span className="text-muted-foreground">{r.label}</span>
+            <div key={r.label} className={`flex justify-between ${(r as any).highlight ? "text-primary font-medium" : ""}`}>
+              <span className={(r as any).highlight ? "" : "text-muted-foreground"}>{r.label}</span>
               <span className="font-mono font-semibold">{formatCurrency(r.value)}</span>
             </div>
           ))}
