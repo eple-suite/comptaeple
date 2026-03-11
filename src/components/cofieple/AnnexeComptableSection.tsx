@@ -659,6 +659,10 @@ export function AnnexeComptableSection() {
       addFooter();
 
       doc.save(`Annexe_CF_${etab.uai}_${etab.exercice}.pdf`);
+      await logAction({
+        action_type: 'export_pdf', uai: etab.uai, exercice: etab.exercice,
+        action_detail: `Export PDF Dém'act — Annexe Compte Financier ${etab.exercice}`,
+      });
       toast.success('PDF Dém\'act exporté');
     } catch (e: any) {
       toast.error('Erreur d\'export PDF : ' + (e.message || ''));
