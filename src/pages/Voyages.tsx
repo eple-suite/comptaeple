@@ -203,6 +203,7 @@ const Voyages = () => {
           {selectedVoyage && <TabsTrigger value="participants">👥 Participants</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="eleves">🎒 Élèves & Paiements</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="subventions">💰 Subventions & Dons</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="recettes">🏦 Recettes Op@le</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="documents">📄 Documents juridiques</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="bilan">📋 Bilan financier</TabsTrigger>}
         </TabsList>
