@@ -1184,9 +1184,11 @@ export function AnnexeComptableSection() {
 // SOUS-COMPOSANTS
 // ═══════════════════════════════════════════════════════════════
 
-function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading }: {
+function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading, lastMod, onBlur }: {
   sectionId: string; text: string; onTextChange: (v: string) => void;
   onGenerate: () => void; loading: boolean;
+  lastMod?: { user_name: string; created_at: string } | null;
+  onBlur?: () => void;
 }) {
   const [editMode, setEditMode] = useState(false);
   const meta = SECTION_META[sectionId];
@@ -1213,6 +1215,7 @@ function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading }
         {text ? (
           editMode ? (
             <Textarea value={text} onChange={e => onTextChange(e.target.value)}
+              onBlur={onBlur}
               className="text-sm min-h-[120px] bg-muted/5 leading-relaxed" />
           ) : (
             <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground">
@@ -1227,7 +1230,18 @@ function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading }
             </p>
           </div>
         )}
+        {lastMod && (
+          <div className="mt-3 pt-2 border-t border-border/50 text-[10px] text-muted-foreground flex items-center gap-1">
+            <Eye className="h-3 w-3" />
+            Dernière modification par <strong className="text-foreground">{lastMod.user_name}</strong> le{' '}
+            {new Date(lastMod.created_at).toLocaleDateString('fr-FR')} à{' '}
+            {new Date(lastMod.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        )}
       </CardContent>
+    </Card>
+  );
+}
     </Card>
   );
 }
