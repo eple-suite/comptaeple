@@ -29,6 +29,7 @@ import { VoyageDocumentsJuridiqueTab } from "./voyages/VoyageDocumentsJuridiqueT
 import { VoyageActesCATab } from "./voyages/VoyageActesCATab";
 import { VoyageSubventionsTab } from "./voyages/VoyageSubventionsTab";
 import { VoyageParticipantsTab } from "./voyages/VoyageParticipantsTab";
+import { VoyageRecettesTab } from "./voyages/VoyageRecettesTab";
 
 const Voyages = () => {
   const [voyages, setVoyages] = useState<Voyage[]>(initialVoyages);
@@ -202,6 +203,7 @@ const Voyages = () => {
           {selectedVoyage && <TabsTrigger value="participants">👥 Participants</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="eleves">🎒 Élèves & Paiements</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="subventions">💰 Subventions & Dons</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="recettes">🏦 Recettes Op@le</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="documents">📄 Documents juridiques</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="bilan">📋 Bilan financier</TabsTrigger>}
         </TabsList>
@@ -455,6 +457,15 @@ const Voyages = () => {
             <VoyageSubventionsTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
           ) : (
             <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
+          )}
+        </TabsContent>
+
+        {/* TAB: Recettes Op@le */}
+        <TabsContent value="recettes">
+          {selectedVoyage ? (
+            <VoyageRecettesTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour gérer les recettes.</p>
           )}
         </TabsContent>
 
