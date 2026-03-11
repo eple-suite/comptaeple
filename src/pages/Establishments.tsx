@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, MapPin, Plus, Loader2, CheckCircle2, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
@@ -45,16 +45,23 @@ const Establishments = () => {
   const { establishments, selectedEstablishment, selectEstablishment, isLoading, refetch } = useEstablishment();
   const { user } = useAuth();
 
-  const handleLookup = async () => {
-    if (uaiInput.length < 7) {
-      setLookupError("Le code UAI doit contenir au moins 7 caractères");
-      return;
+  const uaiInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Auto-focus UAI field when dialog opens
+  React.useEffect(() => {
+    if (open) {
+      setTimeout(() => uaiInputRef.current?.focus(), 100);
     }
+  }, [open]);
+
+  const handleLookup = async (value?: string) => {
+    const uai = (value || uaiInput).trim().toUpperCase();
+    if (uai.length < 7) return;
     setLookupLoading(true);
     setLookupError("");
     setLookupResult(null);
     try {
-      const result = await fetchEstablishmentByUAI(uaiInput);
+      const result = await fetchEstablishmentByUAI(uai);
       if (result) {
         setLookupResult(result);
       } else {
@@ -64,6 +71,17 @@ const Establishments = () => {
       setLookupError("Erreur lors de la recherche. Vérifiez votre connexion.");
     } finally {
       setLookupLoading(false);
+    }
+  };
+
+  // Auto-search when UAI format is valid (7 digits + 1 letter)
+  const handleUaiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toUpperCase();
+    setUaiInput(val);
+    setLookupResult(null);
+    setLookupError("");
+    if (/^[0-9]{7}[A-Z]$/i.test(val)) {
+      handleLookup(val);
     }
   };
 
@@ -169,28 +187,18 @@ const Establishments = () => {
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-2">
-                <Label>Code UAI *</Label>
+                <Label>Code UAI <span className="text-muted-foreground text-xs">(7 chiffres + 1 lettre)</span></Label>
                 <div className="flex gap-2">
                   <Input
+                    ref={uaiInputRef}
                     placeholder="Ex: 0910620T"
                     value={uaiInput}
-                    onChange={(e) => {
-                      setUaiInput(e.target.value.toUpperCase());
-                      setLookupResult(null);
-                      setLookupError("");
-                    }}
+                    onChange={handleUaiChange}
                     maxLength={8}
                     className="font-mono"
+                    autoFocus
                   />
-                  <Button
-                    type="button"
-                    onClick={handleLookup}
-                    disabled={lookupLoading || uaiInput.length < 7}
-                    variant="secondary"
-                  >
-                    {lookupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                    <span className="ml-1">Rechercher</span>
-                  </Button>
+                  {lookupLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mt-2" />}
                 </div>
                 {lookupError && <p className="text-sm text-destructive">{lookupError}</p>}
               </div>
