@@ -67,6 +67,11 @@ const Establishments = () => {
     }
   };
 
+  // Check if UAI already exists locally
+  const existingLocal = establishments.find(
+    (e) => e.uai.toUpperCase() === uaiInput.toUpperCase()
+  );
+
   const addMutation = useMutation({
     mutationFn: async () => {
       if (!lookupResult) return;
@@ -77,27 +82,42 @@ const Establishments = () => {
       if (!opaleRegex.test(opaleNumber.toUpperCase())) {
         throw new Error("Le numéro Op@le doit être au format P00804 (P suivi de 5 chiffres)");
       }
-      const { data, error } = await supabase.from("establishments").insert({
-        uai: uaiInput.toUpperCase(),
-        name: lookupResult.nom_etablissement,
-        type: lookupResult.type_etablissement || "Lycée",
-        academy: lookupResult.libelle_academie || "",
-        city: lookupResult.nom_commune || "",
-        opale_number: opaleNumber.toUpperCase(),
-      }).select().single();
+
+      // Upsert: update if UAI exists, insert if not
+      const { data, error } = await supabase.from("establishments").upsert(
+        {
+          uai: uaiInput.toUpperCase(),
+          name: lookupResult.nom_etablissement,
+          type: lookupResult.type_etablissement || "Lycée",
+          academy: lookupResult.libelle_academie || "",
+          city: lookupResult.nom_commune || "",
+          opale_number: opaleNumber.toUpperCase(),
+        },
+        { onConflict: "uai", ignoreDuplicates: false }
+      ).select().single();
       if (error) throw error;
+
+      // Link user to establishment if not already linked
       if (user && data) {
-        await supabase.from("user_establishments").insert({
-          user_id: user.id,
-          establishment_id: data.id,
-        });
+        const { data: existingLink } = await supabase
+          .from("user_establishments")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("establishment_id", data.id)
+          .maybeSingle();
+        if (!existingLink) {
+          await supabase.from("user_establishments").insert({
+            user_id: user.id,
+            establishment_id: data.id,
+          });
+        }
       }
       return data;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["user-establishments"] });
       refetch();
-      toast.success("Établissement ajouté avec succès");
+      toast.success(existingLocal ? "Établissement mis à jour avec succès" : "Établissement ajouté avec succès");
       if (data) selectEstablishment(data);
       resetDialog();
     },
