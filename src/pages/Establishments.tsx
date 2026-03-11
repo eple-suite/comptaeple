@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Search, MapPin, Plus, Loader2, CheckCircle2, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
