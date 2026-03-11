@@ -91,14 +91,36 @@ export function validerEquilibreBudgetaire(data: VoyageBudgetData): BudgetValida
 
 /**
  * Calcule la participation suggérée par élève pour atteindre l'équilibre
+ * Formule : Coût Total / (Nb élèves + Nb accompagnateurs) = Participation individuelle
  */
 export function calculerParticipationEquilibre(data: VoyageBudgetData): number {
   const totalSubventions = (data.subventionCollectivite || 0) + (data.subventionEtat || 0) + (data.subventionAutre || 0);
   const totalDepenses = data.transport + data.hebergement + data.restauration +
     data.activites + data.assurance + data.divers + (data.regieAvances || 0);
   const resteAFinancer = totalDepenses - totalSubventions - (data.autofinancement || 0);
-  if (data.nbEleves <= 0 || resteAFinancer <= 0) return 0;
-  return Math.ceil(resteAFinancer / data.nbEleves * 100) / 100;
+  const totalParticipants = (data.nbEleves || 0) + (data.nbAccompagnateurs || 0);
+  if (totalParticipants <= 0 || resteAFinancer <= 0) return 0;
+  return Math.ceil(resteAFinancer / totalParticipants * 100) / 100;
+}
+
+/**
+ * Calcule le coût par participant (élèves + accompagnateurs)
+ */
+export function calculerCoutParParticipant(data: VoyageBudgetData): {
+  coutParParticipant: number;
+  partFamilles: number;
+  partEtablissementAccomp: number;
+  totalParticipants: number;
+} {
+  const totalDepenses = data.transport + data.hebergement + data.restauration +
+    data.activites + data.assurance + data.divers + (data.regieAvances || 0);
+  const totalParticipants = (data.nbEleves || 0) + (data.nbAccompagnateurs || 0);
+  const coutParParticipant = totalParticipants > 0 ? totalDepenses / totalParticipants : 0;
+  const partFamilles = data.nbEleves > 0 && data.participationFamilles > 0
+    ? data.participationFamilles / data.nbEleves : 0;
+  // Part des accompagnateurs prise en charge par l'établissement
+  const partEtablissementAccomp = coutParParticipant * (data.nbAccompagnateurs || 0);
+  return { coutParParticipant, partFamilles, partEtablissementAccomp, totalParticipants };
 }
 
 /**
