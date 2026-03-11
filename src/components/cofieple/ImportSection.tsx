@@ -305,11 +305,7 @@ export function ImportSection() {
     });
     e.target.value = '';
   }
-      },
-      error: (err) => { setErrors(prev => ({ ...prev, [slot.key]: err.message })); },
-    });
-    e.target.value = '';
-  }
+
 
   const budgetSlots = budgets.map(b => ({ budget: b, slots: slots.filter(s => s.typeBudget === b.type) }));
 
