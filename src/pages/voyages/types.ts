@@ -127,6 +127,9 @@ export interface Devis {
 
 // ─── Voyage principal ───
 
+export type TransportType = 'bus' | 'avion' | 'train' | 'bateau' | 'mixte';
+export type TypeVoyage = 'pedagogique' | 'linguistique' | 'sportif' | 'culturel' | 'ski' | 'erasmus';
+
 export interface Voyage {
   id: string;
   destination: string;
@@ -179,6 +182,12 @@ export interface Voyage {
   typeHebergement: string;
   contactUrgence: string;
   telUrgence: string;
+  // Champs enrichis (fusion VoyagePro 2026)
+  transportType?: TransportType;
+  typeVoyage?: TypeVoyage;
+  intitule?: string;
+  codeActiviteGFC?: string;
+  dateValidationCA?: string;
 }
 
 export const STATUT_CONFIG: Record<Voyage["statut"], { label: string; class: string; step: number }> = {
