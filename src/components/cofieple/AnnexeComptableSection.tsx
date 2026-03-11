@@ -499,6 +499,10 @@ export function AnnexeComptableSection() {
       toast.error('Justifiez d\'abord les anomalies bloquantes.');
       setActiveTab('autoAudit');
       return;
+    }
+    for (const s of AI_SECTIONS) {
+      await genererSection(s);
+    }
   }
 
   // ── Log manual edits (on blur) ─────────────────────────────
