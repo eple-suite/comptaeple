@@ -4,7 +4,7 @@
 // Conformité : M9-6 2026 · Décret 2012-1246 · Code Éducation
 // ═══════════════════════════════════════════════════════════════
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
