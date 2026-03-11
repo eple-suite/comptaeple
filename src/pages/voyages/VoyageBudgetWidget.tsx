@@ -217,6 +217,7 @@ export const VoyageBudgetWidget = ({ voyage }: Props) => {
             { label: "État", value: v.subventionEtat },
             { label: "Autres subv.", value: v.subventionAutre },
             { label: "Autofinancement", value: v.autofinancement },
+            { label: "🏫 Part EPLE (accomp.)", value: partEPLE, highlight: true },
           ].filter(r => r.value > 0).map(r => (
             <div key={r.label} className="flex justify-between">
               <span className="text-muted-foreground">{r.label}</span>
