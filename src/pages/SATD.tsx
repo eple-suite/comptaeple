@@ -1,6 +1,10 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Gavel, Plus, Trash2, AlertTriangle, CheckCircle2, Clock, Euro, FileText, TrendingDown, Search, PauseCircle, Play, Eye, Users, ChevronRight, XCircle, Scale, Download, Printer } from "lucide-react";
+import {
+  Gavel, Plus, Trash2, AlertTriangle, CheckCircle2, Clock, Euro, FileText,
+  TrendingDown, Search, PauseCircle, Play, Eye, Users, ChevronRight, XCircle,
+  Scale, Download, Printer, Calculator, Sparkles, Bell,
+} from "lucide-react";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,9 +19,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Checkbox } from "@/components/ui/checkbox";
 import { formatCurrency } from "@/lib/mockData";
 import { KpiCard } from "@/components/KpiCard";
+import { useEstablishment } from "@/contexts/EstablishmentContext";
 import {
   Satd, TiersDetenteur, Creance, EtapeProcedure,
   mockSatds, mockTiers,
@@ -26,27 +30,24 @@ import {
 import SatdDocuments from "./satd/SatdDocuments";
 import SatdStats from "./satd/SatdStats";
 import SatdProcedure from "./satd/SatdProcedure";
+import SatdFormulaire from "./satd/SatdFormulaire";
+import SatdCalculateur from "./satd/SatdCalculateur";
+import SatdAssistant from "./satd/SatdAssistant";
 
 const SATD = () => {
+  const { selectedEstablishment } = useEstablishment();
   const [satds, setSatds] = useState<Satd[]>(mockSatds);
   const [tiersDetenteurs, setTiersDetenteurs] = useState<TiersDetenteur[]>(mockTiers);
-  const [open, setOpen] = useState(false);
+  const [openFormulaire, setOpenFormulaire] = useState(false);
   const [openTiers, setOpenTiers] = useState(false);
+  const [openCalc, setOpenCalc] = useState(false);
+  const [openAssistant, setOpenAssistant] = useState(false);
+  const [assistantCtx, setAssistantCtx] = useState("creation_satd");
   const [search, setSearch] = useState("");
   const [filterStatut, setFilterStatut] = useState("all");
   const [selectedSatd, setSelectedSatd] = useState<Satd | null>(null);
   const [newPrelevement, setNewPrelevement] = useState({ date: "", montant: "", reference: "", mode: "virement" as const });
   const [newEtape, setNewEtape] = useState({ type: "relance1" as EtapeProcedure["type"], date: "", commentaire: "" });
-
-  // Form SATD
-  const [form, setForm] = useState({
-    debiteur: "", debiteurAdresse: "", debiteurCP: "", debiteurVille: "",
-    typeDebiteur: "eleve_famille" as Satd["typeDebiteur"],
-    motif: "", observations: "",
-    tiersDetenteurId: "", compteBudgetaire: "411200",
-    creanceCompte: "4112", creanceLibelle: "", creanceExercice: new Date().getFullYear().toString(),
-    creanceMontant: "",
-  });
 
   // Form Tiers
   const [formTiers, setFormTiers] = useState({
@@ -79,40 +80,6 @@ const SATD = () => {
     return d <= new Date(Date.now() + 180 * 24 * 60 * 60 * 1000);
   }).length;
 
-  const handleAddSatd = () => {
-    const count = satds.length + 1;
-    const ref = `SATD-${new Date().getFullYear()}-${String(count).padStart(3, "0")}`;
-    const creance: Creance = {
-      id: `cr${Date.now()}`, compte: form.creanceCompte, libelle: form.creanceLibelle,
-      exercice: Number(form.creanceExercice), montantInitial: Number(form.creanceMontant),
-      montantRecouvre: 0, resteARecouvrer: Number(form.creanceMontant),
-    };
-    const montant = Number(form.creanceMontant);
-    const now = new Date().toISOString().split("T")[0];
-    const prescription = new Date();
-    prescription.setFullYear(prescription.getFullYear() + 4);
-
-    const newSatd: Satd = {
-      id: `s${Date.now()}`, reference: ref,
-      debiteur: form.debiteur, debiteurAdresse: form.debiteurAdresse,
-      debiteurCP: form.debiteurCP, debiteurVille: form.debiteurVille,
-      typeDebiteur: form.typeDebiteur,
-      creances: [creance], montantTotal: montant, fraisPoursuite: 0, majorations: 0, montantGlobal: montant,
-      tiersDetenteurId: form.tiersDetenteurId, tiersDetenteur: null,
-      organisme: "Lycée Victor Hugo", compteBudgetaire: form.compteBudgetaire,
-      iban: "FR76 1007 1130 0000 0020 0390 156", bic: "TRPUFRP1",
-      dateCreation: now, dateReception: "", dateEcheance: "",
-      datePrescription: prescription.toISOString().split("T")[0],
-      etapes: [{ type: "relance1", date: now, commentaire: "Première relance envoyée", documentGenere: true }],
-      statut: "relance", montantPreleve: 0, prelevements: [],
-      motif: form.motif, observations: form.observations,
-      autorisationOrdonnateur: false, dateAutorisation: "", compte416: false,
-    };
-    setSatds([...satds, newSatd]);
-    setOpen(false);
-    setForm({ debiteur: "", debiteurAdresse: "", debiteurCP: "", debiteurVille: "", typeDebiteur: "eleve_famille", motif: "", observations: "", tiersDetenteurId: "", compteBudgetaire: "411200", creanceCompte: "4112", creanceLibelle: "", creanceExercice: new Date().getFullYear().toString(), creanceMontant: "" });
-  };
-
   const handleAddTiers = () => {
     setTiersDetenteurs([...tiersDetenteurs, { id: `t${Date.now()}`, ...formTiers }]);
     setOpenTiers(false);
@@ -136,7 +103,6 @@ const SATD = () => {
       }
       return updated;
     }));
-    // Update selected
     const up = satds.find(s => s.id === selectedSatd.id);
     if (up) {
       setSelectedSatd({
@@ -151,7 +117,6 @@ const SATD = () => {
   const handleAddEtape = () => {
     if (!selectedSatd || !newEtape.date) return;
     const etape: EtapeProcedure = { ...newEtape, documentGenere: false };
-    // Determine new statut based on etape
     let newStatut = selectedSatd.statut;
     if (newEtape.type === "avis_poursuites") newStatut = "avis_poursuites";
     if (newEtape.type === "autorisation_ordonnateur") newStatut = "autorisation";
@@ -166,11 +131,7 @@ const SATD = () => {
       autorisationOrdonnateur: newEtape.type === "autorisation_ordonnateur" ? true : s.autorisationOrdonnateur,
       dateAutorisation: newEtape.type === "autorisation_ordonnateur" ? newEtape.date : s.dateAutorisation,
     } : s));
-    setSelectedSatd({
-      ...selectedSatd,
-      etapes: [...selectedSatd.etapes, etape],
-      statut: newStatut,
-    });
+    setSelectedSatd({ ...selectedSatd, etapes: [...selectedSatd.etapes, etape], statut: newStatut });
     setNewEtape({ type: "relance1", date: "", commentaire: "" });
   };
 
@@ -183,10 +144,25 @@ const SATD = () => {
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold font-display">SATD</h1>
-            <p className="text-sm text-muted-foreground mt-1">Saisies Administratives à Tiers Détenteur — Procédures de recouvrement forcé</p>
+            <h1 className="text-2xl font-bold font-display">SATD Pro</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Saisies Administratives à Tiers Détenteur — Recouvrement forcé
+              {selectedEstablishment && (
+                <span className="ml-2">
+                  — <strong>{selectedEstablishment.name}</strong>
+                  <Badge variant="outline" className="ml-1 text-[9px]">{selectedEstablishment.uai}</Badge>
+                </span>
+              )}
+            </p>
           </div>
           <div className="flex gap-2">
+            {/* Outils */}
+            <Button size="sm" variant="ghost" onClick={() => setOpenCalc(true)} title="Calculateur quotité">
+              <Calculator className="h-3.5 w-3.5" />
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => { setAssistantCtx("creation_satd"); setOpenAssistant(true); }} title="Assistant IA">
+              <Sparkles className="h-3.5 w-3.5" />
+            </Button>
             <Button size="sm" variant="outline" onClick={() => {
               const doc = createStyledPDF({ title: "État des SATD", subtitle: `${satds.length} dossiers — Recouvrement forcé` });
               autoTable(doc, {
@@ -225,6 +201,7 @@ const SATD = () => {
             }}>
               <Download className="h-3.5 w-3.5 mr-1" /> PDF
             </Button>
+            {/* Tiers */}
             <Dialog open={openTiers} onOpenChange={setOpenTiers}>
               <DialogTrigger asChild>
                 <Button variant="outline" size="sm"><Users className="h-3.5 w-3.5 mr-1" /> Tiers</Button>
@@ -265,73 +242,30 @@ const SATD = () => {
                 </div>
               </DialogContent>
             </Dialog>
-            <Dialog open={open} onOpenChange={setOpen}>
-              <DialogTrigger asChild>
-                <Button className="gradient-primary border-0"><Plus className="h-4 w-4 mr-1" /> Nouvelle procédure</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-                <DialogHeader><DialogTitle>Engager une procédure de recouvrement</DialogTitle></DialogHeader>
-                <div className="space-y-4 pt-2">
-                  <p className="text-xs text-muted-foreground bg-warning/10 p-2 rounded flex items-center gap-2">
-                    <AlertTriangle className="h-3.5 w-3.5 text-warning" />
-                    Rappel : la SATD ne peut être émise qu'après relances amiables, avis avant poursuites, et autorisation de l'ordonnateur. Les créances doivent être au compte 416.
-                  </p>
-                  {/* Débiteur */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Débiteur (nom complet)</Label><Input value={form.debiteur} onChange={e => setForm({ ...form, debiteur: e.target.value })} placeholder="M. / Mme NOM Prénom" /></div>
-                    <div><Label>Type de débiteur</Label>
-                      <Select value={form.typeDebiteur} onValueChange={(v: any) => setForm({ ...form, typeDebiteur: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(TYPE_DEBITEUR_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="col-span-2"><Label>Adresse</Label><Input value={form.debiteurAdresse} onChange={e => setForm({ ...form, debiteurAdresse: e.target.value })} /></div>
-                    <div><Label>Code postal</Label><Input value={form.debiteurCP} onChange={e => setForm({ ...form, debiteurCP: e.target.value })} /></div>
-                    <div><Label>Ville</Label><Input value={form.debiteurVille} onChange={e => setForm({ ...form, debiteurVille: e.target.value })} /></div>
-                  </div>
-                  <Separator />
-                  {/* Créance */}
-                  <div className="grid grid-cols-4 gap-3">
-                    <div><Label>Compte</Label>
-                      <Select value={form.creanceCompte} onValueChange={v => setForm({ ...form, creanceCompte: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="4112">4112 — Familles</SelectItem>
-                          <SelectItem value="4122">4122 — Commensaux</SelectItem>
-                          <SelectItem value="416">416 — Créances douteuses</SelectItem>
-                          <SelectItem value="421">421 — Agents</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div><Label>Libellé créance</Label><Input value={form.creanceLibelle} onChange={e => setForm({ ...form, creanceLibelle: e.target.value })} placeholder="Restauration 2024 T1" /></div>
-                    <div><Label>Exercice</Label><Input value={form.creanceExercice} onChange={e => setForm({ ...form, creanceExercice: e.target.value })} /></div>
-                    <div><Label>Montant (€)</Label><Input type="number" value={form.creanceMontant} onChange={e => setForm({ ...form, creanceMontant: e.target.value })} /></div>
-                  </div>
-                  <Separator />
-                  {/* Tiers */}
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <Label>Tiers détenteur</Label>
-                      <Select value={form.tiersDetenteurId} onValueChange={v => setForm({ ...form, tiersDetenteurId: v })}>
-                        <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
-                        <SelectContent>
-                          {tiersDetenteurs.map(t => <SelectItem key={t.id} value={t.id}>{t.nom} ({TYPE_TIERS_LABELS[t.type]})</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div><Label>Compte budgétaire</Label><Input value={form.compteBudgetaire} onChange={e => setForm({ ...form, compteBudgetaire: e.target.value })} /></div>
-                  </div>
-                  <div><Label>Motif</Label><Input value={form.motif} onChange={e => setForm({ ...form, motif: e.target.value })} placeholder="Impayés restauration 2024" /></div>
-                  <div><Label>Observations</Label><Textarea value={form.observations} onChange={e => setForm({ ...form, observations: e.target.value })} rows={2} /></div>
-                  <Button onClick={handleAddSatd} disabled={!form.debiteur || !form.creanceMontant} className="w-full gradient-primary border-0">Créer la procédure</Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+            {/* Nouvelle procédure */}
+            <Button className="gradient-primary border-0" onClick={() => setOpenFormulaire(true)}>
+              <Plus className="h-4 w-4 mr-1" /> Nouvelle procédure
+            </Button>
           </div>
         </div>
       </motion.div>
+
+      {/* Alertes prescription */}
+      {prescriptionsProches > 0 && (
+        <Card className="border-l-4 border-l-destructive bg-destructive/5">
+          <CardContent className="pt-3 pb-3">
+            <div className="flex items-center gap-3">
+              <Bell className="h-5 w-5 text-destructive" />
+              <div>
+                <p className="text-sm font-semibold text-destructive">
+                  {prescriptionsProches} procédure{prescriptionsProches > 1 ? "s" : ""} à risque de prescription (≤ 6 mois)
+                </p>
+                <p className="text-xs text-muted-foreground">Accélérez le recouvrement pour éviter la perte de créances.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
@@ -346,9 +280,9 @@ const SATD = () => {
       <Tabs defaultValue="registre">
         <TabsList className="flex-wrap">
           <TabsTrigger value="registre">Registre ({filtered.length})</TabsTrigger>
-          <TabsTrigger value="poursuivre" className="text-destructive">⚖️ Poursuivre un débiteur</TabsTrigger>
-          <TabsTrigger value="procedure">📋 Procédure & Guide</TabsTrigger>
-          <TabsTrigger value="workflow">Workflow procédure</TabsTrigger>
+          <TabsTrigger value="poursuivre" className="text-destructive">⚖️ Poursuivre</TabsTrigger>
+          <TabsTrigger value="procedure">📋 Procédure</TabsTrigger>
+          <TabsTrigger value="workflow">Workflow</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="statistiques">Statistiques</TabsTrigger>
         </TabsList>
@@ -449,11 +383,10 @@ const SATD = () => {
                 Poursuivre un débiteur — Actions de recouvrement forcé
               </CardTitle>
               <p className="text-xs text-muted-foreground">
-                Sélectionnez un dossier ci-dessous puis lancez l'action de poursuite appropriée selon l'avancement de la procédure.
+                Sélectionnez un dossier puis lancez l'action appropriée selon l'avancement.
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Dossiers éligibles aux poursuites */}
               {(() => {
                 const poursuivables = satds.filter(s => s.statut !== "termine" && s.statut !== "prescrit" && s.statut !== "irrecouv");
                 if (poursuivables.length === 0) return (
@@ -468,48 +401,20 @@ const SATD = () => {
                   const hasSatd = etapeTypes.includes("satd_emission");
                   const hasAR = etapeTypes.includes("satd_reception_ar");
 
-                  // Determine next recommended action
                   let nextAction = "";
                   let nextActionKey = "";
                   let nextActionDescription = "";
                   let canPursue = true;
                   let blockedReason = "";
 
-                  if (!hasRelance1) {
-                    nextAction = "Envoyer la 1ère relance amiable";
-                    nextActionKey = "relance1";
-                    nextActionDescription = "Courrier simple rappelant la dette.";
-                  } else if (!hasRelance2) {
-                    nextAction = "Envoyer la 2ème relance (RAR)";
-                    nextActionKey = "relance2";
-                    nextActionDescription = "Courrier recommandé avec accusé de réception — preuve obligatoire.";
-                  } else if (!hasAvis) {
-                    nextAction = "Envoyer l'avis avant poursuites (RAR)";
-                    nextActionKey = "avis_poursuites";
-                    nextActionDescription = "Dernier avertissement avant SATD. Le débiteur a 30 jours pour régulariser.";
-                  } else if (!hasAutorisation) {
-                    nextAction = "Demander l'autorisation de l'ordonnateur";
-                    nextActionKey = "autorisation_ordonnateur";
-                    nextActionDescription = "Le chef d'établissement doit autoriser par écrit la poursuite.";
-                  } else if (!s.tiersDetenteurId) {
-                    nextAction = "Identifier le tiers détenteur (FICOBA si nécessaire)";
-                    nextActionKey = "ficoba";
-                    nextActionDescription = "Consulter FICOBA via la DDFiP pour identifier les comptes bancaires du débiteur.";
-                    canPursue = false;
-                    blockedReason = "Aucun tiers détenteur assigné à ce dossier. Assignez un tiers d'abord.";
-                  } else if (!hasSatd) {
-                    nextAction = "🚨 ÉMETTRE LA SATD";
-                    nextActionKey = "satd_emission";
-                    nextActionDescription = "Envoi simultané de 3 courriers RAR : au tiers détenteur, au débiteur, bordereau récapitulatif. Les 3 doivent partir le MÊME JOUR.";
-                  } else if (!hasAR) {
-                    nextAction = "Attente réception des AR";
-                    nextActionKey = "satd_reception_ar";
-                    nextActionDescription = "Vérifier la réception des 3 accusés de réception.";
-                  } else {
-                    nextAction = "Suivre les prélèvements";
-                    nextActionKey = "prelevement";
-                    nextActionDescription = "Le tiers détenteur a 30 jours pour verser. S'il ne verse pas, il devient personnellement débiteur.";
-                  }
+                  if (!hasRelance1) { nextAction = "Envoyer la 1ère relance amiable"; nextActionKey = "relance1"; nextActionDescription = "Courrier simple rappelant la dette."; }
+                  else if (!hasRelance2) { nextAction = "Envoyer la 2ème relance (RAR)"; nextActionKey = "relance2"; nextActionDescription = "Courrier recommandé avec AR — preuve obligatoire."; }
+                  else if (!hasAvis) { nextAction = "Envoyer l'avis avant poursuites (RAR)"; nextActionKey = "avis_poursuites"; nextActionDescription = "Dernier avertissement. Le débiteur a 30 jours."; }
+                  else if (!hasAutorisation) { nextAction = "Demander l'autorisation de l'ordonnateur"; nextActionKey = "autorisation_ordonnateur"; nextActionDescription = "Le CE doit autoriser par écrit la poursuite."; }
+                  else if (!s.tiersDetenteurId) { nextAction = "Identifier le tiers détenteur (FICOBA)"; nextActionKey = "ficoba"; nextActionDescription = "Consulter FICOBA via la DDFiP."; canPursue = false; blockedReason = "Aucun tiers assigné."; }
+                  else if (!hasSatd) { nextAction = "🚨 ÉMETTRE LA SATD"; nextActionKey = "satd_emission"; nextActionDescription = "3 courriers RAR le MÊME JOUR."; }
+                  else if (!hasAR) { nextAction = "Attente AR"; nextActionKey = "satd_reception_ar"; nextActionDescription = "Vérifier les 3 AR."; }
+                  else { nextAction = "Suivre les prélèvements"; nextActionKey = "prelevement"; nextActionDescription = "Le tiers a 30 jours pour verser."; }
 
                   const tiers = tiersDetenteurs.find(t => t.id === s.tiersDetenteurId);
                   const restant = s.montantGlobal - s.montantPreleve;
@@ -520,9 +425,7 @@ const SATD = () => {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-mono text-sm font-bold text-primary">{s.reference}</span>
-                            <Badge variant="secondary" className={`text-[10px] ${STATUT_SATD_CONFIG[s.statut].color}`}>
-                              {STATUT_SATD_CONFIG[s.statut].label}
-                            </Badge>
+                            <Badge variant="secondary" className={`text-[10px] ${STATUT_SATD_CONFIG[s.statut].color}`}>{STATUT_SATD_CONFIG[s.statut].label}</Badge>
                           </div>
                           <p className="text-sm font-semibold mt-1">{s.debiteur}</p>
                           <p className="text-xs text-muted-foreground">{s.debiteurAdresse}, {s.debiteurCP} {s.debiteurVille}</p>
@@ -533,7 +436,6 @@ const SATD = () => {
                         </div>
                       </div>
 
-                      {/* Progress bar des étapes */}
                       <div className="flex gap-1">
                         {[
                           { key: "relance1", label: "R1", done: hasRelance1 },
@@ -542,16 +444,13 @@ const SATD = () => {
                           { key: "auto", label: "Autori.", done: hasAutorisation },
                           { key: "satd", label: "SATD", done: hasSatd },
                           { key: "ar", label: "AR", done: hasAR },
-                        ].map(step => (
-                          <div key={step.key} className={`flex-1 text-center py-1 rounded text-[10px] font-semibold ${
-                            step.done ? "bg-success/20 text-success" : "bg-muted/40 text-muted-foreground"
-                          }`}>
-                            {step.done ? "✓" : ""} {step.label}
+                        ].map(st => (
+                          <div key={st.key} className={`flex-1 text-center py-1 rounded text-[10px] font-semibold ${st.done ? "bg-success/20 text-success" : "bg-muted/40 text-muted-foreground"}`}>
+                            {st.done ? "✓" : ""} {st.label}
                           </div>
                         ))}
                       </div>
 
-                      {/* Tiers détenteur */}
                       {tiers ? (
                         <div className="text-xs bg-muted/20 rounded p-2 flex items-center gap-2">
                           <Users className="h-3 w-3 text-muted-foreground" />
@@ -560,61 +459,37 @@ const SATD = () => {
                       ) : (
                         <div className="text-xs bg-warning/10 rounded p-2 flex items-center gap-2 text-warning">
                           <AlertTriangle className="h-3 w-3" />
-                          <span>Aucun tiers détenteur assigné — 
-                            <button className="underline font-semibold ml-1" onClick={() => {
-                              setSelectedSatd(s);
-                              // Scroll or focus tiers selector in new procedure form
-                            }}>Assigner un tiers</button>
-                          </span>
+                          <span>Aucun tiers assigné</span>
                         </div>
                       )}
 
-                      {/* Next action */}
                       <div className={`rounded-lg p-3 ${canPursue ? "bg-primary/5 border border-primary/20" : "bg-warning/10 border border-warning/20"}`}>
                         <div className="flex items-center gap-2 mb-1">
                           <ChevronRight className="h-4 w-4 text-primary" />
                           <span className="text-sm font-bold">{nextAction}</span>
                         </div>
                         <p className="text-xs text-muted-foreground ml-6">{nextActionDescription}</p>
-                        {blockedReason && (
-                          <p className="text-xs text-warning font-semibold ml-6 mt-1">⚠️ {blockedReason}</p>
-                        )}
+                        {blockedReason && <p className="text-xs text-warning font-semibold ml-6 mt-1">⚠️ {blockedReason}</p>}
                         <div className="mt-2 ml-6 flex gap-2 flex-wrap">
                           {canPursue && (
-                            <>
-                              <Button size="sm" className="text-xs h-7 gradient-primary border-0" onClick={() => {
-                                const now = new Date().toISOString().split("T")[0];
-                                const etape: EtapeProcedure = { type: nextActionKey as any, date: now, commentaire: `Action : ${nextAction}`, documentGenere: nextActionKey === "satd_emission" };
-                                let newStatut = s.statut;
-                                if (nextActionKey === "avis_poursuites") newStatut = "avis_poursuites";
-                                if (nextActionKey === "autorisation_ordonnateur") newStatut = "autorisation";
-                                if (nextActionKey === "satd_emission") newStatut = "emise";
-                                if (nextActionKey === "satd_reception_ar") newStatut = "en_cours";
-                                setSatds(prev => prev.map(x => x.id === s.id ? { ...x, etapes: [...x.etapes, etape], statut: newStatut, autorisationOrdonnateur: nextActionKey === "autorisation_ordonnateur" ? true : x.autorisationOrdonnateur } : x));
-                                if (selectedSatd?.id === s.id) {
-                                  setSelectedSatd({ ...s, etapes: [...s.etapes, etape], statut: newStatut });
-                                }
-                              }}>
-                                <Gavel className="h-3 w-3 mr-1" /> Exécuter cette action
-                              </Button>
-                              {nextActionKey === "satd_emission" && (
-                                <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => {/* future: generate 3 documents */}}>
-                                  <FileText className="h-3 w-3 mr-1" /> Générer les 3 courriers SATD
-                                </Button>
-                              )}
-                            </>
+                            <Button size="sm" className="text-xs h-7 gradient-primary border-0" onClick={() => {
+                              const now = new Date().toISOString().split("T")[0];
+                              const etape: EtapeProcedure = { type: nextActionKey as any, date: now, commentaire: `Action : ${nextAction}`, documentGenere: nextActionKey === "satd_emission" };
+                              let ns = s.statut;
+                              if (nextActionKey === "avis_poursuites") ns = "avis_poursuites";
+                              if (nextActionKey === "autorisation_ordonnateur") ns = "autorisation";
+                              if (nextActionKey === "satd_emission") ns = "emise";
+                              if (nextActionKey === "satd_reception_ar") ns = "en_cours";
+                              setSatds(prev => prev.map(x => x.id === s.id ? { ...x, etapes: [...x.etapes, etape], statut: ns, autorisationOrdonnateur: nextActionKey === "autorisation_ordonnateur" ? true : x.autorisationOrdonnateur } : x));
+                            }}>
+                              <Gavel className="h-3 w-3 mr-1" /> Exécuter
+                            </Button>
                           )}
                           {!s.tiersDetenteurId && (
-                            <Select onValueChange={v => {
-                              setSatds(prev => prev.map(x => x.id === s.id ? { ...x, tiersDetenteurId: v } : x));
-                            }}>
-                              <SelectTrigger className="h-7 text-xs w-[250px]"><SelectValue placeholder="Assigner un tiers détenteur..." /></SelectTrigger>
+                            <Select onValueChange={v => setSatds(prev => prev.map(x => x.id === s.id ? { ...x, tiersDetenteurId: v } : x))}>
+                              <SelectTrigger className="h-7 text-xs w-[250px]"><SelectValue placeholder="Assigner un tiers..." /></SelectTrigger>
                               <SelectContent className="max-h-[300px]">
-                                {tiersDetenteurs.map(t => (
-                                  <SelectItem key={t.id} value={t.id} className="text-xs">
-                                    {t.nom} — {TYPE_TIERS_LABELS[t.type]}
-                                  </SelectItem>
-                                ))}
+                                {tiersDetenteurs.map(t => <SelectItem key={t.id} value={t.id} className="text-xs">{t.nom} — {TYPE_TIERS_LABELS[t.type]}</SelectItem>)}
                               </SelectContent>
                             </Select>
                           )}
@@ -631,107 +506,91 @@ const SATD = () => {
         {/* === WORKFLOW === */}
         <TabsContent value="workflow" className="space-y-4 mt-4">
           {selectedSatd ? (
-            <div className="space-y-4">
-              <Card className="shadow-card">
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                      {selectedSatd.reference}
-                      <Badge variant="secondary" className={`text-[10px] ${STATUT_SATD_CONFIG[selectedSatd.statut].color}`}>
-                        {STATUT_SATD_CONFIG[selectedSatd.statut].label}
-                      </Badge>
-                    </CardTitle>
-                    <Button variant="ghost" size="sm" onClick={() => setSelectedSatd(null)} className="text-xs">Fermer</Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
-                    <div><span className="text-xs text-muted-foreground">Débiteur</span><p className="font-medium">{selectedSatd.debiteur}</p></div>
-                    <div><span className="text-xs text-muted-foreground">Montant total</span><p className="font-mono font-bold">{formatCurrency(selectedSatd.montantGlobal)}</p></div>
-                    <div><span className="text-xs text-muted-foreground">Prélevé</span><p className="font-mono font-bold text-success">{formatCurrency(selectedSatd.montantPreleve)}</p></div>
-                    <div><span className="text-xs text-muted-foreground">Reste</span><p className="font-mono font-bold text-warning">{formatCurrency(selectedSatd.montantGlobal - selectedSatd.montantPreleve)}</p></div>
-                  </div>
-                  <Separator className="my-3" />
+            <Card className="shadow-card">
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    {selectedSatd.reference}
+                    <Badge variant="secondary" className={`text-[10px] ${STATUT_SATD_CONFIG[selectedSatd.statut].color}`}>{STATUT_SATD_CONFIG[selectedSatd.statut].label}</Badge>
+                  </CardTitle>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedSatd(null)} className="text-xs">Fermer</Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
+                  <div><span className="text-xs text-muted-foreground">Débiteur</span><p className="font-medium">{selectedSatd.debiteur}</p></div>
+                  <div><span className="text-xs text-muted-foreground">Montant total</span><p className="font-mono font-bold">{formatCurrency(selectedSatd.montantGlobal)}</p></div>
+                  <div><span className="text-xs text-muted-foreground">Prélevé</span><p className="font-mono font-bold text-success">{formatCurrency(selectedSatd.montantPreleve)}</p></div>
+                  <div><span className="text-xs text-muted-foreground">Reste</span><p className="font-mono font-bold text-warning">{formatCurrency(selectedSatd.montantGlobal - selectedSatd.montantPreleve)}</p></div>
+                </div>
+                <Separator className="my-3" />
 
-                  {/* Timeline des étapes */}
-                  <p className="text-xs font-semibold mb-3">Historique de la procédure</p>
-                  <div className="relative pl-6 space-y-3">
-                    {selectedSatd.etapes.map((e, i) => (
-                      <div key={i} className="relative">
-                        <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-primary border-2 border-background" />
-                        {i < selectedSatd.etapes.length - 1 && <div className="absolute -left-[14px] top-4 w-0.5 h-full bg-border" />}
-                        <div className="bg-muted/20 rounded-lg p-2.5">
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs font-semibold">{ETAPE_LABELS[e.type] || e.type}</span>
-                            <span className="text-[10px] text-muted-foreground">{new Date(e.date).toLocaleDateString("fr-FR")}</span>
-                          </div>
-                          {e.commentaire && <p className="text-xs text-muted-foreground mt-0.5">{e.commentaire}</p>}
+                <p className="text-xs font-semibold mb-3">Historique de la procédure</p>
+                <div className="relative pl-6 space-y-3">
+                  {selectedSatd.etapes.map((e, i) => (
+                    <div key={i} className="relative">
+                      <div className="absolute -left-6 top-1 w-3 h-3 rounded-full bg-primary border-2 border-background" />
+                      {i < selectedSatd.etapes.length - 1 && <div className="absolute -left-[14px] top-4 w-0.5 h-full bg-border" />}
+                      <div className="bg-muted/20 rounded-lg p-2.5">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold">{ETAPE_LABELS[e.type] || e.type}</span>
+                          <span className="text-[10px] text-muted-foreground">{new Date(e.date).toLocaleDateString("fr-FR")}</span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Ajouter étape */}
-                  {selectedSatd.statut !== "termine" && (
-                    <div className="mt-4 p-3 bg-muted/20 rounded-lg">
-                      <p className="text-xs font-semibold mb-2">Ajouter une étape</p>
-                      <div className="flex gap-2 items-end flex-wrap">
-                        <div>
-                          <Label className="text-[10px]">Type</Label>
-                          <Select value={newEtape.type} onValueChange={(v: any) => setNewEtape({ ...newEtape, type: v })}>
-                            <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(ETAPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div><Label className="text-[10px]">Date</Label><Input type="date" className="h-8 text-xs w-[140px]" value={newEtape.date} onChange={e => setNewEtape({ ...newEtape, date: e.target.value })} /></div>
-                        <div className="flex-1"><Label className="text-[10px]">Commentaire</Label><Input className="h-8 text-xs" value={newEtape.commentaire} onChange={e => setNewEtape({ ...newEtape, commentaire: e.target.value })} /></div>
-                        <Button size="sm" onClick={handleAddEtape} className="h-8 gradient-primary border-0 text-xs">Ajouter</Button>
+                        {e.commentaire && <p className="text-xs text-muted-foreground mt-0.5">{e.commentaire}</p>}
                       </div>
                     </div>
-                  )}
+                  ))}
+                </div>
 
-                  {/* Prélèvements */}
-                  <Separator className="my-4" />
-                  <p className="text-xs font-semibold mb-2">Prélèvements ({selectedSatd.prelevements.length})</p>
-                  {selectedSatd.prelevements.length > 0 && (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Date</TableHead>
-                          <TableHead>Référence</TableHead>
-                          <TableHead>Mode</TableHead>
-                          <TableHead className="text-right">Montant</TableHead>
+                {selectedSatd.statut !== "termine" && (
+                  <div className="mt-4 p-3 bg-muted/20 rounded-lg">
+                    <p className="text-xs font-semibold mb-2">Ajouter une étape</p>
+                    <div className="flex gap-2 items-end flex-wrap">
+                      <div>
+                        <Label className="text-[10px]">Type</Label>
+                        <Select value={newEtape.type} onValueChange={(v: any) => setNewEtape({ ...newEtape, type: v })}>
+                          <SelectTrigger className="w-[200px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>{Object.entries(ETAPE_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
+                        </Select>
+                      </div>
+                      <div><Label className="text-[10px]">Date</Label><Input type="date" className="h-8 text-xs w-[140px]" value={newEtape.date} onChange={e => setNewEtape({ ...newEtape, date: e.target.value })} /></div>
+                      <div className="flex-1"><Label className="text-[10px]">Commentaire</Label><Input className="h-8 text-xs" value={newEtape.commentaire} onChange={e => setNewEtape({ ...newEtape, commentaire: e.target.value })} /></div>
+                      <Button size="sm" onClick={handleAddEtape} className="h-8 gradient-primary border-0 text-xs">Ajouter</Button>
+                    </div>
+                  </div>
+                )}
+
+                <Separator className="my-4" />
+                <p className="text-xs font-semibold mb-2">Prélèvements ({selectedSatd.prelevements.length})</p>
+                {selectedSatd.prelevements.length > 0 && (
+                  <Table>
+                    <TableHeader><TableRow><TableHead>Date</TableHead><TableHead>Référence</TableHead><TableHead>Mode</TableHead><TableHead className="text-right">Montant</TableHead></TableRow></TableHeader>
+                    <TableBody>
+                      {selectedSatd.prelevements.map((p, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="text-sm">{new Date(p.date).toLocaleDateString("fr-FR")}</TableCell>
+                          <TableCell className="text-sm font-mono">{p.reference}</TableCell>
+                          <TableCell className="text-sm capitalize">{p.mode}</TableCell>
+                          <TableCell className="text-right font-mono text-sm">{formatCurrency(p.montant)}</TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {selectedSatd.prelevements.map((p, i) => (
-                          <TableRow key={i}>
-                            <TableCell className="text-sm">{new Date(p.date).toLocaleDateString("fr-FR")}</TableCell>
-                            <TableCell className="text-sm font-mono">{p.reference}</TableCell>
-                            <TableCell className="text-sm capitalize">{p.mode}</TableCell>
-                            <TableCell className="text-right font-mono text-sm">{formatCurrency(p.montant)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-                  {selectedSatd.statut !== "termine" && (
-                    <div className="flex gap-2 items-end mt-3 flex-wrap">
-                      <div><Label className="text-[10px]">Date</Label><Input type="date" className="h-8 text-xs w-[130px]" value={newPrelevement.date} onChange={e => setNewPrelevement({ ...newPrelevement, date: e.target.value })} /></div>
-                      <div><Label className="text-[10px]">Montant</Label><Input type="number" className="h-8 text-xs w-[100px]" value={newPrelevement.montant} onChange={e => setNewPrelevement({ ...newPrelevement, montant: e.target.value })} /></div>
-                      <div><Label className="text-[10px]">Réf.</Label><Input className="h-8 text-xs w-[120px]" value={newPrelevement.reference} onChange={e => setNewPrelevement({ ...newPrelevement, reference: e.target.value })} placeholder="VIR-XXX" /></div>
-                      <Button size="sm" onClick={handleAddPrelevement} className="h-8 gradient-primary border-0 text-xs">Enregistrer</Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+                {selectedSatd.statut !== "termine" && (
+                  <div className="flex gap-2 items-end mt-3 flex-wrap">
+                    <div><Label className="text-[10px]">Date</Label><Input type="date" className="h-8 text-xs w-[130px]" value={newPrelevement.date} onChange={e => setNewPrelevement({ ...newPrelevement, date: e.target.value })} /></div>
+                    <div><Label className="text-[10px]">Montant</Label><Input type="number" className="h-8 text-xs w-[100px]" value={newPrelevement.montant} onChange={e => setNewPrelevement({ ...newPrelevement, montant: e.target.value })} /></div>
+                    <div><Label className="text-[10px]">Réf.</Label><Input className="h-8 text-xs w-[120px]" value={newPrelevement.reference} onChange={e => setNewPrelevement({ ...newPrelevement, reference: e.target.value })} placeholder="VIR-XXX" /></div>
+                    <Button size="sm" onClick={handleAddPrelevement} className="h-8 gradient-primary border-0 text-xs">Enregistrer</Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           ) : (
             <Card className="shadow-card">
               <CardContent className="py-8 text-center text-sm text-muted-foreground">
-                Sélectionnez une procédure dans l'onglet <strong>Registre</strong> pour suivre son workflow et ajouter des étapes.
+                Sélectionnez une procédure dans l'onglet <strong>Registre</strong> pour suivre son workflow.
               </CardContent>
             </Card>
           )}
@@ -741,11 +600,7 @@ const SATD = () => {
         <TabsContent value="procedure" className="mt-4">
           <SatdProcedure
             satd={selectedSatd}
-            onGenerateDocument={(satd, docType) => {
-              // Trigger document generation based on type
-              const etape: EtapeProcedure = { type: docType as any, date: new Date().toISOString().split("T")[0], commentaire: "Document généré", documentGenere: true };
-              // Auto-generate relevant document
-            }}
+            onGenerateDocument={(satd, docType) => {}}
             onAddEtape={(type) => {
               if (!selectedSatd) return;
               const now = new Date().toISOString().split("T")[0];
@@ -761,21 +616,25 @@ const SATD = () => {
           />
         </TabsContent>
 
-        {/* === DOCUMENTS === */}
         <TabsContent value="documents" className="mt-4">
           <SatdDocuments satds={satds} tiers={tiersDetenteurs} />
         </TabsContent>
 
-        {/* === STATISTIQUES === */}
         <TabsContent value="statistiques" className="mt-4">
           <SatdStats satds={satds} tiers={tiersDetenteurs} />
         </TabsContent>
       </Tabs>
 
-      {/* Detail Dialog when clicking from registre */}
-      <Dialog open={false}>
-        <DialogContent />
-      </Dialog>
+      {/* Modals */}
+      <SatdFormulaire
+        open={openFormulaire}
+        onOpenChange={setOpenFormulaire}
+        tiersDetenteurs={tiersDetenteurs}
+        onCreated={(satd) => setSatds(prev => [...prev, satd])}
+        existingCount={satds.length}
+      />
+      <SatdCalculateur open={openCalc} onOpenChange={setOpenCalc} />
+      <SatdAssistant open={openAssistant} onOpenChange={setOpenAssistant} context={assistantCtx} />
     </div>
   );
 };
