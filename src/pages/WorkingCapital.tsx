@@ -31,10 +31,12 @@ import { StructureBilan } from "./working-capital/FdrStructureBilan";
 import { SimulateurPrelevement } from "./working-capital/FdrSimulateur";
 import { TableauPrelevements } from "./working-capital/FdrPrelevements";
 import { FdrHistorique } from "./working-capital/FdrHistorique";
+import { TableauFinancement } from "./working-capital/FdrTableauFinancement";
 import {
   type DonneesFinancieres, type Prelevement, type ResultatAnalyse,
   calculerAnalyse, SEUIL_CRITIQUE_JOURS,
 } from "./working-capital/types";
+import { useCofiepleStore } from "@/store/useCofiepleStore";
 
 const WorkingCapital = () => {
   const { selectedEstablishment } = useEstablishment();
