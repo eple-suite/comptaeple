@@ -223,6 +223,15 @@ export function calculerResultatsM96(
     services, chargesNature, produitsOrigine,
     ressourcesPropres, recettesAutogenerees,
     tauxExecCharges, tauxExecProduits, joursAutonomie, ratioFdrBfr,
+    prelevementsReserves: {
+      totalPrelevements: totalPrelevements106,
+      prelevementsInvestissement,
+      prelevementsFonctionnement,
+      detailParCompte: detailPrelevements,
+      variationReserves,
+      ecartFrngVsPrelevements,
+      coherent: coherentPrelevements,
+    },
   };
 }
 
