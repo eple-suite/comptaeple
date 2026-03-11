@@ -204,6 +204,8 @@ export interface Voyage {
   intitule?: string;
   codeActiviteGFC?: string;
   dateValidationCA?: string;
+  // Mode de passation marchés
+  modePassation?: ModePassation;
 }
 
 export const STATUT_CONFIG: Record<Voyage["statut"], { label: string; class: string; step: number }> = {
