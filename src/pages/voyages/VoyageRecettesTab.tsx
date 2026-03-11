@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
-import { Plus, Trash2, FileText, CheckCircle2, AlertTriangle, Landmark, BookOpen } from "lucide-react";
+import { Plus, Trash2, FileText, CheckCircle2, AlertTriangle, Landmark, BookOpen, Download, ShieldAlert, HeartHandshake } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,9 +12,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import { formatCurrency } from "@/lib/mockData";
 import { Voyage } from "./types";
+import { createStyledPDF, savePDF } from "@/lib/pdfUtils";
 import { z } from "zod";
 
 // ─── Plan Comptable M9-6 — Classe 7 (Recettes) ───
@@ -65,12 +69,10 @@ function validateCodeActivite(code: string, compteNum: string): { valid: boolean
   const compte = ALL_COMPTES.find(c => c.compte === compteNum);
   if (!compte) return { valid: true, message: "" };
 
-  // If subvention/don selected, first char must be 0, 1 or 2
   if (compte.categorie === "public" || compte.categorie === "prive") {
     if (!["0", "1", "2"].includes(prefix)) {
       return { valid: false, message: `Pour un compte ${compte.categorie === "public" ? "de subvention" : "privé/don"}, le code activité doit commencer par 0, 1 ou 2.` };
     }
-    // More specific: state subventions → 1, collectivité → 2, dons/private → 0
     if (compte.categorie === "public" && compteNum === "741100" && prefix !== "1") {
       return { valid: false, message: "Subvention État : le code activité doit commencer par 1." };
     }
@@ -85,28 +87,20 @@ function validateCodeActivite(code: string, compteNum: string): { valid: boolean
 }
 
 // ─── Mapping comptable M9-6 (Recettes) ───
-// JSON mapping: code_7 → code_4 (débit) selon la source de financement
 
 const MAPPING_DEBIT_RECETTES: Record<string, { code4: string; libelle: string }> = {
-  // Familles → 411100
   "706700": { code4: "411100", libelle: "Familles — Créances sur élèves" },
   "706880": { code4: "411100", libelle: "Familles — Créances sur élèves" },
-  // État (74xxxx) → 441100
   "741100": { code4: "441100", libelle: "État — Subventions à recevoir" },
-  // Collectivités (744xxx) → 441900
   "744200": { code4: "441900", libelle: "Collectivités — Subventions à recevoir" },
   "744300": { code4: "441900", libelle: "Collectivités — Subventions à recevoir" },
   "744400": { code4: "441900", libelle: "Collectivités — Subventions à recevoir" },
   "747800": { code4: "441900", libelle: "Collectivités — Autres organismes à recevoir" },
-  // FSE/AS → 467100
   "754110": { code4: "467100", libelle: "FSE/AS — Autres comptes débiteurs" },
-  // Dons/Privé → 467100 (par défaut)
   "754000": { code4: "467100", libelle: "Dons — Autres comptes débiteurs" },
   "748100": { code4: "467100", libelle: "Taxe d'apprentissage — Débiteurs divers" },
   "758000": { code4: "467100", libelle: "Produits divers — Débiteurs divers" },
 };
-
-// ─── Mapping comptable M9-6 (Dépenses) ───
 
 export const MAPPING_DEPENSES_M96 = {
   acompte: { code4: "409100", libelle: "Fournisseurs — Avances et acomptes versés", ctrl: "check_delib_CA" },
@@ -120,6 +114,13 @@ function genererEcritureComptable(ligne: LigneRecette): EcritureComptable {
   const mapping = MAPPING_DEBIT_RECETTES[ligne.compteComptable];
   const compteDebit = mapping?.code4 || "411100";
   const libelleDebit = mapping?.libelle || "Créances — Tiers";
+
+  // ─── VERROU MÉTIER : Fonds Social → réduction automatique du montant à titrer sur 411100 ───
+  let montantNet = ligne.montant;
+  if (ligne.fondsSocial && ligne.montantFondsSocial > 0 && compteDebit === "411100") {
+    montantNet = Math.max(0, ligne.montant - ligne.montantFondsSocial);
+  }
+
   return {
     id: `ecr-${ligne.id}`,
     dateEcriture: new Date().toISOString().split("T")[0],
@@ -127,7 +128,9 @@ function genererEcritureComptable(ligne: LigneRecette): EcritureComptable {
     libelleDebit,
     compteCredit: ligne.compteComptable,
     libelleCredit: compte?.libelle || "",
-    montant: ligne.montant,
+    montant: montantNet,
+    montantBrut: ligne.montant,
+    deductionFondsSocial: ligne.fondsSocial ? ligne.montantFondsSocial : 0,
     serviceAP: "AP",
     domaine: ligne.domaine,
     codeActivite: ligne.codeActivite,
@@ -147,6 +150,9 @@ export interface LigneRecette {
   etape: "ordonnateur" | "comptable";
   dateCreation: string;
   observations: string;
+  /** Fonds Social : si true, une aide sociale vient en déduction du titre 411100 */
+  fondsSocial: boolean;
+  montantFondsSocial: number;
 }
 
 interface EcritureComptable {
@@ -157,6 +163,8 @@ interface EcritureComptable {
   compteCredit: string;
   libelleCredit: string;
   montant: number;
+  montantBrut: number;
+  deductionFondsSocial: number;
   serviceAP: string;
   domaine: string;
   codeActivite: string;
@@ -171,6 +179,142 @@ const ligneRecetteSchema = z.object({
   domaine: z.string().trim().min(1, "Le domaine est obligatoire").max(50),
   codeActivite: z.string().length(9, "Le code activité doit comporter 9 caractères"),
 });
+
+// ─── Bordereau de Liquidation PDF ───
+
+function genererBordereauPDF(voyage: Voyage, lignes: LigneRecette[], ecritures: EcritureComptable[]) {
+  const doc = createStyledPDF({
+    title: "BORDEREAU DE LIQUIDATION — ORDRES DE RECETTES",
+    subtitle: `Voyage : ${voyage.intitule || voyage.destination} — ${voyage.pays}`,
+    establishment: "Cockpit Comptable EPLE",
+  });
+
+  const pw = doc.internal.pageSize.getWidth();
+  let y = 45;
+
+  // Cartouche identifiant
+  doc.setFontSize(9);
+  doc.setTextColor(0, 0, 0);
+  doc.setFont("helvetica", "bold");
+  doc.text("INFORMATIONS POUR SAISIE OP@LE", 14, y);
+  y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+
+  const infos = [
+    ["Service", "AP (Activités Pédagogiques)"],
+    ["Destination", `${voyage.destination} — ${voyage.pays}`],
+    ["Dates", `${voyage.dateDepart} au ${voyage.dateRetour}`],
+    ["Professeur référent", voyage.professeur],
+    ["Nb élèves / accompagnateurs", `${voyage.nbEleves} / ${voyage.nbAccompagnateurs}`],
+  ];
+
+  infos.forEach(([label, value]) => {
+    doc.setFont("helvetica", "bold");
+    doc.text(`${label} :`, 14, y);
+    doc.setFont("helvetica", "normal");
+    doc.text(value, 60, y);
+    y += 5;
+  });
+
+  y += 4;
+
+  // Tableau des ordres de recette
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(9);
+  doc.text("DÉTAIL DES ORDRES DE RECETTES", 14, y);
+  y += 4;
+
+  const tableData = lignes.map((l, i) => {
+    const mapping = MAPPING_DEBIT_RECETTES[l.compteComptable];
+    const deduction = l.fondsSocial && l.montantFondsSocial > 0 ? l.montantFondsSocial : 0;
+    const net = Math.max(0, l.montant - deduction);
+    return [
+      String(i + 1),
+      l.tiers,
+      mapping?.code4 || "411100",
+      l.compteComptable,
+      l.domaine,
+      l.codeActivite,
+      formatCurrency(l.montant),
+      deduction > 0 ? `-${formatCurrency(deduction)}` : "",
+      formatCurrency(net),
+      l.etape === "comptable" ? "✓ PEC" : "En attente",
+    ];
+  });
+
+  autoTable(doc, {
+    startY: y,
+    head: [["N°", "Code Tiers", "Cpte Débit (4)", "Cpte Crédit (7)", "Domaine", "Code Activité", "Brut", "Fonds Social", "Net à titrer", "Statut"]],
+    body: tableData,
+    styles: { fontSize: 7, cellPadding: 1.5 },
+    headStyles: { fillColor: [37, 68, 120], textColor: [255, 255, 255], fontSize: 7 },
+    columnStyles: {
+      0: { cellWidth: 8 },
+      6: { halign: "right" },
+      7: { halign: "right", textColor: [200, 50, 50] },
+      8: { halign: "right", fontStyle: "bold" },
+    },
+    theme: "grid",
+  });
+
+  // Totaux
+  const finalY = (doc as any).lastAutoTable?.finalY || y + 40;
+  const totalBrut = lignes.reduce((s, l) => s + l.montant, 0);
+  const totalFS = lignes.reduce((s, l) => s + (l.fondsSocial ? l.montantFondsSocial : 0), 0);
+  const totalNet = totalBrut - totalFS;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.text(`TOTAL BRUT : ${formatCurrency(totalBrut)}`, 14, finalY + 8);
+  if (totalFS > 0) {
+    doc.setTextColor(200, 50, 50);
+    doc.text(`DÉDUCTION FONDS SOCIAL : -${formatCurrency(totalFS)}`, 14, finalY + 14);
+    doc.setTextColor(0, 0, 0);
+    doc.text(`NET À TITRER (411100) : ${formatCurrency(totalNet)}`, 14, finalY + 20);
+  }
+
+  // Écritures comptables section
+  if (ecritures.length > 0) {
+    doc.addPage();
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("ÉCRITURES DE PRISE EN CHARGE — AGENT COMPTABLE", 14, 20);
+
+    autoTable(doc, {
+      startY: 26,
+      head: [["Date", "Débit", "Lib. Débit", "Crédit", "Lib. Crédit", "Montant", "Service", "Domaine", "Activité"]],
+      body: ecritures.map(e => [
+        e.dateEcriture,
+        e.compteDebit,
+        e.libelleDebit,
+        e.compteCredit,
+        e.libelleCredit,
+        formatCurrency(e.montant),
+        e.serviceAP,
+        e.domaine,
+        e.codeActivite,
+      ]),
+      styles: { fontSize: 7, cellPadding: 1.5 },
+      headStyles: { fillColor: [37, 68, 120], textColor: [255, 255, 255], fontSize: 7 },
+      theme: "grid",
+    });
+  }
+
+  // Visa
+  const visaY = doc.internal.pageSize.getHeight() - 40;
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.text("Visa de l'Ordonnateur :", 14, visaY);
+  doc.text("Date : ___/___/______", 14, visaY + 6);
+  doc.text("Signature :", 14, visaY + 12);
+  doc.text("Visa de l'Agent Comptable :", pw / 2 + 10, visaY);
+  doc.text("Date : ___/___/______", pw / 2 + 10, visaY + 6);
+  doc.text("Signature :", pw / 2 + 10, visaY + 12);
+
+  savePDF(doc, `bordereau_liquidation_${voyage.destination}_${new Date().toISOString().split("T")[0]}.pdf`);
+  toast.success("Bordereau de liquidation généré — Format Op@le");
+}
 
 // ─── Composant principal ───
 
@@ -190,11 +334,32 @@ export function VoyageRecettesTab({ voyage }: Props) {
   const [domaine, setDomaine] = useState("");
   const [codeActivite, setCodeActivite] = useState("");
   const [observations, setObservations] = useState("");
+  const [fondsSocial, setFondsSocial] = useState(false);
+  const [montantFondsSocial, setMontantFondsSocial] = useState("");
 
   const codeValidation = useMemo(
     () => codeActivite.length > 0 ? validateCodeActivite(codeActivite, compte) : { valid: true, message: "" },
     [codeActivite, compte]
   );
+
+  // ─── VERROU MÉTIER : zero_profit — recettes ne doivent pas dépasser dépenses ───
+  const budgetCheck = useMemo(() => {
+    const totalDepenses = voyage.transport + voyage.hebergement + voyage.restauration +
+      voyage.activites + voyage.assurance + voyage.divers;
+    const totalRecettesExistantes = lignes.reduce((s, l) => s + l.montant, 0);
+    const nouveauMontant = parseFloat(montant) || 0;
+    const totalApresAjout = totalRecettesExistantes + nouveauMontant;
+    const estFamille = ["706700", "706880"].includes(compte);
+
+    // Pour les comptes familles, vérifier que le total ne dépasse pas les dépenses
+    if (estFamille && totalApresAjout > totalDepenses && totalDepenses > 0) {
+      return {
+        bloque: true,
+        message: `Verrou M9-6 zero_profit : la participation familles (${formatCurrency(totalApresAjout)}) dépasserait le coût réel du voyage (${formatCurrency(totalDepenses)}). L'enregistrement est bloqué.`,
+      };
+    }
+    return { bloque: false, message: "" };
+  }, [voyage, lignes, montant, compte]);
 
   const handleAddLigne = () => {
     const parsed = ligneRecetteSchema.safeParse({
@@ -212,6 +377,24 @@ export function VoyageRecettesTab({ voyage }: Props) {
       toast.error(codeValidation.message);
       return;
     }
+    // ─── VERROU MÉTIER : Bloquer si profit sur familles ───
+    if (budgetCheck.bloque) {
+      toast.error(budgetCheck.message);
+      return;
+    }
+
+    // ─── VERROU MÉTIER : Fonds Social — valider le montant de déduction ───
+    const fs = fondsSocial && ["706700", "706880"].includes(compte);
+    const fsAmount = fs ? (parseFloat(montantFondsSocial) || 0) : 0;
+    if (fs && fsAmount <= 0) {
+      toast.error("Le montant de l'aide Fonds Social doit être positif.");
+      return;
+    }
+    if (fs && fsAmount > (parseFloat(montant) || 0)) {
+      toast.error("L'aide Fonds Social ne peut pas excéder le montant brut du titre.");
+      return;
+    }
+
     const nouvelle: LigneRecette = {
       id: `rec-${Date.now()}`,
       tiers: tiers.trim(),
@@ -222,9 +405,12 @@ export function VoyageRecettesTab({ voyage }: Props) {
       etape: "ordonnateur",
       dateCreation: new Date().toISOString().split("T")[0],
       observations: observations.trim(),
+      fondsSocial: fs,
+      montantFondsSocial: fsAmount,
     };
     setLignes([...lignes, nouvelle]);
     setTiers(""); setCompte(""); setMontant(""); setDomaine(""); setCodeActivite(""); setObservations("");
+    setFondsSocial(false); setMontantFondsSocial("");
     toast.success("Titre de recette créé (étape Ordonnateur)");
   };
 
@@ -243,11 +429,12 @@ export function VoyageRecettesTab({ voyage }: Props) {
 
   // Dashboard par domaine
   const dashboardDomaines = useMemo(() => {
-    const map = new Map<string, { prevu: number; encaisse: number; lignes: number }>();
+    const map = new Map<string, { prevu: number; encaisse: number; lignes: number; fondsSocial: number }>();
     lignes.forEach(l => {
-      const entry = map.get(l.domaine) || { prevu: 0, encaisse: 0, lignes: 0 };
+      const entry = map.get(l.domaine) || { prevu: 0, encaisse: 0, lignes: 0, fondsSocial: 0 };
       entry.prevu += l.montant;
       if (l.etape === "comptable") entry.encaisse += l.montant;
+      if (l.fondsSocial) entry.fondsSocial += l.montantFondsSocial;
       entry.lignes++;
       map.set(l.domaine, entry);
     });
@@ -256,23 +443,37 @@ export function VoyageRecettesTab({ voyage }: Props) {
 
   const totalRecettes = lignes.reduce((s, l) => s + l.montant, 0);
   const totalEncaisse = lignes.filter(l => l.etape === "comptable").reduce((s, l) => s + l.montant, 0);
+  const totalFondsSocial = lignes.reduce((s, l) => s + (l.fondsSocial ? l.montantFondsSocial : 0), 0);
+  const totalNetATitrer = totalRecettes - totalFondsSocial;
   const compteInfo = ALL_COMPTES.find(c => c.compte === compte);
+  const isFamilleCompte = ["706700", "706880"].includes(compte);
 
   return (
     <div className="space-y-4">
       {/* En-tête */}
       <Card className="shadow-card">
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <Landmark className="h-5 w-5 text-primary" />
-            <CardTitle className="text-lg">Gestion des Recettes — M9-6 / Op@le</CardTitle>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Landmark className="h-5 w-5 text-primary" />
+              <CardTitle className="text-lg">Gestion des Recettes — M9-6 / Op@le</CardTitle>
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs"
+              onClick={() => genererBordereauPDF(voyage, lignes, ecritures)}
+              disabled={lignes.length === 0}
+            >
+              <Download className="h-3 w-3 mr-1" /> Bordereau de liquidation
+            </Button>
           </div>
           <CardDescription>
             Saisie des titres de recette pour le voyage «&nbsp;{voyage.intitule || voyage.destination}&nbsp;» — Service AP (Activités Pédagogiques)
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
             <div className="bg-primary/10 rounded-lg p-3 text-center">
               <p className="text-xs text-muted-foreground">Total titres émis</p>
               <p className="text-lg font-bold text-primary">{formatCurrency(totalRecettes)}</p>
@@ -286,6 +487,13 @@ export function VoyageRecettesTab({ voyage }: Props) {
               <p className="text-xs text-muted-foreground">En attente liquidation</p>
               <p className="text-lg font-bold text-warning">{formatCurrency(totalRecettes - totalEncaisse)}</p>
             </div>
+            {totalFondsSocial > 0 && (
+              <div className="bg-accent/20 rounded-lg p-3 text-center">
+                <p className="text-xs text-muted-foreground">Déductions Fonds Social</p>
+                <p className="text-lg font-bold text-accent-foreground">-{formatCurrency(totalFondsSocial)}</p>
+                <p className="text-[10px] text-muted-foreground">Net 411100 : {formatCurrency(totalNetATitrer)}</p>
+              </div>
+            )}
             <div className="bg-muted rounded-lg p-3 text-center">
               <p className="text-xs text-muted-foreground">Domaines actifs</p>
               <p className="text-lg font-bold">{dashboardDomaines.length}</p>
@@ -304,6 +512,15 @@ export function VoyageRecettesTab({ voyage }: Props) {
 
         {/* ═══ SAISIE ORDONNATEUR ═══ */}
         <TabsContent value="saisie" className="space-y-4">
+          {/* Verrou zero_profit */}
+          {budgetCheck.bloque && (
+            <Alert variant="destructive" className="py-2">
+              <ShieldAlert className="h-4 w-4" />
+              <AlertTitle className="text-xs font-semibold">Verrou métier M9-6 — Enregistrement bloqué</AlertTitle>
+              <AlertDescription className="text-xs">{budgetCheck.message}</AlertDescription>
+            </Alert>
+          )}
+
           <Card className="shadow-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
@@ -354,6 +571,7 @@ export function VoyageRecettesTab({ voyage }: Props) {
                   {compteInfo && (
                     <p className="text-[10px] text-muted-foreground">
                       Catégorie : {CATEGORIE_LABELS[compteInfo.categorie as CategorieCompte]}
+                      {" — "}Débit : <span className="font-mono font-semibold">{MAPPING_DEBIT_RECETTES[compte]?.code4 || "411100"}</span>
                     </p>
                   )}
                 </div>
@@ -418,19 +636,55 @@ export function VoyageRecettesTab({ voyage }: Props) {
                 </div>
               </div>
 
+              {/* ─── FONDS SOCIAL — Interopérabilité aide → réduction 411100 ─── */}
+              {isFamilleCompte && (
+                <div className="border border-accent/30 rounded-lg p-3 bg-accent/5 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <HeartHandshake className="h-4 w-4 text-accent-foreground" />
+                      <Label className="text-xs font-semibold">Aide Fonds Social applicable ?</Label>
+                    </div>
+                    <Switch checked={fondsSocial} onCheckedChange={setFondsSocial} />
+                  </div>
+                  {fondsSocial && (
+                    <div className="space-y-1">
+                      <Label className="text-xs">Montant de l'aide Fonds Social (€)</Label>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        value={montantFondsSocial}
+                        onChange={(e) => setMontantFondsSocial(e.target.value)}
+                        placeholder="Ex: 50,00"
+                        className="max-w-[200px]"
+                      />
+                      {parseFloat(montantFondsSocial) > 0 && parseFloat(montant) > 0 && (
+                        <p className="text-[10px] text-muted-foreground">
+                          Net à titrer sur 411100 : <span className="font-mono font-bold">{formatCurrency(Math.max(0, (parseFloat(montant) || 0) - (parseFloat(montantFondsSocial) || 0)))}</span>
+                          {" "}(au lieu de {formatCurrency(parseFloat(montant) || 0)})
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Info analytique */}
               <Alert className="bg-muted/50">
                 <BookOpen className="h-4 w-4" />
-                <AlertTitle className="text-xs font-bold">Marqueurs analytiques Op@le</AlertTitle>
+                <AlertTitle className="text-xs font-bold">Marqueurs analytiques Op@le — Triplet obligatoire</AlertTitle>
                 <AlertDescription className="text-[10px]">
                   Service : <Badge variant="secondary" className="text-[9px]">AP</Badge>{" "}
-                  Domaine : <Badge variant="secondary" className="text-[9px]">{domaine || "—"}</Badge>{" "}
-                  Activité : <Badge variant="secondary" className="text-[9px]">{codeActivite || "—"}</Badge>
+                  Domaine : <Badge variant={domaine ? "secondary" : "destructive"} className="text-[9px]">{domaine || "⚠ REQUIS"}</Badge>{" "}
+                  Activité : <Badge variant={codeActivite.length === 9 ? "secondary" : "destructive"} className="text-[9px]">{codeActivite || "⚠ REQUIS (9 car.)"}</Badge>
                 </AlertDescription>
               </Alert>
 
               <div className="flex justify-end">
-                <Button onClick={handleAddLigne} disabled={!codeValidation.valid || !tiers || !compte || !montant || !domaine || codeActivite.length !== 9}>
+                <Button
+                  onClick={handleAddLigne}
+                  disabled={!codeValidation.valid || !tiers || !compte || !montant || !domaine || codeActivite.length !== 9 || budgetCheck.bloque}
+                >
                   <Plus className="h-4 w-4 mr-1" /> Émettre le titre de recette
                 </Button>
               </div>
@@ -449,7 +703,9 @@ export function VoyageRecettesTab({ voyage }: Props) {
                     <TableRow>
                       <TableHead className="text-xs">Tiers</TableHead>
                       <TableHead className="text-xs">Compte</TableHead>
-                      <TableHead className="text-xs text-right">Montant</TableHead>
+                      <TableHead className="text-xs text-right">Brut</TableHead>
+                      <TableHead className="text-xs text-right">Fonds Social</TableHead>
+                      <TableHead className="text-xs text-right">Net</TableHead>
                       <TableHead className="text-xs">Domaine</TableHead>
                       <TableHead className="text-xs">Code Activité</TableHead>
                       <TableHead className="text-xs text-center">Étape</TableHead>
@@ -459,6 +715,7 @@ export function VoyageRecettesTab({ voyage }: Props) {
                   <TableBody>
                     {lignes.map((l) => {
                       const compteLabel = ALL_COMPTES.find(c => c.compte === l.compteComptable)?.libelle || "";
+                      const net = l.fondsSocial ? Math.max(0, l.montant - l.montantFondsSocial) : l.montant;
                       return (
                         <TableRow key={l.id}>
                           <TableCell className="text-xs font-medium">{l.tiers}</TableCell>
@@ -466,7 +723,13 @@ export function VoyageRecettesTab({ voyage }: Props) {
                             <span className="font-mono">{l.compteComptable}</span>
                             <span className="text-muted-foreground ml-1 text-[10px]">{compteLabel}</span>
                           </TableCell>
-                          <TableCell className="text-xs text-right font-semibold">{formatCurrency(l.montant)}</TableCell>
+                          <TableCell className="text-xs text-right">{formatCurrency(l.montant)}</TableCell>
+                          <TableCell className="text-xs text-right">
+                            {l.fondsSocial ? (
+                              <span className="text-destructive">-{formatCurrency(l.montantFondsSocial)}</span>
+                            ) : "—"}
+                          </TableCell>
+                          <TableCell className="text-xs text-right font-semibold">{formatCurrency(net)}</TableCell>
                           <TableCell className="text-xs"><Badge variant="outline" className="text-[9px]">{l.domaine}</Badge></TableCell>
                           <TableCell className="text-xs font-mono">{l.codeActivite}</TableCell>
                           <TableCell className="text-center">
@@ -496,6 +759,10 @@ export function VoyageRecettesTab({ voyage }: Props) {
                     <TableRow>
                       <TableCell colSpan={2} className="text-xs font-bold">Total</TableCell>
                       <TableCell className="text-xs text-right font-bold">{formatCurrency(totalRecettes)}</TableCell>
+                      <TableCell className="text-xs text-right font-bold text-destructive">
+                        {totalFondsSocial > 0 ? `-${formatCurrency(totalFondsSocial)}` : "—"}
+                      </TableCell>
+                      <TableCell className="text-xs text-right font-bold">{formatCurrency(totalNetATitrer)}</TableCell>
                       <TableCell colSpan={4} />
                     </TableRow>
                   </TableFooter>
@@ -509,11 +776,22 @@ export function VoyageRecettesTab({ voyage }: Props) {
         <TabsContent value="ecritures" className="space-y-4">
           <Card className="shadow-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <BookOpen className="h-4 w-4" /> Écritures de prise en charge
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" /> Écritures de prise en charge
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[10px]"
+                  onClick={() => genererBordereauPDF(voyage, lignes, ecritures)}
+                  disabled={ecritures.length === 0}
+                >
+                  <Download className="h-3 w-3 mr-1" /> Export bordereau PDF
+                </Button>
+              </div>
               <CardDescription className="text-xs">
-                Écritures générées automatiquement après validation par l'Agent Comptable — Débit 411/44x / Crédit 7xxxxx
+                Écritures générées automatiquement après validation par l'Agent Comptable — Mapping M9-6 : Débit {"{"}code_4{"}"} / Crédit {"{"}code_7{"}"}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
@@ -526,9 +804,11 @@ export function VoyageRecettesTab({ voyage }: Props) {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-xs">Date</TableHead>
-                      <TableHead className="text-xs">Débit</TableHead>
-                      <TableHead className="text-xs">Crédit</TableHead>
-                      <TableHead className="text-xs text-right">Montant</TableHead>
+                      <TableHead className="text-xs">Débit (4)</TableHead>
+                      <TableHead className="text-xs">Crédit (7)</TableHead>
+                      <TableHead className="text-xs text-right">Brut</TableHead>
+                      <TableHead className="text-xs text-right">Fds Social</TableHead>
+                      <TableHead className="text-xs text-right">Net</TableHead>
                       <TableHead className="text-xs">Service</TableHead>
                       <TableHead className="text-xs">Domaine</TableHead>
                       <TableHead className="text-xs">Activité</TableHead>
@@ -546,6 +826,12 @@ export function VoyageRecettesTab({ voyage }: Props) {
                           <span className="font-mono">{e.compteCredit}</span>
                           <span className="text-muted-foreground text-[10px] ml-1">{e.libelleCredit}</span>
                         </TableCell>
+                        <TableCell className="text-xs text-right">{formatCurrency(e.montantBrut)}</TableCell>
+                        <TableCell className="text-xs text-right">
+                          {e.deductionFondsSocial > 0 ? (
+                            <span className="text-destructive">-{formatCurrency(e.deductionFondsSocial)}</span>
+                          ) : "—"}
+                        </TableCell>
                         <TableCell className="text-xs text-right font-semibold">{formatCurrency(e.montant)}</TableCell>
                         <TableCell className="text-xs"><Badge variant="secondary" className="text-[9px]">{e.serviceAP}</Badge></TableCell>
                         <TableCell className="text-xs"><Badge variant="outline" className="text-[9px]">{e.domaine}</Badge></TableCell>
@@ -556,7 +842,17 @@ export function VoyageRecettesTab({ voyage }: Props) {
                   <TableFooter>
                     <TableRow>
                       <TableCell colSpan={3} className="text-xs font-bold">Total pris en charge</TableCell>
-                      <TableCell className="text-xs text-right font-bold">{formatCurrency(totalEncaisse)}</TableCell>
+                      <TableCell className="text-xs text-right font-bold">
+                        {formatCurrency(ecritures.reduce((s, e) => s + e.montantBrut, 0))}
+                      </TableCell>
+                      <TableCell className="text-xs text-right font-bold text-destructive">
+                        {ecritures.reduce((s, e) => s + e.deductionFondsSocial, 0) > 0
+                          ? `-${formatCurrency(ecritures.reduce((s, e) => s + e.deductionFondsSocial, 0))}`
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-xs text-right font-bold">
+                        {formatCurrency(ecritures.reduce((s, e) => s + e.montant, 0))}
+                      </TableCell>
                       <TableCell colSpan={3} />
                     </TableRow>
                   </TableFooter>
@@ -581,7 +877,8 @@ export function VoyageRecettesTab({ voyage }: Props) {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="text-xs">Domaine</TableHead>
-                      <TableHead className="text-xs text-right">Titres émis (Ordonnateur)</TableHead>
+                      <TableHead className="text-xs text-right">Titres émis</TableHead>
+                      <TableHead className="text-xs text-right">Fonds Social</TableHead>
                       <TableHead className="text-xs text-right">Pris en charge (AC)</TableHead>
                       <TableHead className="text-xs text-right">Écart</TableHead>
                       <TableHead className="text-xs text-center">Nb lignes</TableHead>
@@ -596,6 +893,9 @@ export function VoyageRecettesTab({ voyage }: Props) {
                         <TableRow key={d.domaine}>
                           <TableCell className="text-xs font-semibold"><Badge variant="outline">{d.domaine}</Badge></TableCell>
                           <TableCell className="text-xs text-right">{formatCurrency(d.prevu)}</TableCell>
+                          <TableCell className="text-xs text-right">
+                            {d.fondsSocial > 0 ? <span className="text-destructive">-{formatCurrency(d.fondsSocial)}</span> : "—"}
+                          </TableCell>
                           <TableCell className="text-xs text-right font-semibold text-success">{formatCurrency(d.encaisse)}</TableCell>
                           <TableCell className={`text-xs text-right font-semibold ${ecart > 0 ? "text-warning" : "text-success"}`}>
                             {ecart > 0 ? `−${formatCurrency(ecart)}` : "0 €"}
@@ -614,6 +914,9 @@ export function VoyageRecettesTab({ voyage }: Props) {
                     <TableRow>
                       <TableCell className="text-xs font-bold">Total</TableCell>
                       <TableCell className="text-xs text-right font-bold">{formatCurrency(totalRecettes)}</TableCell>
+                      <TableCell className="text-xs text-right font-bold text-destructive">
+                        {totalFondsSocial > 0 ? `-${formatCurrency(totalFondsSocial)}` : "—"}
+                      </TableCell>
                       <TableCell className="text-xs text-right font-bold text-success">{formatCurrency(totalEncaisse)}</TableCell>
                       <TableCell className="text-xs text-right font-bold text-warning">
                         {totalRecettes - totalEncaisse > 0 ? `−${formatCurrency(totalRecettes - totalEncaisse)}` : "0 €"}
