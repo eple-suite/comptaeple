@@ -16,6 +16,7 @@ export interface BudgetValidation {
 
 export interface VoyageBudgetData {
   nbEleves: number;
+  nbAccompagnateurs?: number;
   participationFamilles: number;
   subventionCollectivite: number;
   subventionEtat: number;
