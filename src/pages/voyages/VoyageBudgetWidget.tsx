@@ -219,8 +219,8 @@ export const VoyageBudgetWidget = ({ voyage }: Props) => {
             { label: "Autofinancement", value: v.autofinancement },
             { label: "🏫 Part EPLE (accomp.)", value: partEPLE, highlight: true },
           ].filter(r => r.value > 0).map(r => (
-            <div key={r.label} className="flex justify-between">
-              <span className="text-muted-foreground">{r.label}</span>
+            <div key={r.label} className={`flex justify-between ${(r as any).highlight ? "text-primary font-medium" : ""}`}>
+              <span className={(r as any).highlight ? "" : "text-muted-foreground"}>{r.label}</span>
               <span className="font-mono font-semibold">{formatCurrency(r.value)}</span>
             </div>
           ))}
