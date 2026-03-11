@@ -1,12 +1,15 @@
-import { useState } from "react";
-import { Info, MapPin, Users, Euro, Check, ArrowRight, Plane, Bus, Train, Ship } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Info, MapPin, Users, Euro, Check, ArrowRight, Plane, Bus, Train, Ship, AlertTriangle, Scale } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Voyage, CHECKLIST_DEFAUT, TransportType, TypeVoyage } from "./types";
+import { validerEquilibreBudgetaire, calculerParticipationEquilibre } from "@/lib/voyageBudgetEngine";
 
 interface Props {
   open: boolean;
@@ -46,19 +49,64 @@ export const VoyageCreationWizard = ({ open, onOpenChange, onCreateVoyage }: Pro
     budgetTotal: "", participationFamilles: "", subventionCollectivite: "", subventionEtat: "",
     subventionAutre: "", autofinancement: "",
     transport: "", hebergement: "", restauration: "", activites: "", assurance: "", divers: "",
+    regieAvances: "",
     objectifPedagogique: "", observations: "", dateLimiteInscription: "", codeActiviteGFC: "",
+    versionStatut: "brouillon" as "brouillon" | "valide",
   });
 
   const update = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }));
 
+  // Budget validation in real-time
+  const budgetValidation = useMemo(() => {
+    const nbEleves = Number(form.nbEleves) || 0;
+    const data = {
+      nbEleves,
+      participationFamilles: Number(form.participationFamilles) || 0,
+      subventionCollectivite: Number(form.subventionCollectivite) || 0,
+      subventionEtat: Number(form.subventionEtat) || 0,
+      subventionAutre: Number(form.subventionAutre) || 0,
+      autofinancement: Number(form.autofinancement) || 0,
+      transport: Number(form.transport) || 0,
+      hebergement: Number(form.hebergement) || 0,
+      restauration: Number(form.restauration) || 0,
+      activites: Number(form.activites) || 0,
+      assurance: Number(form.assurance) || 0,
+      divers: Number(form.divers) || 0,
+      regieAvances: Number(form.regieAvances) || 0,
+    };
+    return validerEquilibreBudgetaire(data);
+  }, [form]);
+
+  const participationSuggestion = useMemo(() => {
+    return calculerParticipationEquilibre({
+      nbEleves: Number(form.nbEleves) || 0,
+      participationFamilles: Number(form.participationFamilles) || 0,
+      subventionCollectivite: Number(form.subventionCollectivite) || 0,
+      subventionEtat: Number(form.subventionEtat) || 0,
+      subventionAutre: Number(form.subventionAutre) || 0,
+      autofinancement: Number(form.autofinancement) || 0,
+      transport: Number(form.transport) || 0,
+      hebergement: Number(form.hebergement) || 0,
+      restauration: Number(form.restauration) || 0,
+      activites: Number(form.activites) || 0,
+      assurance: Number(form.assurance) || 0,
+      divers: Number(form.divers) || 0,
+      regieAvances: Number(form.regieAvances) || 0,
+    });
+  }, [form]);
+
   const handleCreate = () => {
-    const budget = Number(form.budgetTotal);
+    // Block if profit on families (recettes > dépenses)
+    if (budgetValidation.erreurs.length > 0) return;
+
+    const budget = budgetValidation.totalDepenses;
     const familles = Number(form.participationFamilles);
     const subvColl = Number(form.subventionCollectivite) || 0;
     const subvEtat = Number(form.subventionEtat) || 0;
     const subvAutre = Number(form.subventionAutre) || 0;
     const subv = subvColl + subvEtat + subvAutre;
     const autofi = Number(form.autofinancement) || 0;
+    const regie = Number(form.regieAvances) || 0;
 
     const newVoyage: Voyage = {
       id: Date.now().toString(),
@@ -67,7 +115,7 @@ export const VoyageCreationWizard = ({ open, onOpenChange, onCreateVoyage }: Pro
       nbEleves: Number(form.nbEleves) || 0,
       nbAccompagnateurs: Number(form.nbAccompagnateurs) || 0,
       budgetTotal: budget, participationFamilles: familles,
-      subventions: subv, chargeEtablissement: budget - familles - subv - autofi,
+      subventions: subv, chargeEtablissement: Math.max(0, budget - familles - subv - autofi),
       statut: "projet",
       transport: Number(form.transport) || 0, hebergement: Number(form.hebergement) || 0,
       restauration: Number(form.restauration) || 0, activites: Number(form.activites) || 0,
@@ -90,7 +138,9 @@ export const VoyageCreationWizard = ({ open, onOpenChange, onCreateVoyage }: Pro
       typeVoyage: form.typeVoyage,
       intitule: form.intitule || `Voyage à ${form.destination}`,
       codeActiviteGFC: form.codeActiviteGFC,
-    };
+      regieAvances: regie,
+      versionStatut: form.versionStatut,
+    } as any;
     onCreateVoyage(newVoyage);
     onOpenChange(false);
     setStep(1);
@@ -101,7 +151,9 @@ export const VoyageCreationWizard = ({ open, onOpenChange, onCreateVoyage }: Pro
       budgetTotal: "", participationFamilles: "", subventionCollectivite: "", subventionEtat: "",
       subventionAutre: "", autofinancement: "",
       transport: "", hebergement: "", restauration: "", activites: "", assurance: "", divers: "",
+      regieAvances: "",
       objectifPedagogique: "", observations: "", dateLimiteInscription: "", codeActiviteGFC: "",
+      versionStatut: "brouillon",
     });
   };
 
@@ -109,8 +161,13 @@ export const VoyageCreationWizard = ({ open, onOpenChange, onCreateVoyage }: Pro
     if (step === 1) return form.intitule.trim() && form.dateDepart && form.dateRetour;
     if (step === 2) return form.destination.trim();
     if (step === 3) return form.classe.trim() && form.professeur.trim();
-    return Number(form.budgetTotal) > 0;
+    // Step 4: at least one expense, and NO budget errors (no profit)
+    const hasExpense = budgetValidation.totalDepenses > 0;
+    const noBlockingErrors = budgetValidation.erreurs.length === 0;
+    return hasExpense && noBlockingErrors;
   };
+
+  const formatEuro = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -233,17 +290,32 @@ export const VoyageCreationWizard = ({ open, onOpenChange, onCreateVoyage }: Pro
 
           {step === 4 && (
             <>
-              <p className="text-xs font-semibold text-foreground">Financement</p>
-              <div className="grid grid-cols-3 gap-3">
-                <div><Label>Budget total (€) *</Label><Input type="number" value={form.budgetTotal} onChange={e => update("budgetTotal", e.target.value)} /></div>
-                <div><Label>Participation familles (€)</Label><Input type="number" value={form.participationFamilles} onChange={e => update("participationFamilles", e.target.value)} /></div>
-                <div><Label>Autofinancement (€)</Label><Input type="number" value={form.autofinancement} onChange={e => update("autofinancement", e.target.value)} /></div>
-                <div><Label>Subvention collectivité (€)</Label><Input type="number" value={form.subventionCollectivite} onChange={e => update("subventionCollectivite", e.target.value)} /></div>
-                <div><Label>Subvention État (€)</Label><Input type="number" value={form.subventionEtat} onChange={e => update("subventionEtat", e.target.value)} /></div>
-                <div><Label>Autres subventions (€)</Label><Input type="number" value={form.subventionAutre} onChange={e => update("subventionAutre", e.target.value)} /></div>
+              {/* Version statut */}
+              <div className="flex items-center gap-3">
+                <Label className="text-xs font-semibold">Version du budget :</Label>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => update("versionStatut", "brouillon")}
+                    className={`px-3 py-1.5 rounded-lg border-2 text-xs font-medium transition-all ${
+                      form.versionStatut === "brouillon" ? "border-warning bg-warning/5 text-warning" : "border-border text-muted-foreground"
+                    }`}
+                  >
+                    📝 Brouillon enseignant
+                  </button>
+                  <button
+                    onClick={() => update("versionStatut", "valide")}
+                    className={`px-3 py-1.5 rounded-lg border-2 text-xs font-medium transition-all ${
+                      form.versionStatut === "valide" ? "border-success bg-success/5 text-success" : "border-border text-muted-foreground"
+                    }`}
+                  >
+                    ✅ Validé comptable
+                  </button>
+                </div>
               </div>
+
               <Separator />
-              <p className="text-xs font-semibold text-foreground">Ventilation par prestation (marchés publics)</p>
+
+              <p className="text-xs font-semibold text-foreground">Dépenses (prestations + régie)</p>
               <div className="grid grid-cols-3 gap-3">
                 <div><Label>🚌 Transport (€)</Label><Input type="number" value={form.transport} onChange={e => update("transport", e.target.value)} /></div>
                 <div><Label>🏨 Hébergement (€)</Label><Input type="number" value={form.hebergement} onChange={e => update("hebergement", e.target.value)} /></div>
@@ -252,24 +324,86 @@ export const VoyageCreationWizard = ({ open, onOpenChange, onCreateVoyage }: Pro
                 <div><Label>🛡️ Assurance (€)</Label><Input type="number" value={form.assurance} onChange={e => update("assurance", e.target.value)} /></div>
                 <div><Label>📦 Divers (€)</Label><Input type="number" value={form.divers} onChange={e => update("divers", e.target.value)} /></div>
               </div>
-              {/* Point mort preview */}
-              {Number(form.budgetTotal) > 0 && Number(form.nbEleves) > 0 && (
-                <div className="bg-muted/50 rounded-lg p-3 text-xs">
-                  <div className="flex items-center gap-2 font-semibold text-foreground mb-1">
-                    🎯 Analyse rapide
+
+              {/* Régie d'avances */}
+              <div className="bg-accent/30 rounded-lg p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold">💳 Régie d'avances</span>
+                  <Badge variant="outline" className="text-[9px]">Décrets 2019/2020</Badge>
+                </div>
+                <Input type="number" value={form.regieAvances} onChange={e => update("regieAvances", e.target.value)} placeholder="Menus frais, entrées, péages..." />
+                <p className="text-[10px] text-muted-foreground">Frais sur place nécessitant un mandataire (menus frais, entrées musées, péages)</p>
+              </div>
+
+              <Separator />
+
+              <p className="text-xs font-semibold text-foreground">Financement (recettes)</p>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <Label>Participation familles (€)</Label>
+                  <Input type="number" value={form.participationFamilles} onChange={e => update("participationFamilles", e.target.value)} />
+                  {participationSuggestion > 0 && Number(form.nbEleves) > 0 && (
+                    <button
+                      onClick={() => update("participationFamilles", String(Math.round(participationSuggestion * Number(form.nbEleves) * 100) / 100))}
+                      className="text-[10px] text-primary hover:underline mt-0.5"
+                    >
+                      💡 Suggestion : {formatEuro(participationSuggestion)}/él. = {formatEuro(participationSuggestion * Number(form.nbEleves))}
+                    </button>
+                  )}
+                </div>
+                <div><Label>Autofinancement (€)</Label><Input type="number" value={form.autofinancement} onChange={e => update("autofinancement", e.target.value)} /></div>
+                <div><Label>Subvention collectivité (€)</Label><Input type="number" value={form.subventionCollectivite} onChange={e => update("subventionCollectivite", e.target.value)} /></div>
+                <div><Label>Subvention État (€)</Label><Input type="number" value={form.subventionEtat} onChange={e => update("subventionEtat", e.target.value)} /></div>
+                <div><Label>Autres subventions (€)</Label><Input type="number" value={form.subventionAutre} onChange={e => update("subventionAutre", e.target.value)} /></div>
+              </div>
+
+              {/* Budget validation feedback */}
+              {budgetValidation.totalDepenses > 0 && (
+                <div className="space-y-2">
+                  {/* Equilibrium status */}
+                  <div className={`rounded-lg p-3 text-xs border ${
+                    budgetValidation.equilibre
+                      ? "bg-success/5 border-success/30"
+                      : budgetValidation.erreurs.length > 0
+                        ? "bg-destructive/5 border-destructive/30"
+                        : "bg-warning/5 border-warning/30"
+                  }`}>
+                    <div className="flex items-center gap-2 font-semibold mb-1">
+                      {budgetValidation.equilibre ? (
+                        <><Check className="h-3.5 w-3.5 text-success" /> <span className="text-success">Budget équilibré — Recettes = Dépenses</span></>
+                      ) : budgetValidation.erreurs.length > 0 ? (
+                        <><AlertTriangle className="h-3.5 w-3.5 text-destructive" /> <span className="text-destructive">Blocage : {budgetValidation.erreurs[0]}</span></>
+                      ) : (
+                        <><Scale className="h-3.5 w-3.5 text-warning" /> <span className="text-warning">Budget déséquilibré (solde : {formatEuro(budgetValidation.solde)})</span></>
+                      )}
+                    </div>
+                    <div className="flex gap-6 text-muted-foreground">
+                      <span>Dépenses : <strong className="font-mono">{formatEuro(budgetValidation.totalDepenses)}</strong></span>
+                      <span>Recettes : <strong className="font-mono">{formatEuro(budgetValidation.totalRecettes)}</strong></span>
+                    </div>
                   </div>
-                  <div className="text-muted-foreground">
-                    Coût par élève : <span className="font-mono font-semibold text-foreground">
-                      {(Number(form.budgetTotal) / Number(form.nbEleves)).toFixed(0)} €
-                    </span>
-                    {Number(form.participationFamilles) > 0 && Number(form.nbEleves) > 0 && (
-                      <> — Participation / élève : <span className="font-mono font-semibold text-foreground">
-                        {(Number(form.participationFamilles) / Number(form.nbEleves)).toFixed(0)} €
-                      </span></>
-                    )}
-                  </div>
+
+                  {/* Point mort preview */}
+                  {Number(form.nbEleves) > 0 && (
+                    <div className="bg-muted/50 rounded-lg p-3 text-xs">
+                      <div className="flex items-center gap-2 font-semibold text-foreground mb-1">
+                        🎯 Analyse rapide
+                      </div>
+                      <div className="text-muted-foreground">
+                        Coût par élève : <span className="font-mono font-semibold text-foreground">
+                          {formatEuro(budgetValidation.totalDepenses / Number(form.nbEleves))}
+                        </span>
+                        {Number(form.participationFamilles) > 0 && (
+                          <> — Participation / élève : <span className="font-mono font-semibold text-foreground">
+                            {formatEuro(Number(form.participationFamilles) / Number(form.nbEleves))}
+                          </span></>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
+
               <div>
                 <Label>Observations</Label>
                 <Textarea value={form.observations} onChange={e => update("observations", e.target.value)} rows={2} />
