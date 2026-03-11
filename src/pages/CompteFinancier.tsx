@@ -24,7 +24,7 @@ import { ImportHistorySection } from '@/components/cofieple/ImportHistorySection
 import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
-  History, PenTool, BookOpen
+  History, PenTool, BookOpen, ScrollText
 } from 'lucide-react';
 
 interface NavItem {
