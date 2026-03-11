@@ -18,8 +18,7 @@ const BAR_COLORS = [
 export const VoyageBudgetWidget = ({ voyage }: Props) => {
   const v = voyage;
   const regieAvances = (v as any).regieAvances || 0;
-  const totalDepenses = v.transport + v.hebergement + v.restauration + v.activites + v.assurance + v.divers + regieAvances;
-  const totalRecettes = v.participationFamilles + v.subventions + v.autofinancement;
+  const totalDepensesBase = v.transport + v.hebergement + v.restauration + v.activites + v.assurance + v.divers + regieAvances;
   const pm = useMemo(() => calculerPointMort(v), [v]);
 
   // Validation budgétaire stricte

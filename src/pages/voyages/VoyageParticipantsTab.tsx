@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Users, UserCheck, Download, Phone, Mail, Shield } from "lucide-react";
+import { Users, UserCheck, Download, Phone, Mail, Shield, Euro } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Voyage, QUALITES_ACCOMPAGNATEUR, Accompagnateur, Devis, CATEGORIES_PRESTATIONS, CatKey } from "./types";
 import { formatCurrency } from "@/lib/mockData";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { calculerCoutParParticipant } from "@/lib/voyageBudgetEngine";
+import { CheckCircle2, XCircle, TrendingDown, TrendingUp } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -21,6 +22,35 @@ interface Props {
 export const VoyageParticipantsTab = ({ voyage, onUpdateVoyage }: Props) => {
   const [subTab, setSubTab] = useState<"accompagnateurs" | "devis">("accompagnateurs");
   const v = voyage;
+
+  // Calcul de la prise en charge EPLE
+  const regieAvances = (v as any).regieAvances || 0;
+  const coutParticipant = useMemo(() => calculerCoutParParticipant({
+    nbEleves: v.nbEleves,
+    nbAccompagnateurs: v.nbAccompagnateurs,
+    participationFamilles: v.participationFamilles,
+    subventionCollectivite: v.subventionCollectivite,
+    subventionEtat: v.subventionEtat,
+    subventionAutre: v.subventionAutre,
+    autofinancement: v.autofinancement,
+    transport: v.transport,
+    hebergement: v.hebergement,
+    restauration: v.restauration,
+    activites: v.activites,
+    assurance: v.assurance,
+    divers: v.divers,
+    regieAvances,
+  }), [v, regieAvances]);
+
+  // Participation individuelle (ce que paie un élève)
+  const participationIndividuelle = v.nbEleves > 0 ? v.participationFamilles / v.nbEleves : 0;
+
+  // Totaux budgétaires
+  const totalDepenses = v.transport + v.hebergement + v.restauration + v.activites + v.assurance + v.divers + regieAvances;
+  const partEPLE = coutParticipant.partEtablissementAccomp;
+  const totalDepensesAvecEPLE = totalDepenses + partEPLE;
+  const totalRecettes = v.participationFamilles + v.subventions + v.autofinancement + partEPLE;
+  const delta = totalRecettes - totalDepensesAvecEPLE;
 
   // Export liste participants PDF
   const exportListeParticipants = () => {
@@ -36,9 +66,11 @@ export const VoyageParticipantsTab = ({ voyage, onUpdateVoyage }: Props) => {
     doc.text("ACCOMPAGNATEURS", 14, 46);
     autoTable(doc, {
       startY: 50,
-      head: [["Nom", "Prénom", "Qualité", "Fonction", "Téléphone", "Ordre service"]],
+      head: [["Nom", "Prénom", "Qualité", "Fonction", "Téléphone", "Prise en charge EPLE", "Ordre service"]],
       body: v.accompagnateurs.map(a => [
-        a.nom, a.prenom, QUALITES_ACCOMPAGNATEUR[a.qualite], a.fonction, a.telephone, a.ordreService ? "✓" : "✗"
+        a.nom, a.prenom, QUALITES_ACCOMPAGNATEUR[a.qualite], a.fonction, a.telephone,
+        formatCurrency(coutParticipant.coutParParticipant),
+        a.ordreService ? "✓" : "✗"
       ]),
       theme: "grid",
       headStyles: { fillColor: [41, 98, 255] },
@@ -61,6 +93,12 @@ export const VoyageParticipantsTab = ({ voyage, onUpdateVoyage }: Props) => {
       headStyles: { fillColor: [41, 98, 255] },
       styles: { fontSize: 8 },
     });
+
+    // Totaux
+    const y3 = (doc as any).lastAutoTable?.finalY || 200;
+    doc.setFontSize(9);
+    doc.setFont(undefined!, "bold");
+    doc.text(`Part EPLE (accompagnateurs) : ${formatCurrency(partEPLE)} — Total participants : ${v.nbEleves + v.nbAccompagnateurs}`, 14, y3 + 8);
 
     doc.save(`liste_participants_${v.destination}_${v.dateDepart}.pdf`);
   };
@@ -94,6 +132,44 @@ export const VoyageParticipantsTab = ({ voyage, onUpdateVoyage }: Props) => {
         <Button size="sm" variant="outline" onClick={exportListeParticipants}>
           <Download className="h-3 w-3 mr-1" /> Liste PDF
         </Button>
+      </div>
+
+      {/* ═══ TOTAUX BUDGÉTAIRES PERMANENTS ═══ */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card className="shadow-card border-destructive/20">
+          <CardContent className="p-3 text-center">
+            <div className="flex items-center justify-center gap-1 text-destructive text-[10px] font-medium">
+              <TrendingDown className="h-3 w-3" /> TOTAL DÉPENSES
+            </div>
+            <div className="text-lg font-bold font-mono text-destructive">{formatCurrency(totalDepenses)}</div>
+            {partEPLE > 0 && (
+              <div className="text-[9px] text-muted-foreground">+ Part EPLE : {formatCurrency(partEPLE)}</div>
+            )}
+          </CardContent>
+        </Card>
+        <Card className="shadow-card border-success/20">
+          <CardContent className="p-3 text-center">
+            <div className="flex items-center justify-center gap-1 text-success text-[10px] font-medium">
+              <TrendingUp className="h-3 w-3" /> TOTAL RECETTES
+            </div>
+            <div className="text-lg font-bold font-mono text-success">{formatCurrency(totalRecettes)}</div>
+          </CardContent>
+        </Card>
+        <Card className={`shadow-card ${Math.abs(delta) < 0.01 ? "border-success/30 bg-success/5" : "border-destructive/30 bg-destructive/5"}`}>
+          <CardContent className="p-3 text-center">
+            <div className="text-[10px] font-medium text-muted-foreground">SOLDE</div>
+            <div className={`text-lg font-bold font-mono ${Math.abs(delta) < 0.01 ? "text-success" : "text-destructive"}`}>
+              {Math.abs(delta) < 0.01 ? "Équilibré ✓" : `${delta > 0 ? "+" : ""}${formatCurrency(delta)}`}
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="shadow-card border-primary/20 bg-primary/5">
+          <CardContent className="p-3 text-center">
+            <div className="text-[10px] font-medium text-primary">PART EPLE (ACCOMP.)</div>
+            <div className="text-lg font-bold font-mono text-primary">{formatCurrency(partEPLE)}</div>
+            <div className="text-[9px] text-muted-foreground">{v.nbAccompagnateurs} × {formatCurrency(coutParticipant.coutParParticipant)}</div>
+          </CardContent>
+        </Card>
       </div>
 
       <Tabs value={subTab} onValueChange={v => setSubTab(v as any)}>
@@ -134,7 +210,7 @@ export const VoyageParticipantsTab = ({ voyage, onUpdateVoyage }: Props) => {
             </Card>
           </div>
 
-          {/* Tableau accompagnateurs */}
+          {/* Tableau accompagnateurs avec colonne EPLE */}
           <Card className="shadow-card">
             <CardContent className="p-0">
               <Table>
@@ -145,6 +221,7 @@ export const VoyageParticipantsTab = ({ voyage, onUpdateVoyage }: Props) => {
                     <TableHead>Fonction</TableHead>
                     <TableHead>Téléphone</TableHead>
                     <TableHead>Email</TableHead>
+                    <TableHead className="text-right bg-primary/5">Prise en charge EPLE</TableHead>
                     <TableHead className="text-center">Ordre service</TableHead>
                     <TableHead className="text-center">Aut. absence</TableHead>
                   </TableRow>
@@ -159,12 +236,44 @@ export const VoyageParticipantsTab = ({ voyage, onUpdateVoyage }: Props) => {
                       <TableCell className="text-xs text-muted-foreground">{a.fonction}</TableCell>
                       <TableCell className="text-xs font-mono">{a.telephone}</TableCell>
                       <TableCell className="text-xs">{a.email}</TableCell>
+                      <TableCell className="text-right bg-primary/5">
+                        <span className="font-mono font-semibold text-primary text-sm">
+                          {formatCurrency(coutParticipant.coutParParticipant)}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-center"><DocIcon ok={a.ordreService} /></TableCell>
                       <TableCell className="text-center"><DocIcon ok={a.autorisationAbsence} /></TableCell>
                     </TableRow>
                   ))}
+                  {/* Ligne de total */}
+                  <TableRow className="bg-primary/5 font-semibold">
+                    <TableCell colSpan={5} className="text-right text-xs">
+                      Total prise en charge EPLE ({v.nbAccompagnateurs} accompagnateurs) →
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <span className="font-mono font-bold text-primary">
+                        {formatCurrency(partEPLE)}
+                      </span>
+                    </TableCell>
+                    <TableCell colSpan={2}></TableCell>
+                  </TableRow>
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+
+          {/* Explication comptable */}
+          <Card className="shadow-card border-primary/20 bg-primary/5">
+            <CardContent className="p-3 text-xs space-y-1">
+              <div className="font-semibold text-primary flex items-center gap-1">
+                <Euro className="h-3.5 w-3.5" /> Impact budgétaire — Part établissement
+              </div>
+              <p className="text-muted-foreground">
+                Les {v.nbAccompagnateurs} accompagnateurs ne versent pas de participation. Le coût par participant ({formatCurrency(coutParticipant.coutParParticipant)}) × {v.nbAccompagnateurs} = <strong className="text-primary">{formatCurrency(partEPLE)}</strong> est imputé en dépenses sous le libellé « Part établissement (Accompagnateurs) ».
+              </p>
+              <p className="text-muted-foreground">
+                Cette ligne équilibre mathématiquement le budget : ce que les accompagnateurs ne paient pas en recettes est compensé par une charge de l'établissement.
+              </p>
             </CardContent>
           </Card>
 
