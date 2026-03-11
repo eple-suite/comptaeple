@@ -80,6 +80,7 @@ const CompteFinancier = () => {
     switch (activeTab) {
       case 'accueil': return <AccueilSection />;
       case 'import': return <ImportSection />;
+      case 'journal': return <ImportHistorySection />;
       case 'checklist': return <CheckListSection />;
       case 'superviseur': return <SuperviseurSection />;
       case 'synthese': return <SyntheseSection />;
