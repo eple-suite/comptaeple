@@ -32,6 +32,18 @@ export interface VoyageBudgetData {
 }
 
 /**
+ * Règles M9-6 :
+ * - auto_balance : recettes_totales == depenses_totales
+ * - zero_profit : participation_familles <= cout_reel_voyage
+ * - seuil_public : 40 000 € HT
+ */
+export const LOGIC_M96 = {
+  auto_balance: 'recettes_totales == depenses_totales',
+  zero_profit: 'participation_familles <= cout_reel_voyage',
+  seuil_public: 40000,
+} as const;
+
+/**
  * Calcule l'équilibre budgétaire strict
  * Règle : Total Recettes = Total Dépenses (pas de profit sur familles)
  */
@@ -45,7 +57,7 @@ export function validerEquilibreBudgetaire(data: VoyageBudgetData): BudgetValida
   const erreurs: string[] = [];
   const avertissements: string[] = [];
 
-  // Règle 1 : Recettes > Dépenses → profit interdit sur familles
+  // Règle 1 : auto_balance — Recettes > Dépenses → profit interdit sur familles
   if (solde > 0.01) {
     erreurs.push(
       `Excédent de ${formatEuro(solde)} : les recettes dépassent les dépenses. ` +
@@ -53,11 +65,19 @@ export function validerEquilibreBudgetaire(data: VoyageBudgetData): BudgetValida
     );
   }
 
-  // Règle 2 : Dépenses > Recettes → budget déséquilibré
+  // Règle 2 : auto_balance — Dépenses > Recettes → budget déséquilibré
   if (solde < -0.01) {
     avertissements.push(
       `Déficit de ${formatEuro(Math.abs(solde))} : les dépenses dépassent les recettes. ` +
       `La charge résiduelle doit être imputée sur les fonds propres de l'établissement (FDR).`
+    );
+  }
+
+  // Règle 3 : zero_profit — participation familles ne peut pas excéder le coût réel
+  if (data.participationFamilles > totalDepenses && totalDepenses > 0) {
+    erreurs.push(
+      `La participation des familles (${formatEuro(data.participationFamilles)}) excède le coût réel du voyage (${formatEuro(totalDepenses)}). ` +
+      `Règle M9-6 : zero_profit — aucune marge ne peut être réalisée sur les familles.`
     );
   }
 
