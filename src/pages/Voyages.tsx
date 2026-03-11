@@ -194,6 +194,7 @@ const Voyages = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
           <TabsTrigger value="tableau-bord">📊 Tableau de bord</TabsTrigger>
+          <TabsTrigger value="templates">📁 Modèles</TabsTrigger>
           <TabsTrigger value="marches-publics" className="relative">
             ⚖️ Marchés publics
             {alertesCount > 0 && (
