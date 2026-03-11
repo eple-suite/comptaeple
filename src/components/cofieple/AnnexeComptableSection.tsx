@@ -1296,7 +1296,8 @@ export function AnnexeComptableSection() {
           </Card>
           <NarrativeSection sectionId="autresInfos" text={texts.autresInfos}
             onTextChange={v => setTexts(p => ({ ...p, autresInfos: v }))}
-            onGenerate={() => genererSection('autresInfos')} loading={loadingSection === 'autresInfos'} />
+            onGenerate={() => genererSection('autresInfos')} loading={loadingSection === 'autresInfos'}
+            lastMod={lastMods['autresInfos']} onBlur={() => handleEditBlur('autresInfos')} />
         </TabsContent>
       </Tabs>
 
