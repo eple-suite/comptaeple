@@ -147,7 +147,7 @@ export function AnnexeComptableSection() {
 
   const hasMultipleBudgets = budgets.length > 1;
 
-  // ── Load indicators and history ────────────────────────────
+  // ── Load indicators, history, and last modifications ────
   useEffect(() => {
     if (!etab.uai || !R) return;
     (async () => {
@@ -167,6 +167,18 @@ export function AnnexeComptableSection() {
       } catch {}
     })();
   }, [etab.uai, etab.exercice, R]);
+
+  // Fetch last modification info for each section
+  useEffect(() => {
+    if (!etab.uai || !etab.exercice) return;
+    (async () => {
+      const mods: Record<string, { user_name: string; created_at: string } | null> = {};
+      for (const s of AI_SECTIONS) {
+        mods[s] = await getLastModification(etab.uai, etab.exercice, s);
+      }
+      setLastMods(mods);
+    })();
+  }, [etab.uai, etab.exercice, texts, getLastModification]);
 
   // ── AUTO-AUDIT ─────────────────────────────────────────────
   useEffect(() => {
