@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
-import { Plus, Trash2, FileText, CheckCircle2, AlertTriangle, Landmark, BookOpen } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Plus, Trash2, FileText, CheckCircle2, AlertTriangle, Landmark, BookOpen, Download, ShieldAlert, HeartHandshake } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
