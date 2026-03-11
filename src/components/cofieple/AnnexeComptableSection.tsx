@@ -120,6 +120,7 @@ export function AnnexeComptableSection() {
   const balance = useCofiepleStore(s => s.balance);
   const anomaliesBalance = useCofiepleStore(s => s.anomaliesBalance);
   const R = resultats[activeBudget];
+  const { logAction, getLastModification, getAuditHistory } = useAuditTrail();
 
   const [activeTab, setActiveTab] = useState<AnnexeSectionId>('autoAudit');
   const [texts, setTexts] = useState<AnnexeTexts>({ ...INITIAL_TEXTS });
@@ -135,6 +136,7 @@ export function AnnexeComptableSection() {
   const [auditAnomalies, setAuditAnomalies] = useState<AuditAnomaly[]>([]);
   const [exportingPdf, setExportingPdf] = useState(false);
   const [auditDrilldown, setAuditDrilldown] = useState<string | null>(null);
+  const [lastMods, setLastMods] = useState<Record<string, { user_name: string; created_at: string } | null>>({});
 
   const completedSections = useMemo(() => Object.values(texts).filter(t => t.length > 0).length, [texts]);
   const progressPct = Math.round((completedSections / AI_SECTIONS.length) * 100);
