@@ -187,28 +187,18 @@ const Establishments = () => {
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div className="space-y-2">
-                <Label>Code UAI *</Label>
+                <Label>Code UAI <span className="text-muted-foreground text-xs">(7 chiffres + 1 lettre)</span></Label>
                 <div className="flex gap-2">
                   <Input
+                    ref={uaiInputRef}
                     placeholder="Ex: 0910620T"
                     value={uaiInput}
-                    onChange={(e) => {
-                      setUaiInput(e.target.value.toUpperCase());
-                      setLookupResult(null);
-                      setLookupError("");
-                    }}
+                    onChange={handleUaiChange}
                     maxLength={8}
                     className="font-mono"
+                    autoFocus
                   />
-                  <Button
-                    type="button"
-                    onClick={handleLookup}
-                    disabled={lookupLoading || uaiInput.length < 7}
-                    variant="secondary"
-                  >
-                    {lookupLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                    <span className="ml-1">Rechercher</span>
-                  </Button>
+                  {lookupLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mt-2" />}
                 </div>
                 {lookupError && <p className="text-sm text-destructive">{lookupError}</p>}
               </div>
