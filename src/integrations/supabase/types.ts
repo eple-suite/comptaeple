@@ -533,6 +533,330 @@ export type Database = {
         }
         Relationships: []
       }
+      voyage_marches_alertes: {
+        Row: {
+          categorie: string
+          created_at: string
+          establishment_id: string
+          exercice: number
+          id: string
+          montant_cumule_ht: number
+          notifie: boolean
+          procedure_requise: string
+          seuil_atteint: string
+        }
+        Insert: {
+          categorie: string
+          created_at?: string
+          establishment_id: string
+          exercice: number
+          id?: string
+          montant_cumule_ht?: number
+          notifie?: boolean
+          procedure_requise: string
+          seuil_atteint: string
+        }
+        Update: {
+          categorie?: string
+          created_at?: string
+          establishment_id?: string
+          exercice?: number
+          id?: string
+          montant_cumule_ht?: number
+          notifie?: boolean
+          procedure_requise?: string
+          seuil_atteint?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voyage_marches_alertes_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voyage_paiements: {
+        Row: {
+          created_at: string
+          date_paiement: string
+          encaisse: boolean
+          fonds_social: boolean
+          id: string
+          mode: string
+          montant: number
+          observations: string | null
+          participant_id: string
+          reference: string | null
+          voyage_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_paiement?: string
+          encaisse?: boolean
+          fonds_social?: boolean
+          id?: string
+          mode?: string
+          montant?: number
+          observations?: string | null
+          participant_id: string
+          reference?: string | null
+          voyage_id: string
+        }
+        Update: {
+          created_at?: string
+          date_paiement?: string
+          encaisse?: boolean
+          fonds_social?: boolean
+          id?: string
+          mode?: string
+          montant?: number
+          observations?: string | null
+          participant_id?: string
+          reference?: string | null
+          voyage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voyage_paiements_participant_id_fkey"
+            columns: ["participant_id"]
+            isOneToOne: false
+            referencedRelation: "voyage_participants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "voyage_paiements_voyage_id_fkey"
+            columns: ["voyage_id"]
+            isOneToOne: false
+            referencedRelation: "voyages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voyage_participants: {
+        Row: {
+          assurance_rc: boolean
+          autorisation_parentale: boolean
+          classe: string
+          created_at: string
+          date_inscription: string | null
+          email_responsable: string | null
+          fiche_sanitaire: boolean
+          id: string
+          nom: string
+          participation_due: number
+          passeport: boolean
+          prenom: string
+          regime: string
+          responsable: string | null
+          tel_responsable: string | null
+          voyage_id: string
+        }
+        Insert: {
+          assurance_rc?: boolean
+          autorisation_parentale?: boolean
+          classe?: string
+          created_at?: string
+          date_inscription?: string | null
+          email_responsable?: string | null
+          fiche_sanitaire?: boolean
+          id?: string
+          nom: string
+          participation_due?: number
+          passeport?: boolean
+          prenom: string
+          regime?: string
+          responsable?: string | null
+          tel_responsable?: string | null
+          voyage_id: string
+        }
+        Update: {
+          assurance_rc?: boolean
+          autorisation_parentale?: boolean
+          classe?: string
+          created_at?: string
+          date_inscription?: string | null
+          email_responsable?: string | null
+          fiche_sanitaire?: boolean
+          id?: string
+          nom?: string
+          participation_due?: number
+          passeport?: boolean
+          prenom?: string
+          regime?: string
+          responsable?: string | null
+          tel_responsable?: string | null
+          voyage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voyage_participants_voyage_id_fkey"
+            columns: ["voyage_id"]
+            isOneToOne: false
+            referencedRelation: "voyages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      voyages: {
+        Row: {
+          activites: number
+          assurance: number
+          autofinancement: number
+          budget_total: number
+          charge_etablissement: number
+          classe: string
+          code_activite_gfc: string | null
+          contact_urgence: string | null
+          created_at: string
+          date_depart: string
+          date_limite_inscription: string | null
+          date_retour: string
+          date_validation: string | null
+          date_vote_ca: string | null
+          destination: string
+          divers: number
+          establishment_id: string
+          hebergement: number
+          horaires_depart: string | null
+          horaires_retour: string | null
+          id: string
+          intitule: string | null
+          lieu_depart: string | null
+          moyen_transport: string | null
+          nb_accompagnateurs: number
+          nb_eleves: number
+          objectif_pedagogique: string | null
+          observations: string | null
+          participation_familles: number
+          pays: string
+          professeur: string
+          regie_avances: number
+          restauration: number
+          statut: string
+          subvention_autre: number
+          subvention_collectivite: number
+          subvention_etat: number
+          subventions: number
+          tel_urgence: string | null
+          transport: number
+          transport_type: string | null
+          type_hebergement: string | null
+          type_voyage: string | null
+          updated_at: string
+          user_id: string
+          validateur_id: string | null
+          version_statut: string
+        }
+        Insert: {
+          activites?: number
+          assurance?: number
+          autofinancement?: number
+          budget_total?: number
+          charge_etablissement?: number
+          classe?: string
+          code_activite_gfc?: string | null
+          contact_urgence?: string | null
+          created_at?: string
+          date_depart: string
+          date_limite_inscription?: string | null
+          date_retour: string
+          date_validation?: string | null
+          date_vote_ca?: string | null
+          destination: string
+          divers?: number
+          establishment_id: string
+          hebergement?: number
+          horaires_depart?: string | null
+          horaires_retour?: string | null
+          id?: string
+          intitule?: string | null
+          lieu_depart?: string | null
+          moyen_transport?: string | null
+          nb_accompagnateurs?: number
+          nb_eleves?: number
+          objectif_pedagogique?: string | null
+          observations?: string | null
+          participation_familles?: number
+          pays?: string
+          professeur?: string
+          regie_avances?: number
+          restauration?: number
+          statut?: string
+          subvention_autre?: number
+          subvention_collectivite?: number
+          subvention_etat?: number
+          subventions?: number
+          tel_urgence?: string | null
+          transport?: number
+          transport_type?: string | null
+          type_hebergement?: string | null
+          type_voyage?: string | null
+          updated_at?: string
+          user_id: string
+          validateur_id?: string | null
+          version_statut?: string
+        }
+        Update: {
+          activites?: number
+          assurance?: number
+          autofinancement?: number
+          budget_total?: number
+          charge_etablissement?: number
+          classe?: string
+          code_activite_gfc?: string | null
+          contact_urgence?: string | null
+          created_at?: string
+          date_depart?: string
+          date_limite_inscription?: string | null
+          date_retour?: string
+          date_validation?: string | null
+          date_vote_ca?: string | null
+          destination?: string
+          divers?: number
+          establishment_id?: string
+          hebergement?: number
+          horaires_depart?: string | null
+          horaires_retour?: string | null
+          id?: string
+          intitule?: string | null
+          lieu_depart?: string | null
+          moyen_transport?: string | null
+          nb_accompagnateurs?: number
+          nb_eleves?: number
+          objectif_pedagogique?: string | null
+          observations?: string | null
+          participation_familles?: number
+          pays?: string
+          professeur?: string
+          regie_avances?: number
+          restauration?: number
+          statut?: string
+          subvention_autre?: number
+          subvention_collectivite?: number
+          subvention_etat?: number
+          subventions?: number
+          tel_urgence?: string | null
+          transport?: number
+          transport_type?: string | null
+          type_hebergement?: string | null
+          type_voyage?: string | null
+          updated_at?: string
+          user_id?: string
+          validateur_id?: string | null
+          version_statut?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "voyages_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

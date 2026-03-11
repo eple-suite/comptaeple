@@ -22,7 +22,7 @@ import { VoyageCreationWizard } from "./voyages/VoyageCreationWizard";
 import { VoyageBudgetWidget } from "./voyages/VoyageBudgetWidget";
 import { VoyageDocumentsChecklist } from "./voyages/VoyageDocumentsChecklist";
 import { VoyageElevesTab } from "./voyages/VoyageElevesTab";
-import { VoyageMarchesTab } from "./voyages/VoyageMarchesTab";
+import { VoyageMarchesMoniteur } from "./voyages/VoyageMarchesMoniteur";
 import { VoyageBilanTab } from "./voyages/VoyageBilanTab";
 import { VoyageActesCATab } from "./voyages/VoyageActesCATab";
 import { VoyageSubventionsTab } from "./voyages/VoyageSubventionsTab";
@@ -380,7 +380,7 @@ const Voyages = () => {
 
         {/* TAB: Marchés publics */}
         <TabsContent value="marches-publics">
-          <VoyageMarchesTab voyages={voyages} />
+          <VoyageMarchesMoniteur voyages={voyages} exercice={new Date().getFullYear()} />
         </TabsContent>
 
         {/* TAB: Actes CA */}
