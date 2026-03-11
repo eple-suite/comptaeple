@@ -22,7 +22,7 @@ import { VoyageCreationWizard } from "./voyages/VoyageCreationWizard";
 import { VoyageBudgetWidget } from "./voyages/VoyageBudgetWidget";
 import { VoyageDocumentsChecklist } from "./voyages/VoyageDocumentsChecklist";
 import { VoyageElevesTab } from "./voyages/VoyageElevesTab";
-import { VoyageMarchesTab } from "./voyages/VoyageMarchesTab";
+import { VoyageMarchesMoniteur } from "./voyages/VoyageMarchesMoniteur";
 import { VoyageBilanTab } from "./voyages/VoyageBilanTab";
 import { VoyageActesCATab } from "./voyages/VoyageActesCATab";
 import { VoyageSubventionsTab } from "./voyages/VoyageSubventionsTab";
