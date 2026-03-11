@@ -210,10 +210,12 @@ export function ImportSection() {
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
   const analysisRunning = useCofiepleStore(s => s.analysisRunning);
   const { selectedEstablishment } = useEstablishment();
+  const exerciceTravail = useCofiepleStore(s => s.etablissement.exercice);
 
   const [fileStats, setFileStats] = useState<Record<string, { rows: number; name: string }>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [securityBlocks, setSecurityBlocks] = useState<Record<string, string>>({});
+  const [lockAlert, setLockAlert] = useState<TripleLockResult & { slotLabel?: string } | null>(null);
 
   const slots = getSlots(budgets);
   const obligatoires = slots.filter(s => s.obligatoire);
@@ -231,20 +233,24 @@ export function ImportSection() {
           return;
         }
         const rows = results.data as Record<string, string>[];
+        const headers = results.meta?.fields || Object.keys(rows[0] || {});
 
-        // ── VERROU DE SÉCURITÉ : concordance établissement ──
+        // ── TRIPLE VERROU DE SÉCURITÉ ──
         if (selectedEstablishment) {
-          const concordance = checkConcordance(
+          const lock = tripleLockCheck(
             rows,
+            headers,
+            slot.type,
             selectedEstablishment.uai,
-            selectedEstablishment.opale_number
+            selectedEstablishment.opale_number || '',
+            exerciceTravail,
           );
-          if (!concordance.ok) {
-            setSecurityBlocks(prev => ({ ...prev, [slot.key]: concordance.message! }));
+          if (!lock.ok) {
+            setSecurityBlocks(prev => ({ ...prev, [slot.key]: lock.message || 'Import bloqué' }));
             setErrors(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
+            setLockAlert({ ...lock, slotLabel: slot.label });
             return; // IMPORT BLOQUÉ
           }
-          // Clear any previous security block
           setSecurityBlocks(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
         }
 
@@ -268,20 +274,58 @@ export function ImportSection() {
 
   const budgetSlots = budgets.map(b => ({ budget: b, slots: slots.filter(s => s.typeBudget === b.type) }));
 
+  const lockTypeIcons: Record<string, string> = { opale: '🏫', exercice: '📅', colonnes: '📊' };
+
   return (
     <div className="space-y-5">
-      {/* Bandeau de sécurité concordance */}
+      {/* Dialog d'alerte triple verrou */}
+      <Dialog open={!!lockAlert} onOpenChange={() => setLockAlert(null)}>
+        <DialogContent className="border-destructive">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <ShieldAlert className="h-5 w-5" />
+              {lockAlert?.title || 'Import bloqué'}
+            </DialogTitle>
+            <DialogDescription className="space-y-3 pt-2">
+              <div className="flex items-start gap-2">
+                <span className="text-lg">{lockAlert?.type ? lockTypeIcons[lockAlert.type] : '🔒'}</span>
+                <p className="text-sm font-medium text-foreground">{lockAlert?.message}</p>
+              </div>
+              {lockAlert?.details && (
+                <p className="text-xs text-muted-foreground bg-muted rounded-md p-3">{lockAlert.details}</p>
+              )}
+              {lockAlert?.slotLabel && (
+                <p className="text-xs text-muted-foreground">Emplacement : <strong>{lockAlert.slotLabel}</strong></p>
+              )}
+              <div className="flex items-center gap-2 text-xs text-muted-foreground border-t pt-3 mt-3">
+                <AlertTriangle className="h-3 w-3" />
+                Ce contrôle protège la responsabilité de l\u2019agent comptable.
+              </div>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end">
+            <DialogClose asChild>
+              <Button variant="destructive" size="sm">Compris</Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bandeau de sécurité triple verrou */}
       {selectedEstablishment ? (
         <Card className="border-emerald-500/30 bg-emerald-500/5">
           <CardContent className="p-4 flex items-start gap-3">
             <ShieldCheck className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
             <div className="text-xs">
-              <strong>Verrou de sécurité actif</strong> — Les fichiers importés seront vérifiés contre l'établissement
-              sélectionné : <span className="font-mono font-semibold text-primary">{selectedEstablishment.uai}</span>
+              <strong>Triple verrou de sécurité actif</strong> — Chaque fichier sera vérifié sur 3 critères :
+              <span className="font-semibold"> 1) Code Op@le/UAI</span>,
+              <span className="font-semibold"> 2) Exercice comptable ({exerciceTravail})</span>,
+              <span className="font-semibold"> 3) Nature du flux</span>.
+              <br />
+              Établissement : <span className="font-mono font-semibold text-primary">{selectedEstablishment.uai}</span>
               {selectedEstablishment.opale_number && (
                 <> · Op@le <span className="font-mono font-semibold">{selectedEstablishment.opale_number}</span></>
               )}
-              . Tout fichier ne correspondant pas sera bloqué.
             </div>
           </CardContent>
         </Card>
@@ -291,7 +335,7 @@ export function ImportSection() {
             <ShieldAlert className="h-5 w-5 text-destructive mt-0.5 shrink-0" />
             <div className="text-xs text-destructive">
               <strong>Aucun établissement sélectionné</strong> — Sélectionnez un établissement dans le menu principal
-              avant d'importer des fichiers. Le verrou de sécurité ne peut pas fonctionner sans référence.
+              avant d\u2019importer des fichiers. Le verrou de sécurité ne peut pas fonctionner sans référence.
             </div>
           </CardContent>
         </Card>
@@ -336,12 +380,12 @@ export function ImportSection() {
           <div>
             <div className="text-sm font-semibold">{nbObligCharge} / {obligatoires.length} fichiers obligatoires chargés</div>
             <div className="text-xs text-muted-foreground mt-0.5">
-              {canAnalyse ? 'Prêt à lancer l\'analyse' : 'Chargez au minimum SDE, SDR et Balance du budget principal'}
+              {canAnalyse ? "Prêt à lancer l\u2019analyse" : 'Chargez au minimum SDE, SDR et Balance du budget principal'}
             </div>
             <Progress value={(nbObligCharge / obligatoires.length) * 100} className="mt-2 w-48 h-2" />
           </div>
           <Button onClick={() => { lancerAnalyse(); setActiveTab('checklist'); }} disabled={!canAnalyse || analysisRunning} size="lg">
-            {analysisRunning ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Analyse en cours…</> : <><Play className="h-4 w-4 mr-2" />Lancer l'analyse M9-6</>}
+            {analysisRunning ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Analyse en cours…</> : <><Play className="h-4 w-4 mr-2" />Lancer l\u2019analyse M9-6</>}
           </Button>
         </CardContent>
       </Card>
