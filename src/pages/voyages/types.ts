@@ -127,6 +127,9 @@ export interface Devis {
 
 // ─── Voyage principal ───
 
+export type TransportType = 'bus' | 'avion' | 'train' | 'bateau' | 'mixte';
+export type TypeVoyage = 'pedagogique' | 'linguistique' | 'sportif' | 'culturel' | 'ski' | 'erasmus';
+
 export interface Voyage {
   id: string;
   destination: string;
@@ -179,6 +182,12 @@ export interface Voyage {
   typeHebergement: string;
   contactUrgence: string;
   telUrgence: string;
+  // Champs enrichis (fusion VoyagePro 2026)
+  transportType?: TransportType;
+  typeVoyage?: TypeVoyage;
+  intitule?: string;
+  codeActiviteGFC?: string;
+  dateValidationCA?: string;
 }
 
 export const STATUT_CONFIG: Record<Voyage["statut"], { label: string; class: string; step: number }> = {
@@ -487,6 +496,42 @@ export const initialVoyages: Voyage[] = [
     contactUrgence: "Mme Rossi", telUrgence: "06 45 67 89 01",
   },
 ];
+
+// ─── Point mort (seuil de rentabilité) ───
+
+export function calculerPointMort(voyage: Voyage): { pointMort: number; estViable: boolean; marge: number } {
+  const coutsFixes = voyage.subventions + voyage.autofinancement;
+  const participationParEleve = voyage.nbEleves > 0 ? voyage.participationFamilles / voyage.nbEleves : 0;
+  const coutFixeTotal = voyage.budgetTotal - voyage.participationFamilles;
+  
+  if (participationParEleve <= 0) return { pointMort: 0, estViable: false, marge: 0 };
+  
+  const chargeNette = coutFixeTotal - coutsFixes;
+  const pointMort = Math.ceil(chargeNette / participationParEleve);
+  const estViable = voyage.nbEleves >= pointMort;
+  const marge = voyage.nbEleves - pointMort;
+  
+  return { pointMort: Math.max(0, pointMort), estViable, marge };
+}
+
+// ─── Types de transport labels ───
+
+export const TRANSPORT_TYPE_LABELS: Record<string, { label: string; icon: string }> = {
+  bus: { label: "Autocar", icon: "🚌" },
+  avion: { label: "Avion", icon: "✈️" },
+  train: { label: "Train", icon: "🚄" },
+  bateau: { label: "Bateau", icon: "🚢" },
+  mixte: { label: "Mixte", icon: "🔀" },
+};
+
+export const TYPE_VOYAGE_LABELS: Record<string, { label: string; icon: string }> = {
+  pedagogique: { label: "Pédagogique", icon: "📚" },
+  linguistique: { label: "Linguistique", icon: "🌍" },
+  sportif: { label: "Sportif", icon: "⛷️" },
+  culturel: { label: "Culturel", icon: "🏛️" },
+  ski: { label: "Ski", icon: "🎿" },
+  erasmus: { label: "Erasmus+", icon: "⭐" },
+};
 
 export function getRecommandation(total: number, categorie: string, formatCurrency: (n: number) => string): {
   niveau: "ok" | "warning" | "danger" | "critical";
