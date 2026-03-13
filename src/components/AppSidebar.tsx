@@ -58,6 +58,7 @@ const toolItems = [
 const pilotageItems = [
   { title: "Veille juridique", url: "/veille-juridique", icon: Scale },
   { title: "Contrôle interne", url: "/controle-interne", icon: ShieldCheck },
+  { title: "Exécution budgétaire", url: "/execution-budgetaire", icon: TrendingUp },
 ];
 
 export function AppSidebar() {
