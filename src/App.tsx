@@ -74,8 +74,10 @@ const App = () => (
               <Route path="/fonds-sociaux" element={<FondsSociaux />} />
               <Route path="/satd" element={<SATD />} />
               <Route path="/credit-nourriture" element={<CreditNourriture />} />
+              <Route path="/regies" element={<RegiesCaisse />} />
               <Route path="/veille-juridique" element={<VeilleJuridique />} />
               <Route path="/controle-interne" element={<ControleInterne />} />
+              <Route path="/execution-budgetaire" element={<ExecutionBudgetaire />} />
               <Route path="/parametres" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
