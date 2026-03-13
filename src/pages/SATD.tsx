@@ -602,6 +602,21 @@ const SATD = () => {
           )}
         </TabsContent>
 
+        {/* === RELANCES === */}
+        <TabsContent value="relances" className="mt-4">
+          <SatdRelancesTab />
+        </TabsContent>
+
+        {/* === SURENDETTEMENT === */}
+        <TabsContent value="surendettement" className="mt-4">
+          <SatdSurendettementTab />
+        </TabsContent>
+
+        {/* === ALERTES CRÉANCES === */}
+        <TabsContent value="alertes_creances" className="mt-4">
+          <SatdAlertesCreancesTab />
+        </TabsContent>
+
         {/* === PROCEDURE === */}
         <TabsContent value="procedure" className="mt-4">
           <SatdProcedure
