@@ -20,6 +20,8 @@ import CreditNourriture from "./pages/CreditNourriture";
 import VeilleJuridique from "./pages/VeilleJuridique";
 import ControleInterne from "./pages/ControleInterne";
 import SettingsPage from "./pages/SettingsPage";
+import RegiesCaisse from "./pages/RegiesCaisse";
+import ExecutionBudgetaire from "./pages/ExecutionBudgetaire";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -72,8 +74,10 @@ const App = () => (
               <Route path="/fonds-sociaux" element={<FondsSociaux />} />
               <Route path="/satd" element={<SATD />} />
               <Route path="/credit-nourriture" element={<CreditNourriture />} />
+              <Route path="/regies" element={<RegiesCaisse />} />
               <Route path="/veille-juridique" element={<VeilleJuridique />} />
               <Route path="/controle-interne" element={<ControleInterne />} />
+              <Route path="/execution-budgetaire" element={<ExecutionBudgetaire />} />
               <Route path="/parametres" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />

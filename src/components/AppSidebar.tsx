@@ -15,6 +15,8 @@ import {
   Scale,
   ShieldCheck,
   BookOpen,
+  Landmark,
+  TrendingUp,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -50,11 +52,13 @@ const toolItems = [
   { title: "Fonds sociaux", url: "/fonds-sociaux", icon: Heart },
   { title: "SATD", url: "/satd", icon: Gavel },
   { title: "Crédit nourriture", url: "/credit-nourriture", icon: UtensilsCrossed },
+  { title: "Régies & Caisse", url: "/regies", icon: Landmark },
 ];
 
 const pilotageItems = [
   { title: "Veille juridique", url: "/veille-juridique", icon: Scale },
   { title: "Contrôle interne", url: "/controle-interne", icon: ShieldCheck },
+  { title: "Exécution budgétaire", url: "/execution-budgetaire", icon: TrendingUp },
 ];
 
 export function AppSidebar() {

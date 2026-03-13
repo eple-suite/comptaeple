@@ -33,6 +33,9 @@ import SatdProcedure from "./satd/SatdProcedure";
 import SatdFormulaire from "./satd/SatdFormulaire";
 import SatdCalculateur from "./satd/SatdCalculateur";
 import SatdAssistant from "./satd/SatdAssistant";
+import SatdRelancesTab from "./satd/SatdRelancesTab";
+import SatdSurendettementTab from "./satd/SatdSurendettementTab";
+import SatdAlertesCreancesTab from "./satd/SatdAlertesCreancesTab";
 
 const SATD = () => {
   const { selectedEstablishment } = useEstablishment();
@@ -281,6 +284,9 @@ const SATD = () => {
         <TabsList className="flex-wrap">
           <TabsTrigger value="registre">Registre ({filtered.length})</TabsTrigger>
           <TabsTrigger value="poursuivre" className="text-destructive">⚖️ Poursuivre</TabsTrigger>
+          <TabsTrigger value="relances">📧 Relances</TabsTrigger>
+          <TabsTrigger value="surendettement">🏦 Surendettement</TabsTrigger>
+          <TabsTrigger value="alertes_creances">🔔 Alertes créances</TabsTrigger>
           <TabsTrigger value="procedure">📋 Procédure</TabsTrigger>
           <TabsTrigger value="workflow">Workflow</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
@@ -594,6 +600,21 @@ const SATD = () => {
               </CardContent>
             </Card>
           )}
+        </TabsContent>
+
+        {/* === RELANCES === */}
+        <TabsContent value="relances" className="mt-4">
+          <SatdRelancesTab />
+        </TabsContent>
+
+        {/* === SURENDETTEMENT === */}
+        <TabsContent value="surendettement" className="mt-4">
+          <SatdSurendettementTab />
+        </TabsContent>
+
+        {/* === ALERTES CRÉANCES === */}
+        <TabsContent value="alertes_creances" className="mt-4">
+          <SatdAlertesCreancesTab />
         </TabsContent>
 
         {/* === PROCEDURE === */}
