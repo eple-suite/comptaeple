@@ -20,6 +20,8 @@ import CreditNourriture from "./pages/CreditNourriture";
 import VeilleJuridique from "./pages/VeilleJuridique";
 import ControleInterne from "./pages/ControleInterne";
 import SettingsPage from "./pages/SettingsPage";
+import RegiesCaisse from "./pages/RegiesCaisse";
+import ExecutionBudgetaire from "./pages/ExecutionBudgetaire";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
