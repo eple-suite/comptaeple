@@ -33,6 +33,9 @@ import SatdProcedure from "./satd/SatdProcedure";
 import SatdFormulaire from "./satd/SatdFormulaire";
 import SatdCalculateur from "./satd/SatdCalculateur";
 import SatdAssistant from "./satd/SatdAssistant";
+import SatdRelancesTab from "./satd/SatdRelancesTab";
+import SatdSurendettementTab from "./satd/SatdSurendettementTab";
+import SatdAlertesCreancesTab from "./satd/SatdAlertesCreancesTab";
 
 const SATD = () => {
   const { selectedEstablishment } = useEstablishment();
