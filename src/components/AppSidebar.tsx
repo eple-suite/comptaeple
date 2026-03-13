@@ -52,6 +52,7 @@ const toolItems = [
   { title: "Fonds sociaux", url: "/fonds-sociaux", icon: Heart },
   { title: "SATD", url: "/satd", icon: Gavel },
   { title: "Crédit nourriture", url: "/credit-nourriture", icon: UtensilsCrossed },
+  { title: "Régies & Caisse", url: "/regies", icon: Landmark },
 ];
 
 const pilotageItems = [
