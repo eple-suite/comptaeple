@@ -284,6 +284,9 @@ const SATD = () => {
         <TabsList className="flex-wrap">
           <TabsTrigger value="registre">Registre ({filtered.length})</TabsTrigger>
           <TabsTrigger value="poursuivre" className="text-destructive">⚖️ Poursuivre</TabsTrigger>
+          <TabsTrigger value="relances">📧 Relances</TabsTrigger>
+          <TabsTrigger value="surendettement">🏦 Surendettement</TabsTrigger>
+          <TabsTrigger value="alertes_creances">🔔 Alertes créances</TabsTrigger>
           <TabsTrigger value="procedure">📋 Procédure</TabsTrigger>
           <TabsTrigger value="workflow">Workflow</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
