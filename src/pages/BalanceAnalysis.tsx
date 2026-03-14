@@ -262,13 +262,17 @@ const BalanceAnalysis = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold font-display flex items-center gap-2">
-            <Sparkles className="h-6 w-6 text-primary" />
-            Analyse intelligente de la balance
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">Nomenclature M9-6 • Détection d'anomalies • Analyse IA en temps réel</p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1 min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-primary shrink-0">
+              <Sparkles className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold font-display tracking-tight">Analyse intelligente de la balance</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">Nomenclature M9-6 • Détection d'anomalies • Analyse IA en temps réel</p>
+            </div>
+          </div>
         </div>
         <div className="flex gap-2">
           <Button size="sm" variant="outline" onClick={() => {

@@ -202,26 +202,31 @@ const ControleInterne = () => {
 
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold font-display">Contrôle interne comptable</h1>
-            <p className="text-sm text-muted-foreground mt-1">Plan de contrôle & suivi des actions — Référentiel CIC EPLE</p>
-          </div>
-          <div className="flex gap-2">
-            <Select value={pdfOrientation} onValueChange={(v: PDFOrientation) => setPdfOrientation(v)}>
-              <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="portrait">Portrait</SelectItem>
-                <SelectItem value="landscape">Paysage</SelectItem>
-              </SelectContent>
-            </Select>
-            <Button size="sm" variant="outline" onClick={genererPlanControle} className="h-8 text-xs">
-              <Download className="h-3.5 w-3.5 mr-1" /> Plan CIC PDF
-            </Button>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1 min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-primary shrink-0">
+              <ShieldCheck className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold font-display tracking-tight">Contrôle interne comptable</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">Plan de contrôle & suivi des actions — Référentiel CIC EPLE</p>
+            </div>
           </div>
         </div>
-      </motion.div>
+        <div className="flex gap-2 shrink-0">
+          <Select value={pdfOrientation} onValueChange={(v: PDFOrientation) => setPdfOrientation(v)}>
+            <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="portrait">Portrait</SelectItem>
+              <SelectItem value="landscape">Paysage</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button size="sm" variant="outline" onClick={genererPlanControle} className="h-8 text-xs rounded-lg">
+            <Download className="h-3.5 w-3.5 mr-1" /> Plan CIC PDF
+          </Button>
+        </div>
+      </div>
 
       {/* KPIs */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
