@@ -120,54 +120,59 @@ const Voyages = () => {
 
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold font-display">Voyages scolaires</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Gestion complète : actes du CA, participants, subventions, marchés publics, bilan financier
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => {
-              const doc = createStyledPDF({ title: "Voyages scolaires — Synthèse", subtitle: `${voyagesActifs.length} voyages — Exercice ${new Date().getFullYear()}` });
-              autoTable(doc, {
-                startY: 48,
-                head: [["Destination", "Dates", "Classe", "Élèves", "Budget", "Familles", "Subventions", "Statut"]],
-                body: voyagesActifs.map(v => [v.destination, `${v.dateDepart} → ${v.dateRetour}`, v.classe, String(v.nbEleves), formatCurrency(v.budgetTotal), formatCurrency(v.participationFamilles), formatCurrency(v.subventions), v.statut]),
-                headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
-                alternateRowStyles: { fillColor: [240, 244, 248] },
-                margin: { left: 8, right: 8 },
-                columnStyles: { 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } },
-                styles: { fontSize: 7 },
-              });
-              const y = (doc as any).lastAutoTable.finalY + 8;
-              doc.setFontSize(10); doc.setTextColor(0, 0, 0);
-              doc.text(`Budget total : ${formatCurrency(totaux.budget)} — Familles : ${formatCurrency(totaux.familles)} — Subventions : ${formatCurrency(totaux.subventions)} — ${totaux.eleves} élèves`, 14, y, { maxWidth: 180 });
-              savePDF(doc, `Voyages_synthese_${new Date().toISOString().split("T")[0]}.pdf`);
-            }}>
-              <Download className="h-3.5 w-3.5 mr-1" /> PDF
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => {
-              const doc = createStyledPDF({ title: "Voyages scolaires — Synthèse", subtitle: `${voyagesActifs.length} voyages` });
-              autoTable(doc, {
-                startY: 48,
-                head: [["Destination", "Dates", "Classe", "Élèves", "Budget", "Statut"]],
-                body: voyagesActifs.map(v => [v.destination, `${v.dateDepart} → ${v.dateRetour}`, v.classe, String(v.nbEleves), formatCurrency(v.budgetTotal), v.statut]),
-                headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
-                margin: { left: 10, right: 10 },
-                styles: { fontSize: 8 },
-              });
-              printPDF(doc);
-            }}>
-              <Printer className="h-3.5 w-3.5 mr-1" /> Imprimer
-            </Button>
-            <Button className="gradient-primary border-0" onClick={() => setWizardOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Nouveau voyage
-            </Button>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1 min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-primary shrink-0">
+              <Bus className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold font-display tracking-tight">Voyages scolaires</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Gestion complète : actes du CA, participants, subventions, marchés publics, bilan financier
+              </p>
+            </div>
           </div>
         </div>
-      </motion.div>
+        <div className="flex gap-2 shrink-0">
+          <Button size="sm" variant="outline" className="rounded-lg" onClick={() => {
+            const doc = createStyledPDF({ title: "Voyages scolaires — Synthèse", subtitle: `${voyagesActifs.length} voyages — Exercice ${new Date().getFullYear()}` });
+            autoTable(doc, {
+              startY: 48,
+              head: [["Destination", "Dates", "Classe", "Élèves", "Budget", "Familles", "Subventions", "Statut"]],
+              body: voyagesActifs.map(v => [v.destination, `${v.dateDepart} → ${v.dateRetour}`, v.classe, String(v.nbEleves), formatCurrency(v.budgetTotal), formatCurrency(v.participationFamilles), formatCurrency(v.subventions), v.statut]),
+              headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+              alternateRowStyles: { fillColor: [240, 244, 248] },
+              margin: { left: 8, right: 8 },
+              columnStyles: { 4: { halign: "right" }, 5: { halign: "right" }, 6: { halign: "right" } },
+              styles: { fontSize: 7 },
+            });
+            const y = (doc as any).lastAutoTable.finalY + 8;
+            doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+            doc.text(`Budget total : ${formatCurrency(totaux.budget)} — Familles : ${formatCurrency(totaux.familles)} — Subventions : ${formatCurrency(totaux.subventions)} — ${totaux.eleves} élèves`, 14, y, { maxWidth: 180 });
+            savePDF(doc, `Voyages_synthese_${new Date().toISOString().split("T")[0]}.pdf`);
+          }}>
+            <Download className="h-3.5 w-3.5 mr-1" /> PDF
+          </Button>
+          <Button size="sm" variant="outline" className="rounded-lg" onClick={() => {
+            const doc = createStyledPDF({ title: "Voyages scolaires — Synthèse", subtitle: `${voyagesActifs.length} voyages` });
+            autoTable(doc, {
+              startY: 48,
+              head: [["Destination", "Dates", "Classe", "Élèves", "Budget", "Statut"]],
+              body: voyagesActifs.map(v => [v.destination, `${v.dateDepart} → ${v.dateRetour}`, v.classe, String(v.nbEleves), formatCurrency(v.budgetTotal), v.statut]),
+              headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+              margin: { left: 10, right: 10 },
+              styles: { fontSize: 8 },
+            });
+            printPDF(doc);
+          }}>
+            <Printer className="h-3.5 w-3.5 mr-1" /> Imprimer
+          </Button>
+          <Button className="gradient-primary border-0 shadow-primary rounded-lg" onClick={() => setWizardOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Nouveau voyage
+          </Button>
+        </div>
+      </div>
 
       <VoyageCreationWizard open={wizardOpen} onOpenChange={setWizardOpen} onCreateVoyage={handleCreateVoyage} />
 
