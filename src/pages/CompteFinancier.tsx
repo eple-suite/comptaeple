@@ -100,8 +100,8 @@ const CompteFinancier = () => {
   return (
     <div className="space-y-0">
       {/* Header COFIEPLE */}
-      <div className="bg-gradient-to-r from-slate-900 to-slate-800 shadow-xl rounded-t-xl">
-        <div className="px-4 py-3 flex items-center gap-4">
+      <div className="bg-gradient-to-r from-[hsl(222,30%,14%)] to-[hsl(222,25%,20%)] shadow-xl rounded-xl">
+        <div className="px-5 py-4 flex items-center gap-4">
           <div className="flex items-center gap-3 shrink-0">
             <div className="w-11 h-11 rounded-xl bg-warning flex items-center justify-center text-2xl font-black text-white shadow-lg">
               ₣
@@ -118,14 +118,14 @@ const CompteFinancier = () => {
             {etab.nom ? (
               <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-white font-semibold text-sm truncate">{etab.nom}</span>
-                <span className="text-slate-400 text-xs">RNE {etab.uai}</span>
-                <span className="text-slate-400 text-xs">{etab.commune}</span>
+                <span className="text-[hsl(220,15%,55%)] text-xs">RNE {etab.uai}</span>
+                <span className="text-[hsl(220,15%,55%)] text-xs">{etab.commune}</span>
                 <Badge variant="outline" className="border-warning/50 text-warning text-xs">Ex. {etab.exercice}</Badge>
               </div>
             ) : (
-              <span className="text-slate-500 text-sm italic">Renseignez le code UAI pour identifier l'établissement</span>
+              <span className="text-[hsl(220,15%,45%)] text-sm italic">Renseignez le code UAI pour identifier l'établissement</span>
             )}
-            {etab.academie && <p className="text-xs text-slate-500 mt-0.5">{etab.regionAcademique} · {etab.academie}</p>}
+            {etab.academie && <p className="text-xs text-[hsl(220,15%,45%)] mt-0.5">{etab.regionAcademique} · {etab.academie}</p>}
           </div>
 
           {hasData && (
@@ -135,7 +135,7 @@ const CompteFinancier = () => {
               ) : nbAnom > 0 ? (
                 <Badge className="bg-warning text-warning-foreground">⚠️ {nbAnom} anomalie{nbAnom > 1 ? 's' : ''}</Badge>
               ) : (
-                <Badge className="bg-emerald-600 text-white">✅ Aucun bloquant</Badge>
+                <Badge className="bg-success text-success-foreground">✅ Aucun bloquant</Badge>
               )}
             </div>
           )}
@@ -146,7 +146,7 @@ const CompteFinancier = () => {
       <ProgressStepper />
 
       {/* Navigation */}
-      <nav className="bg-slate-800 border-b border-slate-700 sticky top-0 z-40 rounded-none">
+      <nav className="bg-[hsl(222,25%,18%)] border-b border-[hsl(222,25%,24%)] sticky top-0 z-40 rounded-b-xl">
         <div className="px-2">
           <div className="flex overflow-x-auto scrollbar-hide">
             {items.map(item => {
@@ -154,10 +154,10 @@ const CompteFinancier = () => {
               const disabled = item.requiresData && !hasData;
               return (
                 <button key={item.id} onClick={() => !disabled && setActiveTab(item.id)} disabled={disabled}
-                  className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all shrink-0 ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all duration-200 shrink-0 rounded-t-lg ${
                     active ? 'border-warning text-warning bg-white/5' :
-                    disabled ? 'border-transparent text-slate-600 cursor-not-allowed' :
-                    'border-transparent text-slate-400 hover:text-slate-200 hover:bg-white/5'
+                    disabled ? 'border-transparent text-[hsl(222,15%,35%)] cursor-not-allowed' :
+                    'border-transparent text-[hsl(220,15%,55%)] hover:text-[hsl(220,15%,80%)] hover:bg-white/5'
                   }`}
                   title={disabled ? 'Importez d\'abord les données CSV' : item.label}
                 >

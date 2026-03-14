@@ -129,29 +129,36 @@ const WorkingCapital = () => {
 
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold font-display">Fonds de roulement</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Analyse FDR / BFR / Trésorerie — {selectedEstablishment?.name || 'Sélectionnez un établissement'}
-          </p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1 min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-primary shrink-0">
+              <Wallet className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold font-display tracking-tight">Fonds de roulement</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Analyse FDR / BFR / Trésorerie — {selectedEstablishment?.name || 'Sélectionnez un établissement'}
+              </p>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <Badge variant={healthColor[analyse.indicateurSante]}>
             {healthLabel[analyse.indicateurSante]}
           </Badge>
-          <Button size="sm" onClick={handlePrint} className="gradient-primary border-0">
+          <Button size="sm" onClick={handlePrint} className="gradient-primary border-0 shadow-primary rounded-lg">
             <Download className="h-4 w-4 mr-1" /> PDF
           </Button>
         </div>
-      </motion.div>
+      </div>
 
       <Tabs defaultValue="dashboard" className="space-y-5">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="dashboard">Tableau de bord</TabsTrigger>
-          <TabsTrigger value="simulateur">Simulateur</TabsTrigger>
-          <TabsTrigger value="prelevements">DBM</TabsTrigger>
-          <TabsTrigger value="historique">Historique N à N-4</TabsTrigger>
+        <TabsList className="w-full justify-start flex-wrap">
+          <TabsTrigger value="dashboard">📊 Tableau de bord</TabsTrigger>
+          <TabsTrigger value="simulateur">🧮 Simulateur</TabsTrigger>
+          <TabsTrigger value="prelevements">📋 DBM</TabsTrigger>
+          <TabsTrigger value="historique">📈 Historique N à N-4</TabsTrigger>
         </TabsList>
 
         {/* ═══════ DASHBOARD ═══════ */}

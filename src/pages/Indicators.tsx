@@ -64,20 +64,27 @@ const exportIndicatorsPDF = (print = false) => {
 const Indicators = () => {
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold font-display">Indicateurs financiers M9-6</h1>
-          <p className="text-sm text-muted-foreground mt-1">Indicateurs réglementaires — Exercice 2023</p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1 min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-primary shrink-0">
+              <BarChart3 className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold font-display tracking-tight">Indicateurs financiers M9-6</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">Indicateurs réglementaires — Exercice 2023</p>
+            </div>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={() => exportIndicatorsPDF(true)}>
+        <div className="flex gap-2 shrink-0">
+          <Button size="sm" variant="outline" className="rounded-lg" onClick={() => exportIndicatorsPDF(true)}>
             <Printer className="h-4 w-4 mr-1" /> Imprimer
           </Button>
-          <Button size="sm" className="gradient-primary border-0" onClick={() => exportIndicatorsPDF(false)}>
+          <Button size="sm" className="gradient-primary border-0 shadow-primary rounded-lg" onClick={() => exportIndicatorsPDF(false)}>
             <Download className="h-4 w-4 mr-1" /> PDF
           </Button>
         </div>
-      </motion.div>
+      </div>
 
       {/* Gauges row */}
       <Card className="shadow-card">

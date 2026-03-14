@@ -141,24 +141,29 @@ const CreditNourriture = () => {
 
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className="flex items-center justify-between w-full">
-          <div>
-            <h1 className="text-2xl font-bold font-display">Crédit nourriture — Service A2 (SRH)</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Projection trimestrielle • Référence EFFESCO • Distinction denrées / charges indirectes
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" onClick={() => exportPDF(true)}>
-              <Printer className="h-4 w-4 mr-1" /> Imprimer
-            </Button>
-            <Button size="sm" className="gradient-primary border-0" onClick={() => exportPDF(false)}>
-              <Download className="h-4 w-4 mr-1" /> PDF
-            </Button>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1 min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-primary shrink-0">
+              <UtensilsCrossed className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold font-display tracking-tight">Crédit nourriture — Service A2 (SRH)</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Projection trimestrielle • Référence EFFESCO • Distinction denrées / charges indirectes
+              </p>
+            </div>
           </div>
         </div>
-      </motion.div>
+        <div className="flex gap-2 shrink-0">
+          <Button size="sm" variant="outline" className="rounded-lg" onClick={() => exportPDF(true)}>
+            <Printer className="h-4 w-4 mr-1" /> Imprimer
+          </Button>
+          <Button size="sm" className="gradient-primary border-0 shadow-primary rounded-lg" onClick={() => exportPDF(false)}>
+            <Download className="h-4 w-4 mr-1" /> PDF
+          </Button>
+        </div>
+      </div>
 
       {/* === VERDICT PRINCIPAL === */}
       <Card className={`shadow-card border-l-4 ${peutFinirTrimestre ? "border-l-secondary" : "border-l-destructive"}`}>

@@ -144,118 +144,123 @@ const SATD = () => {
 
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold font-display">SATD Pro</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Saisies Administratives à Tiers Détenteur — Recouvrement forcé
-              {selectedEstablishment && (
-                <span className="ml-2">
-                  — <strong>{selectedEstablishment.name}</strong>
-                  <Badge variant="outline" className="ml-1 text-[9px]">{selectedEstablishment.uai}</Badge>
-                </span>
-              )}
-            </p>
-          </div>
-          <div className="flex gap-2">
-            {/* Outils */}
-            <Button size="sm" variant="ghost" onClick={() => setOpenCalc(true)} title="Calculateur quotité">
-              <Calculator className="h-3.5 w-3.5" />
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => { setAssistantCtx("creation_satd"); setOpenAssistant(true); }} title="Assistant IA">
-              <Sparkles className="h-3.5 w-3.5" />
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => {
-              const doc = createStyledPDF({ title: "État des SATD", subtitle: `${satds.length} dossiers — Recouvrement forcé` });
-              autoTable(doc, {
-                startY: 48,
-                head: [["Référence", "Débiteur", "Montant", "Prélevé", "Reste", "Statut"]],
-                body: satds.map(s => [s.reference, s.debiteur, formatCurrency(s.montantGlobal), formatCurrency(s.montantPreleve), formatCurrency(s.montantGlobal - s.montantPreleve), STATUT_SATD_CONFIG[s.statut]?.label || s.statut]),
-                headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
-                alternateRowStyles: { fillColor: [240, 244, 248] },
-                margin: { left: 10, right: 10 },
-                columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
-                styles: { fontSize: 8 },
-              });
-              const y = (doc as any).lastAutoTable.finalY + 8;
-              doc.setFontSize(10); doc.setTextColor(0, 0, 0);
-              doc.text(`Total initial : ${formatCurrency(totalInitial)} — Prélevé : ${formatCurrency(totalPreleve)} — Restant : ${formatCurrency(totalRestant)} — Taux : ${tauxRecouvrement.toFixed(1)}%`, 14, y);
-              printPDF(doc);
-            }}>
-              <Printer className="h-3.5 w-3.5 mr-1" /> Imprimer
-            </Button>
-            <Button size="sm" variant="outline" onClick={() => {
-              const doc = createStyledPDF({ title: "État des SATD", subtitle: `${satds.length} dossiers — Recouvrement forcé` });
-              autoTable(doc, {
-                startY: 48,
-                head: [["Référence", "Débiteur", "Montant", "Prélevé", "Reste", "Statut"]],
-                body: satds.map(s => [s.reference, s.debiteur, formatCurrency(s.montantGlobal), formatCurrency(s.montantPreleve), formatCurrency(s.montantGlobal - s.montantPreleve), STATUT_SATD_CONFIG[s.statut]?.label || s.statut]),
-                headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
-                alternateRowStyles: { fillColor: [240, 244, 248] },
-                margin: { left: 10, right: 10 },
-                columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
-                styles: { fontSize: 8 },
-              });
-              const y = (doc as any).lastAutoTable.finalY + 8;
-              doc.setFontSize(10); doc.setTextColor(0, 0, 0);
-              doc.text(`Total initial : ${formatCurrency(totalInitial)} — Prélevé : ${formatCurrency(totalPreleve)} — Restant : ${formatCurrency(totalRestant)} — Taux : ${tauxRecouvrement.toFixed(1)}%`, 14, y);
-              savePDF(doc, `SATD_etat_${new Date().toISOString().split("T")[0]}.pdf`);
-            }}>
-              <Download className="h-3.5 w-3.5 mr-1" /> PDF
-            </Button>
-            {/* Tiers */}
-            <Dialog open={openTiers} onOpenChange={setOpenTiers}>
-              <DialogTrigger asChild>
-                <Button variant="outline" size="sm"><Users className="h-3.5 w-3.5 mr-1" /> Tiers</Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-lg">
-                <DialogHeader><DialogTitle>Ajouter un tiers détenteur</DialogTitle></DialogHeader>
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="col-span-2"><Label>Nom / Raison sociale</Label><Input value={formTiers.nom} onChange={e => setFormTiers({ ...formTiers, nom: e.target.value })} /></div>
-                    <div><Label>Type</Label>
-                      <Select value={formTiers.type} onValueChange={(v: any) => setFormTiers({ ...formTiers, type: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {Object.entries(TYPE_TIERS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div><Label>SIRET</Label><Input value={formTiers.siret} onChange={e => setFormTiers({ ...formTiers, siret: e.target.value })} /></div>
-                    <div className="col-span-2"><Label>Adresse</Label><Input value={formTiers.adresse} onChange={e => setFormTiers({ ...formTiers, adresse: e.target.value })} /></div>
-                    <div><Label>Code postal</Label><Input value={formTiers.codePostal} onChange={e => setFormTiers({ ...formTiers, codePostal: e.target.value })} /></div>
-                    <div><Label>Ville</Label><Input value={formTiers.ville} onChange={e => setFormTiers({ ...formTiers, ville: e.target.value })} /></div>
-                    <div><Label>Contact</Label><Input value={formTiers.contact} onChange={e => setFormTiers({ ...formTiers, contact: e.target.value })} /></div>
-                    <div><Label>Téléphone</Label><Input value={formTiers.telephone} onChange={e => setFormTiers({ ...formTiers, telephone: e.target.value })} /></div>
-                    <div className="col-span-2"><Label>Email</Label><Input value={formTiers.email} onChange={e => setFormTiers({ ...formTiers, email: e.target.value })} /></div>
-                  </div>
-                  <Button onClick={handleAddTiers} className="w-full gradient-primary border-0">Ajouter le tiers</Button>
-                  {tiersDetenteurs.length > 0 && (
-                    <div className="mt-4 space-y-1 max-h-[200px] overflow-y-auto">
-                      <p className="text-xs font-semibold text-muted-foreground">Tiers enregistrés ({tiersDetenteurs.length})</p>
-                      {tiersDetenteurs.map(t => (
-                        <div key={t.id} className="flex items-center justify-between text-xs p-2 rounded bg-muted/20">
-                          <span className="font-medium">{t.nom}</span>
-                          <Badge variant="outline" className="text-[9px]">{TYPE_TIERS_LABELS[t.type]}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </DialogContent>
-            </Dialog>
-            {/* Nouvelle procédure */}
-            <Button className="gradient-primary border-0" onClick={() => setOpenFormulaire(true)}>
-              <Plus className="h-4 w-4 mr-1" /> Nouvelle procédure
-            </Button>
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-1 min-w-0">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-primary shrink-0">
+              <Gavel className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="text-2xl font-bold font-display tracking-tight">SATD Pro</h1>
+              <p className="text-sm text-muted-foreground mt-0.5">
+                Saisies Administratives à Tiers Détenteur — Recouvrement forcé
+                {selectedEstablishment && (
+                  <span className="ml-1.5">
+                    — <strong className="text-foreground/80">{selectedEstablishment.name}</strong>
+                    <Badge variant="outline" className="ml-1.5 text-[9px] align-middle">{selectedEstablishment.uai}</Badge>
+                  </span>
+                )}
+              </p>
+            </div>
           </div>
         </div>
-      </motion.div>
+        <div className="flex gap-2 shrink-0">
+          {/* Outils */}
+          <Button size="sm" variant="ghost" onClick={() => setOpenCalc(true)} title="Calculateur quotité" className="rounded-lg">
+            <Calculator className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => { setAssistantCtx("creation_satd"); setOpenAssistant(true); }} title="Assistant IA" className="rounded-lg">
+            <Sparkles className="h-3.5 w-3.5" />
+          </Button>
+          <Button size="sm" variant="outline" className="rounded-lg" onClick={() => {
+            const doc = createStyledPDF({ title: "État des SATD", subtitle: `${satds.length} dossiers — Recouvrement forcé` });
+            autoTable(doc, {
+              startY: 48,
+              head: [["Référence", "Débiteur", "Montant", "Prélevé", "Reste", "Statut"]],
+              body: satds.map(s => [s.reference, s.debiteur, formatCurrency(s.montantGlobal), formatCurrency(s.montantPreleve), formatCurrency(s.montantGlobal - s.montantPreleve), STATUT_SATD_CONFIG[s.statut]?.label || s.statut]),
+              headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+              alternateRowStyles: { fillColor: [240, 244, 248] },
+              margin: { left: 10, right: 10 },
+              columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
+              styles: { fontSize: 8 },
+            });
+            const y = (doc as any).lastAutoTable.finalY + 8;
+            doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+            doc.text(`Total initial : ${formatCurrency(totalInitial)} — Prélevé : ${formatCurrency(totalPreleve)} — Restant : ${formatCurrency(totalRestant)} — Taux : ${tauxRecouvrement.toFixed(1)}%`, 14, y);
+            printPDF(doc);
+          }}>
+            <Printer className="h-3.5 w-3.5 mr-1" /> Imprimer
+          </Button>
+          <Button size="sm" variant="outline" className="rounded-lg" onClick={() => {
+            const doc = createStyledPDF({ title: "État des SATD", subtitle: `${satds.length} dossiers — Recouvrement forcé` });
+            autoTable(doc, {
+              startY: 48,
+              head: [["Référence", "Débiteur", "Montant", "Prélevé", "Reste", "Statut"]],
+              body: satds.map(s => [s.reference, s.debiteur, formatCurrency(s.montantGlobal), formatCurrency(s.montantPreleve), formatCurrency(s.montantGlobal - s.montantPreleve), STATUT_SATD_CONFIG[s.statut]?.label || s.statut]),
+              headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: "bold" },
+              alternateRowStyles: { fillColor: [240, 244, 248] },
+              margin: { left: 10, right: 10 },
+              columnStyles: { 2: { halign: "right" }, 3: { halign: "right" }, 4: { halign: "right" } },
+              styles: { fontSize: 8 },
+            });
+            const y = (doc as any).lastAutoTable.finalY + 8;
+            doc.setFontSize(10); doc.setTextColor(0, 0, 0);
+            doc.text(`Total initial : ${formatCurrency(totalInitial)} — Prélevé : ${formatCurrency(totalPreleve)} — Restant : ${formatCurrency(totalRestant)} — Taux : ${tauxRecouvrement.toFixed(1)}%`, 14, y);
+            savePDF(doc, `SATD_etat_${new Date().toISOString().split("T")[0]}.pdf`);
+          }}>
+            <Download className="h-3.5 w-3.5 mr-1" /> PDF
+          </Button>
+          {/* Tiers */}
+          <Dialog open={openTiers} onOpenChange={setOpenTiers}>
+            <DialogTrigger asChild>
+              <Button variant="outline" size="sm" className="rounded-lg"><Users className="h-3.5 w-3.5 mr-1" /> Tiers</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader><DialogTitle>Ajouter un tiers détenteur</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="col-span-2"><Label>Nom / Raison sociale</Label><Input value={formTiers.nom} onChange={e => setFormTiers({ ...formTiers, nom: e.target.value })} /></div>
+                  <div><Label>Type</Label>
+                    <Select value={formTiers.type} onValueChange={(v: any) => setFormTiers({ ...formTiers, type: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(TYPE_TIERS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>SIRET</Label><Input value={formTiers.siret} onChange={e => setFormTiers({ ...formTiers, siret: e.target.value })} /></div>
+                  <div className="col-span-2"><Label>Adresse</Label><Input value={formTiers.adresse} onChange={e => setFormTiers({ ...formTiers, adresse: e.target.value })} /></div>
+                  <div><Label>Code postal</Label><Input value={formTiers.codePostal} onChange={e => setFormTiers({ ...formTiers, codePostal: e.target.value })} /></div>
+                  <div><Label>Ville</Label><Input value={formTiers.ville} onChange={e => setFormTiers({ ...formTiers, ville: e.target.value })} /></div>
+                  <div><Label>Contact</Label><Input value={formTiers.contact} onChange={e => setFormTiers({ ...formTiers, contact: e.target.value })} /></div>
+                  <div><Label>Téléphone</Label><Input value={formTiers.telephone} onChange={e => setFormTiers({ ...formTiers, telephone: e.target.value })} /></div>
+                  <div className="col-span-2"><Label>Email</Label><Input value={formTiers.email} onChange={e => setFormTiers({ ...formTiers, email: e.target.value })} /></div>
+                </div>
+                <Button onClick={handleAddTiers} className="w-full gradient-primary border-0">Ajouter le tiers</Button>
+                {tiersDetenteurs.length > 0 && (
+                  <div className="mt-4 space-y-1 max-h-[200px] overflow-y-auto">
+                    <p className="text-xs font-semibold text-muted-foreground">Tiers enregistrés ({tiersDetenteurs.length})</p>
+                    {tiersDetenteurs.map(t => (
+                      <div key={t.id} className="flex items-center justify-between text-xs p-2 rounded-lg bg-muted/30">
+                        <span className="font-medium">{t.nom}</span>
+                        <Badge variant="outline" className="text-[9px]">{TYPE_TIERS_LABELS[t.type]}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </DialogContent>
+          </Dialog>
+          {/* Nouvelle procédure */}
+          <Button className="gradient-primary border-0 shadow-primary rounded-lg" onClick={() => setOpenFormulaire(true)}>
+            <Plus className="h-4 w-4 mr-1" /> Nouvelle procédure
+          </Button>
+        </div>
+      </div>
 
       {/* Alertes prescription */}
       {prescriptionsProches > 0 && (
-        <Card className="border-l-4 border-l-destructive bg-destructive/5">
+        <Card className="border-l-4 border-l-destructive bg-destructive/5 rounded-xl">
           <CardContent className="pt-3 pb-3">
             <div className="flex items-center gap-3">
               <Bell className="h-5 w-5 text-destructive" />
@@ -282,15 +287,15 @@ const SATD = () => {
 
       <Tabs defaultValue="registre">
         <TabsList className="flex-wrap">
-          <TabsTrigger value="registre">Registre ({filtered.length})</TabsTrigger>
-          <TabsTrigger value="poursuivre" className="text-destructive">⚖️ Poursuivre</TabsTrigger>
+          <TabsTrigger value="registre">📋 Registre ({filtered.length})</TabsTrigger>
+          <TabsTrigger value="poursuivre">⚖️ Poursuivre</TabsTrigger>
           <TabsTrigger value="relances">📧 Relances</TabsTrigger>
           <TabsTrigger value="surendettement">🏦 Surendettement</TabsTrigger>
           <TabsTrigger value="alertes_creances">🔔 Alertes créances</TabsTrigger>
           <TabsTrigger value="procedure">📋 Procédure</TabsTrigger>
-          <TabsTrigger value="workflow">Workflow</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
-          <TabsTrigger value="statistiques">Statistiques</TabsTrigger>
+          <TabsTrigger value="workflow">⚙️ Workflow</TabsTrigger>
+          <TabsTrigger value="documents">📄 Documents</TabsTrigger>
+          <TabsTrigger value="statistiques">📊 Statistiques</TabsTrigger>
         </TabsList>
 
         {/* === REGISTRE === */}
