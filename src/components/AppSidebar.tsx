@@ -69,7 +69,7 @@ export function AppSidebar() {
 
   const renderGroup = (label: string, items: typeof mainItems) => (
     <SidebarGroup>
-      <SidebarGroupLabel className="text-sidebar-foreground/50 uppercase text-[10px] tracking-widest font-semibold">
+      <SidebarGroupLabel className="text-sidebar-foreground/40 uppercase text-[10px] tracking-[0.12em] font-semibold mb-1">
         {!collapsed && label}
       </SidebarGroupLabel>
       <SidebarGroupContent>
@@ -80,10 +80,10 @@ export function AppSidebar() {
                 <NavLink
                   to={item.url}
                   end={item.url === "/"}
-                  className="transition-colors"
+                  className="transition-all duration-200 rounded-lg group/nav"
                   activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
                 >
-                  <item.icon className="h-4 w-4 shrink-0" />
+                  <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
                   {!collapsed && <span className="ml-2">{item.title}</span>}
                 </NavLink>
               </SidebarMenuButton>
@@ -96,34 +96,34 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r-0">
-      <SidebarHeader className="p-4">
+      <SidebarHeader className="p-4 pb-6">
         <div className="flex items-center gap-3">
-          <div className="h-8 w-8 rounded-lg gradient-primary flex items-center justify-center shrink-0">
-            <Shield className="h-4 w-4 text-primary-foreground" />
+          <div className="h-9 w-9 rounded-xl gradient-primary flex items-center justify-center shrink-0 shadow-primary">
+            <Shield className="h-4.5 w-4.5 text-primary-foreground" />
           </div>
           {!collapsed && (
             <div>
-              <h1 className="font-display text-sm font-bold text-sidebar-foreground">
+              <h1 className="font-display text-sm font-bold text-sidebar-foreground tracking-tight">
                 Cockpit Comptable
               </h1>
-              <p className="text-[10px] text-sidebar-foreground/50">EPLE • GRETA • CFA</p>
+              <p className="text-[10px] text-sidebar-foreground/40 tracking-wide">EPLE • GRETA • CFA</p>
             </div>
           )}
         </div>
       </SidebarHeader>
 
-      <SidebarContent className="px-2">
+      <SidebarContent className="px-2 space-y-1">
         {renderGroup("Navigation", mainItems)}
         {renderGroup("Analyses", analysisItems)}
         {renderGroup("Outils métiers", toolItems)}
         {renderGroup("Pilotage AC", pilotageItems)}
       </SidebarContent>
 
-      <SidebarFooter className="p-3">
+      <SidebarFooter className="p-3 border-t border-sidebar-border/50">
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <NavLink to="/parametres" className="transition-colors" activeClassName="bg-sidebar-accent">
+              <NavLink to="/parametres" className="transition-all duration-200 rounded-lg" activeClassName="bg-sidebar-accent">
                 <Settings className="h-4 w-4 shrink-0" />
                 {!collapsed && <span className="ml-2">Paramètres</span>}
               </NavLink>
