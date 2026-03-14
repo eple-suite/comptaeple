@@ -338,7 +338,7 @@ const BalanceAnalysis = () => {
             {isAnalyzing ? "Analyse en cours..." : "Lancer l'analyse IA"}
           </Button>
         </div>
-      </motion.div>
+      </div>
 
       {/* KPI avec anomalies */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
