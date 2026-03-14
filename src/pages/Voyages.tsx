@@ -204,7 +204,7 @@ const Voyages = () => {
 
       {/* Navigation par onglets */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="w-full justify-start flex-wrap h-auto gap-1">
+        <TabsList className="w-full justify-start flex-wrap">
           <TabsTrigger value="tableau-bord">📊 Tableau de bord</TabsTrigger>
           <TabsTrigger value="templates">📁 Modèles</TabsTrigger>
           <TabsTrigger value="marches-publics" className="relative">
@@ -213,13 +213,13 @@ const Voyages = () => {
               <Badge variant="destructive" className="ml-1.5 h-4 w-4 p-0 text-[9px] flex items-center justify-center rounded-full">{alertesCount}</Badge>
             )}
           </TabsTrigger>
-          {selectedVoyage && <TabsTrigger value="actes-ca">🏛️ Actes CA & Conformité</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="actes-ca">🏛️ Actes CA</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="participants">👥 Participants</TabsTrigger>}
-          {selectedVoyage && <TabsTrigger value="eleves">🎒 Élèves & Paiements</TabsTrigger>}
-          {selectedVoyage && <TabsTrigger value="subventions">💰 Subventions & Dons</TabsTrigger>}
-          {selectedVoyage && <TabsTrigger value="recettes">🏦 Recettes Op@le</TabsTrigger>}
-          {selectedVoyage && <TabsTrigger value="documents">📄 Documents juridiques</TabsTrigger>}
-          {selectedVoyage && <TabsTrigger value="bilan">📋 Bilan financier</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="eleves">🎒 Élèves</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="subventions">💰 Subventions</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="recettes">🏦 Recettes</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="documents">📄 Documents</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="bilan">📋 Bilan</TabsTrigger>}
         </TabsList>
 
         {/* TAB: Tableau de bord */}
