@@ -267,10 +267,10 @@ export const TYPES_SUBVENTION: Record<SubventionVoyage["type"], string> = {
 };
 
 export const PROCEDURES_PASSATION: Record<Convention["procedurePassation"], string> = {
-  gre_a_gre: "Gré à gré (< 40 000 € HT)",
-  devis: "3 devis comparatifs (40 - 90 k€ HT)",
-  mapa: "MAPA avec publicité (> 90 k€ HT)",
-  appel_offres: "Appel d'offres (> 221 k€ HT)",
+  gre_a_gre: "Dispense (< 40 000 € HT — 60 000 € au 01/04/2026)",
+  devis: "Procédure adaptée avec mise en concurrence (40 - 90 k€ HT)",
+  mapa: "MAPA avec publicité BOAMP/SHAL (≥ 90 k€ HT)",
+  appel_offres: "Procédure formalisée (≥ 216 k€ HT — seuil européen 2026)",
 };
 
 export const DOCUMENTS_OBLIGATOIRES = [
