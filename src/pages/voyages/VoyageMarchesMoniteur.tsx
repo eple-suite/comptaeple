@@ -537,8 +537,8 @@ export const VoyageMarchesMoniteur = ({ voyages, exercice, mobilitesErasmus, onM
                           <Progress value={pct} className={`h-2.5 ${cat.niveau === "ok" ? "" : cat.niveau === "warning" ? "[&>div]:bg-warning" : "[&>div]:bg-destructive"}`} />
                           <div className="flex justify-between text-[9px] text-muted-foreground">
                             <span>0</span>
-                            <span>{formatCurrency(SEUILS.SANS_PUBLICITE)}</span>
-                            <span>{formatCurrency(SEUILS.PROCEDURE_ADAPTEE)}</span>
+                            <span>{formatCurrency(SEUILS.DISPENSE)}</span>
+                            <span>{formatCurrency(SEUILS.PUBLICITE_OBLIGATOIRE)}</span>
                           </div>
                         </div>
                       </TableCell>
