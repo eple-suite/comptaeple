@@ -62,7 +62,7 @@ export function validerEquilibreBudgetaire(data: VoyageBudgetData): BudgetValida
   if (solde > 0.01) {
     erreurs.push(
       `Excédent de ${formatEuro(solde)} : les recettes dépassent les dépenses. ` +
-      `Interdiction de réaliser un bénéfice sur la participation des familles (BO n°2 du 13/01/2005).`
+      `Interdiction de réaliser un bénéfice sur la participation des familles (Circulaire du 16/07/2024, fiche 5 — Financement des sorties scolaires).`
     );
   }
 
