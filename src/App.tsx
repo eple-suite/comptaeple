@@ -24,6 +24,7 @@ import RegiesCaisse from "./pages/RegiesCaisse";
 import ExecutionBudgetaire from "./pages/ExecutionBudgetaire";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import { ChatEple } from "@/components/ChatEple";
 
 const queryClient = new QueryClient();
 
