@@ -566,29 +566,29 @@ export function getRecommandation(total: number, categorie: string, formatCurren
       niveau: "critical",
       texte: `Le cumul annuel "${categorie}" atteint ${formatCurrency(total)} HT et dépasse le seuil européen de ${formatCurrency(SEUILS.SEUIL_EUROPEEN)} HT.`,
       action: `Ce marché doit faire l'objet d'une procédure formalisée (appel d'offres ouvert ou restreint) avec publication au JOUE. Préparez un DCE complet (AAPC, RC, CCAP, CCTP, BPU). Délai minimum : 35 jours. Contactez le service juridique de la collectivité de rattachement.`,
-      base_legale: "Art. L2124-2 et R2124-2 du Code de la commande publique — Seuil européen fournitures et services (221 000 € HT au 01/01/2024)",
+      base_legale: "Art. L2124-2 et R2124-2 du Code de la commande publique — Seuil européen fournitures et services (216 000 € HT au 01/01/2026, avis JOUE 2026-2027)",
     };
   }
-  if (total >= SEUILS.PROCEDURE_ADAPTEE) {
+  if (total >= SEUILS.PUBLICITE_OBLIGATOIRE) {
     return {
       niveau: "danger",
-      texte: `Le cumul annuel "${categorie}" atteint ${formatCurrency(total)} HT et dépasse le seuil de procédure adaptée de ${formatCurrency(SEUILS.PROCEDURE_ADAPTEE)} HT.`,
-      action: `Ce marché doit faire l'objet d'une procédure adaptée (MAPA) avec publicité obligatoire. Rédigez un cahier des charges (CCTP), définissez les critères de sélection pondérés, publiez sur la plateforme de dématérialisation de votre collectivité (profil acheteur). Délai recommandé : 21 jours minimum.`,
-      base_legale: "Art. R2123-1 du Code de la commande publique — Procédure adaptée au-dessus de 90 000 € HT",
+      texte: `Le cumul annuel "${categorie}" atteint ${formatCurrency(total)} HT et dépasse le seuil de publicité obligatoire de ${formatCurrency(SEUILS.PUBLICITE_OBLIGATOIRE)} HT.`,
+      action: `Ce marché doit faire l'objet d'une procédure adaptée (MAPA) avec publicité obligatoire au BOAMP ou dans un SHAL. Rédigez un cahier des charges (CCTP), définissez les critères de sélection pondérés, publiez sur la plateforme de dématérialisation (profil acheteur). Délai recommandé : 21 jours minimum.`,
+      base_legale: "Art. R2131-12 du Code de la commande publique — Publicité obligatoire au-dessus de 90 000 € HT",
     };
   }
-  if (total >= SEUILS.SANS_PUBLICITE) {
+  if (total >= SEUILS.DISPENSE) {
     return {
       niveau: "warning",
-      texte: `Le cumul annuel "${categorie}" atteint ${formatCurrency(total)} HT et dépasse le seuil de mise en concurrence de ${formatCurrency(SEUILS.SANS_PUBLICITE)} HT.`,
-      action: `Vous devez solliciter au minimum 3 devis comparables, établir une grille d'analyse multicritères (prix, qualité, délais) et conserver l'ensemble des pièces justificatives. La négociation est possible. Formalisez le choix dans un rapport de présentation.`,
-      base_legale: "Art. R2122-8 du Code de la commande publique — Marchés sans publicité ni mise en concurrence en dessous de 40 000 € HT",
+      texte: `Le cumul annuel "${categorie}" atteint ${formatCurrency(total)} HT et dépasse le seuil de dispense de ${formatCurrency(SEUILS.DISPENSE)} HT.`,
+      action: `Procédure adaptée : vous devez organiser une mise en concurrence (devis comparatifs recommandés), établir une grille d'analyse et conserver les pièces justificatives. La négociation est possible. Formalisez le choix dans un rapport de présentation.`,
+      base_legale: "Art. R2122-8 du Code de la commande publique — Dispense de publicité et mise en concurrence en dessous de 40 000 € HT (décret n°2025-1386 : 60 000 € HT à compter du 01/04/2026)",
     };
   }
   return {
     niveau: "ok",
-    texte: `Le cumul annuel "${categorie}" est de ${formatCurrency(total)} HT, sous le seuil de ${formatCurrency(SEUILS.SANS_PUBLICITE)} HT.`,
-    action: `Achat libre sans formalité obligatoire. Bonne pratique : conservez les devis et factures, respectez le principe de bonne gestion des deniers publics.`,
+    texte: `Le cumul annuel "${categorie}" est de ${formatCurrency(total)} HT, sous le seuil de dispense de ${formatCurrency(SEUILS.DISPENSE)} HT.`,
+    action: `Dispense de publicité et de mise en concurrence. Bonne pratique : conservez les devis et factures, respectez le principe de bonne gestion des deniers publics.`,
     base_legale: "Art. R2122-8 du Code de la commande publique",
   };
 }
