@@ -165,10 +165,10 @@ export const VoyageMarchesTab = ({ voyages }: Props) => {
           </Table>
           <Separator className="my-3" />
           <div className="flex flex-wrap gap-4 text-[10px] text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-success inline-block" /> &lt; {formatCurrency(SEUILS.SANS_PUBLICITE)} : Achat libre</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-warning inline-block" /> {formatCurrency(SEUILS.SANS_PUBLICITE)} — {formatCurrency(SEUILS.PROCEDURE_ADAPTEE)} : 3 devis + grille d'analyse</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive inline-block" /> &gt; {formatCurrency(SEUILS.PROCEDURE_ADAPTEE)} : MAPA avec publicité</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive inline-block" /> &gt; {formatCurrency(SEUILS.SEUIL_EUROPEEN)} : Appel d'offres européen</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-success inline-block" /> &lt; {formatCurrency(SEUILS.DISPENSE)} : Dispense</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-warning inline-block" /> {formatCurrency(SEUILS.DISPENSE)} — {formatCurrency(SEUILS.PUBLICITE_OBLIGATOIRE)} : Mise en concurrence</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive inline-block" /> &gt; {formatCurrency(SEUILS.PUBLICITE_OBLIGATOIRE)} : MAPA avec publicité</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive inline-block" /> &gt; {formatCurrency(SEUILS.SEUIL_EUROPEEN)} : Procédure formalisée</span>
           </div>
         </CardContent>
       </Card>
