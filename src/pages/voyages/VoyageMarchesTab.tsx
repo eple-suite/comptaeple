@@ -128,7 +128,7 @@ export const VoyageMarchesTab = ({ voyages }: Props) => {
             </TableHeader>
             <TableBody>
               {cumulParCategorie.map(cat => {
-                const pct = Math.min((cat.total / SEUILS.PROCEDURE_ADAPTEE) * 100, 100);
+                const pct = Math.min((cat.total / SEUILS.PUBLICITE_OBLIGATOIRE) * 100, 100);
                 return (
                   <TableRow key={cat.key}>
                     <TableCell className="font-medium text-sm">
