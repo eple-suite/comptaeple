@@ -77,7 +77,7 @@ const Voyages = () => {
       .map(([cat, montant]) => ({ cat, montant, ...evaluerSeuilCCP(montant) }))
       .filter(a => a.niveau !== 'ok');
     const totalGeneral = Object.values(cumuls).reduce((s, v) => s + v, 0);
-    return { alertes, totalGeneral, seuilGlobalFranchi: totalGeneral >= SEUIL_CCP.SANS_PUBLICITE };
+    return { alertes, totalGeneral, seuilGlobalFranchi: totalGeneral >= SEUIL_CCP.DISPENSE };
   }, [voyagesActifs]);
 
   // Collecte globale familles

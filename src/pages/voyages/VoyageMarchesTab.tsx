@@ -128,7 +128,7 @@ export const VoyageMarchesTab = ({ voyages }: Props) => {
             </TableHeader>
             <TableBody>
               {cumulParCategorie.map(cat => {
-                const pct = Math.min((cat.total / SEUILS.PROCEDURE_ADAPTEE) * 100, 100);
+                const pct = Math.min((cat.total / SEUILS.PUBLICITE_OBLIGATOIRE) * 100, 100);
                 return (
                   <TableRow key={cat.key}>
                     <TableCell className="font-medium text-sm">
@@ -141,8 +141,8 @@ export const VoyageMarchesTab = ({ voyages }: Props) => {
                         <Progress value={pct} className={`h-2.5 ${cat.niveau === "ok" ? "" : cat.niveau === "warning" ? "[&>div]:bg-warning" : "[&>div]:bg-destructive"}`} />
                         <div className="flex justify-between text-[9px] text-muted-foreground">
                           <span>0</span>
-                          <span>{formatCurrency(SEUILS.SANS_PUBLICITE)}</span>
-                          <span>{formatCurrency(SEUILS.PROCEDURE_ADAPTEE)}</span>
+                          <span>{formatCurrency(SEUILS.DISPENSE)}</span>
+                          <span>{formatCurrency(SEUILS.PUBLICITE_OBLIGATOIRE)}</span>
                         </div>
                       </div>
                     </TableCell>
@@ -165,10 +165,10 @@ export const VoyageMarchesTab = ({ voyages }: Props) => {
           </Table>
           <Separator className="my-3" />
           <div className="flex flex-wrap gap-4 text-[10px] text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-success inline-block" /> &lt; {formatCurrency(SEUILS.SANS_PUBLICITE)} : Achat libre</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-warning inline-block" /> {formatCurrency(SEUILS.SANS_PUBLICITE)} — {formatCurrency(SEUILS.PROCEDURE_ADAPTEE)} : 3 devis + grille d'analyse</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive inline-block" /> &gt; {formatCurrency(SEUILS.PROCEDURE_ADAPTEE)} : MAPA avec publicité</span>
-            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive inline-block" /> &gt; {formatCurrency(SEUILS.SEUIL_EUROPEEN)} : Appel d'offres européen</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-success inline-block" /> &lt; {formatCurrency(SEUILS.DISPENSE)} : Dispense</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-warning inline-block" /> {formatCurrency(SEUILS.DISPENSE)} — {formatCurrency(SEUILS.PUBLICITE_OBLIGATOIRE)} : Mise en concurrence</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive inline-block" /> &gt; {formatCurrency(SEUILS.PUBLICITE_OBLIGATOIRE)} : MAPA avec publicité</span>
+            <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-destructive inline-block" /> &gt; {formatCurrency(SEUILS.SEUIL_EUROPEEN)} : Procédure formalisée</span>
           </div>
         </CardContent>
       </Card>
@@ -186,8 +186,8 @@ export const VoyageMarchesTab = ({ voyages }: Props) => {
                 <XAxis type="number" tickFormatter={v => `${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
                 <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11 }} />
                 <Tooltip formatter={(v: number) => formatCurrency(v)} />
-                <ReferenceLine x={SEUILS.SANS_PUBLICITE} stroke="hsl(var(--warning))" strokeDasharray="5 5" label={{ value: "40k", position: "top", fontSize: 9 }} />
-                <ReferenceLine x={SEUILS.PROCEDURE_ADAPTEE} stroke="hsl(var(--destructive))" strokeDasharray="5 5" label={{ value: "90k", position: "top", fontSize: 9 }} />
+                <ReferenceLine x={SEUILS.DISPENSE} stroke="hsl(var(--warning))" strokeDasharray="5 5" label={{ value: "40k", position: "top", fontSize: 9 }} />
+                <ReferenceLine x={SEUILS.PUBLICITE_OBLIGATOIRE} stroke="hsl(var(--destructive))" strokeDasharray="5 5" label={{ value: "90k", position: "top", fontSize: 9 }} />
                 <Bar dataKey="Cumul" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]}>
                   {chartData.map((entry, i) => (
                     <rect key={i} fill={niveauColors[cumulParCategorie[i].niveau]} />

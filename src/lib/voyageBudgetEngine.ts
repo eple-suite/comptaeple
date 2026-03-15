@@ -32,15 +32,16 @@ export interface VoyageBudgetData {
 }
 
 /**
- * Règles M9-6 :
+ * Règles M9-6 + Code de la commande publique (seuils 2026) :
  * - auto_balance : recettes_totales == depenses_totales
  * - zero_profit : participation_familles <= cout_reel_voyage
- * - seuil_public : 40 000 € HT
+ * - seuil_dispense : 40 000 € HT (60 000 € HT à compter du 01/04/2026 — Décret n°2025-1386)
+ * - Circulaire du 16 juillet 2024 (remplace circulaire n°2011-117 du 3 août 2011)
  */
 export const LOGIC_M96 = {
   auto_balance: 'recettes_totales == depenses_totales',
   zero_profit: 'participation_familles <= cout_reel_voyage',
-  seuil_public: 40000,
+  seuil_dispense: 40000, // 60 000 € HT à compter du 01/04/2026
 } as const;
 
 /**
@@ -61,7 +62,7 @@ export function validerEquilibreBudgetaire(data: VoyageBudgetData): BudgetValida
   if (solde > 0.01) {
     erreurs.push(
       `Excédent de ${formatEuro(solde)} : les recettes dépassent les dépenses. ` +
-      `Interdiction de réaliser un bénéfice sur la participation des familles (BO n°2 du 13/01/2005).`
+      `Interdiction de réaliser un bénéfice sur la participation des familles (Circulaire du 16/07/2024, fiche 5 — Financement des sorties scolaires).`
     );
   }
 
@@ -167,17 +168,26 @@ export function cumulerSeuils(voyages: VoyageBudgetData[]): Record<string, numbe
 /**
  * Vérifie si un seuil CCP est franchi
  */
+/**
+ * Seuils de la commande publique — Fournitures & Services
+ * Décret n°2025-1386 du 29/12/2025 + Avis JOUE 2026-2027
+ * Note : Le seuil de dispense passe de 40 000 € à 60 000 € HT au 01/04/2026.
+ * Les EPLE sont des "autres acheteurs" → seuil européen = 216 000 € HT (2026-2027).
+ */
 export const SEUIL_CCP = {
-  SANS_PUBLICITE: 40000,
-  MAPA: 90000,
-  EUROPEEN: 221000,
+  /** Dispense de publicité et de mise en concurrence (40k jusqu'au 31/03/2026, 60k après) */
+  DISPENSE: 40000,
+  /** Publicité BOAMP ou SHAL obligatoire */
+  PUBLICITE_OBLIGATOIRE: 90000,
+  /** Seuil européen — Procédure formalisée (fournitures/services, autres acheteurs) */
+  EUROPEEN: 216000,
 };
 
 export function evaluerSeuilCCP(montant: number): { niveau: 'ok' | 'warning' | 'danger' | 'critical'; label: string } {
-  if (montant >= SEUIL_CCP.EUROPEEN) return { niveau: 'critical', label: 'Seuil européen dépassé — Appel d\'offres obligatoire' };
-  if (montant >= SEUIL_CCP.MAPA) return { niveau: 'danger', label: 'MAPA avec publicité obligatoire' };
-  if (montant >= SEUIL_CCP.SANS_PUBLICITE) return { niveau: 'warning', label: '3 devis comparatifs obligatoires' };
-  return { niveau: 'ok', label: 'Achat libre' };
+  if (montant >= SEUIL_CCP.EUROPEEN) return { niveau: 'critical', label: 'Seuil européen dépassé (216 000 € HT) — Procédure formalisée obligatoire (Appel d\'offres)' };
+  if (montant >= SEUIL_CCP.PUBLICITE_OBLIGATOIRE) return { niveau: 'danger', label: 'MAPA avec publicité BOAMP/SHAL obligatoire (≥ 90 000 € HT)' };
+  if (montant >= SEUIL_CCP.DISPENSE) return { niveau: 'warning', label: 'Procédure adaptée — mise en concurrence recommandée (≥ 40 000 € HT)' };
+  return { niveau: 'ok', label: 'Dispense de publicité et mise en concurrence' };
 }
 
 function formatEuro(n: number): string {
