@@ -32,15 +32,16 @@ export interface VoyageBudgetData {
 }
 
 /**
- * Règles M9-6 :
+ * Règles M9-6 + Code de la commande publique (seuils 2026) :
  * - auto_balance : recettes_totales == depenses_totales
  * - zero_profit : participation_familles <= cout_reel_voyage
- * - seuil_public : 40 000 € HT
+ * - seuil_dispense : 40 000 € HT (60 000 € HT à compter du 01/04/2026 — Décret n°2025-1386)
+ * - Circulaire du 16 juillet 2024 (remplace circulaire n°2011-117 du 3 août 2011)
  */
 export const LOGIC_M96 = {
   auto_balance: 'recettes_totales == depenses_totales',
   zero_profit: 'participation_familles <= cout_reel_voyage',
-  seuil_public: 40000,
+  seuil_dispense: 40000, // 60 000 € HT à compter du 01/04/2026
 } as const;
 
 /**
