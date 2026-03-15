@@ -582,8 +582,8 @@ export const VoyageMarchesMoniteur = ({ voyages, exercice, mobilitesErasmus, onM
                   <XAxis type="number" tickFormatter={v => `${(v/1000).toFixed(0)}k`} tick={{ fontSize: 11 }} />
                   <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11 }} />
                   <RTooltip formatter={(v: number) => formatCurrency(v)} />
-                  <ReferenceLine x={SEUILS.SANS_PUBLICITE} stroke="hsl(var(--warning))" strokeDasharray="5 5" label={{ value: "40k", position: "top", fontSize: 9 }} />
-                  <ReferenceLine x={SEUILS.PROCEDURE_ADAPTEE} stroke="hsl(var(--destructive))" strokeDasharray="5 5" label={{ value: "90k", position: "top", fontSize: 9 }} />
+                  <ReferenceLine x={SEUILS.DISPENSE} stroke="hsl(var(--warning))" strokeDasharray="5 5" label={{ value: "40k", position: "top", fontSize: 9 }} />
+                  <ReferenceLine x={SEUILS.PUBLICITE_OBLIGATOIRE} stroke="hsl(var(--destructive))" strokeDasharray="5 5" label={{ value: "90k", position: "top", fontSize: 9 }} />
                   <Bar dataKey="Cumul" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
                 </BarChart>
               </ResponsiveContainer>
