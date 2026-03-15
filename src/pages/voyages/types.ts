@@ -218,11 +218,15 @@ export const STATUT_CONFIG: Record<Voyage["statut"], { label: string; class: str
   annule: { label: "Annulé", class: "bg-destructive/10 text-destructive border-0", step: -1 },
 };
 
-// Seuils marchés publics (HT) — Code de la commande publique 2024
+// Seuils marchés publics (HT) — Code de la commande publique 2026
+// Décret n°2025-1386 du 29/12/2025 + Avis JOUE 2026-2027
 export const SEUILS = {
-  SANS_PUBLICITE: 40000,
-  PROCEDURE_ADAPTEE: 90000,
-  SEUIL_EUROPEEN: 221000,
+  /** Dispense de publicité et mise en concurrence (60 000 € HT à compter du 01/04/2026) */
+  DISPENSE: 40000,
+  /** Publicité BOAMP/SHAL obligatoire */
+  PUBLICITE_OBLIGATOIRE: 90000,
+  /** Seuil européen — Procédure formalisée (fournitures/services, autres acheteurs) */
+  SEUIL_EUROPEEN: 216000,
 };
 
 export const CATEGORIES_PRESTATIONS = [
