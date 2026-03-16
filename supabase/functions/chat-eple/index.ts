@@ -21,6 +21,11 @@ type StructuredAnswer = {
   answer_markdown: string;
   citations: string[];
   confidence: "high" | "medium" | "low";
+  evidence_quotes?: Array<{
+    id: string;
+    quote: string;
+    rationale?: string;
+  }>;
   checks?: {
     ordonnateur_vs_comptable?: "ok" | "uncertain";
     operation_type?: "budgetaire" | "non_budgetaire" | "mixte" | "uncertain";
@@ -174,15 +179,17 @@ const STOP_WORDS = new Set([
 const FORBIDDEN_PRIVATE_TERMS = ["pcg", "ifrs", "ias", "comptabilite privee"];
 const HIGH_RISK_TERMS = ["écriture", "ecriture", "compte", "comptabilisation", "dft", "rejet", "bourse", "annulation", "anv", "remise gracieuse"];
 
-const STRICT_SYSTEM_PROMPT = `Tu es un assistant juridique/comptable EPLE en mode STRICTEMENT SOURCÉ.
+const STRICT_SYSTEM_PROMPT = `Tu es un assistant juridique/comptable EPLE en mode PREUVE OBLIGATOIRE.
 
 Règles absolues :
 1) Tu réponds UNIQUEMENT à partir du corpus fourni (IDs de snippets).
-2) Tu n'inventes jamais d'article, de compte, d'écriture, ni de procédure.
-3) Si l'information n'est pas explicitement présente dans le corpus, renvoie status="insufficient".
+2) Tu n'inventes jamais d'article, de compte, d'écriture, de seuil ni de procédure.
+3) Si un doute existe, ou si une preuve textuelle manque, renvoie status="insufficient".
 4) Tu utilises exclusivement la terminologie Op@le et la logique M9-6/GBCP/Code de l'éducation/CCP.
-5) Tu distingues systématiquement ordonnateur vs agent comptable pour les questions d'exécution comptable.
-6) Tu réponds en français.
+5) Pour toute question comptable, tu distingues ordonnateur vs agent comptable.
+6) Tu cites au moins 2 snippets en status="grounded".
+7) Tu fournis des extraits textuels exacts du corpus via evidence_quotes (citations littérales).
+8) Tu réponds en français.
 
 Tu DOIS répondre en JSON strict (sans balises markdown) :
 {
@@ -190,6 +197,13 @@ Tu DOIS répondre en JSON strict (sans balises markdown) :
   "answer_markdown": "string",
   "citations": ["ID_SNIPPET_1", "ID_SNIPPET_2"],
   "confidence": "high" | "medium" | "low",
+  "evidence_quotes": [
+    {
+      "id": "ID_SNIPPET",
+      "quote": "extrait exact du snippet",
+      "rationale": "pourquoi cet extrait prouve la réponse"
+    }
+  ],
   "checks": {
     "ordonnateur_vs_comptable": "ok" | "uncertain",
     "operation_type": "budgetaire" | "non_budgetaire" | "mixte" | "uncertain"
@@ -325,24 +339,47 @@ function parseStructuredAnswer(rawContent: string): StructuredAnswer | null {
   return null;
 }
 
+function getSnippetText(snippet: KnowledgeSnippet): string {
+  return normalize(`${snippet.content} ${snippet.refs.join(" ")} ${snippet.tags.join(" ")}`);
+}
+
+function containsExactEvidence(snippet: KnowledgeSnippet, quote: string): boolean {
+  const cleanedQuote = normalize((quote || "").trim());
+  if (!cleanedQuote || cleanedQuote.length < 12) return false;
+  return getSnippetText(snippet).includes(cleanedQuote);
+}
+
+function extractAccountNumbers(text: string): string[] {
+  const matches = text.match(/\b[1-8]\d{3,5}\b/g) ?? [];
+  return Array.from(new Set(matches));
+}
+
+function mentionsOrdoAndAC(text: string): boolean {
+  const n = normalize(text);
+  return n.includes("ordonnateur") && (n.includes("agent comptable") || n.includes("ac"));
+}
+
 function validateStructuredAnswer(parsed: StructuredAnswer, snippets: KnowledgeSnippet[], question: string): string[] {
   const errors: string[] = [];
-  const snippetIds = new Set(snippets.map((s) => s.id));
+  const snippetById = new Map(snippets.map((s) => [s.id, s]));
+  const sensitiveQuestion = isHighRiskQuestion(question);
 
   if (!["grounded", "insufficient"].includes(parsed.status)) {
     errors.push("status invalide");
   }
 
-  if (!Array.isArray(parsed.citations) || parsed.citations.length === 0) {
-    errors.push("citations absentes");
-  } else {
-    for (const id of parsed.citations) {
-      if (!snippetIds.has(id)) errors.push(`citation hors corpus: ${id}`);
-    }
-  }
-
   if (!parsed.answer_markdown?.trim()) {
     errors.push("answer vide");
+  }
+
+  if (parsed.status === "grounded") {
+    if (!Array.isArray(parsed.citations) || parsed.citations.length < 2) {
+      errors.push("citations insuffisantes");
+    } else {
+      for (const id of parsed.citations) {
+        if (!snippetById.has(id)) errors.push(`citation hors corpus: ${id}`);
+      }
+    }
   }
 
   const answerNormalized = normalize(parsed.answer_markdown || "");
@@ -352,11 +389,63 @@ function validateStructuredAnswer(parsed: StructuredAnswer, snippets: KnowledgeS
     }
   }
 
-  if (isHighRiskQuestion(question) && parsed.status === "grounded") {
-    if (parsed.confidence !== "high") errors.push("confiance insuffisante pour question sensible");
-    if (parsed.checks?.ordonnateur_vs_comptable !== "ok") {
-      errors.push("distinction ordonnateur/comptable non validée");
+  if (parsed.status === "grounded") {
+    if (parsed.confidence === "low") {
+      errors.push("confiance trop faible en mode strict");
     }
+
+    if (sensitiveQuestion && parsed.confidence !== "high") {
+      errors.push("confiance insuffisante pour question sensible");
+    }
+
+    if (sensitiveQuestion) {
+      if (parsed.checks?.ordonnateur_vs_comptable !== "ok") {
+        errors.push("distinction ordonnateur/comptable non validée");
+      }
+      if (parsed.checks?.operation_type === "uncertain") {
+        errors.push("type d'opération incertain sur question sensible");
+      }
+      if (!mentionsOrdoAndAC(parsed.answer_markdown || "")) {
+        errors.push("réponse sensible sans mention explicite ordonnateur/agent comptable");
+      }
+    }
+
+    const evidenceQuotes = parsed.evidence_quotes ?? [];
+    const minEvidence = sensitiveQuestion ? 2 : 1;
+    if (evidenceQuotes.length < minEvidence) {
+      errors.push("preuves textuelles insuffisantes");
+    } else {
+      for (const evidence of evidenceQuotes) {
+        const snippet = snippetById.get(evidence.id);
+        if (!snippet) {
+          errors.push(`preuve hors corpus: ${evidence.id}`);
+          continue;
+        }
+        if (!parsed.citations?.includes(evidence.id)) {
+          errors.push(`preuve non citée: ${evidence.id}`);
+        }
+        if (!containsExactEvidence(snippet, evidence.quote || "")) {
+          errors.push(`preuve non retrouvée textuellement: ${evidence.id}`);
+        }
+      }
+    }
+
+    const citedCorpusText = (parsed.citations || [])
+      .map((id) => snippetById.get(id))
+      .filter((snippet): snippet is KnowledgeSnippet => Boolean(snippet))
+      .map((snippet) => getSnippetText(snippet))
+      .join(" ");
+
+    const accountsInAnswer = extractAccountNumbers(parsed.answer_markdown || "");
+    for (const account of accountsInAnswer) {
+      if (!citedCorpusText.includes(account)) {
+        errors.push(`compte non prouvé dans le corpus cité: ${account}`);
+      }
+    }
+  }
+
+  if (parsed.checks?.operation_type === "non_budgetaire" && answerNormalized.includes("demande de paiement")) {
+    errors.push("incohérence: demande de paiement sur opération non budgétaire");
   }
 
   if (hasAll(question, ["rejet", "bourse", "dft"])) {
@@ -386,7 +475,15 @@ function formatGroundedAnswer(parsed: StructuredAnswer, snippets: KnowledgeSnipp
     })
     .join("\n");
 
-  return `${parsed.answer_markdown.trim()}\n\n### Références mobilisées\n${citations}`;
+  const evidence = (parsed.evidence_quotes ?? [])
+    .filter((ev, idx, arr) => byId.has(ev.id) && ev.quote?.trim() && arr.findIndex((x) => x.id === ev.id && x.quote === ev.quote) === idx)
+    .slice(0, 4)
+    .map((ev) => `- **${ev.id}** : "${ev.quote.trim()}"`)
+    .join("\n");
+
+  const evidenceSection = evidence ? `\n\n### Extraits justificatifs\n${evidence}` : "";
+
+  return `${parsed.answer_markdown.trim()}${evidenceSection}\n\n### Références mobilisées\n${citations}`;
 }
 
 function buildFallbackMessage(): string {
@@ -440,7 +537,7 @@ serve(async (req) => {
     const selectedKnowledge = selectKnowledge(question);
     const knowledgeBlock = buildKnowledgeBlock(selectedKnowledge);
 
-    const userPrompt = `Question utilisateur:\n${question}\n\nCorpus disponible (utiliser uniquement ces snippets):\n${knowledgeBlock}\n\nContraintes supplémentaires:\n- Pour toute question d'écriture/procédure, expliciter l'acteur compétent (ordonnateur ou agent comptable).\n- Ne pas utiliser la comptabilité privée.\n- Si preuve insuffisante: status=\"insufficient\".`;
+    const userPrompt = `Question utilisateur:\n${question}\n\nCorpus disponible (utiliser uniquement ces snippets):\n${knowledgeBlock}\n\nContraintes supplémentaires:\n- Pour toute question d'écriture/procédure, expliciter l'acteur compétent (ordonnateur ou agent comptable).\n- Ne pas utiliser la comptabilité privée.\n- Si preuve insuffisante: status=\"insufficient\".\n- En status=\"grounded\", fournir au minimum 2 citations et 1 à 2 extraits textuels exacts dans evidence_quotes.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
