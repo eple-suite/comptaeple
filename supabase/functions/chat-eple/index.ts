@@ -537,7 +537,7 @@ serve(async (req) => {
     const selectedKnowledge = selectKnowledge(question);
     const knowledgeBlock = buildKnowledgeBlock(selectedKnowledge);
 
-    const userPrompt = `Question utilisateur:\n${question}\n\nCorpus disponible (utiliser uniquement ces snippets):\n${knowledgeBlock}\n\nContraintes supplémentaires:\n- Pour toute question d'écriture/procédure, expliciter l'acteur compétent (ordonnateur ou agent comptable).\n- Ne pas utiliser la comptabilité privée.\n- Si preuve insuffisante: status=\"insufficient\".`;
+    const userPrompt = `Question utilisateur:\n${question}\n\nCorpus disponible (utiliser uniquement ces snippets):\n${knowledgeBlock}\n\nContraintes supplémentaires:\n- Pour toute question d'écriture/procédure, expliciter l'acteur compétent (ordonnateur ou agent comptable).\n- Ne pas utiliser la comptabilité privée.\n- Si preuve insuffisante: status=\"insufficient\".\n- En status=\"grounded\", fournir au minimum 2 citations et 1 à 2 extraits textuels exacts dans evidence_quotes.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
