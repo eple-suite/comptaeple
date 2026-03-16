@@ -361,22 +361,25 @@ function mentionsOrdoAndAC(text: string): boolean {
 
 function validateStructuredAnswer(parsed: StructuredAnswer, snippets: KnowledgeSnippet[], question: string): string[] {
   const errors: string[] = [];
-  const snippetIds = new Set(snippets.map((s) => s.id));
+  const snippetById = new Map(snippets.map((s) => [s.id, s]));
+  const sensitiveQuestion = isHighRiskQuestion(question);
 
   if (!["grounded", "insufficient"].includes(parsed.status)) {
     errors.push("status invalide");
   }
 
-  if (!Array.isArray(parsed.citations) || parsed.citations.length === 0) {
-    errors.push("citations absentes");
-  } else {
-    for (const id of parsed.citations) {
-      if (!snippetIds.has(id)) errors.push(`citation hors corpus: ${id}`);
-    }
-  }
-
   if (!parsed.answer_markdown?.trim()) {
     errors.push("answer vide");
+  }
+
+  if (parsed.status === "grounded") {
+    if (!Array.isArray(parsed.citations) || parsed.citations.length < 2) {
+      errors.push("citations insuffisantes");
+    } else {
+      for (const id of parsed.citations) {
+        if (!snippetById.has(id)) errors.push(`citation hors corpus: ${id}`);
+      }
+    }
   }
 
   const answerNormalized = normalize(parsed.answer_markdown || "");
@@ -386,11 +389,63 @@ function validateStructuredAnswer(parsed: StructuredAnswer, snippets: KnowledgeS
     }
   }
 
-  if (isHighRiskQuestion(question) && parsed.status === "grounded") {
-    if (parsed.confidence !== "high") errors.push("confiance insuffisante pour question sensible");
-    if (parsed.checks?.ordonnateur_vs_comptable !== "ok") {
-      errors.push("distinction ordonnateur/comptable non validée");
+  if (parsed.status === "grounded") {
+    if (parsed.confidence === "low") {
+      errors.push("confiance trop faible en mode strict");
     }
+
+    if (sensitiveQuestion && parsed.confidence !== "high") {
+      errors.push("confiance insuffisante pour question sensible");
+    }
+
+    if (sensitiveQuestion) {
+      if (parsed.checks?.ordonnateur_vs_comptable !== "ok") {
+        errors.push("distinction ordonnateur/comptable non validée");
+      }
+      if (parsed.checks?.operation_type === "uncertain") {
+        errors.push("type d'opération incertain sur question sensible");
+      }
+      if (!mentionsOrdoAndAC(parsed.answer_markdown || "")) {
+        errors.push("réponse sensible sans mention explicite ordonnateur/agent comptable");
+      }
+    }
+
+    const evidenceQuotes = parsed.evidence_quotes ?? [];
+    const minEvidence = sensitiveQuestion ? 2 : 1;
+    if (evidenceQuotes.length < minEvidence) {
+      errors.push("preuves textuelles insuffisantes");
+    } else {
+      for (const evidence of evidenceQuotes) {
+        const snippet = snippetById.get(evidence.id);
+        if (!snippet) {
+          errors.push(`preuve hors corpus: ${evidence.id}`);
+          continue;
+        }
+        if (!parsed.citations?.includes(evidence.id)) {
+          errors.push(`preuve non citée: ${evidence.id}`);
+        }
+        if (!containsExactEvidence(snippet, evidence.quote || "")) {
+          errors.push(`preuve non retrouvée textuellement: ${evidence.id}`);
+        }
+      }
+    }
+
+    const citedCorpusText = (parsed.citations || [])
+      .map((id) => snippetById.get(id))
+      .filter((snippet): snippet is KnowledgeSnippet => Boolean(snippet))
+      .map((snippet) => getSnippetText(snippet))
+      .join(" ");
+
+    const accountsInAnswer = extractAccountNumbers(parsed.answer_markdown || "");
+    for (const account of accountsInAnswer) {
+      if (!citedCorpusText.includes(account)) {
+        errors.push(`compte non prouvé dans le corpus cité: ${account}`);
+      }
+    }
+  }
+
+  if (parsed.checks?.operation_type === "non_budgetaire" && answerNormalized.includes("demande de paiement")) {
+    errors.push("incohérence: demande de paiement sur opération non budgétaire");
   }
 
   if (hasAll(question, ["rejet", "bourse", "dft"])) {
