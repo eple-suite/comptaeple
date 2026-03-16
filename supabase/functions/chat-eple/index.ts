@@ -21,6 +21,11 @@ type StructuredAnswer = {
   answer_markdown: string;
   citations: string[];
   confidence: "high" | "medium" | "low";
+  evidence_quotes?: Array<{
+    id: string;
+    quote: string;
+    rationale?: string;
+  }>;
   checks?: {
     ordonnateur_vs_comptable?: "ok" | "uncertain";
     operation_type?: "budgetaire" | "non_budgetaire" | "mixte" | "uncertain";
