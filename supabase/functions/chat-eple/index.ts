@@ -475,7 +475,15 @@ function formatGroundedAnswer(parsed: StructuredAnswer, snippets: KnowledgeSnipp
     })
     .join("\n");
 
-  return `${parsed.answer_markdown.trim()}\n\n### Références mobilisées\n${citations}`;
+  const evidence = (parsed.evidence_quotes ?? [])
+    .filter((ev, idx, arr) => byId.has(ev.id) && ev.quote?.trim() && arr.findIndex((x) => x.id === ev.id && x.quote === ev.quote) === idx)
+    .slice(0, 4)
+    .map((ev) => `- **${ev.id}** : "${ev.quote.trim()}"`)
+    .join("\n");
+
+  const evidenceSection = evidence ? `\n\n### Extraits justificatifs\n${evidence}` : "";
+
+  return `${parsed.answer_markdown.trim()}${evidenceSection}\n\n### Références mobilisées\n${citations}`;
 }
 
 function buildFallbackMessage(): string {
