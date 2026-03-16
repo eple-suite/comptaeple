@@ -339,6 +339,26 @@ function parseStructuredAnswer(rawContent: string): StructuredAnswer | null {
   return null;
 }
 
+function getSnippetText(snippet: KnowledgeSnippet): string {
+  return normalize(`${snippet.content} ${snippet.refs.join(" ")} ${snippet.tags.join(" ")}`);
+}
+
+function containsExactEvidence(snippet: KnowledgeSnippet, quote: string): boolean {
+  const cleanedQuote = normalize((quote || "").trim());
+  if (!cleanedQuote || cleanedQuote.length < 12) return false;
+  return getSnippetText(snippet).includes(cleanedQuote);
+}
+
+function extractAccountNumbers(text: string): string[] {
+  const matches = text.match(/\b[1-8]\d{3,5}\b/g) ?? [];
+  return Array.from(new Set(matches));
+}
+
+function mentionsOrdoAndAC(text: string): boolean {
+  const n = normalize(text);
+  return n.includes("ordonnateur") && (n.includes("agent comptable") || n.includes("ac"));
+}
+
 function validateStructuredAnswer(parsed: StructuredAnswer, snippets: KnowledgeSnippet[], question: string): string[] {
   const errors: string[] = [];
   const snippetIds = new Set(snippets.map((s) => s.id));
