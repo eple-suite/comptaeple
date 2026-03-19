@@ -509,8 +509,8 @@ export function ImportSection() {
       reader.onload = (evt) => {
         try {
           const wb = XLSX.read(evt.target?.result, { type: 'array' });
-          const rows = pickBestWorkbookRows(wb, slot.type);
-          processImportedRows(rows, file.name, slot);
+          const { rows, title, meta } = pickBestWorkbookRows(wb, slot.type);
+          processImportedRows(rows, file.name, slot, title, meta);
         } catch (err: any) {
           setErrors(prev => ({ ...prev, [slot.key]: `Erreur Excel : ${err.message || 'Format non reconnu'}` }));
         }
