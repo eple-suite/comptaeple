@@ -64,8 +64,37 @@ function findCol(row: Record<string, string>, ...names: string[]): string {
 
 function toNumDirect(v: string): number {
   if (!v || v === '') return 0;
-  const s = v.replace(/\s/g, '').replace(',', '.');
-  return parseFloat(s) || 0;
+  let s = String(v).trim().replace(/[\s\u00A0]/g, '');
+  if (!s) return 0;
+
+  let negative = false;
+  if (/^\(.*\)$/.test(s)) {
+    negative = true;
+    s = s.slice(1, -1);
+  }
+
+  s = s.replace(/[^0-9,.-]/g, '');
+  const hasComma = s.includes(',');
+  const hasDot = s.includes('.');
+
+  if (hasComma && hasDot) {
+    if (s.lastIndexOf(',') > s.lastIndexOf('.')) {
+      s = s.replace(/\./g, '').replace(',', '.');
+    } else {
+      s = s.replace(/,/g, '');
+    }
+  } else if (hasComma) {
+    if (/,-?\d{3}$/.test(s)) s = s.replace(/,/g, '');
+    else s = s.replace(',', '.');
+  } else if (hasDot) {
+    const dots = (s.match(/\./g) || []).length;
+    if (dots > 1) s = s.replace(/\./g, '');
+    else if (/\.\d{3}$/.test(s)) s = s.replace('.', '');
+  }
+
+  const parsed = parseFloat(s);
+  if (!Number.isFinite(parsed)) return 0;
+  return negative ? -parsed : parsed;
 }
 
 export function parserSDE(rows: Record<string, string>[], _typeBudget: TypeBudget): LigneSDE[] {
@@ -129,19 +158,31 @@ export function parserBalance(rows: Record<string, string>[], _typeBudget: TypeB
   const keys = Object.keys(rows[0]);
   const hasDirectCols = keys.some(k => {
     const nk = normalizeHeader(k);
-    return nk.includes('compte') || nk.includes('solde') || nk.includes('debit');
+    return nk.includes('compte') || nk.includes('solde') || nk.includes('debit') || nk.includes('credit');
   });
   if (hasDirectCols) {
     return rows
       .filter(r => {
-        const compte = findCol(r, 'Compte', 'compte');
-        return compte && /^\d/.test(compte) && compte.length >= 3;
+        const compteSource = findCol(r, 'Compte', 'compte', 'Compte et intitulé', 'Compte et intitule');
+        return compteSource && /^\d/.test(compteSource) && compteSource.length >= 3;
       })
       .map(r => {
-        const compte = findCol(r, 'Compte', 'compte').replace(/[^0-9]/g, '').substring(0, 9);
+        const compteSource = findCol(r, 'Compte', 'compte', 'Compte et intitulé', 'Compte et intitule');
+        const compte = compteSource.replace(/[^0-9]/g, '').substring(0, 9);
+        const intituleDepuisCompte = compteSource.replace(/^\s*\d+\s*-\s*/, '').trim();
+        const intituleExplicite = findCol(
+          r,
+          'Intitulé réduit du compte',
+          'intitule',
+          'Libellé',
+          'Intitule reduit du compte',
+          'Compte et intitulé',
+          'Compte et intitule',
+        ).replace(/^\s*\d+\s*-\s*/, '').trim();
+
         return {
           compte,
-          intituleReduit: findCol(r, 'Intitulé réduit du compte', 'intitule', 'Libellé', 'Intitule reduit du compte') || compte,
+          intituleReduit: intituleExplicite || intituleDepuisCompte || compte,
           type: findCol(r, 'Type', 'type'),
           antDbt: toNumDirect(findCol(r, 'Montant débit antérieur', 'Montant debit anterieur', 'antDbt')),
           antCrd: toNumDirect(findCol(r, 'Montant crédit antérieur', 'Montant credit anterieur', 'antCrd')),
