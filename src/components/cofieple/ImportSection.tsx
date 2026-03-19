@@ -486,7 +486,7 @@ function ImportBox({ slot, loaded, stat, error, securityBlock, onFile }: {
           )}
           {loaded && stat && <div className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold truncate">{stat.rows} lignes — {stat.name}</div>}
           {error && <div className="text-xs text-destructive font-semibold">{error}</div>}
-          {!loaded && !error && !securityBlock && <div className="text-xs text-muted-foreground italic">Cliquer pour charger</div>}
+          {!loaded && !error && !securityBlock && <div className="text-xs text-muted-foreground italic">CSV ou Excel — Cliquer pour charger</div>}
           <div className="mt-2 text-xs text-muted-foreground"><strong>Colonnes :</strong> {slot.colonnes}</div>
         </div>
       </div>
