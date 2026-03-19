@@ -441,7 +441,7 @@ function ImportBox({ slot, loaded, stat, error, securityBlock, onFile }: {
       loaded ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/10 border-solid' :
       'border-border bg-muted/30 hover:border-primary hover:bg-primary/5'
     }`} onClick={() => inputRef.current?.click()}>
-      <input ref={inputRef} type="file" accept=".csv,.txt" className="hidden" onChange={onFile} />
+      <input ref={inputRef} type="file" accept=".csv,.txt,.xlsx,.xls" className="hidden" onChange={onFile} />
       <div className="flex items-start gap-3">
         <span className="text-2xl shrink-0">
           {securityBlock ? <ShieldAlert className="h-6 w-6 text-destructive" /> :
