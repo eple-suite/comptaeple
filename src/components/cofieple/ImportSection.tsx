@@ -7,6 +7,7 @@
 
 import { useRef, useState } from 'react';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -254,52 +255,76 @@ export function ImportSection() {
     }
   }
 
+  function processImportedRows(rows: Record<string, string>[], fileName: string, slot: FileSlot) {
+    if (!rows || rows.length === 0) {
+      setErrors(prev => ({ ...prev, [slot.key]: 'Fichier vide ou format non reconnu' }));
+      logImport({ fileName, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: 0, result: 'error', rejectReason: 'Fichier vide ou format non reconnu' });
+      return;
+    }
+    const headers = Object.keys(rows[0] || {});
+    const { uai: csvUai, opale: csvOpale } = extractCsvIdentifier(rows);
+    const csvExercice = extractExercice(rows);
+    const csvDocType = detectDocumentType(headers);
+
+    // ── TRIPLE VERROU DE SÉCURITÉ ──
+    if (selectedEstablishment) {
+      const lock = tripleLockCheck(rows, headers, slot.type, selectedEstablishment.uai, selectedEstablishment.opale_number || '', exerciceTravail);
+      if (!lock.ok) {
+        const resultCode = lock.type === 'opale' ? 'blocked_opale' : lock.type === 'exercice' ? 'blocked_exercice' : 'blocked_colonnes';
+        setSecurityBlocks(prev => ({ ...prev, [slot.key]: lock.message || 'Import bloqué' }));
+        setErrors(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
+        setLockAlert({ ...lock, slotLabel: slot.label });
+        logImport({ fileName, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: resultCode, rejectReason: lock.message, fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
+        return;
+      }
+      setSecurityBlocks(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
+    }
+
+    setFileStats(prev => ({ ...prev, [slot.key]: { rows: rows.length, name: fileName } }));
+    setErrors(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
+    try {
+      if (slot.type === 'sde') setSDE(parserSDE(rows, slot.typeBudget), slot.typeBudget);
+      else if (slot.type === 'sde1') setSDE1(parserSDE(rows, slot.typeBudget), slot.typeBudget);
+      else if (slot.type === 'sdr') setSDR(parserSDR(rows, slot.typeBudget), slot.typeBudget);
+      else if (slot.type === 'sdr1') setSDR1(parserSDR(rows, slot.typeBudget), slot.typeBudget);
+      else if (slot.type === 'bal') setBalance(parserBalance(rows, slot.typeBudget), slot.typeBudget);
+      else if (slot.type === 'bal1') setBalance1(parserBalance(rows, slot.typeBudget), slot.typeBudget);
+      logImport({ fileName, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: 'success', fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
+    } catch (err: any) {
+      setErrors(prev => ({ ...prev, [slot.key]: err.message || 'Erreur de parsing' }));
+      logImport({ fileName, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: 'error', rejectReason: err.message, fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
+    }
+  }
+
   function handleFile(e: React.ChangeEvent<HTMLInputElement>, slot: FileSlot) {
     const file = e.target.files?.[0];
     if (!file) return;
-    Papa.parse<Record<string, string>>(file, {
-      header: true, skipEmptyLines: true, delimiter: '',
-      complete: (results) => {
-        if (!results.data || results.data.length === 0) {
-          setErrors(prev => ({ ...prev, [slot.key]: 'Fichier vide ou format non reconnu' }));
-          logImport({ fileName: file.name, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: 0, result: 'error', rejectReason: 'Fichier vide ou format non reconnu' });
-          return;
-        }
-        const rows = results.data as Record<string, string>[];
-        const headers = results.meta?.fields || Object.keys(rows[0] || {});
-        const { uai: csvUai, opale: csvOpale } = extractCsvIdentifier(rows);
-        const csvExercice = extractExercice(rows);
-        const csvDocType = detectDocumentType(headers);
+    const ext = file.name.split('.').pop()?.toLowerCase();
 
-        // ── TRIPLE VERROU DE SÉCURITÉ ──
-        if (selectedEstablishment) {
-          const lock = tripleLockCheck(rows, headers, slot.type, selectedEstablishment.uai, selectedEstablishment.opale_number || '', exerciceTravail);
-          if (!lock.ok) {
-            const resultCode = lock.type === 'opale' ? 'blocked_opale' : lock.type === 'exercice' ? 'blocked_exercice' : 'blocked_colonnes';
-            setSecurityBlocks(prev => ({ ...prev, [slot.key]: lock.message || 'Import bloqué' }));
-            setErrors(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
-            setLockAlert({ ...lock, slotLabel: slot.label });
-            logImport({ fileName: file.name, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: resultCode, rejectReason: lock.message, fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
-            return;
-          }
-          setSecurityBlocks(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
-        }
-
-        setFileStats(prev => ({ ...prev, [slot.key]: { rows: rows.length, name: file.name } }));
-        setErrors(prev => { const n = { ...prev }; delete n[slot.key]; return n; });
+    // ── Excel files (.xlsx, .xls) ──
+    if (ext === 'xlsx' || ext === 'xls') {
+      const reader = new FileReader();
+      reader.onload = (evt) => {
         try {
-          if (slot.type === 'sde') setSDE(parserSDE(rows, slot.typeBudget), slot.typeBudget);
-          else if (slot.type === 'sde1') setSDE1(parserSDE(rows, slot.typeBudget), slot.typeBudget);
-          else if (slot.type === 'sdr') setSDR(parserSDR(rows, slot.typeBudget), slot.typeBudget);
-          else if (slot.type === 'sdr1') setSDR1(parserSDR(rows, slot.typeBudget), slot.typeBudget);
-          else if (slot.type === 'bal') setBalance(parserBalance(rows, slot.typeBudget), slot.typeBudget);
-          else if (slot.type === 'bal1') setBalance1(parserBalance(rows, slot.typeBudget), slot.typeBudget);
-          // Log succès
-          logImport({ fileName: file.name, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: 'success', fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
+          const wb = XLSX.read(evt.target?.result, { type: 'array' });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json<Record<string, string>>(ws, { defval: '' });
+          processImportedRows(rows, file.name, slot);
         } catch (err: any) {
-          setErrors(prev => ({ ...prev, [slot.key]: err.message || 'Erreur de parsing' }));
-          logImport({ fileName: file.name, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: 'error', rejectReason: err.message, fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
+          setErrors(prev => ({ ...prev, [slot.key]: `Erreur Excel : ${err.message || 'Format non reconnu'}` }));
         }
+      };
+      reader.readAsArrayBuffer(file);
+      e.target.value = '';
+      return;
+    }
+
+    // ── CSV / TXT files ──
+    Papa.parse<Record<string, string>>(file, {
+      header: true, skipEmptyLines: true,
+      encoding: 'UTF-8',
+      complete: (results) => {
+        processImportedRows(results.data as Record<string, string>[], file.name, slot);
       },
       error: (err) => { setErrors(prev => ({ ...prev, [slot.key]: err.message })); },
     });
@@ -380,7 +405,7 @@ export function ImportSection() {
         <CardContent className="p-4 flex items-start gap-3">
           <Info className="h-5 w-5 text-primary mt-0.5 shrink-0" />
           <div className="text-xs">
-            Importez les fichiers CSV extraits depuis <strong>Op@le</strong>. Les fichiers{' '}
+            Importez les fichiers <strong>CSV ou Excel</strong> extraits depuis <strong>Op@le</strong>. Les fichiers{' '}
             <strong>SDE, SDR et Balance</strong> sont obligatoires. Les fichiers N-1 permettent les comparaisons
             inter-exercices. Pour les budgets annexes (GRETA/CFA), importez leurs fichiers dédiés.
           </div>
@@ -440,7 +465,7 @@ function ImportBox({ slot, loaded, stat, error, securityBlock, onFile }: {
       loaded ? 'border-emerald-400 bg-emerald-50 dark:bg-emerald-900/10 border-solid' :
       'border-border bg-muted/30 hover:border-primary hover:bg-primary/5'
     }`} onClick={() => inputRef.current?.click()}>
-      <input ref={inputRef} type="file" accept=".csv,.txt" className="hidden" onChange={onFile} />
+      <input ref={inputRef} type="file" accept=".csv,.txt,.xlsx,.xls" className="hidden" onChange={onFile} />
       <div className="flex items-start gap-3">
         <span className="text-2xl shrink-0">
           {securityBlock ? <ShieldAlert className="h-6 w-6 text-destructive" /> :
@@ -461,7 +486,7 @@ function ImportBox({ slot, loaded, stat, error, securityBlock, onFile }: {
           )}
           {loaded && stat && <div className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold truncate">{stat.rows} lignes — {stat.name}</div>}
           {error && <div className="text-xs text-destructive font-semibold">{error}</div>}
-          {!loaded && !error && !securityBlock && <div className="text-xs text-muted-foreground italic">Cliquer pour charger</div>}
+          {!loaded && !error && !securityBlock && <div className="text-xs text-muted-foreground italic">CSV ou Excel — Cliquer pour charger</div>}
           <div className="mt-2 text-xs text-muted-foreground"><strong>Colonnes :</strong> {slot.colonnes}</div>
         </div>
       </div>

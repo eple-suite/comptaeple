@@ -21,27 +21,143 @@ export const formatPct = fmtPct;
 export { parseSDE, parseSDR, parseBalance } from './cofieple_csvParser';
 
 // Wrappers nommés pour compatibilité avec les composants
-// Acceptent des Record<string,string>[] (sortie PapaParse) et
-// reconstituent un CSV texte pour le parseur central
+// Acceptent des Record<string,string>[] (sortie PapaParse/XLSX) et
+// reconstituent un CSV texte pour le parseur central.
+// Utilise ';' comme séparateur et normalise les en-têtes.
 function rowsToCSV(rows: Record<string, string>[]): string {
   if (rows.length === 0) return '';
   const headers = Object.keys(rows[0]);
   const lines = [headers.join(';')];
   for (const r of rows) {
-    lines.push(headers.map(h => r[h] ?? '').join(';'));
+    lines.push(headers.map(h => {
+      const val = r[h] ?? '';
+      // Escape semicolons in values
+      return String(val).includes(';') ? `"${val}"` : String(val);
+    }).join(';'));
   }
   return lines.join('\n');
 }
 
+/** Normalize a header: lowercase, remove accents, trim */
+function normalizeHeader(h: string): string {
+  return h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+}
+
+/** Find a value in a row by trying multiple possible column names (accent-insensitive) */
+function findCol(row: Record<string, string>, ...names: string[]): string {
+  // Try exact match first
+  for (const n of names) {
+    if (n in row) return String(row[n] ?? '');
+  }
+  // Try normalized match
+  const normalizedNames = names.map(normalizeHeader);
+  for (const [key, val] of Object.entries(row)) {
+    const nk = normalizeHeader(key);
+    if (normalizedNames.includes(nk)) return String(val ?? '');
+    // Partial match (startsWith)
+    for (const nn of normalizedNames) {
+      if (nk.startsWith(nn) || nn.startsWith(nk)) return String(val ?? '');
+    }
+  }
+  return '';
+}
+
+function toNumDirect(v: string): number {
+  if (!v || v === '') return 0;
+  const s = v.replace(/\s/g, '').replace(',', '.');
+  return parseFloat(s) || 0;
+}
+
 export function parserSDE(rows: Record<string, string>[], _typeBudget: TypeBudget): LigneSDE[] {
+  // Try direct row parsing first; fallback to CSV reconversion
+  if (rows.length === 0) return [];
+  const firstRow = rows[0];
+  const keys = Object.keys(firstRow);
+  // Check if we can find expected columns directly
+  const hasDirectCols = keys.some(k => {
+    const nk = normalizeHeader(k);
+    return nk.includes('service') || nk.includes('compte') || nk.includes('budget');
+  });
+  if (hasDirectCols) {
+    return rows.map(r => ({
+      rne: findCol(r, 'RNE', 'rne'),
+      exercice: Math.round(toNumDirect(findCol(r, 'exercice', 'Exercice'))) || new Date().getFullYear(),
+      service: findCol(r, 'service', 'Service'),
+      domaine: findCol(r, 'domaine', 'Domaine'),
+      activite: findCol(r, 'activités', 'activite', 'Activité', 'activites'),
+      compte: findCol(r, 'compte', 'Compte').replace(/\s.*/, '').substring(0, 6),
+      budget: toNumDirect(findCol(r, 'budget', 'Budget', 'BUDGET')),
+      engage: toNumDirect(findCol(r, 'engagé', 'engage', 'Engagé', 'Engage')),
+      realise: toNumDirect(findCol(r, 'réalisé', 'realise', 'Réalisé', 'Realise')),
+      encours: toNumDirect(findCol(r, 'en cours', 'encours', 'En cours')),
+      disponible: toNumDirect(findCol(r, 'disponible', 'Disponible')),
+      ext: findCol(r, 'EXT', 'ext'),
+    })).filter(r => r.service !== '' || r.compte !== '');
+  }
   return parseSDE(rowsToCSV(rows));
 }
 
 export function parserSDR(rows: Record<string, string>[], _typeBudget: TypeBudget): LigneSDR[] {
+  if (rows.length === 0) return [];
+  const keys = Object.keys(rows[0]);
+  const hasDirectCols = keys.some(k => {
+    const nk = normalizeHeader(k);
+    return nk.includes('service') || nk.includes('compte') || nk.includes('budget');
+  });
+  if (hasDirectCols) {
+    return rows.map(r => ({
+      rne: findCol(r, 'RNE', 'rne'),
+      exercice: Math.round(toNumDirect(findCol(r, 'exercice', 'Exercice'))) || new Date().getFullYear(),
+      service: findCol(r, 'service', 'Service'),
+      domaine: findCol(r, 'domaine', 'Domaine'),
+      activite: findCol(r, 'activités', 'activite', 'Activité', 'activites'),
+      compte: findCol(r, 'compte', 'Compte').replace(/\s.*/, '').substring(0, 6),
+      budget: toNumDirect(findCol(r, 'budget', 'Budget')),
+      engage: toNumDirect(findCol(r, 'engagé', 'engage', 'Engagé', 'Engage')),
+      aor: toNumDirect(findCol(r, 'aor', 'AOR')),
+      realise: toNumDirect(findCol(r, 'réalisé', 'realise', 'Réalisé', 'Realise', 'aor', 'AOR')),
+      encours: toNumDirect(findCol(r, 'en cours', 'encours', 'En cours')),
+      plusValues: toNumDirect(findCol(r, '+values/-values', 'plusValues', '+values')),
+      extourne: findCol(r, 'EXTOURNE', 'extourne') || 'N',
+    })).filter(r => r.service !== '' || r.compte !== '');
+  }
   return parseSDR(rowsToCSV(rows));
 }
 
 export function parserBalance(rows: Record<string, string>[], _typeBudget: TypeBudget): LigneBalance[] {
+  if (rows.length === 0) return [];
+  const keys = Object.keys(rows[0]);
+  const hasDirectCols = keys.some(k => {
+    const nk = normalizeHeader(k);
+    return nk.includes('compte') || nk.includes('solde') || nk.includes('debit');
+  });
+  if (hasDirectCols) {
+    return rows
+      .filter(r => {
+        const compte = findCol(r, 'Compte', 'compte');
+        return compte && /^\d/.test(compte) && compte.length >= 3;
+      })
+      .map(r => {
+        const compte = findCol(r, 'Compte', 'compte').replace(/[^0-9]/g, '').substring(0, 9);
+        return {
+          compte,
+          intituleReduit: findCol(r, 'Intitulé réduit du compte', 'intitule', 'Libellé', 'Intitule reduit du compte') || compte,
+          type: findCol(r, 'Type', 'type'),
+          antDbt: toNumDirect(findCol(r, 'Montant débit antérieur', 'Montant debit anterieur', 'antDbt')),
+          antCrd: toNumDirect(findCol(r, 'Montant crédit antérieur', 'Montant credit anterieur', 'antCrd')),
+          dbt: toNumDirect(findCol(r, 'Montant débit', 'Montant debit', 'dbt')),
+          crd: toNumDirect(findCol(r, 'Montant crédit', 'Montant credit', 'crd')),
+          solDbt: toNumDirect(findCol(r, 'Solde débit', 'Solde debit', 'solDbt')),
+          solCrd: toNumDirect(findCol(r, 'Solde crédit', 'Solde credit', 'solCrd')),
+          poste: findCol(r, 'Poste', 'poste'),
+          classe: compte.charAt(0),
+          ssClasse: compte.substring(0, 2),
+          ssSsClasse: compte.substring(0, 3),
+          etablissement: findCol(r, 'Etablissement', 'etablissement'),
+        };
+      })
+      .filter(r => r.compte !== '');
+  }
   return parseBalance(rowsToCSV(rows));
 }
 
