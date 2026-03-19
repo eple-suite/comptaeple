@@ -90,28 +90,36 @@ function extractExercice(rows: Record<string, string>[]): number | null {
 }
 
 /** Détecte le type de document à partir de ses colonnes (matching souple) */
-function detectDocumentType(headers: string[]): 'sde' | 'sdr' | 'bal' | null {
+function detectDocumentType(headers: string[], sheetTitle?: string | null): 'sde' | 'sdr' | 'bal' | null {
   const has = (...aliases: string[]) => findColumnIndex(headers, aliases) !== -1;
 
-  const scores = {
-    sde: 0,
-    sdr: 0,
-    bal: 0,
-  };
+  const scores = { sde: 0, sdr: 0, bal: 0 };
 
-  if (has('service', 'cgr de niveau 3', 'cgr et intitule reduit 3')) scores.sde += 2;
-  if (has('domaine', 'cgr de niveau 4', 'cgr et intitule reduit 4')) scores.sde += 2;
-  if (has('budget')) scores.sde += 2;
-  if (has('engage', 'engagé')) scores.sde += 1;
-  if (has('realise', 'réalisé')) scores.sde += 1;
-  if (has('disponible', 'en cours', 'encours', 'ext')) scores.sde += 2;
+  // ── Strong signal from ECBU sheet title ──
+  if (sheetTitle) {
+    const t = normalizeColumnName(sheetTitle);
+    if (t.includes('depense')) scores.sde += 15;
+    if (t.includes('recette')) scores.sdr += 15;
+    if (t.includes('balance')) scores.bal += 15;
+  }
 
-  if (has('service', 'cgr de niveau 3', 'cgr et intitule reduit 3')) scores.sdr += 2;
-  if (has('domaine', 'cgr de niveau 4', 'cgr et intitule reduit 4')) scores.sdr += 2;
-  if (has('budget')) scores.sdr += 2;
-  if (has('aor', 'extourne', '+values', 'plus values', '+/- value')) scores.sdr += 3;
-  if (has('realise', 'réalisé')) scores.sdr += 1;
+  // ── Shared SDE/SDR columns (don't differentiate) ──
+  if (has('service', 'cgr de niveau 3', 'cgr et intitule reduit 3')) { scores.sde += 2; scores.sdr += 2; }
+  if (has('domaine', 'cgr de niveau 4', 'cgr et intitule reduit 4')) { scores.sde += 2; scores.sdr += 2; }
+  if (has('budget')) { scores.sde += 2; scores.sdr += 2; }
+  if (has('realise', 'réalisé', 'realise comptable')) { scores.sde += 1; scores.sdr += 1; }
+  if (has('engage', 'engagé')) { scores.sde += 1; scores.sdr += 1; }
 
+  // ── SDE-exclusive indicators ──
+  if (has('disponible')) scores.sde += 4;
+
+  // ── SDR-exclusive indicators ──
+  if (has('aor', 'extourne', '+values', 'plus values', '+/- value', '+values/-values')) scores.sdr += 5;
+
+  // ── "en cours" appears in both SDE and SDR, slight SDE lean only ──
+  if (has('en cours', 'encours')) { scores.sde += 1; scores.sdr += 1; }
+
+  // ── Balance indicators ──
   if (has('compte', 'compte et intitule', 'compte et intitulé')) scores.bal += 2;
   if (has('debit', 'débit')) scores.bal += 2;
   if (has('credit', 'crédit')) scores.bal += 2;
