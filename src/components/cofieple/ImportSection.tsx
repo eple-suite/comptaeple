@@ -209,6 +209,21 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): Record<strin
 
   for (const sheetName of wb.SheetNames) {
     const ws = wb.Sheets[sheetName];
+
+    // Fix broken !ref range — Op@le pivot exports often declare only 2 rows
+    // while actual cell data extends much further.
+    if (ws['!ref']) {
+      let maxRow = 0;
+      for (const key of Object.keys(ws)) {
+        const m = key.match(/^[A-Z]+(\d+)$/);
+        if (m) { const r = parseInt(m[1], 10); if (r > maxRow) maxRow = r; }
+      }
+      const refMatch = ws['!ref'].match(/^([A-Z]+\d+):([A-Z]+)(\d+)$/);
+      if (refMatch && maxRow > parseInt(refMatch[3], 10)) {
+        ws['!ref'] = `${refMatch[1]}:${refMatch[2]}${maxRow}`;
+      }
+    }
+
     const matrix = XLSX.utils.sheet_to_json<(string | number | boolean | null | undefined)[]>(ws, {
       header: 1,
       defval: '',
