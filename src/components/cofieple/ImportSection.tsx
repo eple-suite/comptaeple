@@ -19,6 +19,7 @@ import { useEstablishment } from '@/contexts/EstablishmentContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { parserSDE, parserSDR, parserBalance } from '@/lib/cofieple_calculations';
+import { buildRowsFromSheetMatrix, findColumnIndex, normalizeColumnName } from '@/lib/opaleImportUtils';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 
 interface FileSlot {
@@ -51,7 +52,7 @@ function extractCsvIdentifier(rows: Record<string, string>[]): { uai: string | n
   for (const row of rows.slice(0, 20)) {
     for (const [key, val] of Object.entries(row)) {
       const v = String(val || '').trim().toUpperCase();
-      const k = key.toLowerCase();
+      const k = normalizeColumnName(key);
       if (!uai && (k.includes('rne') || k.includes('uai') || k.includes('etablissement'))) {
         if (/^[0-9]{7}[A-Z]$/.test(v)) uai = v;
       }
@@ -70,15 +71,14 @@ function extractCsvIdentifier(rows: Record<string, string>[]): { uai: string | n
 function extractExercice(rows: Record<string, string>[]): number | null {
   for (const row of rows.slice(0, 20)) {
     for (const [key, val] of Object.entries(row)) {
-      const k = key.toLowerCase();
+      const k = normalizeColumnName(key);
       const v = String(val || '').trim();
-      if (k.includes('exercice') || k.includes('année') || k.includes('annee')) {
+      if (k.includes('exercice') || k.includes('annee')) {
         const year = parseInt(v, 10);
         if (year >= 2000 && year <= 2099) return year;
       }
     }
   }
-  // Fallback: check any numeric column value that looks like a year
   for (const row of rows.slice(0, 5)) {
     for (const val of Object.values(row)) {
       const v = String(val || '').trim();
@@ -89,31 +89,39 @@ function extractExercice(rows: Record<string, string>[]): number | null {
   return null;
 }
 
-// ── Colonnes attendues par type de document ──────────────────────────
-const COLONNES_ATTENDUES: Record<string, string[]> = {
-  sde: ['service', 'domaine', 'compte', 'budget', 'réalisé', 'disponible', 'realise', 'engagé', 'engage'],
-  sdr: ['service', 'domaine', 'compte', 'budget', 'réalisé', 'aor', 'realise', 'engagé', 'engage'],
-  bal: ['compte', 'intitulé', 'débit', 'crédit', 'solde', 'montant', 'poste', 'type'],
-};
-
-/** Détecte le type de document CSV à partir de ses colonnes */
+/** Détecte le type de document à partir de ses colonnes (matching souple) */
 function detectDocumentType(headers: string[]): 'sde' | 'sdr' | 'bal' | null {
-  const lowerHeaders = headers.map(h => h.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
-  // Balance: has 'solde' or both 'debit anterieur' and 'credit anterieur'
-  const hasPoste = lowerHeaders.some(h => h.includes('poste'));
-  const hasSolde = lowerHeaders.some(h => h.includes('solde'));
-  const hasAnterieur = lowerHeaders.some(h => h.includes('anterieur'));
-  if ((hasSolde && hasAnterieur) || (hasPoste && hasSolde)) return 'bal';
-  // SDR: has 'aor' or '+values'
-  const hasAor = lowerHeaders.some(h => h.includes('aor'));
-  const hasPlusValues = lowerHeaders.some(h => h.includes('values') || h.includes('extourne'));
-  if (hasAor || hasPlusValues) return 'sdr';
-  // SDE: has 'disponible' or 'en cours'
-  const hasDispo = lowerHeaders.some(h => h.includes('disponible'));
-  const hasEncours = lowerHeaders.some(h => h.includes('en cours') || h.includes('encours'));
-  const hasExt = lowerHeaders.some(h => h.includes('ext'));
-  if (hasDispo || hasEncours || hasExt) return 'sde';
-  return null;
+  const has = (...aliases: string[]) => findColumnIndex(headers, aliases) !== -1;
+
+  const scores = {
+    sde: 0,
+    sdr: 0,
+    bal: 0,
+  };
+
+  if (has('service')) scores.sde += 1;
+  if (has('domaine')) scores.sde += 1;
+  if (has('budget')) scores.sde += 1;
+  if (has('realise', 'réalisé')) scores.sde += 1;
+  if (has('disponible', 'en cours', 'encours', 'ext')) scores.sde += 2;
+
+  if (has('service')) scores.sdr += 1;
+  if (has('domaine')) scores.sdr += 1;
+  if (has('budget')) scores.sdr += 1;
+  if (has('aor', 'extourne', '+values', 'plus values')) scores.sdr += 3;
+  if (has('realise', 'réalisé')) scores.sdr += 1;
+
+  if (has('compte', 'compte et intitule', 'compte et intitulé')) scores.bal += 2;
+  if (has('debit', 'débit')) scores.bal += 2;
+  if (has('credit', 'crédit')) scores.bal += 2;
+  if (has('solde')) scores.bal += 2;
+  if (has('anterieur', 'antérieur', 'poste', 'montant')) scores.bal += 1;
+
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const [bestType, bestScore] = sorted[0];
+
+  if (bestScore < 3) return null;
+  return bestType as 'sde' | 'sdr' | 'bal';
 }
 
 /** Vérifie que les colonnes du fichier correspondent au type de slot attendu */
