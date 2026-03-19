@@ -405,7 +405,7 @@ export function ImportSection() {
         <CardContent className="p-4 flex items-start gap-3">
           <Info className="h-5 w-5 text-primary mt-0.5 shrink-0" />
           <div className="text-xs">
-            Importez les fichiers CSV extraits depuis <strong>Op@le</strong>. Les fichiers{' '}
+            Importez les fichiers <strong>CSV ou Excel</strong> extraits depuis <strong>Op@le</strong>. Les fichiers{' '}
             <strong>SDE, SDR et Balance</strong> sont obligatoires. Les fichiers N-1 permettent les comparaisons
             inter-exercices. Pour les budgets annexes (GRETA/CFA), importez leurs fichiers dédiés.
           </div>
