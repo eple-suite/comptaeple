@@ -67,8 +67,11 @@ function extractCsvIdentifier(rows: Record<string, string>[]): { uai: string | n
   return { uai, opale };
 }
 
-/** Extrait l'exercice comptable depuis les données CSV */
-function extractExercice(rows: Record<string, string>[]): number | null {
+/** Extrait l'exercice comptable depuis les données CSV.
+ *  Priorité : champ exercice > période "du …/YYYY au …/YYYY" > année isolée.
+ *  On ignore les dates d'édition (ex. "Edité au : 04/03/2026"). */
+function extractExercice(rows: Record<string, string>[], sheetMeta?: string | null): number | null {
+  // 1) Explicit "exercice" / "annee" field
   for (const row of rows.slice(0, 20)) {
     for (const [key, val] of Object.entries(row)) {
       const k = normalizeColumnName(key);
@@ -79,8 +82,21 @@ function extractExercice(rows: Record<string, string>[]): number | null {
       }
     }
   }
+
+  // 2) Period pattern "du MM/YYYY au MM/YYYY" or "du JJ/MM/YYYY au JJ/MM/YYYY" — use ending year
+  const allText = (sheetMeta || '') + ' ' + rows.slice(0, 10).map(r => Object.values(r).join(' ')).join(' ');
+  const periodMatch = allText.match(/du\s+[\d/]+\s*au\s+\d{0,2}\/?(\d{4})/i)
+    || allText.match(/du\s+\d{2}\/(\d{4})\s+au/i);
+  if (periodMatch) {
+    const year = parseInt(periodMatch[1], 10);
+    if (year >= 2000 && year <= 2099) return year;
+  }
+
+  // 3) Fallback: first year found in first 5 rows (excluding "edite" / "date" fields)
   for (const row of rows.slice(0, 5)) {
-    for (const val of Object.values(row)) {
+    for (const [key, val] of Object.entries(row)) {
+      const k = normalizeColumnName(key);
+      if (k.includes('edite') || k.includes('date')) continue;
       const v = String(val || '').trim();
       const m = v.match(/\b(20[0-9]{2})\b/);
       if (m) return parseInt(m[1], 10);
