@@ -369,7 +369,7 @@ function tripleLockCheck(
   }
 
   // ── VERROU 2 : Exercice comptable ──
-  const fileExercice = extractExercice(rows);
+  const fileExercice = extractExercice(rows, sheetMeta);
   if (fileExercice && exerciceTravail && fileExercice !== exerciceTravail) {
     // Allow N-1 files in N-1 slots
     const isN1Slot = slotType.endsWith('1');
