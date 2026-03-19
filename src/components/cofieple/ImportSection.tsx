@@ -346,6 +346,8 @@ function tripleLockCheck(
   selectedUai: string,
   selectedOpale: string,
   exerciceTravail: number,
+  sheetTitle?: string | null,
+  sheetMeta?: string | null,
 ): TripleLockResult {
   // ── VERROU 1 : Code Op@le / UAI ──
   const { uai: fileUai, opale: fileOpale } = extractCsvIdentifier(rows);
