@@ -226,8 +226,47 @@ function normalizeRowsForImport(rows: Record<string, string>[]): Record<string, 
   });
 }
 
-function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): Record<string, string>[] {
+/** Extract document title from ECBU or first sheet (e.g. "SITUATION DES RECETTES") */
+function extractWorkbookTitle(wb: XLSX.WorkBook): string | null {
+  for (const sn of wb.SheetNames) {
+    if (normalizeColumnName(sn).includes('donnee')) continue; // skip data sheet
+    const ws = wb.Sheets[sn];
+    // Scan first 5 rows for a title string
+    for (let r = 1; r <= 5; r++) {
+      for (let c = 1; c <= 10; c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r: r - 1, c: c - 1 })];
+        if (cell && typeof cell.v === 'string') {
+          const v = cell.v.trim();
+          if (/situation\s+des\s+(depenses|recettes|dépenses)/i.test(v) || /balance\s+comptable/i.test(v)) {
+            return v;
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/** Extract raw metadata text from ECBU/first sheet for exercise detection */
+function extractWorkbookMeta(wb: XLSX.WorkBook): string {
+  const parts: string[] = [];
+  for (const sn of wb.SheetNames) {
+    if (normalizeColumnName(sn).includes('donnee')) continue;
+    const ws = wb.Sheets[sn];
+    for (let r = 1; r <= 8; r++) {
+      for (let c = 1; c <= 16; c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r: r - 1, c: c - 1 })];
+        if (cell && cell.v != null) parts.push(String(cell.v));
+      }
+    }
+  }
+  return parts.join(' ');
+}
+
+function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Record<string, string>[]; title: string | null; meta: string } {
   const expectedType = slotType.replace('1', '');
+  const title = extractWorkbookTitle(wb);
+  const meta = extractWorkbookMeta(wb);
   let bestRows: Record<string, string>[] = [];
   let bestScore = -Infinity;
 
@@ -235,7 +274,6 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): Record<strin
     const ws = wb.Sheets[sheetName];
 
     // Fix broken !ref range — Op@le pivot exports often declare only 2 rows
-    // while actual cell data extends much further.
     if (ws['!ref']) {
       let maxRow = 0;
       for (const key of Object.keys(ws)) {
@@ -249,9 +287,7 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): Record<strin
     }
 
     const matrix = XLSX.utils.sheet_to_json<(string | number | boolean | null | undefined)[]>(ws, {
-      header: 1,
-      defval: '',
-      raw: false,
+      header: 1, defval: '', raw: false,
     });
 
     const initialRows = buildRowsFromSheetMatrix(matrix);
@@ -259,7 +295,7 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): Record<strin
 
     const rows = normalizeRowsForImport(initialRows);
     const headers = Object.keys(rows[0] || {});
-    const detected = detectDocumentType(headers);
+    const detected = detectDocumentType(headers, title);
 
     let score = 0;
     score += Math.min(rows.length, 200) / 40;
@@ -274,7 +310,7 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): Record<strin
     }
   }
 
-  return bestRows;
+  return { rows: bestRows, title, meta };
 }
 
 /** Vérifie que les colonnes du fichier correspondent au type de slot attendu */
