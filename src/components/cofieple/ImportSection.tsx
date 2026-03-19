@@ -314,9 +314,9 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
 }
 
 /** Vérifie que les colonnes du fichier correspondent au type de slot attendu */
-function validateColumns(headers: string[], slotType: string): { ok: boolean; detected: string | null; message?: string } {
+function validateColumns(headers: string[], slotType: string, sheetTitle?: string | null): { ok: boolean; detected: string | null; message?: string } {
   const baseType = slotType.replace('1', ''); // sde1 → sde
-  const detected = detectDocumentType(headers);
+  const detected = detectDocumentType(headers, sheetTitle);
   if (!detected) {
     return { ok: false, detected: null, message: `Structure de colonnes non reconnue. Le fichier ne correspond à aucun format Op@le connu (SDE, SDR, Balance).` };
   }
