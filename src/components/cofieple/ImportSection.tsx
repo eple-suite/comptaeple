@@ -377,12 +377,15 @@ export function ImportSection() {
     }
   }
 
-  function processImportedRows(rows: Record<string, string>[], fileName: string, slot: FileSlot) {
+  function processImportedRows(rawRows: Record<string, string>[], fileName: string, slot: FileSlot) {
+    const rows = normalizeRowsForImport(rawRows);
+
     if (!rows || rows.length === 0) {
       setErrors(prev => ({ ...prev, [slot.key]: 'Fichier vide ou format non reconnu' }));
       logImport({ fileName, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: 0, result: 'error', rejectReason: 'Fichier vide ou format non reconnu' });
       return;
     }
+
     const headers = Object.keys(rows[0] || {});
     const { uai: csvUai, opale: csvOpale } = extractCsvIdentifier(rows);
     const csvExercice = extractExercice(rows);
@@ -429,13 +432,7 @@ export function ImportSection() {
       reader.onload = (evt) => {
         try {
           const wb = XLSX.read(evt.target?.result, { type: 'array' });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const matrix = XLSX.utils.sheet_to_json<(string | number | boolean | null | undefined)[]>(ws, {
-            header: 1,
-            defval: '',
-            raw: false,
-          });
-          const rows = buildRowsFromSheetMatrix(matrix);
+          const rows = pickBestWorkbookRows(wb, slot.type);
           processImportedRows(rows, file.name, slot);
         } catch (err: any) {
           setErrors(prev => ({ ...prev, [slot.key]: `Erreur Excel : ${err.message || 'Format non reconnu'}` }));
@@ -448,7 +445,8 @@ export function ImportSection() {
 
     // ── CSV / TXT files ──
     Papa.parse<Record<string, string>>(file, {
-      header: true, skipEmptyLines: true,
+      header: true,
+      skipEmptyLines: true,
       encoding: 'UTF-8',
       complete: (results) => {
         processImportedRows(results.data as Record<string, string>[], file.name, slot);
