@@ -454,7 +454,7 @@ export function ImportSection() {
     }
   }
 
-  function processImportedRows(rawRows: Record<string, string>[], fileName: string, slot: FileSlot) {
+  function processImportedRows(rawRows: Record<string, string>[], fileName: string, slot: FileSlot, sheetTitle?: string | null, sheetMeta?: string | null) {
     const rows = normalizeRowsForImport(rawRows);
 
     if (!rows || rows.length === 0) {
@@ -465,12 +465,12 @@ export function ImportSection() {
 
     const headers = Object.keys(rows[0] || {});
     const { uai: csvUai, opale: csvOpale } = extractCsvIdentifier(rows);
-    const csvExercice = extractExercice(rows);
-    const csvDocType = detectDocumentType(headers);
+    const csvExercice = extractExercice(rows, sheetMeta);
+    const csvDocType = detectDocumentType(headers, sheetTitle);
 
     // ── TRIPLE VERROU DE SÉCURITÉ ──
     if (selectedEstablishment) {
-      const lock = tripleLockCheck(rows, headers, slot.type, selectedEstablishment.uai, selectedEstablishment.opale_number || '', exerciceTravail);
+      const lock = tripleLockCheck(rows, headers, slot.type, selectedEstablishment.uai, selectedEstablishment.opale_number || '', exerciceTravail, sheetTitle, sheetMeta);
       if (!lock.ok) {
         const resultCode = lock.type === 'opale' ? 'blocked_opale' : lock.type === 'exercice' ? 'blocked_exercice' : 'blocked_colonnes';
         setSecurityBlocks(prev => ({ ...prev, [slot.key]: lock.message || 'Import bloqué' }));
