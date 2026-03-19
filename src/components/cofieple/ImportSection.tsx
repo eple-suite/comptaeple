@@ -385,7 +385,7 @@ function tripleLockCheck(
   }
 
   // ── VERROU 3 : Nature du flux (colonnes) ──
-  const colCheck = validateColumns(headers, slotType);
+  const colCheck = validateColumns(headers, slotType, sheetTitle);
   if (!colCheck.ok) {
     return {
       ok: false, type: 'colonnes',
