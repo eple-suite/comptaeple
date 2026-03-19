@@ -99,16 +99,17 @@ function detectDocumentType(headers: string[]): 'sde' | 'sdr' | 'bal' | null {
     bal: 0,
   };
 
-  if (has('service')) scores.sde += 1;
-  if (has('domaine')) scores.sde += 1;
-  if (has('budget')) scores.sde += 1;
+  if (has('service', 'cgr de niveau 3', 'cgr et intitule reduit 3')) scores.sde += 2;
+  if (has('domaine', 'cgr de niveau 4', 'cgr et intitule reduit 4')) scores.sde += 2;
+  if (has('budget')) scores.sde += 2;
+  if (has('engage', 'engagé')) scores.sde += 1;
   if (has('realise', 'réalisé')) scores.sde += 1;
   if (has('disponible', 'en cours', 'encours', 'ext')) scores.sde += 2;
 
-  if (has('service')) scores.sdr += 1;
-  if (has('domaine')) scores.sdr += 1;
-  if (has('budget')) scores.sdr += 1;
-  if (has('aor', 'extourne', '+values', 'plus values')) scores.sdr += 3;
+  if (has('service', 'cgr de niveau 3', 'cgr et intitule reduit 3')) scores.sdr += 2;
+  if (has('domaine', 'cgr de niveau 4', 'cgr et intitule reduit 4')) scores.sdr += 2;
+  if (has('budget')) scores.sdr += 2;
+  if (has('aor', 'extourne', '+values', 'plus values', '+/- value')) scores.sdr += 3;
   if (has('realise', 'réalisé')) scores.sdr += 1;
 
   if (has('compte', 'compte et intitule', 'compte et intitulé')) scores.bal += 2;
@@ -122,6 +123,119 @@ function detectDocumentType(headers: string[]): 'sde' | 'sdr' | 'bal' | null {
 
   if (bestScore < 3) return null;
   return bestType as 'sde' | 'sdr' | 'bal';
+}
+
+function findHeaderByAliases(headers: string[], aliases: string[]): string | null {
+  const idx = findColumnIndex(headers, aliases);
+  return idx === -1 ? null : headers[idx];
+}
+
+function extractCgrCode(value: string): string {
+  const v = String(value || '').trim();
+  if (!v || v === '-') return '';
+  return (v.split('-')[0] || v).replace(/\s+/g, ' ').trim();
+}
+
+function normalizeRowsForImport(rows: Record<string, string>[]): Record<string, string>[] {
+  if (!rows.length) return rows;
+
+  const headers = Object.keys(rows[0]);
+  const hasPivotMontants = headers.some((h) => /^montant colonne\s+\d+$/i.test(normalizeColumnName(h)));
+  if (!hasPivotMontants) return rows;
+
+  const metricByAmountHeader = new Map<string, string>();
+
+  for (const amountHeader of headers) {
+    const match = normalizeColumnName(amountHeader).match(/^montant colonne\s+(\d+)$/);
+    if (!match) continue;
+
+    const idx = match[1];
+    const descriptorHeader = findHeaderByAliases(headers, [`colonne ${idx}`, `colonne ${idx} ligne 2`]);
+    if (!descriptorHeader) continue;
+
+    const descriptor = rows
+      .slice(0, 25)
+      .map((r) => String(r[descriptorHeader] ?? '').trim())
+      .find(Boolean) || '';
+
+    const d = normalizeColumnName(descriptor);
+    let metric = '';
+
+    if (d.includes('budget')) metric = 'budget';
+    else if (d.includes('engag')) metric = 'engagé';
+    else if (d.includes('realise')) metric = 'réalisé';
+    else if (d.includes('en cours')) metric = 'en cours';
+    else if (d.includes('disponible')) metric = 'disponible';
+    else if (d.includes('aor')) metric = 'aor';
+    else if (d.includes('extourne')) metric = 'extourne';
+    else if (d.includes('value') || d.includes('plus') || d.includes('+/-')) metric = '+values/-values';
+
+    if (metric) metricByAmountHeader.set(amountHeader, metric);
+  }
+
+  const keyService = findHeaderByAliases(headers, ['service', 'cgr de niveau 3', 'cgr et intitule reduit 3', 'cgr de niveau 2']);
+  const keyDomaine = findHeaderByAliases(headers, ['domaine', 'cgr de niveau 4', 'cgr et intitule reduit 4']);
+  const keyActivite = findHeaderByAliases(headers, ['activite', 'activités', 'cgr de niveau 6', 'cgr et intitule reduit 6', 'cgr de niveau 5']);
+  const keyCompte = findHeaderByAliases(headers, ['compte', 'compte et intitule', 'compte et intitulé']);
+
+  return rows.map((row) => {
+    const next: Record<string, string> = { ...row };
+
+    metricByAmountHeader.forEach((metric, amountHeader) => {
+      const current = String(next[metric] ?? '').trim();
+      if (!current) next[metric] = String(row[amountHeader] ?? '').trim();
+    });
+
+    const serviceCurrent = String(next.service ?? next.Service ?? '').trim();
+    if (!serviceCurrent && keyService) next.service = extractCgrCode(String(row[keyService] ?? ''));
+
+    const domaineCurrent = String(next.domaine ?? next.Domaine ?? '').trim();
+    if (!domaineCurrent && keyDomaine) next.domaine = extractCgrCode(String(row[keyDomaine] ?? ''));
+
+    const activiteCurrent = String(next.activite ?? next['activités'] ?? next.Activité ?? '').trim();
+    if (!activiteCurrent && keyActivite) next.activite = extractCgrCode(String(row[keyActivite] ?? ''));
+
+    const compteCurrent = String(next.compte ?? next.Compte ?? '').trim();
+    if (!compteCurrent && keyCompte) next.compte = String(row[keyCompte] ?? '').trim();
+
+    return next;
+  });
+}
+
+function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): Record<string, string>[] {
+  const expectedType = slotType.replace('1', '');
+  let bestRows: Record<string, string>[] = [];
+  let bestScore = -Infinity;
+
+  for (const sheetName of wb.SheetNames) {
+    const ws = wb.Sheets[sheetName];
+    const matrix = XLSX.utils.sheet_to_json<(string | number | boolean | null | undefined)[]>(ws, {
+      header: 1,
+      defval: '',
+      raw: false,
+    });
+
+    const initialRows = buildRowsFromSheetMatrix(matrix);
+    if (!initialRows.length) continue;
+
+    const rows = normalizeRowsForImport(initialRows);
+    const headers = Object.keys(rows[0] || {});
+    const detected = detectDocumentType(headers);
+
+    let score = 0;
+    score += Math.min(rows.length, 200) / 40;
+    if (detected) score += 6;
+    if (detected === expectedType) score += 20;
+    if (normalizeColumnName(sheetName).includes('donnee')) score += 4;
+    if (headers.some((h) => normalizeColumnName(h).startsWith('montant colonne'))) score += 6;
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestRows = rows;
+    }
+  }
+
+  return bestRows;
 }
 
 /** Vérifie que les colonnes du fichier correspondent au type de slot attendu */
