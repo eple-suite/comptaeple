@@ -67,8 +67,11 @@ function extractCsvIdentifier(rows: Record<string, string>[]): { uai: string | n
   return { uai, opale };
 }
 
-/** Extrait l'exercice comptable depuis les données CSV */
-function extractExercice(rows: Record<string, string>[]): number | null {
+/** Extrait l'exercice comptable depuis les données CSV.
+ *  Priorité : champ exercice > période "du …/YYYY au …/YYYY" > année isolée.
+ *  On ignore les dates d'édition (ex. "Edité au : 04/03/2026"). */
+function extractExercice(rows: Record<string, string>[], sheetMeta?: string | null): number | null {
+  // 1) Explicit "exercice" / "annee" field
   for (const row of rows.slice(0, 20)) {
     for (const [key, val] of Object.entries(row)) {
       const k = normalizeColumnName(key);
@@ -79,8 +82,21 @@ function extractExercice(rows: Record<string, string>[]): number | null {
       }
     }
   }
+
+  // 2) Period pattern "du MM/YYYY au MM/YYYY" or "du JJ/MM/YYYY au JJ/MM/YYYY" — use ending year
+  const allText = (sheetMeta || '') + ' ' + rows.slice(0, 10).map(r => Object.values(r).join(' ')).join(' ');
+  const periodMatch = allText.match(/du\s+[\d/]+\s*au\s+\d{0,2}\/?(\d{4})/i)
+    || allText.match(/du\s+\d{2}\/(\d{4})\s+au/i);
+  if (periodMatch) {
+    const year = parseInt(periodMatch[1], 10);
+    if (year >= 2000 && year <= 2099) return year;
+  }
+
+  // 3) Fallback: first year found in first 5 rows (excluding "edite" / "date" fields)
   for (const row of rows.slice(0, 5)) {
-    for (const val of Object.values(row)) {
+    for (const [key, val] of Object.entries(row)) {
+      const k = normalizeColumnName(key);
+      if (k.includes('edite') || k.includes('date')) continue;
       const v = String(val || '').trim();
       const m = v.match(/\b(20[0-9]{2})\b/);
       if (m) return parseInt(m[1], 10);
@@ -90,28 +106,36 @@ function extractExercice(rows: Record<string, string>[]): number | null {
 }
 
 /** Détecte le type de document à partir de ses colonnes (matching souple) */
-function detectDocumentType(headers: string[]): 'sde' | 'sdr' | 'bal' | null {
+function detectDocumentType(headers: string[], sheetTitle?: string | null): 'sde' | 'sdr' | 'bal' | null {
   const has = (...aliases: string[]) => findColumnIndex(headers, aliases) !== -1;
 
-  const scores = {
-    sde: 0,
-    sdr: 0,
-    bal: 0,
-  };
+  const scores = { sde: 0, sdr: 0, bal: 0 };
 
-  if (has('service', 'cgr de niveau 3', 'cgr et intitule reduit 3')) scores.sde += 2;
-  if (has('domaine', 'cgr de niveau 4', 'cgr et intitule reduit 4')) scores.sde += 2;
-  if (has('budget')) scores.sde += 2;
-  if (has('engage', 'engagé')) scores.sde += 1;
-  if (has('realise', 'réalisé')) scores.sde += 1;
-  if (has('disponible', 'en cours', 'encours', 'ext')) scores.sde += 2;
+  // ── Strong signal from ECBU sheet title ──
+  if (sheetTitle) {
+    const t = normalizeColumnName(sheetTitle);
+    if (t.includes('depense')) scores.sde += 15;
+    if (t.includes('recette')) scores.sdr += 15;
+    if (t.includes('balance')) scores.bal += 15;
+  }
 
-  if (has('service', 'cgr de niveau 3', 'cgr et intitule reduit 3')) scores.sdr += 2;
-  if (has('domaine', 'cgr de niveau 4', 'cgr et intitule reduit 4')) scores.sdr += 2;
-  if (has('budget')) scores.sdr += 2;
-  if (has('aor', 'extourne', '+values', 'plus values', '+/- value')) scores.sdr += 3;
-  if (has('realise', 'réalisé')) scores.sdr += 1;
+  // ── Shared SDE/SDR columns (don't differentiate) ──
+  if (has('service', 'cgr de niveau 3', 'cgr et intitule reduit 3')) { scores.sde += 2; scores.sdr += 2; }
+  if (has('domaine', 'cgr de niveau 4', 'cgr et intitule reduit 4')) { scores.sde += 2; scores.sdr += 2; }
+  if (has('budget')) { scores.sde += 2; scores.sdr += 2; }
+  if (has('realise', 'réalisé', 'realise comptable')) { scores.sde += 1; scores.sdr += 1; }
+  if (has('engage', 'engagé')) { scores.sde += 1; scores.sdr += 1; }
 
+  // ── SDE-exclusive indicators ──
+  if (has('disponible')) scores.sde += 4;
+
+  // ── SDR-exclusive indicators ──
+  if (has('aor', 'extourne', '+values', 'plus values', '+/- value', '+values/-values')) scores.sdr += 5;
+
+  // ── "en cours" appears in both SDE and SDR, slight SDE lean only ──
+  if (has('en cours', 'encours')) { scores.sde += 1; scores.sdr += 1; }
+
+  // ── Balance indicators ──
   if (has('compte', 'compte et intitule', 'compte et intitulé')) scores.bal += 2;
   if (has('debit', 'débit')) scores.bal += 2;
   if (has('credit', 'crédit')) scores.bal += 2;
@@ -202,8 +226,47 @@ function normalizeRowsForImport(rows: Record<string, string>[]): Record<string, 
   });
 }
 
-function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): Record<string, string>[] {
+/** Extract document title from ECBU or first sheet (e.g. "SITUATION DES RECETTES") */
+function extractWorkbookTitle(wb: XLSX.WorkBook): string | null {
+  for (const sn of wb.SheetNames) {
+    if (normalizeColumnName(sn).includes('donnee')) continue; // skip data sheet
+    const ws = wb.Sheets[sn];
+    // Scan first 5 rows for a title string
+    for (let r = 1; r <= 5; r++) {
+      for (let c = 1; c <= 10; c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r: r - 1, c: c - 1 })];
+        if (cell && typeof cell.v === 'string') {
+          const v = cell.v.trim();
+          if (/situation\s+des\s+(depenses|recettes|dépenses)/i.test(v) || /balance\s+comptable/i.test(v)) {
+            return v;
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
+/** Extract raw metadata text from ECBU/first sheet for exercise detection */
+function extractWorkbookMeta(wb: XLSX.WorkBook): string {
+  const parts: string[] = [];
+  for (const sn of wb.SheetNames) {
+    if (normalizeColumnName(sn).includes('donnee')) continue;
+    const ws = wb.Sheets[sn];
+    for (let r = 1; r <= 8; r++) {
+      for (let c = 1; c <= 16; c++) {
+        const cell = ws[XLSX.utils.encode_cell({ r: r - 1, c: c - 1 })];
+        if (cell && cell.v != null) parts.push(String(cell.v));
+      }
+    }
+  }
+  return parts.join(' ');
+}
+
+function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Record<string, string>[]; title: string | null; meta: string } {
   const expectedType = slotType.replace('1', '');
+  const title = extractWorkbookTitle(wb);
+  const meta = extractWorkbookMeta(wb);
   let bestRows: Record<string, string>[] = [];
   let bestScore = -Infinity;
 
@@ -211,7 +274,6 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): Record<strin
     const ws = wb.Sheets[sheetName];
 
     // Fix broken !ref range — Op@le pivot exports often declare only 2 rows
-    // while actual cell data extends much further.
     if (ws['!ref']) {
       let maxRow = 0;
       for (const key of Object.keys(ws)) {
@@ -225,9 +287,7 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): Record<strin
     }
 
     const matrix = XLSX.utils.sheet_to_json<(string | number | boolean | null | undefined)[]>(ws, {
-      header: 1,
-      defval: '',
-      raw: false,
+      header: 1, defval: '', raw: false,
     });
 
     const initialRows = buildRowsFromSheetMatrix(matrix);
@@ -235,7 +295,7 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): Record<strin
 
     const rows = normalizeRowsForImport(initialRows);
     const headers = Object.keys(rows[0] || {});
-    const detected = detectDocumentType(headers);
+    const detected = detectDocumentType(headers, title);
 
     let score = 0;
     score += Math.min(rows.length, 200) / 40;
@@ -250,13 +310,13 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): Record<strin
     }
   }
 
-  return bestRows;
+  return { rows: bestRows, title, meta };
 }
 
 /** Vérifie que les colonnes du fichier correspondent au type de slot attendu */
-function validateColumns(headers: string[], slotType: string): { ok: boolean; detected: string | null; message?: string } {
+function validateColumns(headers: string[], slotType: string, sheetTitle?: string | null): { ok: boolean; detected: string | null; message?: string } {
   const baseType = slotType.replace('1', ''); // sde1 → sde
-  const detected = detectDocumentType(headers);
+  const detected = detectDocumentType(headers, sheetTitle);
   if (!detected) {
     return { ok: false, detected: null, message: `Structure de colonnes non reconnue. Le fichier ne correspond à aucun format Op@le connu (SDE, SDR, Balance).` };
   }
@@ -286,6 +346,8 @@ function tripleLockCheck(
   selectedUai: string,
   selectedOpale: string,
   exerciceTravail: number,
+  sheetTitle?: string | null,
+  sheetMeta?: string | null,
 ): TripleLockResult {
   // ── VERROU 1 : Code Op@le / UAI ──
   const { uai: fileUai, opale: fileOpale } = extractCsvIdentifier(rows);
@@ -307,7 +369,7 @@ function tripleLockCheck(
   }
 
   // ── VERROU 2 : Exercice comptable ──
-  const fileExercice = extractExercice(rows);
+  const fileExercice = extractExercice(rows, sheetMeta);
   if (fileExercice && exerciceTravail && fileExercice !== exerciceTravail) {
     // Allow N-1 files in N-1 slots
     const isN1Slot = slotType.endsWith('1');
@@ -323,7 +385,7 @@ function tripleLockCheck(
   }
 
   // ── VERROU 3 : Nature du flux (colonnes) ──
-  const colCheck = validateColumns(headers, slotType);
+  const colCheck = validateColumns(headers, slotType, sheetTitle);
   if (!colCheck.ok) {
     return {
       ok: false, type: 'colonnes',
@@ -392,7 +454,7 @@ export function ImportSection() {
     }
   }
 
-  function processImportedRows(rawRows: Record<string, string>[], fileName: string, slot: FileSlot) {
+  function processImportedRows(rawRows: Record<string, string>[], fileName: string, slot: FileSlot, sheetTitle?: string | null, sheetMeta?: string | null) {
     const rows = normalizeRowsForImport(rawRows);
 
     if (!rows || rows.length === 0) {
@@ -403,12 +465,12 @@ export function ImportSection() {
 
     const headers = Object.keys(rows[0] || {});
     const { uai: csvUai, opale: csvOpale } = extractCsvIdentifier(rows);
-    const csvExercice = extractExercice(rows);
-    const csvDocType = detectDocumentType(headers);
+    const csvExercice = extractExercice(rows, sheetMeta);
+    const csvDocType = detectDocumentType(headers, sheetTitle);
 
     // ── TRIPLE VERROU DE SÉCURITÉ ──
     if (selectedEstablishment) {
-      const lock = tripleLockCheck(rows, headers, slot.type, selectedEstablishment.uai, selectedEstablishment.opale_number || '', exerciceTravail);
+      const lock = tripleLockCheck(rows, headers, slot.type, selectedEstablishment.uai, selectedEstablishment.opale_number || '', exerciceTravail, sheetTitle, sheetMeta);
       if (!lock.ok) {
         const resultCode = lock.type === 'opale' ? 'blocked_opale' : lock.type === 'exercice' ? 'blocked_exercice' : 'blocked_colonnes';
         setSecurityBlocks(prev => ({ ...prev, [slot.key]: lock.message || 'Import bloqué' }));
@@ -447,8 +509,8 @@ export function ImportSection() {
       reader.onload = (evt) => {
         try {
           const wb = XLSX.read(evt.target?.result, { type: 'array' });
-          const rows = pickBestWorkbookRows(wb, slot.type);
-          processImportedRows(rows, file.name, slot);
+          const { rows, title, meta } = pickBestWorkbookRows(wb, slot.type);
+          processImportedRows(rows, file.name, slot, title, meta);
         } catch (err: any) {
           setErrors(prev => ({ ...prev, [slot.key]: `Erreur Excel : ${err.message || 'Format non reconnu'}` }));
         }
