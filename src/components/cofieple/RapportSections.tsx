@@ -508,17 +508,17 @@ export function RapportACSection() {
           </div>
 
           {/* Section 13: Prélèvements sur réserves */}
-          {R.prelevementsReserves && R.prelevementsReserves.totalPrelevements > 0 && (
+          {safe.prelevementsReserves.totalPrelevements > 0 && (
             <>
               <SectionTitre numero="13" title="Prélèvements sur réserves (classe 106)" />
               <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 mb-4 text-xs leading-relaxed">
                 <p className="font-semibold text-foreground mb-2">
                   Au cours de l'exercice {etab.exercice}, l'établissement a procédé à un prélèvement total sur ses réserves
-                  de <strong className="text-destructive">{formatEur(R.prelevementsReserves.totalPrelevements)}</strong>, dont :
+                  de <strong className="text-destructive">{formatEur(safe.prelevementsReserves.totalPrelevements)}</strong>, dont :
                 </p>
                 <ul className="list-disc ml-4 space-y-1 text-muted-foreground">
-                  <li><strong className="text-foreground">{formatEur(R.prelevementsReserves.prelevementsInvestissement)}</strong> pour le financement d'investissements</li>
-                  <li><strong className="text-foreground">{formatEur(R.prelevementsReserves.prelevementsFonctionnement)}</strong> pour des dépenses exceptionnelles de fonctionnement</li>
+                  <li><strong className="text-foreground">{formatEur(safe.prelevementsReserves.prelevementsInvestissement)}</strong> pour le financement d'investissements</li>
+                  <li><strong className="text-foreground">{formatEur(safe.prelevementsReserves.prelevementsFonctionnement)}</strong> pour des dépenses exceptionnelles de fonctionnement</li>
                 </ul>
               </div>
             </>
