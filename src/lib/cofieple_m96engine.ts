@@ -217,8 +217,7 @@ export function calculerResultatsM96(
   const tauxExecProduits = totalProduitsPrev > 0 ? totalProduitsSdr / totalProduitsPrev : 0;
   const joursAutonomie   = totalChargesSde > 0 ? (tresorerie / (totalChargesSde / 365)) : 0;
   const ratioFdrBfr      = bfr !== 0 ? fdrBas / bfr : 0;
-  const totalChargesBalance = dbtCl6 - crdCl6;
-  const totalProduitsBalance = crdCl7 - dbtCl7;
+  // totalChargesBalance and totalProduitsBalance already computed above (lines 55-56)
   const ressourcesPropres = sdr.filter(r => /^7[0-6]/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const recettesAutogenerees = sdr.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
 
