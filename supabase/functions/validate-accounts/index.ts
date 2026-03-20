@@ -37,20 +37,29 @@ OUTILS AC DE RÉFÉRENCE :
 - Effesco : effectifs restauration / crédit nourriture
 - Op@le : progiciel comptable (ex-GFC/COFI)
 
-SOLDES NORMAUX DE RÉFÉRENCE :
-- Classe 1 (capitaux) : CRÉDITEUR (sauf 119 débiteur)
-- Classe 2 (immobilisations) : DÉBITEUR (sauf 28 amortissements créditeur)
-- Classe 3 (stocks) : DÉBITEUR
+SOLDES NORMAUX DE RÉFÉRENCE (M9-6 du 19/01/2026) :
+- Classe 1 (capitaux) : CRÉDITEUR (sauf 119 débiteur = report à nouveau déficitaire, 129 débiteur = déficit, 139 débiteur = quote-part virée au CdR, 18x mixte = comptes de liaison)
+- Classe 2 (immobilisations) :
+  * 20x, 21x, 22x, 23x, 24x, 25x, 26x, 27x : DÉBITEUR (actif brut)
+  * 28x (amortissements) : CRÉDITEUR (passif correcteur, diminution de l'actif)
+  * 29x (dépréciations) : CRÉDITEUR (passif correcteur)
+- Classe 3 (stocks) : DÉBITEUR (sauf 39x dépréciations → CRÉDITEUR)
 - Classe 4 (tiers) : VARIABLE selon le compte
-  - 401 fournisseurs : CRÉDITEUR
+  - 401 fournisseurs : CRÉDITEUR (dettes)
+  - 409 avances fournisseurs : DÉBITEUR
   - 4112/4113 familles : DÉBITEUR (créances)
   - 416 créances douteuses : DÉBITEUR
-  - 421 personnel : CRÉDITEUR
-  - 4411 État : variable (avance=créditeur)
-  - 4412 collectivité : variable
-- Classe 5 (financiers) : DÉBITEUR (jamais négatif !)
+  - 421 personnel : CRÉDITEUR (dettes)
+  - 4411 État : MIXTE (variable selon avance/créance)
+  - 44311 bourses crédit à répartir : CRÉDITEUR
+  - 44312 bourses part familles : DÉBITEUR
+  - 4412 collectivité : MIXTE
+  - 49x dépréciations des comptes de tiers : CRÉDITEUR
+- Classe 5 (financiers) : DÉBITEUR (jamais négatif !) sauf 519 concours bancaires → CRÉDITEUR et 59x dépréciations → CRÉDITEUR
 - Classe 6 (charges) : DÉBITEUR
 - Classe 7 (produits) : CRÉDITEUR
+
+⚠️ RÈGLE CLÉ : Les comptes d'amortissements (28x) et de dépréciations (29x, 39x, 49x, 59x) sont TOUJOURS CRÉDITEURS car ce sont des comptes de passif correcteur (diminution de l'actif). Un solde débiteur sur ces comptes est une ERREUR.
 
 TU DOIS PRODUIRE :
 1. 🔴 **ALERTES BLOQUANTES** — erreurs qui rendent le compte financier invalide

@@ -361,26 +361,131 @@ export function buildChecklist(r: ResultatsM96): VerificationM96[] {
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// SUPERVISEUR — Sens des soldes M9-6 Plan comptable EPLE
 // ═══════════════════════════════════════════════════════════════════
-const SENS_PAR_CLASSE: Record<string, SensNormal> = {
-  '1': 'crediteur', '2': 'debiteur', '3': 'debiteur',
-  '4': 'mixte', '5': 'debiteur', '6': 'debiteur', '7': 'crediteur',
-};
-const COMPTES_4_CREDITEURS = new Set(['401','402','403','404','408','409','419','421','422','423','424','425','426','427','428','431','432','437','438','443','444','447','448','451','452','455','456','457','458','463','464','465','467','468','477','478']);
-const COMPTES_TOUJOURS_DEBITEURS = new Set(['109','119','129','209','219','229','239','249','259','269','279','289','309','319','329','339','349','359','369','379','389','409']);
-const COMPTES_TOUJOURS_CREDITEURS = new Set(['101','104','106','108','110','111','118','130','131','134','138','160','161','162','163','164','165','166','167','168']);
+// SUPERVISEUR — Sens des soldes M9-6 Plan comptable EPLE
+// Référence : Instruction codificatrice M9-6 du 19/01/2026
+// ═══════════════════════════════════════════════════════════════════
+//
+// RÈGLE FONDAMENTALE M9-6 :
+// - Les comptes d'actif (immobilisations brutes, stocks, créances, trésorerie) = DÉBITEUR
+// - Les comptes de passif (capitaux, dettes, provisions) = CRÉDITEUR
+// - Les comptes d'amortissements (28x) et dépréciations (29x, 39x, 49x, 59x) = CRÉDITEUR
+//   car ils viennent en diminution de l'actif (ce sont des comptes de passif correcteur)
+// - Les comptes de charges (classe 6) = DÉBITEUR
+// - Les comptes de produits (classe 7) = CRÉDITEUR
+// - Les comptes de classe 8 = MIXTE (engagements hors bilan)
 
 function getSensNormal(compte: string): SensNormal {
-  const cl = compte.charAt(0);
-  const ss = compte.substring(0, 3);
-  if (COMPTES_TOUJOURS_DEBITEURS.has(ss)) return 'debiteur';
-  if (COMPTES_TOUJOURS_CREDITEURS.has(ss)) return 'crediteur';
-  if (cl === '4') return COMPTES_4_CREDITEURS.has(ss) ? 'crediteur' : 'debiteur';
-  // Seuls les concours bancaires (519) sont normalement créditeurs en classe 5
-  // Le compte 512 (Banque/DFT) est normalement DÉBITEUR
-  if (compte.startsWith('519')) return 'crediteur';
-  return SENS_PAR_CLASSE[cl] || 'debiteur';
+  const c = compte.replace(/\s/g, '');
+  const cl = c.charAt(0);
+  const r2 = c.substring(0, 2); // racine 2 chiffres
+  const r3 = c.substring(0, 3); // racine 3 chiffres
+
+  // ─── CLASSE 1 : Capitaux propres et financement ───
+  // Normalement CRÉDITEUR sauf :
+  // - 119 : Report à nouveau déficitaire → DÉBITEUR
+  // - 129 : Résultat de l'exercice (déficit) → DÉBITEUR
+  // - 139 : Quote-part virée au CdR (neutralisation subv. invest.) → DÉBITEUR
+  // - 169 : Primes de remboursement des obligations → DÉBITEUR
+  // - 181/185/186/187/188/189 : Comptes de liaison → MIXTE
+  if (cl === '1') {
+    if (r3 === '119' || r3 === '129' || r3 === '139' || r3 === '169') return 'debiteur';
+    if (r2 === '18') return 'mixte'; // comptes de liaison
+    return 'crediteur';
+  }
+
+  // ─── CLASSE 2 : Immobilisations ───
+  // - 20x, 21x, 22x, 23x, 24x, 25x, 26x, 27x : immobilisations brutes → DÉBITEUR
+  // - 28x : Amortissements des immobilisations → CRÉDITEUR (passif correcteur)
+  // - 29x : Dépréciations des immobilisations → CRÉDITEUR (passif correcteur)
+  if (cl === '2') {
+    if (r2 === '28' || r2 === '29') return 'crediteur';
+    return 'debiteur';
+  }
+
+  // ─── CLASSE 3 : Stocks ───
+  // - 31x, 32x, 33x, 35x, 37x : stocks → DÉBITEUR
+  // - 39x : Dépréciations des stocks → CRÉDITEUR (passif correcteur)
+  if (cl === '3') {
+    if (r2 === '39') return 'crediteur';
+    return 'debiteur';
+  }
+
+  // ─── CLASSE 4 : Comptes de tiers ───
+  // Règles M9-6 détaillées par compte
+  if (cl === '4') {
+    // Fournisseurs → CRÉDITEUR (dettes)
+    if (r2 === '40') return 'crediteur';
+    // Sauf 409 avances fournisseurs → DÉBITEUR
+    if (r3 === '409') return 'debiteur';
+
+    // Familles : créances à recouvrer → DÉBITEUR
+    if (r3 === '411' || r3 === '412' || r3 === '413' || r3 === '414' || r3 === '415') return 'debiteur';
+    // Créances douteuses → DÉBITEUR
+    if (r3 === '416') return 'debiteur';
+    // Comptes transitoires d'encaissement : souvent DÉBITEUR quand avances versées
+    if (r3 === '418') return 'debiteur';
+    // Dépréciation des comptes de tiers → CRÉDITEUR (passif correcteur)
+    if (r2 === '49') return 'crediteur';
+
+    // Personnel → CRÉDITEUR (dettes envers personnel)
+    if (r2 === '42') return 'crediteur';
+    // Organismes sociaux → CRÉDITEUR (charges sociales dues)
+    if (r2 === '43') return 'crediteur';
+
+    // État et collectivités : variable selon le sous-compte
+    // 4411 : Subventions État à recevoir → variable (avance=créditeur, créance=débiteur)
+    // 44311 : Bourses — crédit à répartir → CRÉDITEUR
+    // 44312 : Bourses — part familles → DÉBITEUR
+    if (r3 === '441') {
+      if (c.startsWith('44311') || c.startsWith('44313')) return 'crediteur';
+      if (c.startsWith('44312')) return 'debiteur';
+      if (c.startsWith('4411')) return 'mixte'; // variable
+      if (c.startsWith('4412')) return 'mixte'; // variable
+      return 'mixte';
+    }
+    if (r3 === '443') return 'crediteur'; // TVA, impôts → dettes
+    if (r3 === '444') return 'crediteur'; // État — impôts sur bénéfices
+
+    // Comptes de liaison interne → MIXTE
+    if (r3 === '451' || r3 === '452' || r3 === '455' || r3 === '456' || r3 === '457' || r3 === '458') return 'mixte';
+
+    // Débiteurs/créditeurs divers → MIXTE
+    if (r3 === '462') return 'debiteur'; // créances sur cessions
+    if (r3 === '463') return 'debiteur'; // ordres de reversement
+    if (r3 === '464') return 'crediteur'; // dettes sur acquisitions
+    if (r3 === '465') return 'crediteur'; // créditeurs divers
+    if (r3 === '467') return 'mixte'; // débiteurs/créditeurs divers
+    if (r3 === '468') return 'mixte'; // produits à répartir (bourses)
+
+    // Comptes transitoires / d'attente → MIXTE
+    if (r2 === '47') return 'mixte';
+    if (r2 === '48') return 'mixte'; // charges/produits constatés d'avance
+
+    // Par défaut en classe 4 → MIXTE
+    return 'mixte';
+  }
+
+  // ─── CLASSE 5 : Financier ───
+  // - 50x, 51x, 53x, 54x, 58x : trésorerie active → DÉBITEUR
+  // - 519 : Concours bancaires courants → CRÉDITEUR
+  // - 59x : Dépréciations des comptes financiers → CRÉDITEUR
+  if (cl === '5') {
+    if (r3 === '519') return 'crediteur';
+    if (r2 === '59') return 'crediteur';
+    return 'debiteur';
+  }
+
+  // ─── CLASSE 6 : Charges → DÉBITEUR ───
+  if (cl === '6') return 'debiteur';
+
+  // ─── CLASSE 7 : Produits → CRÉDITEUR ───
+  if (cl === '7') return 'crediteur';
+
+  // ─── CLASSE 8 : Comptes spéciaux (engagements hors bilan) → MIXTE ───
+  if (cl === '8') return 'mixte';
+
+  return 'debiteur';
 }
 
 export function analyserBalance(bal: LigneBalance[]): CompteBalance[] {
