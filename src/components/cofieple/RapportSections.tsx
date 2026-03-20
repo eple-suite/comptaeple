@@ -419,7 +419,7 @@ export function RapportACSection() {
           {/* Section 6: Trésorerie */}
           <SectionTitre numero="6" title="Présentation de la trésorerie" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label="Trésorerie" value={formatEur(R.tresorerie)} color={R.tresorerie >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(R.joursTresorerie)} jours`} isText />
+            <KPICard label="Trésorerie" value={formatEur(R.tresorerie)} color={R.tresorerie >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(safe.joursTresorerie)} jours`} isText />
             <KPICard label="FDR" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" isText />
             <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" isText />
             <KPICard label="FDR = BFR + Tréso" value={formatEur(R.bfr + R.tresorerie)} color="blue" icon="⚖️" sub="Vérification" isText />
