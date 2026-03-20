@@ -503,8 +503,8 @@ export function RapportACSection() {
           {/* Section 12: Reliquats de subventions */}
           <SectionTitre numero="12" title="État des reliquats de subventions" />
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <KPICard label="Reliquats subventions" value={formatEur(R.reliquatsSubventions)} color="amber" icon="📋" sub="Subventions non consommées à la clôture" isText />
-            <KPICard label="% de la trésorerie" value={pct(R.reliquatsSubventions, R.tresorerie)} color="blue" icon="📊" sub="Poids des reliquats dans la trésorerie" isText />
+            <KPICard label="Reliquats subventions" value={formatEur(safe.reliquatsSubventions)} color="amber" icon="📋" sub="Subventions non consommées à la clôture" isText />
+            <KPICard label="% de la trésorerie" value={pct(safe.reliquatsSubventions, R.tresorerie)} color="blue" icon="📊" sub="Poids des reliquats dans la trésorerie" isText />
           </div>
 
           {/* Section 13: Prélèvements sur réserves */}
