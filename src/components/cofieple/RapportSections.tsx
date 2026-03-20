@@ -538,12 +538,12 @@ export function RapportACSection() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">FDR mobilisable</div>
-                <div className="text-2xl font-bold font-mono">{formatEur(R.fdrMobilisable)}</div>
+                <div className="text-2xl font-bold font-mono">{formatEur(safe.fdrMobilisable)}</div>
                 <div className="text-muted-foreground mt-1">= FDR brut − Stocks − Créances anciennes − Compte 416</div>
               </div>
               <div>
                 <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">Jours d'autonomie mobilisable</div>
-                <div className="text-2xl font-bold font-mono">{R.totalChargesSde > 0 ? Math.round(R.fdrMobilisable / (R.totalChargesSde / 365)) : 0} jours</div>
+                <div className="text-2xl font-bold font-mono">{R.totalChargesSde > 0 ? Math.round(safe.fdrMobilisable / (R.totalChargesSde / 365)) : 0} jours</div>
                 <div className="text-muted-foreground mt-1">Base de décision pour le CA (seuil recommandé : 30 jours)</div>
               </div>
             </div>
