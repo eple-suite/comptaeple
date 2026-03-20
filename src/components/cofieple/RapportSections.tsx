@@ -383,10 +383,10 @@ export function RapportACSection() {
           {/* Section 3: Variation FDR */}
           <SectionTitre numero="3" title="Variation du fonds de roulement" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label={R.cafComptable >= 0 ? 'CAF' : 'IAF'} value={formatEur(R.cafComptable)} color={R.cafComptable >= 0 ? 'green' : 'red'} icon="🔄" sub="Autofinancement" isText />
-            <KPICard label="Achats immobilisés" value={formatEur(R.prelevementsReserves.prelevementsInvestissement)} color="amber" icon="🏗️" sub="Investissements" isText />
-            <KPICard label="Variation FDR" value={formatEur(R.varFdrBas)} color={R.varFdrBas >= 0 ? 'green' : 'red'} icon="📈" sub="FDR BF - FDR BE" isText />
-            <KPICard label="FDR clôture" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub={`${Math.round(R.joursFdr)} jours`} isText />
+            <KPICard label={safe.cafComptable >= 0 ? 'CAF' : 'IAF'} value={formatEur(safe.cafComptable)} color={safe.cafComptable >= 0 ? 'green' : 'red'} icon="🔄" sub="Autofinancement" isText />
+            <KPICard label="Achats immobilisés" value={formatEur(safe.prelevementsReserves.prelevementsInvestissement)} color="amber" icon="🏗️" sub="Investissements" isText />
+            <KPICard label="Variation FDR" value={formatEur(safe.varFdrBas)} color={safe.varFdrBas >= 0 ? 'green' : 'red'} icon="📈" sub="FDR BF - FDR BE" isText />
+            <KPICard label="FDR clôture" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub={`${Math.round(safe.joursFdr)} jours`} isText />
           </div>
 
           {/* Section 4: Présentation FDR */}
