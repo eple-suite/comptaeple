@@ -168,5 +168,25 @@ export const useCofiepleStore = create<Store>()(
         state.activeTab = 'accueil';
         state.uaiError = null;
       }),
-  }))
+  })),
+    {
+      name: 'cofieple-store',
+      partialize: (state) => ({
+        etablissement: state.etablissement,
+        budgets: state.budgets,
+        sde: state.sde,
+        sde1: state.sde1,
+        sdr: state.sdr,
+        sdr1: state.sdr1,
+        balance: state.balance,
+        balance1: state.balance1,
+        fichierCharge: state.fichierCharge,
+        resultats: state.resultats,
+        resultatsConsolides: state.resultatsConsolides,
+        checkItems: state.checkItems,
+        anomaliesBalance: state.anomaliesBalance,
+        activeBudget: state.activeBudget,
+      }),
+    }
+  ))
 );
