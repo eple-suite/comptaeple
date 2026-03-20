@@ -72,11 +72,12 @@ export function calculerResultatsM96(
   const dbt777 = sumBal(bal, c => c.startsWith('777'), 'dbt');
   const crd777 = sumBal(bal, c => c.startsWith('777'), 'crd');
 
-  const cafComptable = (crdCl6 + crdCl7 - dbtCl6 - dbtCl7)
-    + excedent - deficit
-    + dbt675 + dbt68 - crd675 - crd68
-    - crd775 - crd776 - crd777 - crd78
-    + dbt775 + dbt776 + dbt777 + dbt78;
+  // CAF comptable = Résultat comptable + Charges non décaissables - Produits non encaissables
+  // Charges non décaissables : dotations amortissements/provisions (68), VNC cessions (675)
+  // Produits non encaissables : reprises amort/prov (78), produits de cessions (775/776/777)
+  const chargesNonDecaissables = (dbt68 - crd68) + (dbt675 - crd675);
+  const produitsNonEncaissables = (crd78 - dbt78) + (crd775 - dbt775) + (crd776 - dbt776) + (crd777 - dbt777);
+  const cafComptable = resultatComptable + chargesNonDecaissables - produitsNonEncaissables;
 
   // ── CAF budgétaire ─────────────────────────────────────────────────
   const chInvSde = sde.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
