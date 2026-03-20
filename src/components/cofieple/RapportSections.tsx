@@ -491,11 +491,11 @@ export function RapportACSection() {
             <table className="w-full text-xs border">
               <thead><tr className="bg-muted/50"><th className="p-2 text-left">Type</th><th className="p-2 text-right">Montant</th><th className="p-2 text-right">%</th></tr></thead>
               <tbody>
-                {R.dettesFournisseurs > 0 && <tr className="border-b"><td className="p-2">Fournisseurs</td><td className="p-2 text-right font-mono">{formatEur(R.dettesFournisseurs)}</td><td className="p-2 text-right font-mono">{pct(R.dettesFournisseurs, R.totalDettes)}</td></tr>}
-                {R.dettesEtat > 0 && <tr className="border-b"><td className="p-2">État (subventions, bourses)</td><td className="p-2 text-right font-mono">{formatEur(R.dettesEtat)}</td><td className="p-2 text-right font-mono">{pct(R.dettesEtat, R.totalDettes)}</td></tr>}
-                {R.dettesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité de rattachement</td><td className="p-2 text-right font-mono">{formatEur(R.dettesCollectivite)}</td><td className="p-2 text-right font-mono">{pct(R.dettesCollectivite, R.totalDettes)}</td></tr>}
-                {R.dettesAutres > 0 && <tr className="border-b"><td className="p-2">Autres créditeurs</td><td className="p-2 text-right font-mono">{formatEur(R.dettesAutres)}</td><td className="p-2 text-right font-mono">{pct(R.dettesAutres, R.totalDettes)}</td></tr>}
-                <tr className="border-b font-bold bg-muted/20"><td className="p-2">TOTAL DETTES</td><td className="p-2 text-right font-mono">{formatEur(R.totalDettes)}</td><td className="p-2 text-right">100 %</td></tr>
+                {safe.dettesFournisseurs > 0 && <tr className="border-b"><td className="p-2">Fournisseurs</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesFournisseurs)}</td><td className="p-2 text-right font-mono">{pct(safe.dettesFournisseurs, safe.totalDettes)}</td></tr>}
+                {safe.dettesEtat > 0 && <tr className="border-b"><td className="p-2">État (subventions, bourses)</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesEtat)}</td><td className="p-2 text-right font-mono">{pct(safe.dettesEtat, safe.totalDettes)}</td></tr>}
+                {safe.dettesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité de rattachement</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesCollectivite)}</td><td className="p-2 text-right font-mono">{pct(safe.dettesCollectivite, safe.totalDettes)}</td></tr>}
+                {safe.dettesAutres > 0 && <tr className="border-b"><td className="p-2">Autres créditeurs</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesAutres)}</td><td className="p-2 text-right font-mono">{pct(safe.dettesAutres, safe.totalDettes)}</td></tr>}
+                <tr className="border-b font-bold bg-muted/20"><td className="p-2">TOTAL DETTES</td><td className="p-2 text-right font-mono">{formatEur(safe.totalDettes)}</td><td className="p-2 text-right">100 %</td></tr>
               </tbody>
             </table>
           </div>
