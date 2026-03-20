@@ -179,6 +179,19 @@ export function calculerResultatsM96(
   const totalAmortissements = sumBal(bal, c => c.startsWith('28'), 'solCrd');
   const valeurNette = totalImmo - totalAmortissements;
 
+  // ── Patrimoine antérieur (pour variation) ─────────────────────────
+  const totalImmoN1 = sumBal(bal, c => c.charAt(0) === '2' && !c.startsWith('28') && !c.startsWith('29'), 'antDbt');
+  const totalAmortN1 = sumBal(bal, c => c.startsWith('28'), 'antCrd');
+  const valeurNetteN1 = totalImmoN1 - totalAmortN1;
+  const variationPatrimoine = valeurNette - valeurNetteN1;
+
+  // ── Origines de financement patrimoine ────────────────────────────
+  const subInvestissement = sumBal(bal, c => c.startsWith('13'), 'solCrd') - sumBal(bal, c => c.startsWith('139'), 'solCrd');
+  const patrimoineOriginesSubventions = subInvestissement;
+  const patrimoineOriginesFondsPropres = valeurNette - subInvestissement;
+  const patrimoineOriginesPctFP = valeurNette > 0 ? (patrimoineOriginesFondsPropres / valeurNette) * 100 : 0;
+  const patrimoineOriginesPctSub = valeurNette > 0 ? (patrimoineOriginesSubventions / valeurNette) * 100 : 0;
+
   // ── Services ───────────────────────────────────────────────────────
   const services: Record<string, ServiceData> = {};
   sde.forEach(r => {
@@ -217,13 +230,62 @@ export function calculerResultatsM96(
   const tauxExecProduits = totalProduitsPrev > 0 ? totalProduitsSdr / totalProduitsPrev : 0;
   const joursAutonomie   = totalChargesSde > 0 ? (tresorerie / (totalChargesSde / 365)) : 0;
   const ratioFdrBfr      = bfr !== 0 ? fdrBas / bfr : 0;
-  // totalChargesBalance and totalProduitsBalance already computed above (lines 55-56)
   const ressourcesPropres = sdr.filter(r => /^7[0-6]/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const recettesAutogenerees = sdr.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+
+  // ── REPROFI — Jours FDR et Trésorerie ─────────────────────────────
+  const chargesExplQuotidiennes = totalChargesSde / 365;
+  const joursFdr = chargesExplQuotidiennes > 0 ? fdrComptable / chargesExplQuotidiennes : 0;
+  const joursTresorerie = chargesExplQuotidiennes > 0 ? tresorerie / chargesExplQuotidiennes : 0;
+
+  // ── REPROFI — Composition FDR (encaissé / non encaissé) ───────────
+  const fdrPartEncaissee = Math.max(0, tresorerie > 0 ? Math.min(tresorerie, fdrComptable) : 0);
+  const fdrPartNonEncaissee = fdrComptable - fdrPartEncaissee;
+  const fdrPctEncaissee = fdrComptable > 0 ? (fdrPartEncaissee / fdrComptable) * 100 : 0;
+  const fdrPctNonEncaissee = fdrComptable > 0 ? (fdrPartNonEncaissee / fdrComptable) * 100 : 0;
+
+  // ── REPROFI — TMcap (Taux moyen charges à payer) ──────────────────
+  // Part impayée des charges = dettes fournisseurs / charges réalisées
+  const dettesFournisseurs = sumBal(bal, c => c.startsWith('401') || c.startsWith('408'), 'solCrd');
+  const tmcap = totalChargesSde > 0 ? (dettesFournisseurs / totalChargesSde) * 100 : 0;
+
+  // ── REPROFI — TMnr (Taux moyen de non-recouvrement) ───────────────
+  // Part non recouvrée = créances cl4 débit / recettes réalisées
+  const totalCreancesCl4 = sumBal(bal, c => c.charAt(0) === '4', 'solDbt');
+  const tmnr = totalProduitsSdr > 0 ? (totalCreancesCl4 / totalProduitsSdr) * 100 : 0;
+
+  // ── REPROFI — Créances par origine ────────────────────────────────
+  const creancesEtat = sumBal(bal, c => c.startsWith('4411') || c.startsWith('4431') || c.startsWith('4432') || c.startsWith('4438'), 'solDbt');
+  const creancesCollectivite = sumBal(bal, c => c.startsWith('4412') || c.startsWith('4413'), 'solDbt');
+  const creancesFamilles = sumBal(bal, c => c.startsWith('411') || c.startsWith('412') || c.startsWith('413'), 'solDbt');
+  const creancesAutres = totalCreancesCl4 - creancesEtat - creancesCollectivite - creancesFamilles;
+  const totalCreances = totalCreancesCl4;
+
+  // ── REPROFI — Dettes par type ─────────────────────────────────────
+  const dettesEtat = sumBal(bal, c => c.startsWith('4411') || c.startsWith('4431') || c.startsWith('4432') || c.startsWith('4438'), 'solCrd');
+  const dettesCollectivite = sumBal(bal, c => c.startsWith('4412') || c.startsWith('4413'), 'solCrd');
+  const dettesAutresCl4 = sumBal(bal, c => c.charAt(0) === '4', 'solCrd') - dettesFournisseurs - dettesEtat - dettesCollectivite;
+  const totalDettes = sumBal(bal, c => c.charAt(0) === '4', 'solCrd');
+
+  // ── REPROFI — Reliquats de subventions ────────────────────────────
+  const reliquatsSubventions = sumBal(bal, c => c.startsWith('441') || c.startsWith('443') || c.startsWith('468'), 'solCrd');
+
+  // ── REPROFI — Composition trésorerie ──────────────────────────────
+  const depotsCautions = sumBal(bal, c => c.startsWith('165') || c.startsWith('275'), 'solDbt');
+  const reglementsEnAttente = sumBal(bal, c => c.startsWith('511') || c.startsWith('5117'), 'solDbt');
+  const tresorerieSpecifique = 0; // placeholder
+  const autonomieFinanciere = tresorerie - reliquatsSubventions - depotsCautions - reglementsEnAttente;
+  const avancesRecues = totalDettes - dettesFournisseurs - dettesEtat - dettesCollectivite;
+
+  // ── REPROFI — FDR mobilisable ─────────────────────────────────────
+  const stocks = sumBal(bal, c => c.charAt(0) === '3', 'solDbt');
+  const creancesAnciennes = sumBal(bal, c => c.startsWith('416'), 'solDbt');
+  const fdrMobilisable = fdrComptable - stocks - creancesAnciennes;
 
   return {
     resultatBudgetaire, resultatComptable, excedent, deficit,
     cafBudgetaire, cafComptable,
+    chargesNonDecaissables, produitsNonEncaissables,
     fdrHaut, fdrBas, fdrComptable,
     varFdrHaut, varFdrBas, varFdrCaf, varFdrTableauFinancement: varFdrBas, structurationFdr,
     bfr, varBfrSynthetique, varBfrSoustractive, varBfrTableauFinancement: varBfrSynthetique,
@@ -244,6 +306,26 @@ export function calculerResultatsM96(
       ecartFrngVsPrelevements,
       coherent: coherentPrelevements,
     },
+    // REPROFI indicators
+    joursFdr, joursTresorerie,
+    fdrPartEncaissee, fdrPartNonEncaissee, fdrPctEncaissee, fdrPctNonEncaissee,
+    tmcap, tmnr,
+    creancesEtat, creancesCollectivite, creancesFamilles, creancesAutres, totalCreances,
+    dettesFournisseurs, dettesEtat, dettesCollectivite, dettesAutres: dettesAutresCl4, totalDettes,
+    reliquatsSubventions,
+    patrimoineOriginesFondsPropres, patrimoineOriginesSubventions,
+    patrimoineOriginesPctFP, patrimoineOriginesPctSub,
+    variationPatrimoine,
+    tresoComposition: {
+      autonomieFinanciere,
+      depotsCautions,
+      reglementsEnAttente,
+      avancesRecues,
+      reliquatsSubventions,
+      tresorerieSpecifique,
+    },
+    fdrMobilisable,
+    resultatN1,
   };
 }
 

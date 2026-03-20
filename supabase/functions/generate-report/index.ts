@@ -16,7 +16,6 @@ serve(async (req) => {
     const R = resultats;
     const fmtEur = (n: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
 
-    // Build context blocks
     const indBlock = indicateurs ? `\nDonnées de contexte : ${indicateurs.effectif_eleves || 0} élèves, ${indicateurs.effectif_boursiers || 0} boursiers, ${indicateurs.effectif_dp || 0} DP, ${indicateurs.effectif_internes || 0} internes, ${indicateurs.nb_repas_servis || 0} repas/an, ${indicateurs.effectif_personnel || 0} personnel, ${indicateurs.etp_ressources_propres || 0} ETP ressources propres, surface ${indicateurs.surface_batiments || 0} m².` : '';
 
     const histBlock = historique && historique.length > 0
@@ -29,13 +28,70 @@ serve(async (req) => {
       systemPrompt = `Tu es expert en comptabilité publique française EPLE, M9-6 2026 et Décret 2012-1246. Tu rédiges des textes officiels pour le conseil d'administration. Style institutionnel, en français. N'invente pas de données. Intègre les indicateurs hors-comptables quand ils sont fournis.`;
       userPrompt = `Rédige deux paragraphes séparés par "---" pour le rapport de l'ordonnateur.\nPARAGRAPHE 1 — Présentation de l'établissement (4-6 lignes) :\n${etab.nom} — UAI ${etab.uai} — ${etab.type} — Ex. ${etab.exercice}\n${etab.academie}${indBlock}\nOrdonnateur : ${etab.ordonnateur}\n---\nPARAGRAPHE 2 — Points d'attention (4-6 lignes) :\nRésultat budgétaire : ${fmtEur(R.resultatBudgetaire)}\nFDR : ${fmtEur(R.fdrComptable)}\nTrésorerie : ${fmtEur(R.tresorerieNette)}\nCAF : ${fmtEur(R.cafBudgetaire)}\nCharges : ${fmtEur(R.totalChargesReel)} / Produits : ${fmtEur(R.totalProduitsReel)}${histBlock}`;
     } else {
-      systemPrompt = `Tu es expert en comptabilité publique française EPLE, M9-6 2026 et Décret 2012-1246. Tu rédiges les observations de l'agent comptable. Style institutionnel, 4-5 paragraphes, sans liste à puces. N'invente pas de données. Intègre l'analyse du recouvrement, de la solvabilité et l'évolution pluriannuelle du FRNG quand les données historiques sont fournies. Si des prélèvements sur réserves ont été effectués, inclus obligatoirement la phrase de synthèse type.`;
+      systemPrompt = `Tu es expert en comptabilité publique française EPLE, M9-6 2026 et Décret 2012-1246. Tu rédiges le rapport financier de l'agent comptable sur le modèle REPROFI. Style institutionnel, prose soutenue, paragraphes développés. N'invente pas de données. N'utilise JAMAIS de listes à puces. Rédige en texte continu.
+
+STRUCTURE OBLIGATOIRE du rapport (8-12 paragraphes, chacun développé sur 4-8 lignes) :
+
+1. RÉSULTAT ET AUTOFINANCEMENT : analyse du résultat comptable, comparaison avec l'exercice précédent si historique disponible, explication des charges non décaissables et produits non encaissables, calcul et interprétation de la CAF/IAF.
+
+2. FONDS DE ROULEMENT : niveau du FDR, jours d'autonomie de fonctionnement, composition (part encaissée = autonomie financière vs part non encaissée = créances), FDR mobilisable (hors stocks, créances anciennes, compte 416), rapprochement FDR haut/bas.
+
+3. BESOIN EN FONDS DE ROULEMENT : explication du BFR négatif typique des EPLE (dégagement en FDR), signification (les reliquats de subventions excèdent les créances), vérification FDR = BFR + Trésorerie.
+
+4. TRÉSORERIE : niveau, jours d'autonomie de décaissement, composition (autonomie financière, dépôts et cautions, règlements en attente, reliquats de subventions), rapprochement avec FDR et BFR.
+
+5. CHARGES À PAYER ET RECOUVREMENT : taux moyen de charges à payer (TMcap), taux moyen de non-recouvrement (TMnr), analyse de la solvabilité.
+
+6. PATRIMOINE : valeur résiduelle, variation annuelle, origines de financement (fonds propres vs subventions d'investissement).
+
+7. CRÉANCES ET DETTES : état des créances par origine (État, collectivité, familles), état des dettes par type (fournisseurs, État, collectivité), reliquats de subventions non consommées.
+
+8. RÉSERVES ET AFFECTATION : situation des comptes de réserves (c/1068), variation annuelle, prélèvements effectués, proposition d'affectation du résultat.
+
+9. ÉVOLUTION PLURIANNUELLE (si historique fourni) : tendance du FDR, de la trésorerie, de la CAF, analyse de la trajectoire financière.
+
+10. CONCLUSION : synthèse de la santé financière, points de vigilance, recommandations.
+
+RÈGLES :
+- Cite les montants exacts fournis (pas d'arrondi sauf jours)
+- Compare systématiquement avec N-1 si les données historiques le permettent
+- Mentionne les références M9-6 et le Décret 2012-1246 quand pertinent
+- Si des prélèvements sur réserves ont été effectués, intègre obligatoirement la phrase de synthèse type
+- Qualifie chaque indicateur (sain/vigilance/critique) selon les seuils M9-6`;
 
       const prelevBlock = R.prelevementsReserves && R.prelevementsReserves.totalPrelevements > 0
-        ? `\nPRÉLÈVEMENTS SUR RÉSERVES (à inclure obligatoirement dans le rapport) :\nTotal : ${fmtEur(R.prelevementsReserves.totalPrelevements)}\nDont investissement : ${fmtEur(R.prelevementsReserves.prelevementsInvestissement)}\nDont fonctionnement exceptionnel : ${fmtEur(R.prelevementsReserves.prelevementsFonctionnement)}\nPhrase à intégrer : « Au cours de l'exercice ${etab.exercice}, l'établissement a procédé à un prélèvement total sur ses réserves de ${fmtEur(R.prelevementsReserves.totalPrelevements)}, dont ${fmtEur(R.prelevementsReserves.prelevementsInvestissement)} pour le financement d'investissements et ${fmtEur(R.prelevementsReserves.prelevementsFonctionnement)} pour couvrir des dépenses exceptionnelles de fonctionnement. »`
+        ? `\nPRÉLÈVEMENTS SUR RÉSERVES :\nTotal : ${fmtEur(R.prelevementsReserves.totalPrelevements)}\nDont investissement : ${fmtEur(R.prelevementsReserves.prelevementsInvestissement)}\nDont fonctionnement : ${fmtEur(R.prelevementsReserves.prelevementsFonctionnement)}`
         : '';
 
-      userPrompt = `Rédige les observations de l'agent comptable pour le compte financier ${etab.exercice}.\n${etab.nom} (${etab.uai})\nAgent comptable : ${etab.agentComptable}\nAnomalies : ${anomalies || 0} dont ${bloquants || 0} bloquant(s)\nRésultat budgétaire : ${fmtEur(R.resultatBudgetaire)}\nRésultat comptable : ${fmtEur(R.resultatComptable)}\nFDR : ${fmtEur(R.fdrComptable)}\nTrésorerie : ${fmtEur(R.tresorerieNette)}\nCAF comptable : ${fmtEur(R.cafComptable)}\nRéserves : ${fmtEur(R.reserves || 0)}\nJours d'autonomie : ${Math.round(R.joursAutonomie)}${prelevBlock}${indBlock}${histBlock}`;
+      userPrompt = `Rédige le rapport financier complet de l'agent comptable pour le compte financier ${etab.exercice}.
+${etab.nom} (${etab.uai}) — ${etab.type}
+Agent comptable : ${etab.agentComptable}
+Anomalies : ${anomalies || 0} dont ${bloquants || 0} bloquant(s)
+
+INDICATEURS FINANCIERS :
+- Résultat comptable : ${fmtEur(R.resultatComptable)}
+- Résultat budgétaire : ${fmtEur(R.resultatBudgetaire)}
+- Charges non décaissables (68+675) : ${fmtEur(R.chargesNonDecaissables || 0)}
+- Produits non encaissables (78+775…) : ${fmtEur(R.produitsNonEncaissables || 0)}
+- CAF/IAF comptable : ${fmtEur(R.cafComptable || 0)}
+- CAF/IAF budgétaire : ${fmtEur(R.cafBudgetaire || 0)}
+- FDR : ${fmtEur(R.fdrComptable)} (${Math.round(R.joursFdr || 0)} jours)
+- FDR part encaissée : ${(R.fdrPctEncaissee || 0).toFixed(1)}% — part non encaissée : ${(R.fdrPctNonEncaissee || 0).toFixed(1)}%
+- FDR mobilisable : ${fmtEur(R.fdrMobilisable || 0)}
+- BFR : ${fmtEur(R.bfr || 0)}
+- Trésorerie : ${fmtEur(R.tresorerieNette)} (${Math.round(R.joursTresorerie || 0)} jours)
+- TMcap : ${(R.tmcap || 0).toFixed(2)}%
+- TMnr : ${(R.tmnr || 0).toFixed(2)}%
+- Charges SDE : ${fmtEur(R.totalChargesReel)}
+- Produits SDR : ${fmtEur(R.totalProduitsReel)}
+- Créances totales : ${fmtEur(R.totalCreances || 0)}
+- Dettes totales : ${fmtEur(R.totalDettes || 0)}
+- Reliquats subventions : ${fmtEur(R.reliquatsSubventions || 0)}
+- Patrimoine (valeur nette) : ${fmtEur(R.valeurNette || 0)}
+- Variation patrimoine : ${fmtEur(R.variationPatrimoine || 0)}
+- Origines patrimoine : fonds propres ${(R.patrimoineOriginesPctFP || 0).toFixed(1)}%
+- Réserves (c/1068) : ${fmtEur(R.reserves || 0)}
+- Jours autonomie : ${Math.round(R.joursAutonomie)}${prelevBlock}${indBlock}${histBlock}`;
     }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
