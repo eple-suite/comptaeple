@@ -157,9 +157,9 @@ export function RapportOrdoSection() {
 
           <SectionTitre numero="3" title="Situation financière et patrimoniale" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label="FDR" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub={`${Math.round(R.joursFdr)} jours`} isText />
+            <KPICard label="FDR" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub={`${Math.round(R.joursFdr ?? 0)} jours`} isText />
             <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" sub="Besoin en FDR" isText />
-            <KPICard label="Trésorerie" value={formatEur(R.tresorerie)} color={R.tresorerie >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(R.joursTresorerie)} jours`} isText />
+            <KPICard label="Trésorerie" value={formatEur(R.tresorerie)} color={R.tresorerie >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(R.joursTresorerie ?? 0)} jours`} isText />
             <KPICard label="Réserves" value={formatEur(R.reserves)} color="blue" icon="🏛️" sub="Compte 1068" isText />
           </div>
 
@@ -224,6 +224,42 @@ export function RapportACSection() {
   }, [etab.uai, etab.exercice, R]);
 
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'agent comptable (M9-6 § V.2)." />;
+
+  // Safe defaults for REPROFI properties that may not exist on older results
+  const safe = {
+    fdrPartEncaissee: R.fdrPartEncaissee ?? 0,
+    fdrPartNonEncaissee: R.fdrPartNonEncaissee ?? 0,
+    fdrPctEncaissee: R.fdrPctEncaissee ?? 0,
+    fdrPctNonEncaissee: R.fdrPctNonEncaissee ?? 0,
+    fdrMobilisable: R.fdrMobilisable ?? 0,
+    chargesNonDecaissables: R.chargesNonDecaissables ?? 0,
+    produitsNonEncaissables: R.produitsNonEncaissables ?? 0,
+    cafComptable: R.cafComptable ?? 0,
+    varFdrBas: R.varFdrBas ?? 0,
+    joursFdr: R.joursFdr ?? 0,
+    joursTresorerie: R.joursTresorerie ?? 0,
+    tmcap: R.tmcap ?? 0,
+    tmnr: R.tmnr ?? 0,
+    totalCreances: R.totalCreances ?? 0,
+    totalDettes: R.totalDettes ?? 0,
+    creancesEtat: R.creancesEtat ?? 0,
+    creancesCollectivite: R.creancesCollectivite ?? 0,
+    creancesFamilles: R.creancesFamilles ?? 0,
+    creancesAutres: R.creancesAutres ?? 0,
+    dettesFournisseurs: R.dettesFournisseurs ?? 0,
+    dettesEtat: R.dettesEtat ?? 0,
+    dettesCollectivite: R.dettesCollectivite ?? 0,
+    dettesAutres: R.dettesAutres ?? 0,
+    reliquatsSubventions: R.reliquatsSubventions ?? 0,
+    valeurNette: R.valeurNette ?? 0,
+    variationPatrimoine: R.variationPatrimoine ?? 0,
+    patrimoineOriginesFondsPropres: R.patrimoineOriginesFondsPropres ?? 0,
+    patrimoineOriginesPctFP: R.patrimoineOriginesPctFP ?? 0,
+    patrimoineOriginesSubventions: R.patrimoineOriginesSubventions ?? 0,
+    patrimoineOriginesPctSub: R.patrimoineOriginesPctSub ?? 0,
+    tresoComposition: R.tresoComposition ?? { autonomieFinanciere: 0, depotsCautions: 0, reglementsEnAttente: 0, reliquatsSubventions: 0 },
+    prelevementsReserves: R.prelevementsReserves ?? { totalPrelevements: 0, prelevementsInvestissement: 0, prelevementsFonctionnement: 0, variationReserves: 0 },
+  };
 
   const nbBloq = checkItems.filter(c => c.bloquant).length;
   const nbAnom = checkItems.filter(c => c.statut !== 'ok').length;
@@ -321,36 +357,36 @@ export function RapportACSection() {
                   <td className="p-2 font-semibold">Produits nets (classe 7)</td>
                   <td className="p-2 text-right font-mono">{formatEur(R.totalProduitsSdr)}</td>
                 </tr>
-                <tr className="border-b">
+                 <tr className="border-b">
                   <td className="p-2 font-semibold">Charges non décaissables (68+675)</td>
-                  <td className="p-2 text-right font-mono">{formatEur(R.chargesNonDecaissables)}</td>
+                  <td className="p-2 text-right font-mono">{formatEur(safe.chargesNonDecaissables)}</td>
                   <td className="p-2 font-semibold">Produits non encaissables (78+775…)</td>
-                  <td className="p-2 text-right font-mono">{formatEur(R.produitsNonEncaissables)}</td>
+                  <td className="p-2 text-right font-mono">{formatEur(safe.produitsNonEncaissables)}</td>
                 </tr>
                 <tr className={`border-b font-bold ${R.resultatComptable >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
                   <td className="p-2" colSpan={2}>RÉSULTAT DE L'EXERCICE</td>
                   <td className="p-2 text-right font-mono" colSpan={2}>{formatEur(R.resultatComptable)}</td>
                 </tr>
-                <tr className={`font-bold ${R.cafComptable >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
-                  <td className="p-2" colSpan={2}>{R.cafComptable >= 0 ? 'CAF (Capacité d\'autofinancement)' : 'IAF (Insuffisance d\'autofinancement)'}</td>
-                  <td className="p-2 text-right font-mono" colSpan={2}>{formatEur(R.cafComptable)}</td>
+                <tr className={`font-bold ${safe.cafComptable >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
+                  <td className="p-2" colSpan={2}>{safe.cafComptable >= 0 ? 'CAF (Capacité d\'autofinancement)' : 'IAF (Insuffisance d\'autofinancement)'}</td>
+                  <td className="p-2 text-right font-mono" colSpan={2}>{formatEur(safe.cafComptable)}</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div className="text-xs text-muted-foreground mb-4 bg-muted/10 rounded p-3">
             Le résultat est la différence entre les produits nets et les charges nettes de fonctionnement.
-            L'autofinancement ({R.cafComptable >= 0 ? 'CAF' : 'IAF'}) mesure l'impact de l'exécution budgétaire
+            L'autofinancement ({safe.cafComptable >= 0 ? 'CAF' : 'IAF'}) mesure l'impact de l'exécution budgétaire
             sur les fonds propres, en excluant les charges non décaissables et les produits non encaissables.
           </div>
 
           {/* Section 3: Variation FDR */}
           <SectionTitre numero="3" title="Variation du fonds de roulement" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label={R.cafComptable >= 0 ? 'CAF' : 'IAF'} value={formatEur(R.cafComptable)} color={R.cafComptable >= 0 ? 'green' : 'red'} icon="🔄" sub="Autofinancement" isText />
-            <KPICard label="Achats immobilisés" value={formatEur(R.prelevementsReserves.prelevementsInvestissement)} color="amber" icon="🏗️" sub="Investissements" isText />
-            <KPICard label="Variation FDR" value={formatEur(R.varFdrBas)} color={R.varFdrBas >= 0 ? 'green' : 'red'} icon="📈" sub="FDR BF - FDR BE" isText />
-            <KPICard label="FDR clôture" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub={`${Math.round(R.joursFdr)} jours`} isText />
+            <KPICard label={safe.cafComptable >= 0 ? 'CAF' : 'IAF'} value={formatEur(safe.cafComptable)} color={safe.cafComptable >= 0 ? 'green' : 'red'} icon="🔄" sub="Autofinancement" isText />
+            <KPICard label="Achats immobilisés" value={formatEur(safe.prelevementsReserves.prelevementsInvestissement)} color="amber" icon="🏗️" sub="Investissements" isText />
+            <KPICard label="Variation FDR" value={formatEur(safe.varFdrBas)} color={safe.varFdrBas >= 0 ? 'green' : 'red'} icon="📈" sub="FDR BF - FDR BE" isText />
+            <KPICard label="FDR clôture" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub={`${Math.round(safe.joursFdr)} jours`} isText />
           </div>
 
           {/* Section 4: Présentation FDR */}
@@ -359,10 +395,10 @@ export function RapportACSection() {
             <table className="w-full text-xs border">
               <tbody>
                 <tr className="border-b bg-muted/20"><td className="p-2 font-semibold" colSpan={2}>Composition du FDR</td><td className="p-2 text-right font-mono">{formatEur(R.fdrComptable)}</td></tr>
-                <tr className="border-b"><td className="p-2" colSpan={2}>Part encaissée (autonomie financière)</td><td className="p-2 text-right font-mono">{formatEur(R.fdrPartEncaissee)} ({R.fdrPctEncaissee.toFixed(1)} %)</td></tr>
-                <tr className="border-b"><td className="p-2" colSpan={2}>Part non encaissée (créances & CCA)</td><td className="p-2 text-right font-mono">{formatEur(R.fdrPartNonEncaissee)} ({R.fdrPctNonEncaissee.toFixed(1)} %)</td></tr>
-                <tr className="border-b"><td className="p-2" colSpan={2}>Jours de fonctionnement</td><td className="p-2 text-right font-mono font-bold">{Math.round(R.joursFdr)} jours</td></tr>
-                <tr className="border-b"><td className="p-2" colSpan={2}>FDR mobilisable (hors stocks, créances anciennes, c/416)</td><td className="p-2 text-right font-mono font-bold">{formatEur(R.fdrMobilisable)}</td></tr>
+                <tr className="border-b"><td className="p-2" colSpan={2}>Part encaissée (autonomie financière)</td><td className="p-2 text-right font-mono">{formatEur(safe.fdrPartEncaissee)} ({safe.fdrPctEncaissee.toFixed(1)} %)</td></tr>
+                <tr className="border-b"><td className="p-2" colSpan={2}>Part non encaissée (créances & CCA)</td><td className="p-2 text-right font-mono">{formatEur(safe.fdrPartNonEncaissee)} ({safe.fdrPctNonEncaissee.toFixed(1)} %)</td></tr>
+                <tr className="border-b"><td className="p-2" colSpan={2}>Jours de fonctionnement</td><td className="p-2 text-right font-mono font-bold">{Math.round(safe.joursFdr)} jours</td></tr>
+                <tr className="border-b"><td className="p-2" colSpan={2}>FDR mobilisable (hors stocks, créances anciennes, c/416)</td><td className="p-2 text-right font-mono font-bold">{formatEur(safe.fdrMobilisable)}</td></tr>
               </tbody>
             </table>
           </div>
@@ -376,14 +412,14 @@ export function RapportACSection() {
           </div>
           <div className="grid grid-cols-3 gap-3 mb-4">
             <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" sub={R.bfr < 0 ? 'Dégagement en FDR' : 'Besoin en FDR'} isText />
-            <KPICard label="Créances (cl.4 débit)" value={formatEur(R.totalCreances)} color="blue" icon="📋" isText />
-            <KPICard label="Dettes (cl.4 crédit)" value={formatEur(R.totalDettes)} color="amber" icon="📋" isText />
+            <KPICard label="Créances (cl.4 débit)" value={formatEur(safe.totalCreances)} color="blue" icon="📋" isText />
+            <KPICard label="Dettes (cl.4 crédit)" value={formatEur(safe.totalDettes)} color="amber" icon="📋" isText />
           </div>
 
           {/* Section 6: Trésorerie */}
           <SectionTitre numero="6" title="Présentation de la trésorerie" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label="Trésorerie" value={formatEur(R.tresorerie)} color={R.tresorerie >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(R.joursTresorerie)} jours`} isText />
+            <KPICard label="Trésorerie" value={formatEur(R.tresorerie)} color={R.tresorerie >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(safe.joursTresorerie)} jours`} isText />
             <KPICard label="FDR" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" isText />
             <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" isText />
             <KPICard label="FDR = BFR + Tréso" value={formatEur(R.bfr + R.tresorerie)} color="blue" icon="⚖️" sub="Vérification" isText />
@@ -395,10 +431,10 @@ export function RapportACSection() {
             <table className="w-full text-xs border">
               <thead><tr className="bg-muted/50"><th className="p-2 text-left">Composante</th><th className="p-2 text-right">Montant</th><th className="p-2 text-right">% Trésorerie</th></tr></thead>
               <tbody>
-                <tr className="border-b"><td className="p-2">Autonomie financière</td><td className="p-2 text-right font-mono">{formatEur(R.tresoComposition.autonomieFinanciere)}</td><td className="p-2 text-right font-mono">{pct(Math.abs(R.tresoComposition.autonomieFinanciere), R.tresorerie)}</td></tr>
-                <tr className="border-b"><td className="p-2">Dépôts et cautions</td><td className="p-2 text-right font-mono">{formatEur(R.tresoComposition.depotsCautions)}</td><td className="p-2 text-right font-mono">{pct(R.tresoComposition.depotsCautions, R.tresorerie)}</td></tr>
-                <tr className="border-b"><td className="p-2">Règlements en attente</td><td className="p-2 text-right font-mono">{formatEur(R.tresoComposition.reglementsEnAttente)}</td><td className="p-2 text-right font-mono">{pct(R.tresoComposition.reglementsEnAttente, R.tresorerie)}</td></tr>
-                <tr className="border-b"><td className="p-2">Reliquats de subventions</td><td className="p-2 text-right font-mono">{formatEur(R.tresoComposition.reliquatsSubventions)}</td><td className="p-2 text-right font-mono">{pct(R.tresoComposition.reliquatsSubventions, R.tresorerie)}</td></tr>
+                <tr className="border-b"><td className="p-2">Autonomie financière</td><td className="p-2 text-right font-mono">{formatEur(safe.tresoComposition.autonomieFinanciere)}</td><td className="p-2 text-right font-mono">{pct(Math.abs(safe.tresoComposition.autonomieFinanciere), R.tresorerie)}</td></tr>
+                <tr className="border-b"><td className="p-2">Dépôts et cautions</td><td className="p-2 text-right font-mono">{formatEur(safe.tresoComposition.depotsCautions)}</td><td className="p-2 text-right font-mono">{pct(safe.tresoComposition.depotsCautions, R.tresorerie)}</td></tr>
+                <tr className="border-b"><td className="p-2">Règlements en attente</td><td className="p-2 text-right font-mono">{formatEur(safe.tresoComposition.reglementsEnAttente)}</td><td className="p-2 text-right font-mono">{pct(safe.tresoComposition.reglementsEnAttente, R.tresorerie)}</td></tr>
+                <tr className="border-b"><td className="p-2">Reliquats de subventions</td><td className="p-2 text-right font-mono">{formatEur(safe.tresoComposition.reliquatsSubventions)}</td><td className="p-2 text-right font-mono">{pct(safe.tresoComposition.reliquatsSubventions, R.tresorerie)}</td></tr>
                 <tr className="border-b font-bold bg-muted/20"><td className="p-2">TRÉSORERIE TOTALE</td><td className="p-2 text-right font-mono">{formatEur(R.tresorerie)}</td><td className="p-2 text-right">100 %</td></tr>
               </tbody>
             </table>
@@ -409,12 +445,12 @@ export function RapportACSection() {
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="bg-muted/30 rounded-lg p-4 text-xs">
               <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMcap — Taux moyen de charges à payer</div>
-              <div className="text-2xl font-bold font-mono">{R.tmcap.toFixed(2)} %</div>
+              <div className="text-2xl font-bold font-mono">{safe.tmcap.toFixed(2)} %</div>
               <div className="text-muted-foreground mt-1">Part impayée des charges réalisées à la clôture (dettes fournisseurs / charges SDE)</div>
             </div>
             <div className="bg-muted/30 rounded-lg p-4 text-xs">
               <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMnr — Taux moyen de non-recouvrement</div>
-              <div className="text-2xl font-bold font-mono">{R.tmnr.toFixed(2)} %</div>
+              <div className="text-2xl font-bold font-mono">{safe.tmnr.toFixed(2)} %</div>
               <div className="text-muted-foreground mt-1">Part non recouvrée des recettes réalisées à la clôture (créances cl.4 / produits SDR)</div>
             </div>
           </div>
@@ -426,10 +462,10 @@ export function RapportACSection() {
               <tbody>
                 <tr className="border-b bg-muted/20"><td className="p-2 font-semibold">Immobilisations brutes (classe 2)</td><td className="p-2 text-right font-mono">{formatEur(R.totalImmo)}</td></tr>
                 <tr className="border-b"><td className="p-2">Amortissements cumulés (compte 28)</td><td className="p-2 text-right font-mono">- {formatEur(R.totalAmortissements)}</td></tr>
-                <tr className="border-b font-bold"><td className="p-2">Valeur résiduelle du patrimoine</td><td className="p-2 text-right font-mono">{formatEur(R.valeurNette)}</td></tr>
-                <tr className="border-b"><td className="p-2">Variation annuelle</td><td className="p-2 text-right font-mono">{formatEur(R.variationPatrimoine)}</td></tr>
-                <tr className="border-b"><td className="p-2">Origines — Fonds propres</td><td className="p-2 text-right font-mono">{formatEur(R.patrimoineOriginesFondsPropres)} ({R.patrimoineOriginesPctFP.toFixed(1)} %)</td></tr>
-                <tr className="border-b"><td className="p-2">Origines — Subventions d'investissement</td><td className="p-2 text-right font-mono">{formatEur(R.patrimoineOriginesSubventions)} ({R.patrimoineOriginesPctSub.toFixed(1)} %)</td></tr>
+                <tr className="border-b font-bold"><td className="p-2">Valeur résiduelle du patrimoine</td><td className="p-2 text-right font-mono">{formatEur(safe.valeurNette)}</td></tr>
+                <tr className="border-b"><td className="p-2">Variation annuelle</td><td className="p-2 text-right font-mono">{formatEur(safe.variationPatrimoine)}</td></tr>
+                <tr className="border-b"><td className="p-2">Origines — Fonds propres</td><td className="p-2 text-right font-mono">{formatEur(safe.patrimoineOriginesFondsPropres)} ({safe.patrimoineOriginesPctFP.toFixed(1)} %)</td></tr>
+                <tr className="border-b"><td className="p-2">Origines — Subventions d'investissement</td><td className="p-2 text-right font-mono">{formatEur(safe.patrimoineOriginesSubventions)} ({safe.patrimoineOriginesPctSub.toFixed(1)} %)</td></tr>
               </tbody>
             </table>
           </div>
@@ -440,11 +476,11 @@ export function RapportACSection() {
             <table className="w-full text-xs border">
               <thead><tr className="bg-muted/50"><th className="p-2 text-left">Origine</th><th className="p-2 text-right">Montant</th><th className="p-2 text-right">%</th></tr></thead>
               <tbody>
-                {R.creancesEtat > 0 && <tr className="border-b"><td className="p-2">État</td><td className="p-2 text-right font-mono">{formatEur(R.creancesEtat)}</td><td className="p-2 text-right font-mono">{pct(R.creancesEtat, R.totalCreances)}</td></tr>}
-                {R.creancesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité de rattachement</td><td className="p-2 text-right font-mono">{formatEur(R.creancesCollectivite)}</td><td className="p-2 text-right font-mono">{pct(R.creancesCollectivite, R.totalCreances)}</td></tr>}
-                {R.creancesFamilles > 0 && <tr className="border-b"><td className="p-2">Familles (DP, internes)</td><td className="p-2 text-right font-mono">{formatEur(R.creancesFamilles)}</td><td className="p-2 text-right font-mono">{pct(R.creancesFamilles, R.totalCreances)}</td></tr>}
-                {R.creancesAutres > 0 && <tr className="border-b"><td className="p-2">Autres débiteurs</td><td className="p-2 text-right font-mono">{formatEur(R.creancesAutres)}</td><td className="p-2 text-right font-mono">{pct(R.creancesAutres, R.totalCreances)}</td></tr>}
-                <tr className="border-b font-bold bg-muted/20"><td className="p-2">TOTAL CRÉANCES</td><td className="p-2 text-right font-mono">{formatEur(R.totalCreances)}</td><td className="p-2 text-right">100 %</td></tr>
+                {safe.creancesEtat > 0 && <tr className="border-b"><td className="p-2">État</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesEtat)}</td><td className="p-2 text-right font-mono">{pct(safe.creancesEtat, safe.totalCreances)}</td></tr>}
+                {safe.creancesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité de rattachement</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesCollectivite)}</td><td className="p-2 text-right font-mono">{pct(safe.creancesCollectivite, safe.totalCreances)}</td></tr>}
+                {safe.creancesFamilles > 0 && <tr className="border-b"><td className="p-2">Familles (DP, internes)</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesFamilles)}</td><td className="p-2 text-right font-mono">{pct(safe.creancesFamilles, safe.totalCreances)}</td></tr>}
+                {safe.creancesAutres > 0 && <tr className="border-b"><td className="p-2">Autres débiteurs</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesAutres)}</td><td className="p-2 text-right font-mono">{pct(safe.creancesAutres, safe.totalCreances)}</td></tr>}
+                <tr className="border-b font-bold bg-muted/20"><td className="p-2">TOTAL CRÉANCES</td><td className="p-2 text-right font-mono">{formatEur(safe.totalCreances)}</td><td className="p-2 text-right">100 %</td></tr>
               </tbody>
             </table>
           </div>
@@ -455,11 +491,11 @@ export function RapportACSection() {
             <table className="w-full text-xs border">
               <thead><tr className="bg-muted/50"><th className="p-2 text-left">Type</th><th className="p-2 text-right">Montant</th><th className="p-2 text-right">%</th></tr></thead>
               <tbody>
-                {R.dettesFournisseurs > 0 && <tr className="border-b"><td className="p-2">Fournisseurs</td><td className="p-2 text-right font-mono">{formatEur(R.dettesFournisseurs)}</td><td className="p-2 text-right font-mono">{pct(R.dettesFournisseurs, R.totalDettes)}</td></tr>}
-                {R.dettesEtat > 0 && <tr className="border-b"><td className="p-2">État (subventions, bourses)</td><td className="p-2 text-right font-mono">{formatEur(R.dettesEtat)}</td><td className="p-2 text-right font-mono">{pct(R.dettesEtat, R.totalDettes)}</td></tr>}
-                {R.dettesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité de rattachement</td><td className="p-2 text-right font-mono">{formatEur(R.dettesCollectivite)}</td><td className="p-2 text-right font-mono">{pct(R.dettesCollectivite, R.totalDettes)}</td></tr>}
-                {R.dettesAutres > 0 && <tr className="border-b"><td className="p-2">Autres créditeurs</td><td className="p-2 text-right font-mono">{formatEur(R.dettesAutres)}</td><td className="p-2 text-right font-mono">{pct(R.dettesAutres, R.totalDettes)}</td></tr>}
-                <tr className="border-b font-bold bg-muted/20"><td className="p-2">TOTAL DETTES</td><td className="p-2 text-right font-mono">{formatEur(R.totalDettes)}</td><td className="p-2 text-right">100 %</td></tr>
+                {safe.dettesFournisseurs > 0 && <tr className="border-b"><td className="p-2">Fournisseurs</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesFournisseurs)}</td><td className="p-2 text-right font-mono">{pct(safe.dettesFournisseurs, safe.totalDettes)}</td></tr>}
+                {safe.dettesEtat > 0 && <tr className="border-b"><td className="p-2">État (subventions, bourses)</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesEtat)}</td><td className="p-2 text-right font-mono">{pct(safe.dettesEtat, safe.totalDettes)}</td></tr>}
+                {safe.dettesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité de rattachement</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesCollectivite)}</td><td className="p-2 text-right font-mono">{pct(safe.dettesCollectivite, safe.totalDettes)}</td></tr>}
+                {safe.dettesAutres > 0 && <tr className="border-b"><td className="p-2">Autres créditeurs</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesAutres)}</td><td className="p-2 text-right font-mono">{pct(safe.dettesAutres, safe.totalDettes)}</td></tr>}
+                <tr className="border-b font-bold bg-muted/20"><td className="p-2">TOTAL DETTES</td><td className="p-2 text-right font-mono">{formatEur(safe.totalDettes)}</td><td className="p-2 text-right">100 %</td></tr>
               </tbody>
             </table>
           </div>
@@ -467,22 +503,22 @@ export function RapportACSection() {
           {/* Section 12: Reliquats de subventions */}
           <SectionTitre numero="12" title="État des reliquats de subventions" />
           <div className="grid grid-cols-2 gap-3 mb-4">
-            <KPICard label="Reliquats subventions" value={formatEur(R.reliquatsSubventions)} color="amber" icon="📋" sub="Subventions non consommées à la clôture" isText />
-            <KPICard label="% de la trésorerie" value={pct(R.reliquatsSubventions, R.tresorerie)} color="blue" icon="📊" sub="Poids des reliquats dans la trésorerie" isText />
+            <KPICard label="Reliquats subventions" value={formatEur(safe.reliquatsSubventions)} color="amber" icon="📋" sub="Subventions non consommées à la clôture" isText />
+            <KPICard label="% de la trésorerie" value={pct(safe.reliquatsSubventions, R.tresorerie)} color="blue" icon="📊" sub="Poids des reliquats dans la trésorerie" isText />
           </div>
 
           {/* Section 13: Prélèvements sur réserves */}
-          {R.prelevementsReserves && R.prelevementsReserves.totalPrelevements > 0 && (
+          {safe.prelevementsReserves.totalPrelevements > 0 && (
             <>
               <SectionTitre numero="13" title="Prélèvements sur réserves (classe 106)" />
               <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 mb-4 text-xs leading-relaxed">
                 <p className="font-semibold text-foreground mb-2">
                   Au cours de l'exercice {etab.exercice}, l'établissement a procédé à un prélèvement total sur ses réserves
-                  de <strong className="text-destructive">{formatEur(R.prelevementsReserves.totalPrelevements)}</strong>, dont :
+                  de <strong className="text-destructive">{formatEur(safe.prelevementsReserves.totalPrelevements)}</strong>, dont :
                 </p>
                 <ul className="list-disc ml-4 space-y-1 text-muted-foreground">
-                  <li><strong className="text-foreground">{formatEur(R.prelevementsReserves.prelevementsInvestissement)}</strong> pour le financement d'investissements</li>
-                  <li><strong className="text-foreground">{formatEur(R.prelevementsReserves.prelevementsFonctionnement)}</strong> pour des dépenses exceptionnelles de fonctionnement</li>
+                  <li><strong className="text-foreground">{formatEur(safe.prelevementsReserves.prelevementsInvestissement)}</strong> pour le financement d'investissements</li>
+                  <li><strong className="text-foreground">{formatEur(safe.prelevementsReserves.prelevementsFonctionnement)}</strong> pour des dépenses exceptionnelles de fonctionnement</li>
                 </ul>
               </div>
             </>
@@ -493,7 +529,7 @@ export function RapportACSection() {
           <div className="grid grid-cols-3 gap-3 mb-4">
             <KPICard label="Réserves (c/1068)" value={formatEur(R.reserves)} color="blue" icon="🏛️" isText />
             <KPICard label="Dont SRH (c/106870)" value={formatEur(R.reservesSRH)} color="blue" icon="🍽️" isText />
-            <KPICard label="Variation annuelle" value={formatEur(R.prelevementsReserves.variationReserves)} color={R.prelevementsReserves.variationReserves >= 0 ? 'green' : 'red'} icon="📈" isText />
+            <KPICard label="Variation annuelle" value={formatEur(safe.prelevementsReserves.variationReserves)} color={safe.prelevementsReserves.variationReserves >= 0 ? 'green' : 'red'} icon="📈" isText />
           </div>
 
           {/* Section 15: Fonds mobilisables */}
@@ -502,12 +538,12 @@ export function RapportACSection() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">FDR mobilisable</div>
-                <div className="text-2xl font-bold font-mono">{formatEur(R.fdrMobilisable)}</div>
+                <div className="text-2xl font-bold font-mono">{formatEur(safe.fdrMobilisable)}</div>
                 <div className="text-muted-foreground mt-1">= FDR brut − Stocks − Créances anciennes − Compte 416</div>
               </div>
               <div>
                 <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">Jours d'autonomie mobilisable</div>
-                <div className="text-2xl font-bold font-mono">{R.totalChargesSde > 0 ? Math.round(R.fdrMobilisable / (R.totalChargesSde / 365)) : 0} jours</div>
+                <div className="text-2xl font-bold font-mono">{R.totalChargesSde > 0 ? Math.round(safe.fdrMobilisable / (R.totalChargesSde / 365)) : 0} jours</div>
                 <div className="text-muted-foreground mt-1">Base de décision pour le CA (seuil recommandé : 30 jours)</div>
               </div>
             </div>
