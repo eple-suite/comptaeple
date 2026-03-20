@@ -36,9 +36,13 @@ export function calculerResultatsM96(
   const resultatBudgetaire = totalProduitsSdr - totalChargesSde;
 
   // ── Résultat comptable ─────────────────────────────────────────────
-  const excedent = sumBal(bal, c => c.startsWith('120'), 'solCrd');
-  const deficit  = sumBal(bal, c => c.startsWith('129'), 'solDbt');
-  const resultatComptable = excedent - deficit;
+  // IMPORTANT: Les comptes 120/129 contiennent le résultat de N-1 (non encore affecté).
+  // Le résultat de l'exercice N se calcule à partir des mouvements de l'exercice
+  // sur les classes 6 (charges) et 7 (produits) dans la balance.
+  const excedent120 = sumBal(bal, c => c.startsWith('120'), 'solCrd');
+  const deficit129  = sumBal(bal, c => c.startsWith('129'), 'solDbt');
+  // Résultat N-1 (pour information, conservé séparément)
+  const resultatN1 = excedent120 - deficit129;
 
   // ── Totaux balance classes 6/7 ─────────────────────────────────────
   const dbtCl6 = sumBal(bal, c => c.charAt(0) === '6', 'dbt');
