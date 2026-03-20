@@ -36,15 +36,27 @@ export function calculerResultatsM96(
   const resultatBudgetaire = totalProduitsSdr - totalChargesSde;
 
   // ── Résultat comptable ─────────────────────────────────────────────
-  const excedent = sumBal(bal, c => c.startsWith('120'), 'solCrd');
-  const deficit  = sumBal(bal, c => c.startsWith('129'), 'solDbt');
-  const resultatComptable = excedent - deficit;
+  // IMPORTANT: Les comptes 120/129 contiennent le résultat de N-1 (non encore affecté).
+  // Le résultat de l'exercice N se calcule à partir des mouvements de l'exercice
+  // sur les classes 6 (charges) et 7 (produits) dans la balance.
+  const excedent120 = sumBal(bal, c => c.startsWith('120'), 'solCrd');
+  const deficit129  = sumBal(bal, c => c.startsWith('129'), 'solDbt');
+  // Résultat N-1 (pour information, conservé séparément)
+  const resultatN1 = excedent120 - deficit129;
 
   // ── Totaux balance classes 6/7 ─────────────────────────────────────
   const dbtCl6 = sumBal(bal, c => c.charAt(0) === '6', 'dbt');
   const crdCl6 = sumBal(bal, c => c.charAt(0) === '6', 'crd');
   const dbtCl7 = sumBal(bal, c => c.charAt(0) === '7', 'dbt');
   const crdCl7 = sumBal(bal, c => c.charAt(0) === '7', 'crd');
+
+  // Résultat comptable N = Produits N (classe 7) - Charges N (classe 6)
+  // Calculé à partir des mouvements de la balance (pas des comptes 120/129 qui contiennent N-1)
+  const totalChargesBalance = dbtCl6 - crdCl6;
+  const totalProduitsBalance = crdCl7 - dbtCl7;
+  const resultatComptable = totalProduitsBalance - totalChargesBalance;
+  const excedent = resultatComptable >= 0 ? resultatComptable : 0;
+  const deficit = resultatComptable < 0 ? -resultatComptable : 0;
 
   // ── CAF comptable (M9-6 § IV.3) ───────────────────────────────────
   const dbt675 = sumBal(bal, c => c.startsWith('675'), 'dbt');
@@ -60,11 +72,12 @@ export function calculerResultatsM96(
   const dbt777 = sumBal(bal, c => c.startsWith('777'), 'dbt');
   const crd777 = sumBal(bal, c => c.startsWith('777'), 'crd');
 
-  const cafComptable = (crdCl6 + crdCl7 - dbtCl6 - dbtCl7)
-    + excedent - deficit
-    + dbt675 + dbt68 - crd675 - crd68
-    - crd775 - crd776 - crd777 - crd78
-    + dbt775 + dbt776 + dbt777 + dbt78;
+  // CAF comptable = Résultat comptable + Charges non décaissables - Produits non encaissables
+  // Charges non décaissables : dotations amortissements/provisions (68), VNC cessions (675)
+  // Produits non encaissables : reprises amort/prov (78), produits de cessions (775/776/777)
+  const chargesNonDecaissables = (dbt68 - crd68) + (dbt675 - crd675);
+  const produitsNonEncaissables = (crd78 - dbt78) + (crd775 - dbt775) + (crd776 - dbt776) + (crd777 - dbt777);
+  const cafComptable = resultatComptable + chargesNonDecaissables - produitsNonEncaissables;
 
   // ── CAF budgétaire ─────────────────────────────────────────────────
   const chInvSde = sde.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
@@ -204,8 +217,7 @@ export function calculerResultatsM96(
   const tauxExecProduits = totalProduitsPrev > 0 ? totalProduitsSdr / totalProduitsPrev : 0;
   const joursAutonomie   = totalChargesSde > 0 ? (tresorerie / (totalChargesSde / 365)) : 0;
   const ratioFdrBfr      = bfr !== 0 ? fdrBas / bfr : 0;
-  const totalChargesBalance = dbtCl6 - crdCl6;
-  const totalProduitsBalance = crdCl7 - dbtCl7;
+  // totalChargesBalance and totalProduitsBalance already computed above (lines 55-56)
   const ressourcesPropres = sdr.filter(r => /^7[0-6]/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const recettesAutogenerees = sdr.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
 
