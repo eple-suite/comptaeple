@@ -412,8 +412,8 @@ export function RapportACSection() {
           </div>
           <div className="grid grid-cols-3 gap-3 mb-4">
             <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" sub={R.bfr < 0 ? 'Dégagement en FDR' : 'Besoin en FDR'} isText />
-            <KPICard label="Créances (cl.4 débit)" value={formatEur(R.totalCreances)} color="blue" icon="📋" isText />
-            <KPICard label="Dettes (cl.4 crédit)" value={formatEur(R.totalDettes)} color="amber" icon="📋" isText />
+            <KPICard label="Créances (cl.4 débit)" value={formatEur(safe.totalCreances)} color="blue" icon="📋" isText />
+            <KPICard label="Dettes (cl.4 crédit)" value={formatEur(safe.totalDettes)} color="amber" icon="📋" isText />
           </div>
 
           {/* Section 6: Trésorerie */}
