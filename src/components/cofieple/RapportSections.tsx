@@ -395,10 +395,10 @@ export function RapportACSection() {
             <table className="w-full text-xs border">
               <tbody>
                 <tr className="border-b bg-muted/20"><td className="p-2 font-semibold" colSpan={2}>Composition du FDR</td><td className="p-2 text-right font-mono">{formatEur(R.fdrComptable)}</td></tr>
-                <tr className="border-b"><td className="p-2" colSpan={2}>Part encaissée (autonomie financière)</td><td className="p-2 text-right font-mono">{formatEur(R.fdrPartEncaissee)} ({R.fdrPctEncaissee.toFixed(1)} %)</td></tr>
-                <tr className="border-b"><td className="p-2" colSpan={2}>Part non encaissée (créances & CCA)</td><td className="p-2 text-right font-mono">{formatEur(R.fdrPartNonEncaissee)} ({R.fdrPctNonEncaissee.toFixed(1)} %)</td></tr>
-                <tr className="border-b"><td className="p-2" colSpan={2}>Jours de fonctionnement</td><td className="p-2 text-right font-mono font-bold">{Math.round(R.joursFdr)} jours</td></tr>
-                <tr className="border-b"><td className="p-2" colSpan={2}>FDR mobilisable (hors stocks, créances anciennes, c/416)</td><td className="p-2 text-right font-mono font-bold">{formatEur(R.fdrMobilisable)}</td></tr>
+                <tr className="border-b"><td className="p-2" colSpan={2}>Part encaissée (autonomie financière)</td><td className="p-2 text-right font-mono">{formatEur(safe.fdrPartEncaissee)} ({safe.fdrPctEncaissee.toFixed(1)} %)</td></tr>
+                <tr className="border-b"><td className="p-2" colSpan={2}>Part non encaissée (créances & CCA)</td><td className="p-2 text-right font-mono">{formatEur(safe.fdrPartNonEncaissee)} ({safe.fdrPctNonEncaissee.toFixed(1)} %)</td></tr>
+                <tr className="border-b"><td className="p-2" colSpan={2}>Jours de fonctionnement</td><td className="p-2 text-right font-mono font-bold">{Math.round(safe.joursFdr)} jours</td></tr>
+                <tr className="border-b"><td className="p-2" colSpan={2}>FDR mobilisable (hors stocks, créances anciennes, c/416)</td><td className="p-2 text-right font-mono font-bold">{formatEur(safe.fdrMobilisable)}</td></tr>
               </tbody>
             </table>
           </div>
