@@ -357,26 +357,26 @@ export function RapportACSection() {
                   <td className="p-2 font-semibold">Produits nets (classe 7)</td>
                   <td className="p-2 text-right font-mono">{formatEur(R.totalProduitsSdr)}</td>
                 </tr>
-                <tr className="border-b">
+                 <tr className="border-b">
                   <td className="p-2 font-semibold">Charges non décaissables (68+675)</td>
-                  <td className="p-2 text-right font-mono">{formatEur(R.chargesNonDecaissables)}</td>
+                  <td className="p-2 text-right font-mono">{formatEur(safe.chargesNonDecaissables)}</td>
                   <td className="p-2 font-semibold">Produits non encaissables (78+775…)</td>
-                  <td className="p-2 text-right font-mono">{formatEur(R.produitsNonEncaissables)}</td>
+                  <td className="p-2 text-right font-mono">{formatEur(safe.produitsNonEncaissables)}</td>
                 </tr>
                 <tr className={`border-b font-bold ${R.resultatComptable >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
                   <td className="p-2" colSpan={2}>RÉSULTAT DE L'EXERCICE</td>
                   <td className="p-2 text-right font-mono" colSpan={2}>{formatEur(R.resultatComptable)}</td>
                 </tr>
-                <tr className={`font-bold ${R.cafComptable >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
-                  <td className="p-2" colSpan={2}>{R.cafComptable >= 0 ? 'CAF (Capacité d\'autofinancement)' : 'IAF (Insuffisance d\'autofinancement)'}</td>
-                  <td className="p-2 text-right font-mono" colSpan={2}>{formatEur(R.cafComptable)}</td>
+                <tr className={`font-bold ${safe.cafComptable >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
+                  <td className="p-2" colSpan={2}>{safe.cafComptable >= 0 ? 'CAF (Capacité d\'autofinancement)' : 'IAF (Insuffisance d\'autofinancement)'}</td>
+                  <td className="p-2 text-right font-mono" colSpan={2}>{formatEur(safe.cafComptable)}</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div className="text-xs text-muted-foreground mb-4 bg-muted/10 rounded p-3">
             Le résultat est la différence entre les produits nets et les charges nettes de fonctionnement.
-            L'autofinancement ({R.cafComptable >= 0 ? 'CAF' : 'IAF'}) mesure l'impact de l'exécution budgétaire
+            L'autofinancement ({safe.cafComptable >= 0 ? 'CAF' : 'IAF'}) mesure l'impact de l'exécution budgétaire
             sur les fonds propres, en excluant les charges non décaissables et les produits non encaissables.
           </div>
 
