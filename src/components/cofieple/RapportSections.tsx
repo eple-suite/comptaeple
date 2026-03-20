@@ -225,6 +225,42 @@ export function RapportACSection() {
 
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'agent comptable (M9-6 § V.2)." />;
 
+  // Safe defaults for REPROFI properties that may not exist on older results
+  const safe = {
+    fdrPartEncaissee: R.fdrPartEncaissee ?? 0,
+    fdrPartNonEncaissee: R.fdrPartNonEncaissee ?? 0,
+    fdrPctEncaissee: R.fdrPctEncaissee ?? 0,
+    fdrPctNonEncaissee: R.fdrPctNonEncaissee ?? 0,
+    fdrMobilisable: R.fdrMobilisable ?? 0,
+    chargesNonDecaissables: R.chargesNonDecaissables ?? 0,
+    produitsNonEncaissables: R.produitsNonEncaissables ?? 0,
+    cafComptable: R.cafComptable ?? 0,
+    varFdrBas: R.varFdrBas ?? 0,
+    joursFdr: R.joursFdr ?? 0,
+    joursTresorerie: R.joursTresorerie ?? 0,
+    tmcap: R.tmcap ?? 0,
+    tmnr: R.tmnr ?? 0,
+    totalCreances: R.totalCreances ?? 0,
+    totalDettes: R.totalDettes ?? 0,
+    creancesEtat: R.creancesEtat ?? 0,
+    creancesCollectivite: R.creancesCollectivite ?? 0,
+    creancesFamilles: R.creancesFamilles ?? 0,
+    creancesAutres: R.creancesAutres ?? 0,
+    dettesFournisseurs: R.dettesFournisseurs ?? 0,
+    dettesEtat: R.dettesEtat ?? 0,
+    dettesCollectivite: R.dettesCollectivite ?? 0,
+    dettesAutres: R.dettesAutres ?? 0,
+    reliquatsSubventions: R.reliquatsSubventions ?? 0,
+    valeurNette: R.valeurNette ?? 0,
+    variationPatrimoine: R.variationPatrimoine ?? 0,
+    patrimoineOriginesFondsPropres: R.patrimoineOriginesFondsPropres ?? 0,
+    patrimoineOriginesPctFP: R.patrimoineOriginesPctFP ?? 0,
+    patrimoineOriginesSubventions: R.patrimoineOriginesSubventions ?? 0,
+    patrimoineOriginesPctSub: R.patrimoineOriginesPctSub ?? 0,
+    tresoComposition: R.tresoComposition ?? { autonomieFinanciere: 0, depotsCautions: 0, reglementsEnAttente: 0, reliquatsSubventions: 0 },
+    prelevementsReserves: R.prelevementsReserves ?? { totalPrelevements: 0, prelevementsInvestissement: 0, prelevementsFonctionnement: 0, variationReserves: 0 },
+  };
+
   const nbBloq = checkItems.filter(c => c.bloquant).length;
   const nbAnom = checkItems.filter(c => c.statut !== 'ok').length;
   const dateArrete = etab.dateArrete ? new Date(etab.dateArrete).toLocaleDateString('fr-FR') : '—';
