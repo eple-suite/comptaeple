@@ -209,12 +209,14 @@ function detectDocumentType(headers: string[], sheetTitle?: string | null): 'sde
   // ── "en cours" appears in both SDE and SDR, slight SDE lean only ──
   if (has('en cours', 'encours')) { scores.sde += 1; scores.sdr += 1; }
 
-  // ── Balance indicators ──
-  if (has('compte', 'compte et intitule', 'compte et intitulé')) scores.bal += 2;
-  if (has('debit', 'débit')) scores.bal += 2;
-  if (has('credit', 'crédit')) scores.bal += 2;
-  if (has('solde')) scores.bal += 2;
-  if (has('anterieur', 'antérieur', 'poste', 'montant')) scores.bal += 1;
+  // ── Balance indicators (Op@le pivot + DBF/IMPORT BAL formats) ──
+  if (has('compte', 'compte et intitule', 'compte et intitulé', 'cgcompte')) scores.bal += 2;
+  if (has('debit', 'débit', 'cgbedeb', 'cgopdeb', 'cgtedeb')) scores.bal += 2;
+  if (has('credit', 'crédit', 'cgbecred', 'cgopcred', 'cgtecred')) scores.bal += 2;
+  if (has('solde', 'cgsldeb', 'cgslcred')) scores.bal += 2;
+  if (has('anterieur', 'antérieur', 'poste', 'montant', 'cglibelle')) scores.bal += 1;
+  // DBF balance has EXERCICE + CGETAB columns — strong signal
+  if (has('exercice') && has('cgetab')) scores.bal += 6;
 
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   const [bestType, bestScore] = sorted[0];
