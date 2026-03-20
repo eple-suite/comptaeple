@@ -529,7 +529,7 @@ export function RapportACSection() {
           <div className="grid grid-cols-3 gap-3 mb-4">
             <KPICard label="Réserves (c/1068)" value={formatEur(R.reserves)} color="blue" icon="🏛️" isText />
             <KPICard label="Dont SRH (c/106870)" value={formatEur(R.reservesSRH)} color="blue" icon="🍽️" isText />
-            <KPICard label="Variation annuelle" value={formatEur(R.prelevementsReserves.variationReserves)} color={R.prelevementsReserves.variationReserves >= 0 ? 'green' : 'red'} icon="📈" isText />
+            <KPICard label="Variation annuelle" value={formatEur(safe.prelevementsReserves.variationReserves)} color={safe.prelevementsReserves.variationReserves >= 0 ? 'green' : 'red'} icon="📈" isText />
           </div>
 
           {/* Section 15: Fonds mobilisables */}
