@@ -53,7 +53,8 @@ type Store = CofiepleState & {
 };
 
 export const useCofiepleStore = create<Store>()(
-  immer((set, get) => ({
+  persist(
+    immer((set, get) => ({
     etablissement: ETAB_INITIAL,
     budgets: [{ type: 'principal' as TypeBudget, libelle: 'Budget principal' }],
     sde: BUDGETS_VIDES(),
