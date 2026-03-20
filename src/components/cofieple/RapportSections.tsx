@@ -445,12 +445,12 @@ export function RapportACSection() {
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="bg-muted/30 rounded-lg p-4 text-xs">
               <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMcap — Taux moyen de charges à payer</div>
-              <div className="text-2xl font-bold font-mono">{R.tmcap.toFixed(2)} %</div>
+              <div className="text-2xl font-bold font-mono">{safe.tmcap.toFixed(2)} %</div>
               <div className="text-muted-foreground mt-1">Part impayée des charges réalisées à la clôture (dettes fournisseurs / charges SDE)</div>
             </div>
             <div className="bg-muted/30 rounded-lg p-4 text-xs">
               <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMnr — Taux moyen de non-recouvrement</div>
-              <div className="text-2xl font-bold font-mono">{R.tmnr.toFixed(2)} %</div>
+              <div className="text-2xl font-bold font-mono">{safe.tmnr.toFixed(2)} %</div>
               <div className="text-muted-foreground mt-1">Part non recouvrée des recettes réalisées à la clôture (créances cl.4 / produits SDR)</div>
             </div>
           </div>
@@ -462,10 +462,10 @@ export function RapportACSection() {
               <tbody>
                 <tr className="border-b bg-muted/20"><td className="p-2 font-semibold">Immobilisations brutes (classe 2)</td><td className="p-2 text-right font-mono">{formatEur(R.totalImmo)}</td></tr>
                 <tr className="border-b"><td className="p-2">Amortissements cumulés (compte 28)</td><td className="p-2 text-right font-mono">- {formatEur(R.totalAmortissements)}</td></tr>
-                <tr className="border-b font-bold"><td className="p-2">Valeur résiduelle du patrimoine</td><td className="p-2 text-right font-mono">{formatEur(R.valeurNette)}</td></tr>
-                <tr className="border-b"><td className="p-2">Variation annuelle</td><td className="p-2 text-right font-mono">{formatEur(R.variationPatrimoine)}</td></tr>
-                <tr className="border-b"><td className="p-2">Origines — Fonds propres</td><td className="p-2 text-right font-mono">{formatEur(R.patrimoineOriginesFondsPropres)} ({R.patrimoineOriginesPctFP.toFixed(1)} %)</td></tr>
-                <tr className="border-b"><td className="p-2">Origines — Subventions d'investissement</td><td className="p-2 text-right font-mono">{formatEur(R.patrimoineOriginesSubventions)} ({R.patrimoineOriginesPctSub.toFixed(1)} %)</td></tr>
+                <tr className="border-b font-bold"><td className="p-2">Valeur résiduelle du patrimoine</td><td className="p-2 text-right font-mono">{formatEur(safe.valeurNette)}</td></tr>
+                <tr className="border-b"><td className="p-2">Variation annuelle</td><td className="p-2 text-right font-mono">{formatEur(safe.variationPatrimoine)}</td></tr>
+                <tr className="border-b"><td className="p-2">Origines — Fonds propres</td><td className="p-2 text-right font-mono">{formatEur(safe.patrimoineOriginesFondsPropres)} ({safe.patrimoineOriginesPctFP.toFixed(1)} %)</td></tr>
+                <tr className="border-b"><td className="p-2">Origines — Subventions d'investissement</td><td className="p-2 text-right font-mono">{formatEur(safe.patrimoineOriginesSubventions)} ({safe.patrimoineOriginesPctSub.toFixed(1)} %)</td></tr>
               </tbody>
             </table>
           </div>
