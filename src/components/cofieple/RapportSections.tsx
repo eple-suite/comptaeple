@@ -476,11 +476,11 @@ export function RapportACSection() {
             <table className="w-full text-xs border">
               <thead><tr className="bg-muted/50"><th className="p-2 text-left">Origine</th><th className="p-2 text-right">Montant</th><th className="p-2 text-right">%</th></tr></thead>
               <tbody>
-                {R.creancesEtat > 0 && <tr className="border-b"><td className="p-2">État</td><td className="p-2 text-right font-mono">{formatEur(R.creancesEtat)}</td><td className="p-2 text-right font-mono">{pct(R.creancesEtat, R.totalCreances)}</td></tr>}
-                {R.creancesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité de rattachement</td><td className="p-2 text-right font-mono">{formatEur(R.creancesCollectivite)}</td><td className="p-2 text-right font-mono">{pct(R.creancesCollectivite, R.totalCreances)}</td></tr>}
-                {R.creancesFamilles > 0 && <tr className="border-b"><td className="p-2">Familles (DP, internes)</td><td className="p-2 text-right font-mono">{formatEur(R.creancesFamilles)}</td><td className="p-2 text-right font-mono">{pct(R.creancesFamilles, R.totalCreances)}</td></tr>}
-                {R.creancesAutres > 0 && <tr className="border-b"><td className="p-2">Autres débiteurs</td><td className="p-2 text-right font-mono">{formatEur(R.creancesAutres)}</td><td className="p-2 text-right font-mono">{pct(R.creancesAutres, R.totalCreances)}</td></tr>}
-                <tr className="border-b font-bold bg-muted/20"><td className="p-2">TOTAL CRÉANCES</td><td className="p-2 text-right font-mono">{formatEur(R.totalCreances)}</td><td className="p-2 text-right">100 %</td></tr>
+                {safe.creancesEtat > 0 && <tr className="border-b"><td className="p-2">État</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesEtat)}</td><td className="p-2 text-right font-mono">{pct(safe.creancesEtat, safe.totalCreances)}</td></tr>}
+                {safe.creancesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité de rattachement</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesCollectivite)}</td><td className="p-2 text-right font-mono">{pct(safe.creancesCollectivite, safe.totalCreances)}</td></tr>}
+                {safe.creancesFamilles > 0 && <tr className="border-b"><td className="p-2">Familles (DP, internes)</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesFamilles)}</td><td className="p-2 text-right font-mono">{pct(safe.creancesFamilles, safe.totalCreances)}</td></tr>}
+                {safe.creancesAutres > 0 && <tr className="border-b"><td className="p-2">Autres débiteurs</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesAutres)}</td><td className="p-2 text-right font-mono">{pct(safe.creancesAutres, safe.totalCreances)}</td></tr>}
+                <tr className="border-b font-bold bg-muted/20"><td className="p-2">TOTAL CRÉANCES</td><td className="p-2 text-right font-mono">{formatEur(safe.totalCreances)}</td><td className="p-2 text-right">100 %</td></tr>
               </tbody>
             </table>
           </div>
