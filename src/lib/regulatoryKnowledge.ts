@@ -69,11 +69,16 @@ export const SOLDES_ANORMAUX: RegleSoldeAnormal[] = [
   { compte: "15", libelle: "Provisions", sensNormal: "crediteur", anomalie: "Solde débiteur = provisions devenues négatives, impossible", action: "Corriger les écritures de dotation/reprise", gravite: "critique" },
 
   // ─── CLASSE 2 ───
+  { compte: "20", libelle: "Immobilisations incorporelles", sensNormal: "debiteur", anomalie: "Solde créditeur = erreur d'écriture sur immo incorporelles", action: "Vérifier les écritures d'immobilisations incorporelles", gravite: "critique" },
   { compte: "21", libelle: "Immobilisations corporelles", sensNormal: "debiteur", anomalie: "Solde créditeur = amortissements > valeur brute, erreur d'écriture", action: "Vérifier le tableau des amortissements", gravite: "critique" },
-  { compte: "28", libelle: "Amortissements", sensNormal: "crediteur", anomalie: "Solde débiteur = amortissements négatifs, erreur", action: "Rapprocher avec les immobilisations (21)", gravite: "critique" },
+  { compte: "23", libelle: "Immobilisations en cours", sensNormal: "debiteur", anomalie: "Solde créditeur = erreur d'écriture", action: "Vérifier les mises en service (transfert 23→21)", gravite: "critique" },
+  { compte: "27", libelle: "Autres immobilisations financières", sensNormal: "debiteur", anomalie: "Solde créditeur = dépôts/cautions négatifs", action: "Vérifier les mouvements de dépôts et cautions", gravite: "attention" },
+  { compte: "28", libelle: "Amortissements des immobilisations", sensNormal: "crediteur", anomalie: "Solde débiteur = amortissements négatifs, erreur comptable", action: "Rapprocher avec les immobilisations (21) — les amortissements sont toujours créditeurs (M9-6)", gravite: "critique" },
+  { compte: "29", libelle: "Dépréciations des immobilisations", sensNormal: "crediteur", anomalie: "Solde débiteur = dépréciation négative, erreur comptable", action: "Vérifier les dotations/reprises de dépréciations", gravite: "critique" },
 
   // ─── CLASSE 3 ───
   { compte: "31", libelle: "Stocks de denrées", sensNormal: "debiteur", anomalie: "Solde créditeur = stock négatif, erreur d'inventaire", action: "Effectuer un inventaire physique", gravite: "attention" },
+  { compte: "39", libelle: "Dépréciations des stocks", sensNormal: "crediteur", anomalie: "Solde débiteur = dépréciation de stock négative", action: "Vérifier les dotations/reprises de dépréciations de stocks", gravite: "attention" },
 
   // ─── CLASSE 4 — COMPTES DE TIERS ───
   { compte: "401", libelle: "Fournisseurs", sensNormal: "crediteur", anomalie: "Solde débiteur = avances fournisseurs ou double paiement", action: "Vérifier les avoirs et avances non régularisées", gravite: "attention" },
