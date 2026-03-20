@@ -83,6 +83,7 @@ export interface ResultatsM96 {
   resultatBudgetaire: number; resultatComptable: number;
   excedent: number; deficit: number;
   cafBudgetaire: number; cafComptable: number;
+  chargesNonDecaissables: number; produitsNonEncaissables: number;
   fdrHaut: number; fdrBas: number; fdrComptable: number;
   varFdrHaut: number; varFdrBas: number; varFdrCaf: number;
   varFdrTableauFinancement: number; structurationFdr: number;
@@ -103,6 +104,41 @@ export interface ResultatsM96 {
   tauxExecCharges: number; tauxExecProduits: number;
   joursAutonomie: number; ratioFdrBfr: number;
   prelevementsReserves: PrelevementsReserves;
+  // REPROFI indicators
+  joursFdr: number;                    // FDR / (charges expl / 365)
+  joursTresorerie: number;             // Trésorerie / (charges expl / 365)
+  fdrPartEncaissee: number;            // Trésorerie libre dans le FDR
+  fdrPartNonEncaissee: number;         // Créances dans le FDR
+  fdrPctEncaissee: number;             // % encaissée
+  fdrPctNonEncaissee: number;          // % non encaissée
+  tmcap: number;                       // Taux moyen charges à payer (dettes fournisseurs / charges)
+  tmnr: number;                        // Taux moyen non-recouvrement (créances impayées / recettes)
+  creancesEtat: number;
+  creancesCollectivite: number;
+  creancesFamilles: number;
+  creancesAutres: number;
+  totalCreances: number;
+  dettesFournisseurs: number;
+  dettesEtat: number;
+  dettesCollectivite: number;
+  dettesAutres: number;
+  totalDettes: number;
+  reliquatsSubventions: number;
+  patrimoineOriginesFondsPropres: number;
+  patrimoineOriginesSubventions: number;
+  patrimoineOriginesPctFP: number;
+  patrimoineOriginesPctSub: number;
+  variationPatrimoine: number;
+  tresoComposition: {
+    autonomieFinanciere: number;      // Trésorerie libre
+    depotsCautions: number;           // Compte 165/275
+    reglementsEnAttente: number;      // Comptes 511/5117
+    avancesRecues: number;            // Avances familles/tiers
+    reliquatsSubventions: number;     // Reliquats sub non consommées
+    tresorerieSpecifique: number;     // Trésorerie fléchée
+  };
+  fdrMobilisable: number;             // FDR - stocks - créances anciennes - 416
+  resultatN1: number;                 // Résultat N-1 (comptes 120/129)
 }
 
 export interface ResultatsBudgetAnnexe {
