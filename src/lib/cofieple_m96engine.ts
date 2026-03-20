@@ -50,6 +50,14 @@ export function calculerResultatsM96(
   const dbtCl7 = sumBal(bal, c => c.charAt(0) === '7', 'dbt');
   const crdCl7 = sumBal(bal, c => c.charAt(0) === '7', 'crd');
 
+  // Résultat comptable N = Produits N (classe 7) - Charges N (classe 6)
+  // Calculé à partir des mouvements de la balance (pas des comptes 120/129 qui contiennent N-1)
+  const totalChargesBalance = dbtCl6 - crdCl6;
+  const totalProduitsBalance = crdCl7 - dbtCl7;
+  const resultatComptable = totalProduitsBalance - totalChargesBalance;
+  const excedent = resultatComptable >= 0 ? resultatComptable : 0;
+  const deficit = resultatComptable < 0 ? -resultatComptable : 0;
+
   // ── CAF comptable (M9-6 § IV.3) ───────────────────────────────────
   const dbt675 = sumBal(bal, c => c.startsWith('675'), 'dbt');
   const crd675 = sumBal(bal, c => c.startsWith('675'), 'crd');
