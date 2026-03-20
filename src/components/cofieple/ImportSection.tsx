@@ -71,37 +71,111 @@ function extractCsvIdentifier(rows: Record<string, string>[]): { uai: string | n
  *  Priorité : champ exercice > période "du …/YYYY au …/YYYY" > année isolée.
  *  On ignore les dates d'édition (ex. "Edité au : 04/03/2026"). */
 function extractExercice(rows: Record<string, string>[], sheetMeta?: string | null): number | null {
-  // 1) Explicit "exercice" / "annee" field
-  for (const row of rows.slice(0, 20)) {
-    for (const [key, val] of Object.entries(row)) {
-      const k = normalizeColumnName(key);
-      const v = String(val || '').trim();
-      if (k.includes('exercice') || k.includes('annee')) {
-        const year = parseInt(v, 10);
-        if (year >= 2000 && year <= 2099) return year;
-      }
+  const isValidYear = (year: number | null | undefined): year is number => !!year && year >= 2000 && year <= 2099;
+
+  const extractYearFromValue = (value: string): number | null => {
+    const v = String(value || '').trim();
+    if (!v) return null;
+
+    const fullDate = v.match(/\b\d{1,2}[/-]\d{1,2}[/-](20\d{2})\b/);
+    if (fullDate) {
+      const y = parseInt(fullDate[1], 10);
+      return isValidYear(y) ? y : null;
+    }
+
+    const monthYear = v.match(/\b\d{1,2}[/-](20\d{2})\b/);
+    if (monthYear) {
+      const y = parseInt(monthYear[1], 10);
+      return isValidYear(y) ? y : null;
+    }
+
+    const yearOnly = v.match(/^\s*(20\d{2})\s*$/);
+    if (yearOnly) {
+      const y = parseInt(yearOnly[1], 10);
+      return isValidYear(y) ? y : null;
+    }
+
+    return null;
+  };
+
+  const isEditionOrPrintContext = (text: string): boolean => {
+    const t = normalizeColumnName(text);
+    return (
+      t.includes('edite') ||
+      t.includes('edition') ||
+      t.includes('imprime') ||
+      t.includes('date') ||
+      t.includes('job') ||
+      t.includes('utilisateur')
+    );
+  };
+
+  const previewRows = rows.slice(0, 25);
+  const entries = previewRows.flatMap((row) => Object.entries(row));
+
+  // 1) Strong signals: "Période de début/fin" key-value pairs
+  let periodStart: number | null = null;
+  let periodEnd: number | null = null;
+  for (const [key, val] of entries) {
+    const k = normalizeColumnName(key);
+    if (!k.includes('periode')) continue;
+    const y = extractYearFromValue(String(val || ''));
+    if (!isValidYear(y)) continue;
+    if (k.includes('fin')) periodEnd = y;
+    if (k.includes('debut')) periodStart = y;
+  }
+  if (isValidYear(periodEnd)) return periodEnd;
+  if (isValidYear(periodStart)) return periodStart;
+
+  // 2) Text-level period detection (e.g. "du 01/2025 au 12/2025")
+  const allTextRaw = `${sheetMeta || ''} ${previewRows
+    .slice(0, 10)
+    .map((r) => Object.entries(r).map(([k, v]) => `${k} ${v}`).join(' '))
+    .join(' ')}`;
+  const allText = normalizeColumnName(allTextRaw);
+
+  const periodPatterns: RegExp[] = [
+    /du\s+\d{1,2}[/-]\d{4}\s+au\s+\d{1,2}[/-](20\d{2})/i,
+    /du\s+\d{1,2}[/-]\d{1,2}[/-]\d{4}\s+au\s+\d{1,2}[/-]\d{1,2}[/-](20\d{2})/i,
+    /periode\s+de\s+debut\s*:?\s*\d{1,2}[/-](20\d{2}).{0,80}?periode\s+de\s+fin\s*:?\s*\d{1,2}[/-](20\d{2})/i,
+    /periode\s+de\s+fin\s*:?\s*(?:\d{1,2}[/-])?(20\d{2})/i,
+  ];
+
+  for (const pattern of periodPatterns) {
+    const m = allText.match(pattern);
+    if (!m) continue;
+    const candidate = parseInt(m[m.length - 1], 10);
+    if (isValidYear(candidate)) return candidate;
+  }
+
+  // 3) Explicit exercice/année field (only standalone year accepted)
+  for (const [key, val] of entries) {
+    const k = normalizeColumnName(key);
+    const v = String(val || '').trim();
+    if (!k.includes('exercice') && !k.includes('annee')) continue;
+    const yearOnly = v.match(/^\s*(20\d{2})\s*$/);
+    if (!yearOnly) continue;
+    const y = parseInt(yearOnly[1], 10);
+    if (isValidYear(y)) return y;
+  }
+
+  // 4) Fallback: end-of-exercise dates, then generic year (excluding edition/print metadata)
+  for (const [key, val] of entries) {
+    const k = normalizeColumnName(key);
+    if (k.includes('fin') && k.includes('exercice') && !isEditionOrPrintContext(k)) {
+      const y = extractYearFromValue(String(val || ''));
+      if (isValidYear(y)) return y;
     }
   }
 
-  // 2) Period pattern "du MM/YYYY au MM/YYYY" or "du JJ/MM/YYYY au JJ/MM/YYYY" — use ending year
-  const allText = (sheetMeta || '') + ' ' + rows.slice(0, 10).map(r => Object.values(r).join(' ')).join(' ');
-  const periodMatch = allText.match(/du\s+[\d/]+\s*au\s+\d{0,2}\/?(\d{4})/i)
-    || allText.match(/du\s+\d{2}\/(\d{4})\s+au/i);
-  if (periodMatch) {
-    const year = parseInt(periodMatch[1], 10);
-    if (year >= 2000 && year <= 2099) return year;
+  for (const [key, val] of entries) {
+    if (isEditionOrPrintContext(key) || isEditionOrPrintContext(String(val || ''))) continue;
+    const m = String(val || '').match(/\b(20\d{2})\b/);
+    if (!m) continue;
+    const y = parseInt(m[1], 10);
+    if (isValidYear(y)) return y;
   }
 
-  // 3) Fallback: first year found in first 5 rows (excluding "edite" / "date" fields)
-  for (const row of rows.slice(0, 5)) {
-    for (const [key, val] of Object.entries(row)) {
-      const k = normalizeColumnName(key);
-      if (k.includes('edite') || k.includes('date')) continue;
-      const v = String(val || '').trim();
-      const m = v.match(/\b(20[0-9]{2})\b/);
-      if (m) return parseInt(m[1], 10);
-    }
-  }
   return null;
 }
 
@@ -251,10 +325,12 @@ function extractWorkbookTitle(wb: XLSX.WorkBook): string | null {
 function extractWorkbookMeta(wb: XLSX.WorkBook): string {
   const parts: string[] = [];
   for (const sn of wb.SheetNames) {
-    if (normalizeColumnName(sn).includes('donnee')) continue;
+    const isDataSheet = normalizeColumnName(sn).includes('donnee');
     const ws = wb.Sheets[sn];
-    for (let r = 1; r <= 8; r++) {
-      for (let c = 1; c <= 16; c++) {
+    const maxRows = isDataSheet ? 4 : 8;
+    const maxCols = isDataSheet ? 24 : 16;
+    for (let r = 1; r <= maxRows; r++) {
+      for (let c = 1; c <= maxCols; c++) {
         const cell = ws[XLSX.utils.encode_cell({ r: r - 1, c: c - 1 })];
         if (cell && cell.v != null) parts.push(String(cell.v));
       }
