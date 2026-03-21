@@ -24,10 +24,17 @@ function extractService(ligne: string): string {
 
 // ═══════════════════════════════════════════════════════════════════
 // CALCUL PRINCIPAL M9-6 2026
+// Supporte Budget Principal ET Budget Annexe (GRETA/CFA/SRH)
 // ═══════════════════════════════════════════════════════════════════
+export interface CalculOptions {
+  isAnnexe?: boolean; // true = budget annexe → TN via C/185000
+}
+
 export function calculerResultatsM96(
-  sde: LigneSDE[], sdr: LigneSDR[], bal: LigneBalance[]
+  sde: LigneSDE[], sdr: LigneSDR[], bal: LigneBalance[],
+  options: CalculOptions = {}
 ): ResultatsM96 {
+  const { isAnnexe = false } = options;
 
   // ── Totaux SDE/SDR ─────────────────────────────────────────────────
   const totalChargesSde  = sde.reduce((s, r) => s + r.realise, 0);
@@ -138,8 +145,29 @@ export function calculerResultatsM96(
   const varBfrSoustractive = varFdrBas - (solDbtCl5 - solCrdCl5 - antDbtCl5 + antCrdCl5);
 
   // ── Trésorerie ─────────────────────────────────────────────────────
-  const tresorerie = solDbtCl5 - solCrdCl5;
-  const varTresorerieComptable = tresorerie - (antDbtCl5 - antCrdCl5);
+  // Budget Principal : TN = solde net classe 5 (C/515100 = dépôt au Trésor)
+  // Budget Annexe : TN = C/185000 solde débiteur (trésorerie virtuelle via BP support)
+  //                 Pas de C/515100, le Trésor est porté par le budget principal
+  let tresorerie: number;
+  if (isAnnexe) {
+    // Pour un budget annexe : trésorerie = C/185000 solde débiteur
+    const solDbt185 = sumBal(bal, c => c.startsWith('185'), 'solDbt');
+    const solCrd185fromCl5 = sumBal(bal, c => c.startsWith('185'), 'solCrd');
+    tresorerie = solDbt185 - solCrd185fromCl5;
+  } else {
+    tresorerie = solDbtCl5 - solCrdCl5;
+  }
+  const tresorerieClassique = solDbtCl5 - solCrdCl5; // toujours calculée pour vérification
+  const antTresoClassique = antDbtCl5 - antCrdCl5;
+  let tresorerieAnt: number;
+  if (isAnnexe) {
+    const antDbt185 = sumBal(bal, c => c.startsWith('185'), 'antDbt');
+    const antCrd185val = sumBal(bal, c => c.startsWith('185'), 'antCrd');
+    tresorerieAnt = antDbt185 - antCrd185val;
+  } else {
+    tresorerieAnt = antTresoClassique;
+  }
+  const varTresorerieComptable = tresorerie - tresorerieAnt;
   const varTresorerieTableauFinancement = varFdrBas - varBfrSynthetique;
   const fluxNetsTresorerie = varFdrCaf - varBfrSynthetique;
   const structurationTresorerie = bfr + tresorerie;
@@ -433,9 +461,10 @@ export function calculerResultatsM96(
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// CHECK-LIST M9-6 — 15 vérifications
+// CHECK-LIST M9-6 — 15+ vérifications (adaptées Budget Principal / Annexe)
 // ═══════════════════════════════════════════════════════════════════
-export function buildChecklist(r: ResultatsM96): VerificationM96[] {
+export function buildChecklist(r: ResultatsM96, options: { isAnnexe?: boolean; bal?: LigneBalance[] } = {}): VerificationM96[] {
+  const { isAnnexe = false, bal = [] } = options;
   const checks: VerificationM96[] = [];
   function add(id: string, titre: string, ref: string, v1Label: string, v1: number, v2Label: string, v2: number, bloquant: boolean, piste: string) {
     const ecart = v1 - v2;
@@ -455,11 +484,55 @@ export function buildChecklist(r: ResultatsM96): VerificationM96[] {
   add('struct_fdr','Structuration FDR ≠ FDR comptable','M9-6 § IV.2','Total structuration FDR (BFR + Tréso)',r.structurationFdr,'FDR comptable',r.fdrComptable,true,"Vérifier la décomposition du FDR en BFR + Trésorerie. Des comptes de tiers anormaux peuvent provoquer ce déséquilibre.");
   add('var_bfr_synth_soustr','Variation BFR synthétique ≠ Variation BFR soustractive','M9-6 § IV.2 — BFR','Variation BFR synthétique (BF - BE)',r.varBfrSynthetique,'Variation BFR soustractive',r.varBfrSoustractive,false,"Des comptes de tiers anormalement débiteurs ou créditeurs peuvent causer ce type d'anomalie. Vérifier les comptes 40X et 41X.");
   add('var_bfr_tf','Variation BFR tableau financement ≠ Variation BFR comptable','M9-6 § IV.2','Variation BFR tableau financement',r.varBfrTableauFinancement,'Variation BFR comptable',r.varBfrSoustractive,false,"Des comptes de tiers anormaux peuvent causer ce type d'anomalie.");
-  add('struct_trso','Structuration trésorerie ≠ Trésorerie','M9-6 § IV.2','Total structuration trésorerie',r.structurationTresorerie,'Trésorerie (classe 5)',r.tresorerie,false,"Des comptes de tiers anormaux peuvent provoquer ce déséquilibre.");
+  add('struct_trso','Structuration trésorerie ≠ Trésorerie','M9-6 § IV.2','Total structuration trésorerie',r.structurationTresorerie,'Trésorerie',r.tresorerie,false,"Des comptes de tiers anormaux peuvent provoquer ce déséquilibre.");
   add('flux_trso','Flux nets de trésorerie ≠ Variation trésorerie comptable','M9-6 § IV.3 Tableau des flux','Total flux nets de trésorerie',r.fluxNetsTresorerie,'Variation trésorerie comptable',r.varTresorerieComptable,false,'');
   add('var_trso_tf','Variation trésorerie TF ≠ Variation trésorerie comptable','M9-6 § IV.3','Variation trésorerie tableau financement',r.varTresorerieTableauFinancement,'Variation trésorerie comptable',r.varTresorerieComptable,false,'');
   add('charges_sde_bal','Total charges SDE ≠ Total classe 6 balance','M9-6 § II — Rapprochement Ordo/AC — POINT BLOQUANT','Total charges nettes SDE (N)',r.totalChargesSde,'Total charges classe 6 balance',r.totalChargesBalance,true,"POINT BLOQUANT : rapprochement ordonnateur/agent comptable. Vérifier que toutes les demandes de paiement ont été traitées. Contrôler les extournes.");
   add('produits_sdr_bal','Total produits SDR ≠ Total classe 7 balance','M9-6 § II — Rapprochement Ordo/AC — POINT BLOQUANT','Total produits nets SDR (N)',r.totalProduitsSdr,'Total produits classe 7 balance',r.totalProduitsBalance,true,"POINT BLOQUANT : rapprochement ordonnateur/agent comptable. Vérifier les titres de recettes émis et les extournes.");
+
+  // ── Vérifications spécifiques BUDGET ANNEXE ──────────────────────
+  if (isAnnexe && bal.length > 0) {
+    // Cohérence TN : FDR - BFR doit = C/185000 solde débiteur
+    const solDbt185 = sumBal(bal, c => c.startsWith('185'), 'solDbt');
+    const solCrd185 = sumBal(bal, c => c.startsWith('185'), 'solCrd');
+    const tn185 = solDbt185 - solCrd185;
+    const tnCalcule = r.fdrBas - r.bfr;
+    add('ba_tn_coherence',
+      'TN (FDR−BFR) ≠ C/185000 — Incohérence budget annexe',
+      'M9-6 § Budget annexe — POINT BLOQUANT',
+      'TN calculée (FDR − BFR)', tnCalcule,
+      'C/185000 solde débiteur', tn185,
+      true,
+      "POINT BLOQUANT budget annexe : la trésorerie calculée (FDR − BFR) doit correspondre au solde débiteur du compte de liaison 185000. Vérifier les comptes de tiers et le compte de liaison avec le budget principal."
+    );
+
+    // Vérification absence C/515100 (pas de Trésor pour un annexe)
+    const solDbt515 = sumBal(bal, c => c.startsWith('515100'), 'solDbt');
+    const solCrd515 = sumBal(bal, c => c.startsWith('515100'), 'solCrd');
+    if (solDbt515 > 0 || solCrd515 > 0) {
+      add('ba_515100_present',
+        'C/515100 présent dans un budget annexe',
+        'M9-6 — Structure budget annexe',
+        'Solde C/515100', solDbt515 - solCrd515,
+        'Attendu pour annexe', 0,
+        false,
+        "Un budget annexe ne devrait pas avoir de compte au Trésor (515100). Ce compte est porté par le budget principal support. Vérifier l'export Op@le."
+      );
+    }
+
+    // Vérification C/185000 doit être débiteur (créances sur le BP)
+    if (tn185 < 0) {
+      add('ba_185_crediteur',
+        'C/185000 créditeur — Budget annexe en dette envers le BP',
+        'M9-6 — Comptes de liaison',
+        'Solde C/185000', tn185,
+        'Seuil minimum', 0,
+        false,
+        "Le compte de liaison 185000 est créditeur, ce qui signifie que le budget annexe doit de l'argent au budget principal. Situation à surveiller."
+      );
+    }
+  }
+
   return checks;
 }
 

@@ -6,7 +6,7 @@
 
 import type { LigneSDE, LigneSDR, LigneBalance } from './cofieple_types';
 import { calculerResultatsM96, buildChecklist, analyserBalance as analyserBalanceEngine, calculerBudgetAnnexe } from './cofieple_m96engine';
-import { fmtEur, fmtPct, parseSDE, parseSDR, parseBalance } from './cofieple_csvParser';
+import { fmtEur, fmtPct, parseSDE, parseSDR, parseBalance, detectBudgetType } from './cofieple_csvParser';
 import type {
   TypeBudget, ResultatsUI, CheckItem, AnomalieBalance,
   ServiceDataUI, IndicateursBA,
@@ -209,7 +209,9 @@ export function calculerResultats(
   sde1: LigneSDE[], sdr1: LigneSDR[], _bal1: LigneBalance[],
   _typeBudget: TypeBudget
 ): ResultatsUI {
-  const r = calculerResultatsM96(sde, sdr, bal);
+  // Detect if this is an annexe budget based on balance data
+  const isAnnexe = _typeBudget !== 'principal' || (bal.length > 0 && detectBudgetType(bal).isAnnexe);
+  const r = calculerResultatsM96(sde, sdr, bal, { isAnnexe });
 
   // ── Populate N-1 from imported SDE-1/SDR-1 ──────────────────────
   const totalChargesSdeN1 = sde1.reduce((s, row) => s + row.realise, 0);
@@ -317,8 +319,9 @@ export function consolider(bp: ResultatsUI, annexes: ResultatsUI[]): ResultatsUI
 // ── Checklist M9-6 ──────────────────────────────────────────────────
 // 15 vérifications réglementaires — M9-6 §§ II, III, IV
 // Points bloquants identifiés conformément au Décret 2012-1246 art. 195-199
-export function construireCheckList(r: ResultatsUI, _activeBudget: TypeBudget): CheckItem[] {
-  const checks = buildChecklist(r);
+export function construireCheckList(r: ResultatsUI, _activeBudget: TypeBudget, bal?: LigneBalance[]): CheckItem[] {
+  const isAnnexe = _activeBudget !== 'principal';
+  const checks = buildChecklist(r, { isAnnexe, bal });
   return checks.map(c => ({
     id: c.id,
     titre: c.titre,

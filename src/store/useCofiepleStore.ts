@@ -137,8 +137,8 @@ export const useCofiepleStore = create<Store>()(
         const consolide = bp && annexes.length > 0 ? consolider(bp, annexes) : null;
         const activeBudget = S.activeBudget;
         const resultatsActifs = newResultats[activeBudget];
-        const checkItems = resultatsActifs ? construireCheckList(resultatsActifs, activeBudget) : [];
         const balanceActive = S.balance[activeBudget] || [];
+        const checkItems = resultatsActifs ? construireCheckList(resultatsActifs, activeBudget, balanceActive) : [];
         const anomaliesBalance = analyserBalance(balanceActive);
 
         set(state => {
