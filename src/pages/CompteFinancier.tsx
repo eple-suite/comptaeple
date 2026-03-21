@@ -133,6 +133,7 @@ const CompteFinancier = () => {
       case 'greta': return <IndicateursGreta />;
       case 'cfa': return <IndicateursCfa />;
       case 'srh': return <IndicateursSrh />;
+      case 'vue_consolidee': return <VueConsolidee />;
       case 'rapport_ordo': return <RapportOrdoSection />;
       case 'rapport_ac': return <RapportACSection />;
       case 'annexe': return <AnnexeComptableSection />;
