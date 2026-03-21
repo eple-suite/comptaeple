@@ -235,6 +235,37 @@ const CompteFinancier = () => {
         </div>
       )}
 
+      {/* Banner Budget Annexe — Mode de calcul adapté */}
+      {hasData && activeBudget !== 'principal' && resultats[activeBudget] && (() => {
+        const bal = balance?.[activeBudget] || [];
+        const c185 = bal.find(l => l.compte.startsWith('185'));
+        const solde185 = c185 ? (c185.solDbt - c185.solCrd) : 0;
+        return (
+          <div className="mx-1 mt-2">
+            <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+              <div className="flex items-start gap-3">
+                <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+                <div className="space-y-1 text-sm">
+                  <p className="font-bold text-warning">
+                    ℹ️ BUDGET ANNEXE DÉTECTÉ — Mode de calcul adapté (M9-6 §2.1.2.3.2)
+                  </p>
+                  <p className="text-muted-foreground text-xs leading-relaxed">
+                    Ce budget n'ayant pas de personnalité juridique (M9-6 §2.1.2.3.1), il ne dispose pas
+                    de compte de dépôt des fonds au Trésor (C/515100). Sa trésorerie est matérialisée par
+                    le <span className="font-semibold text-foreground">compte 185000</span>{' '}
+                    (solde débiteur : <span className="font-semibold text-warning">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(solde185)}</span>),
+                    qui représente les fonds mis à disposition par le budget principal support.
+                  </p>
+                  <p className="text-muted-foreground text-[11px]">
+                    Tous les indicateurs (FDR, BFR, TN) ont été recalculés en conséquence.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Navigation */}
       <nav className="bg-[hsl(222,25%,18%)] border-b border-[hsl(222,25%,24%)] sticky top-0 z-40 rounded-b-xl">
         <div className="px-2">
