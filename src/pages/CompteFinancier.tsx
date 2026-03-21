@@ -26,6 +26,7 @@ import { AnnexeComptableSection } from '@/components/cofieple/AnnexeComptableSec
 import { ImportHistorySection } from '@/components/cofieple/ImportHistorySection';
 import { LiaisonsInterBudgets } from '@/components/cofieple/LiaisonsInterBudgets';
 import { IndicateursGreta } from '@/components/cofieple/IndicateursGreta';
+import { IndicateursCfa } from '@/components/cofieple/IndicateursCfa';
 import { detectBudgetType } from '@/lib/cofieple_csvParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import {
