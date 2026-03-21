@@ -24,10 +24,17 @@ function extractService(ligne: string): string {
 
 // ═══════════════════════════════════════════════════════════════════
 // CALCUL PRINCIPAL M9-6 2026
+// Supporte Budget Principal ET Budget Annexe (GRETA/CFA/SRH)
 // ═══════════════════════════════════════════════════════════════════
+export interface CalculOptions {
+  isAnnexe?: boolean; // true = budget annexe → TN via C/185000
+}
+
 export function calculerResultatsM96(
-  sde: LigneSDE[], sdr: LigneSDR[], bal: LigneBalance[]
+  sde: LigneSDE[], sdr: LigneSDR[], bal: LigneBalance[],
+  options: CalculOptions = {}
 ): ResultatsM96 {
+  const { isAnnexe = false } = options;
 
   // ── Totaux SDE/SDR ─────────────────────────────────────────────────
   const totalChargesSde  = sde.reduce((s, r) => s + r.realise, 0);
