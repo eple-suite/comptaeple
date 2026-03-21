@@ -1,6 +1,8 @@
 // ═══════════════════════════════════════════════════════════════
 // COFIEPLE — Rapport Ordonnateur + Rapport Agent Comptable
 // Modèle REPROFI 25 pages — M9-6 2026, Décret 2012-1246
+// Version enrichie : domaines D1-D9, N/N-1, opérations d'ordre,
+// DGP/DGR, 12 ratios, composition FDR/BFR/Trésorerie
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useEffect } from 'react';
@@ -13,6 +15,10 @@ import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+  ResponsiveContainer, ReferenceLine, Cell, Legend,
+} from 'recharts';
 
 interface Indicators {
   effectif_eleves: number; effectif_dp: number; effectif_internes: number;
@@ -44,6 +50,7 @@ function useExtraIndicators() {
 
 // ═══════════════════════════════════════════════════════════════
 // RAPPORT DE L'ORDONNATEUR — M9-6 § V.1
+// Enrichi : D1-D9, N/N-1, écarts significatifs, opérations d'ordre
 // ═══════════════════════════════════════════════════════════════
 export function RapportOrdoSection() {
   const etab = useCofiepleStore(s => s.etablissement);
@@ -59,6 +66,10 @@ export function RapportOrdoSection() {
 
   const dateArrete = etab.dateArrete ? new Date(etab.dateArrete).toLocaleDateString('fr-FR') : '—';
   const tauxBoursiers = ind && ind.effectif_eleves > 0 ? ((ind.effectif_boursiers / ind.effectif_eleves) * 100).toFixed(1) : null;
+  const hasN1 = (R.totalChargesSdeN1 ?? 0) > 0;
+  const oo = R.operationsOrdre ?? { dotationsAmort: 0, reprisesAmort: 0, vncCessions: 0, produitsCessions: 0, neutralisationSubInv: 0, totalChargesOO: 0, totalProduitsOO: 0, soldeOO: 0 };
+  const domaines = R.domaines ?? {};
+  const domainesList = Object.values(domaines).filter(d => d.chargesReel > 0 || d.produitsReel > 0).sort((a, b) => a.code.localeCompare(b.code));
 
   async function genererIA() {
     setAiLoading(true);
@@ -72,6 +83,7 @@ export function RapportOrdoSection() {
             totalChargesReel: R.totalChargesSde, totalProduitsReel: R.totalProduitsSdr,
             joursAutonomie: R.joursAutonomie, reserves: R.reserves,
             tauxExecCharges: R.tauxExecCharges, tauxExecProduits: R.tauxExecProduits,
+            domaines, operationsOrdre: oo,
           },
           indicateurs: ind,
         },
@@ -84,6 +96,14 @@ export function RapportOrdoSection() {
     } catch (e) { console.error(e); }
     setAiLoading(false);
   }
+
+  // Chart data for domain-level execution
+  const domChartData = domainesList.map(d => ({
+    name: `D${d.code}`,
+    Dépenses: d.chargesReel,
+    Recettes: d.produitsReel,
+    Solde: d.solde,
+  }));
 
   return (
     <div className="space-y-4">
@@ -99,6 +119,7 @@ export function RapportOrdoSection() {
 
       <Card className="max-w-4xl mx-auto print:shadow-none">
         <CardContent className="p-8">
+          {/* Header officiel */}
           <div className="flex justify-between items-start border-b-2 border-foreground pb-4 mb-5">
             <div>
               <h1 className="text-xl font-black tracking-tight">RAPPORT DE L'ORDONNATEUR</h1>
@@ -119,6 +140,7 @@ export function RapportOrdoSection() {
             Présenté par l'ordonnateur : <strong>{etab.ordonnateur || '—'}</strong> · Arrêté au : {dateArrete}
           </p>
 
+          {/* 1. Présentation de l'établissement */}
           <SectionTitre numero="1" title="Présentation de l'établissement" />
           {ind && ind.effectif_eleves > 0 && (
             <div className="mb-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -136,17 +158,209 @@ export function RapportOrdoSection() {
             placeholder="Cliquez sur 'Générer le texte IA' ou saisissez votre texte ici…" rows={4}
             className="mb-4 bg-muted/30 text-sm" />
 
+          {/* 2. Exécution budgétaire globale */}
           <SectionTitre numero="2" title={`Exécution budgétaire de l'exercice ${etab.exercice}`} />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label="Charges réalisées" value={formatEur(R.totalChargesSde)} color="amber" icon="💸" sub={`Taux : ${(R.tauxExecCharges * 100).toFixed(1)} %`} isText />
-            <KPICard label="Produits réalisés" value={formatEur(R.totalProduitsSdr)} color="green" icon="💰" sub={`Taux : ${(R.tauxExecProduits * 100).toFixed(1)} %`} isText />
-            <KPICard label="Résultat budg." value={formatEur(R.resultatBudgetaire)} color={R.resultatBudgetaire >= 0 ? 'green' : 'red'} icon="📊" sub={R.resultatBudgetaire >= 0 ? 'Excédent' : 'Déficit'} isText />
-            <KPICard label="CAF/IAF" value={formatEur(R.cafBudgetaire)} color={R.cafBudgetaire >= 0 ? 'green' : 'red'} icon="🔄" sub={R.cafBudgetaire >= 0 ? 'Capacité' : 'Insuffisance'} isText />
+            <KPICard label="Crédits ouverts" value={formatEur(R.totalChargesPrev)} color="blue" icon="💸" sub="Budget voté + DBM" isText />
+            <KPICard label="Dépenses réalisées" value={formatEur(R.totalChargesSde)} color="amber" icon="✅" sub={`Taux : ${(R.tauxExecCharges * 100).toFixed(1)} %`} isText />
+            <KPICard label="Prévisions recettes" value={formatEur(R.totalProduitsPrev)} color="blue" icon="💰" sub="Budget voté + DBM" isText />
+            <KPICard label="Recettes réalisées" value={formatEur(R.totalProduitsSdr)} color={R.totalProduitsSdr >= R.totalProduitsPrev ? 'green' : 'red'} icon="✅" sub={`Taux : ${(R.tauxExecProduits * 100).toFixed(1)} %`} isText />
           </div>
 
+          {/* N vs N-1 comparison */}
+          {hasN1 && (
+            <div className="overflow-x-auto mb-4">
+              <table className="w-full text-xs border">
+                <thead><tr className="bg-slate-700 text-white">
+                  <th className="p-2 text-left">Agrégat</th>
+                  <th className="p-2 text-right">N ({etab.exercice})</th>
+                  <th className="p-2 text-right">N-1 ({etab.exercice - 1})</th>
+                  <th className="p-2 text-right">Variation</th>
+                  <th className="p-2 text-right">%</th>
+                </tr></thead>
+                <tbody>
+                  {[
+                    { label: 'Dépenses réalisées', vN: R.totalChargesSde, vN1: R.totalChargesSdeN1 },
+                    { label: 'Recettes réalisées', vN: R.totalProduitsSdr, vN1: R.totalProduitsSdrN1 },
+                    { label: 'Résultat budgétaire', vN: R.resultatBudgetaire, vN1: R.resultatBudgetaireN1 },
+                  ].map(row => {
+                    const v = row.vN - (row.vN1 ?? 0);
+                    const pct = (row.vN1 ?? 0) > 0 ? (v / (row.vN1 ?? 1)) * 100 : 0;
+                    return (
+                      <tr key={row.label} className="border-t">
+                        <td className="p-2 font-semibold">{row.label}</td>
+                        <td className="p-2 text-right font-mono">{formatEur(row.vN)}</td>
+                        <td className="p-2 text-right font-mono text-muted-foreground">{formatEur(row.vN1 ?? 0)}</td>
+                        <td className={`p-2 text-right font-mono ${v >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>{v >= 0 ? '+' : ''}{formatEur(v)}</td>
+                        <td className={`p-2 text-right font-mono ${v >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>{pct >= 0 ? '+' : ''}{pct.toFixed(1)} %</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <KPICard label="Résultat budg." value={formatEur(R.resultatBudgetaire)} color={R.resultatBudgetaire >= 0 ? 'green' : 'red'} icon="📊" sub={R.resultatBudgetaire >= 0 ? 'Excédent' : 'Déficit'} isText />
+            <KPICard label="CAF/IAF" value={formatEur(R.cafBudgetaire)} color={R.cafBudgetaire >= 0 ? 'green' : 'red'} icon="🔄" sub={R.cafBudgetaire >= 0 ? 'Capacité' : 'Insuffisance'} isText />
+            <KPICard label="DGP" value={`${Math.round(R.dgpJours ?? 0)} jours`} color={(R.dgpJours ?? 0) > 30 ? 'red' : 'green'} icon="⏱️" sub="Délai global paiement" isText />
+            <KPICard label="DGR" value={`${Math.round(R.dgrJours ?? 0)} jours`} color={(R.dgrJours ?? 0) > 60 ? 'red' : 'green'} icon="⏱️" sub="Délai global recouvrement" isText />
+          </div>
+
+          {/* 3. Exécution par domaine D1-D9 */}
+          {domainesList.length > 0 && (
+            <>
+              <SectionTitre numero="3" title={`Exécution par domaine — Exercice ${etab.exercice}`} />
+              <div className="overflow-x-auto mb-4">
+                <table className="w-full text-xs border">
+                  <thead><tr className="bg-slate-700 text-white">
+                    <th className="p-2 text-left">Domaine</th>
+                    <th className="p-2 text-right">Crédits ouverts</th>
+                    <th className="p-2 text-right">Dépenses</th>
+                    <th className="p-2 text-right">Taux exéc.</th>
+                    <th className="p-2 text-right">Prév. recettes</th>
+                    <th className="p-2 text-right">Recettes</th>
+                    <th className="p-2 text-right">+/- values</th>
+                    <th className="p-2 text-right">Solde</th>
+                    {hasN1 && <>
+                      <th className="p-2 text-right">Var. dép. %</th>
+                      <th className="p-2 text-right">Var. rec. %</th>
+                    </>}
+                  </tr></thead>
+                  <tbody>
+                    {domainesList.map(d => {
+                      const significant = Math.abs(d.pctVariationCharges) > 10 || Math.abs(d.pctVariationProduits) > 10;
+                      return (
+                        <tr key={d.code} className={`border-t ${significant ? 'bg-warning/5' : ''}`}>
+                          <td className="p-2 font-semibold">{d.libelle}</td>
+                          <td className="p-2 text-right font-mono">{formatEur(d.chargesPrev)}</td>
+                          <td className="p-2 text-right font-mono font-bold">{formatEur(d.chargesReel)}</td>
+                          <td className="p-2 text-right">
+                            <span className={`font-semibold ${d.tauxExecCharges >= 0.9 ? 'text-emerald-600' : d.tauxExecCharges >= 0.7 ? 'text-warning' : 'text-destructive'}`}>
+                              {(d.tauxExecCharges * 100).toFixed(1)} %
+                            </span>
+                          </td>
+                          <td className="p-2 text-right font-mono">{formatEur(d.produitsPrev)}</td>
+                          <td className="p-2 text-right font-mono font-bold">{formatEur(d.produitsReel)}</td>
+                          <td className={`p-2 text-right font-mono ${d.plusValues >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                            {d.plusValues !== 0 ? formatEur(d.plusValues) : '—'}
+                          </td>
+                          <td className={`p-2 text-right font-mono font-bold ${d.solde >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
+                            {formatEur(d.solde)}
+                          </td>
+                          {hasN1 && <>
+                            <td className={`p-2 text-right font-mono text-xs ${d.pctVariationCharges > 0 ? 'text-destructive' : 'text-emerald-600'}`}>
+                              {d.chargesReelN1 > 0 ? `${d.pctVariationCharges >= 0 ? '+' : ''}${d.pctVariationCharges.toFixed(1)} %` : '—'}
+                            </td>
+                            <td className={`p-2 text-right font-mono text-xs ${d.pctVariationProduits >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                              {d.produitsReelN1 > 0 ? `${d.pctVariationProduits >= 0 ? '+' : ''}${d.pctVariationProduits.toFixed(1)} %` : '—'}
+                            </td>
+                          </>}
+                        </tr>
+                      );
+                    })}
+                    <tr className="bg-slate-800 text-white font-bold">
+                      <td className="p-2">TOTAL</td>
+                      <td className="p-2 text-right font-mono">{formatEur(R.totalChargesPrev)}</td>
+                      <td className="p-2 text-right font-mono">{formatEur(R.totalChargesSde)}</td>
+                      <td className="p-2 text-right">{(R.tauxExecCharges * 100).toFixed(1)} %</td>
+                      <td className="p-2 text-right font-mono">{formatEur(R.totalProduitsPrev)}</td>
+                      <td className="p-2 text-right font-mono">{formatEur(R.totalProduitsSdr)}</td>
+                      <td className={`p-2 text-right font-mono ${(R.totalProduitsSdr - R.totalProduitsPrev) >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                        {formatEur(R.totalProduitsSdr - R.totalProduitsPrev)}
+                      </td>
+                      <td className={`p-2 text-right font-mono ${R.resultatBudgetaire >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
+                        {formatEur(R.resultatBudgetaire)}
+                      </td>
+                      {hasN1 && <td colSpan={2}></td>}
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Graphique dépenses/recettes par domaine */}
+              {domChartData.length > 1 && (
+                <div className="mb-4">
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={domChartData} barCategoryGap="15%">
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                      <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
+                      <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                      <Legend wrapperStyle={{ fontSize: 10 }} />
+                      <Bar dataKey="Dépenses" fill="hsl(38, 92%, 50%)" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="Recettes" fill="hsl(160, 45%, 45%)" radius={[2, 2, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+
+              {/* Écarts significatifs (> 10%) */}
+              {hasN1 && (() => {
+                const ecarts = domainesList.filter(d => Math.abs(d.pctVariationCharges) > 10 || Math.abs(d.pctVariationProduits) > 10);
+                if (ecarts.length === 0) return null;
+                return (
+                  <>
+                    <SectionTitre numero="3bis" title="Écarts significatifs N / N-1 (> 10%)" />
+                    <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 mb-4 text-xs space-y-2">
+                      {ecarts.map(d => (
+                        <div key={d.code}>
+                          <strong>{d.libelle}</strong> :
+                          {Math.abs(d.pctVariationCharges) > 10 && (
+                            <span className={d.pctVariationCharges > 0 ? ' text-destructive' : ' text-emerald-600'}>
+                              {' '}Dépenses {d.pctVariationCharges > 0 ? '+' : ''}{d.pctVariationCharges.toFixed(1)} % ({formatEur(d.variationCharges)})
+                            </span>
+                          )}
+                          {Math.abs(d.pctVariationProduits) > 10 && (
+                            <span className={d.pctVariationProduits >= 0 ? ' text-emerald-600' : ' text-destructive'}>
+                              {' '}Recettes {d.pctVariationProduits >= 0 ? '+' : ''}{d.pctVariationProduits.toFixed(1)} % ({formatEur(d.variationProduits)})
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+            </>
+          )}
+
+          {/* 4. Opérations d'ordre */}
+          <SectionTitre numero="4" title="Opérations d'ordre" />
+          <div className="overflow-x-auto mb-4">
+            <table className="w-full text-xs border">
+              <thead><tr className="bg-muted/50"><th className="p-2 text-left">Opération</th><th className="p-2 text-right">Charges (OO)</th><th className="p-2 text-right">Produits (OO)</th></tr></thead>
+              <tbody>
+                <tr className="border-t"><td className="p-2">Dotations aux amortissements (68)</td><td className="p-2 text-right font-mono">{formatEur(oo.dotationsAmort)}</td><td className="p-2 text-right font-mono">—</td></tr>
+                <tr className="border-t"><td className="p-2">Reprises sur amortissements et provisions (78)</td><td className="p-2 text-right font-mono">—</td><td className="p-2 text-right font-mono">{formatEur(oo.reprisesAmort)}</td></tr>
+                <tr className="border-t"><td className="p-2">VNC des éléments cédés (675)</td><td className="p-2 text-right font-mono">{formatEur(oo.vncCessions)}</td><td className="p-2 text-right font-mono">—</td></tr>
+                <tr className="border-t"><td className="p-2">Produits de cessions d'éléments d'actif (775/776/777)</td><td className="p-2 text-right font-mono">—</td><td className="p-2 text-right font-mono">{formatEur(oo.produitsCessions)}</td></tr>
+                <tr className="border-t"><td className="p-2">Neutralisation subventions d'investissement (139)</td><td className="p-2 text-right font-mono">—</td><td className="p-2 text-right font-mono">{formatEur(oo.neutralisationSubInv)}</td></tr>
+                <tr className="border-t font-bold bg-muted/20">
+                  <td className="p-2">TOTAL Opérations d'ordre</td>
+                  <td className="p-2 text-right font-mono">{formatEur(oo.totalChargesOO)}</td>
+                  <td className="p-2 text-right font-mono">{formatEur(oo.totalProduitsOO)}</td>
+                </tr>
+                <tr className="font-bold">
+                  <td className="p-2">Solde des opérations d'ordre</td>
+                  <td className="p-2 text-right font-mono" colSpan={2}>
+                    <span className={oo.soldeOO >= 0 ? 'text-emerald-600' : 'text-destructive'}>{formatEur(oo.soldeOO)}</span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="text-xs text-muted-foreground mb-4 bg-muted/10 rounded p-3">
+            Les opérations d'ordre n'ont aucun impact sur la trésorerie. Elles correspondent aux dotations aux amortissements,
+            reprises sur provisions et neutralisations de subventions d'investissement. Le résultat comptable intègre ces opérations,
+            tandis que la CAF/IAF les exclut pour mesurer l'impact réel sur les fonds propres.
+          </div>
+
+          {/* 5. SRH */}
           {ind && ind.nb_repas_servis > 0 && (
             <>
-              <SectionTitre numero="2bis" title="Service de restauration et d'hébergement (SRH)" />
+              <SectionTitre numero="5" title="Service de restauration et d'hébergement (SRH)" />
               <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
                 <IndicatorBadge icon="🍽️" label="Repas élèves" value={ind.nb_repas_servis.toLocaleString('fr-FR')} />
                 {ind.nb_repas_commensaux > 0 && <IndicatorBadge icon="🍴" label="Repas commensaux" value={ind.nb_repas_commensaux.toLocaleString('fr-FR')} />}
@@ -155,15 +369,43 @@ export function RapportOrdoSection() {
             </>
           )}
 
-          <SectionTitre numero="3" title="Situation financière et patrimoniale" />
+          {/* 6. Situation financière */}
+          <SectionTitre numero="6" title="Situation financière et patrimoniale" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <KPICard label="FDR" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub={`${Math.round(R.joursFdr ?? 0)} jours`} isText />
-            <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" sub="Besoin en FDR" isText />
+            <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" sub={R.bfr < 0 ? 'DFR' : 'BFR'} isText />
             <KPICard label="Trésorerie" value={formatEur(R.tresorerie)} color={R.tresorerie >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(R.joursTresorerie ?? 0)} jours`} isText />
             <KPICard label="Réserves" value={formatEur(R.reserves)} color="blue" icon="🏛️" sub="Compte 1068" isText />
           </div>
 
-          <SectionTitre numero="4" title="Points d'attention et perspectives" />
+          {/* N-1 financial comparison */}
+          {(R.fdrComptableN1 ?? 0) !== 0 && (
+            <div className="overflow-x-auto mb-4">
+              <table className="w-full text-xs border">
+                <thead><tr className="bg-muted/50"><th className="p-2 text-left">Indicateur</th><th className="p-2 text-right">N</th><th className="p-2 text-right">N-1</th><th className="p-2 text-right">Variation</th></tr></thead>
+                <tbody>
+                  {[
+                    { label: 'FDR', vN: R.fdrComptable, vN1: R.fdrComptableN1 ?? 0 },
+                    { label: 'BFR', vN: R.bfr, vN1: R.bfrN1 ?? 0 },
+                    { label: 'Trésorerie', vN: R.tresorerie, vN1: R.tresorerieN1 ?? 0 },
+                    { label: 'Réserves', vN: R.reserves, vN1: R.reservesN1Solde ?? 0 },
+                  ].map(row => (
+                    <tr key={row.label} className="border-t">
+                      <td className="p-2 font-semibold">{row.label}</td>
+                      <td className="p-2 text-right font-mono">{formatEur(row.vN)}</td>
+                      <td className="p-2 text-right font-mono text-muted-foreground">{formatEur(row.vN1)}</td>
+                      <td className={`p-2 text-right font-mono font-bold ${(row.vN - row.vN1) >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+                        {(row.vN - row.vN1) >= 0 ? '+' : ''}{formatEur(row.vN - row.vN1)}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          {/* 7. Points d'attention */}
+          <SectionTitre numero="7" title="Points d'attention et perspectives" />
           <Textarea value={aiText3} onChange={e => setAiText3(e.target.value)}
             placeholder="Cliquez sur 'Générer le texte IA' ou saisissez votre texte ici…" rows={4}
             className="mb-4 bg-muted/30 text-sm" />
@@ -174,6 +416,7 @@ export function RapportOrdoSection() {
             </div>
           )}
 
+          {/* Signatures */}
           <div className="flex justify-between mt-8 pt-5 border-t text-xs text-muted-foreground">
             <div>
               <strong className="block text-foreground">L'ordonnateur</strong>
@@ -225,7 +468,7 @@ export function RapportACSection() {
 
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'agent comptable (M9-6 § V.2)." />;
 
-  // Safe defaults for REPROFI properties that may not exist on older results
+  // Safe defaults for REPROFI properties
   const safe = {
     fdrPartEncaissee: R.fdrPartEncaissee ?? 0,
     fdrPartNonEncaissee: R.fdrPartNonEncaissee ?? 0,
@@ -259,11 +502,23 @@ export function RapportACSection() {
     patrimoineOriginesPctSub: R.patrimoineOriginesPctSub ?? 0,
     tresoComposition: R.tresoComposition ?? { autonomieFinanciere: 0, depotsCautions: 0, reglementsEnAttente: 0, reliquatsSubventions: 0 },
     prelevementsReserves: R.prelevementsReserves ?? { totalPrelevements: 0, prelevementsInvestissement: 0, prelevementsFonctionnement: 0, variationReserves: 0 },
+    dgpJours: R.dgpJours ?? 0,
+    dgrJours: R.dgrJours ?? 0,
+    fdrComptableN1: R.fdrComptableN1 ?? 0,
+    bfrN1: R.bfrN1 ?? 0,
+    tresorerieN1: R.tresorerieN1 ?? 0,
+    ratioLiquiditeGenerale: R.ratioLiquiditeGenerale ?? 0,
+    ratioLiquiditeReduite: R.ratioLiquiditeReduite ?? 0,
+    ratioLiquiditeImmediate: R.ratioLiquiditeImmediate ?? 0,
+    ratioAutonomieFinanciere: R.ratioAutonomieFinanciere ?? 0,
+    ratioSolvabilite: R.ratioSolvabilite ?? 0,
+    ratioEndettement: R.ratioEndettement ?? 0,
+    ratioChargesPersonnel: R.ratioChargesPersonnel ?? 0,
+    ratioCouvertureCharges: R.ratioCouvertureCharges ?? 0,
   };
 
   const nbBloq = checkItems.filter(c => c.bloquant).length;
   const nbAnom = checkItems.filter(c => c.statut !== 'ok').length;
-  const dateArrete = etab.dateArrete ? new Date(etab.dateArrete).toLocaleDateString('fr-FR') : '—';
 
   async function genererIA() {
     setAiLoading(true);
@@ -288,6 +543,7 @@ export function RapportACSection() {
             patrimoineOriginesPctFP: R.patrimoineOriginesPctFP,
             fdrMobilisable: R.fdrMobilisable,
             prelevementsReserves: R.prelevementsReserves,
+            dgpJours: R.dgpJours, dgrJours: R.dgrJours,
           },
           anomalies: nbAnom, bloquants: nbBloq, indicateurs: ind, historique: history,
         },
@@ -299,6 +555,13 @@ export function RapportACSection() {
   }
 
   const pct = (v: number, t: number) => t > 0 ? `${((v / t) * 100).toFixed(1)} %` : '—';
+
+  // Chart data for FDR/BFR/Trésorerie evolution from balance N-1 data
+  const hasN1Financial = safe.fdrComptableN1 !== 0 || safe.bfrN1 !== 0 || safe.tresorerieN1 !== 0;
+  const evolutionData = hasN1Financial ? [
+    { exercice: `N-1`, FDR: safe.fdrComptableN1, BFR: safe.bfrN1, Trésorerie: safe.tresorerieN1 },
+    { exercice: `N`, FDR: R.fdrComptable, BFR: R.bfr, Trésorerie: R.tresorerie },
+  ] : [];
 
   return (
     <div className="space-y-4">
@@ -346,7 +609,7 @@ export function RapportACSection() {
             l'établissement pour financer des actions sur fonds propres.
           </div>
 
-          {/* Section 2: Résultat */}
+          {/* Section 2: Résultat + CAF/IAF */}
           <SectionTitre numero="2" title="Présentation du résultat et de l'autofinancement" />
           <div className="overflow-x-auto mb-4">
             <table className="w-full text-xs border">
@@ -357,7 +620,7 @@ export function RapportACSection() {
                   <td className="p-2 font-semibold">Produits nets (classe 7)</td>
                   <td className="p-2 text-right font-mono">{formatEur(R.totalProduitsSdr)}</td>
                 </tr>
-                 <tr className="border-b">
+                <tr className="border-b">
                   <td className="p-2 font-semibold">Charges non décaissables (68+675)</td>
                   <td className="p-2 text-right font-mono">{formatEur(safe.chargesNonDecaissables)}</td>
                   <td className="p-2 font-semibold">Produits non encaissables (78+775…)</td>
@@ -374,22 +637,36 @@ export function RapportACSection() {
               </tbody>
             </table>
           </div>
-          <div className="text-xs text-muted-foreground mb-4 bg-muted/10 rounded p-3">
-            Le résultat est la différence entre les produits nets et les charges nettes de fonctionnement.
-            L'autofinancement ({safe.cafComptable >= 0 ? 'CAF' : 'IAF'}) mesure l'impact de l'exécution budgétaire
-            sur les fonds propres, en excluant les charges non décaissables et les produits non encaissables.
-          </div>
 
           {/* Section 3: Variation FDR */}
           <SectionTitre numero="3" title="Variation du fonds de roulement" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <KPICard label={safe.cafComptable >= 0 ? 'CAF' : 'IAF'} value={formatEur(safe.cafComptable)} color={safe.cafComptable >= 0 ? 'green' : 'red'} icon="🔄" sub="Autofinancement" isText />
-            <KPICard label="Achats immobilisés" value={formatEur(safe.prelevementsReserves.prelevementsInvestissement)} color="amber" icon="🏗️" sub="Investissements" isText />
+            <KPICard label="Investissements" value={formatEur(safe.prelevementsReserves.prelevementsInvestissement)} color="amber" icon="🏗️" sub="Achats immobilisés" isText />
             <KPICard label="Variation FDR" value={formatEur(safe.varFdrBas)} color={safe.varFdrBas >= 0 ? 'green' : 'red'} icon="📈" sub="FDR BF - FDR BE" isText />
             <KPICard label="FDR clôture" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub={`${Math.round(safe.joursFdr)} jours`} isText />
           </div>
 
-          {/* Section 4: Présentation FDR */}
+          {/* N-1 evolution chart */}
+          {evolutionData.length > 0 && (
+            <div className="mb-4">
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={evolutionData} barCategoryGap="25%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="exercice" tick={{ fontSize: 11 }} />
+                  <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
+                  <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                  <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                  <Bar dataKey="FDR" fill="hsl(215, 70%, 50%)" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="BFR" fill="hsl(38, 92%, 50%)" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="Trésorerie" fill="hsl(160, 45%, 45%)" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          {/* Section 4: Composition FDR */}
           <SectionTitre numero="4" title="Présentation du fonds de roulement" />
           <div className="overflow-x-auto mb-4">
             <table className="w-full text-xs border">
@@ -405,11 +682,6 @@ export function RapportACSection() {
 
           {/* Section 5: BFR */}
           <SectionTitre numero="5" title="Présentation du besoin en fonds de roulement" />
-          <div className="text-xs text-muted-foreground mb-2 bg-muted/10 rounded p-3">
-            Dans les EPLE, le BFR est généralement négatif (dégagement en fonds de roulement) car les reliquats
-            de subventions et avances excèdent les créances. La valeur absolue des créances neutralisées devrait
-            couvrir les dettes (reliquats de subventions et avances).
-          </div>
           <div className="grid grid-cols-3 gap-3 mb-4">
             <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" sub={R.bfr < 0 ? 'Dégagement en FDR' : 'Besoin en FDR'} isText />
             <KPICard label="Créances (cl.4 débit)" value={formatEur(safe.totalCreances)} color="blue" icon="📋" isText />
@@ -440,18 +712,28 @@ export function RapportACSection() {
             </table>
           </div>
 
-          {/* Section 8: TMcap & TMnr */}
-          <SectionTitre numero="8" title="Taux de charges à payer et de non-recouvrement" />
-          <div className="grid grid-cols-2 gap-3 mb-4">
+          {/* Section 8: TMcap & TMnr + DGP/DGR */}
+          <SectionTitre numero="8" title="Délais et taux de charges à payer / non-recouvrement" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <div className="bg-muted/30 rounded-lg p-4 text-xs">
-              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMcap — Taux moyen de charges à payer</div>
+              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMcap</div>
               <div className="text-2xl font-bold font-mono">{safe.tmcap.toFixed(2)} %</div>
-              <div className="text-muted-foreground mt-1">Part impayée des charges réalisées à la clôture (dettes fournisseurs / charges SDE)</div>
+              <div className="text-muted-foreground mt-1">Charges à payer / Charges totales</div>
             </div>
             <div className="bg-muted/30 rounded-lg p-4 text-xs">
-              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMnr — Taux moyen de non-recouvrement</div>
+              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMnr</div>
               <div className="text-2xl font-bold font-mono">{safe.tmnr.toFixed(2)} %</div>
-              <div className="text-muted-foreground mt-1">Part non recouvrée des recettes réalisées à la clôture (créances cl.4 / produits SDR)</div>
+              <div className="text-muted-foreground mt-1">Non-recouvrement / Recettes totales</div>
+            </div>
+            <div className={`bg-muted/30 rounded-lg p-4 text-xs ${safe.dgpJours > 30 ? 'border border-destructive/30' : ''}`}>
+              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">DGP</div>
+              <div className={`text-2xl font-bold font-mono ${safe.dgpJours > 30 ? 'text-destructive' : ''}`}>{Math.round(safe.dgpJours)} jours</div>
+              <div className="text-muted-foreground mt-1">Délai global de paiement {safe.dgpJours > 30 ? '⚠️ > 30j' : '✅ ≤ 30j'}</div>
+            </div>
+            <div className={`bg-muted/30 rounded-lg p-4 text-xs ${safe.dgrJours > 60 ? 'border border-warning/30' : ''}`}>
+              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">DGR</div>
+              <div className={`text-2xl font-bold font-mono ${safe.dgrJours > 60 ? 'text-warning' : ''}`}>{Math.round(safe.dgrJours)} jours</div>
+              <div className="text-muted-foreground mt-1">Délai global de recouvrement</div>
             </div>
           </div>
 
@@ -500,7 +782,7 @@ export function RapportACSection() {
             </table>
           </div>
 
-          {/* Section 12: Reliquats de subventions */}
+          {/* Section 12: Reliquats */}
           <SectionTitre numero="12" title="État des reliquats de subventions" />
           <div className="grid grid-cols-2 gap-3 mb-4">
             <KPICard label="Reliquats subventions" value={formatEur(safe.reliquatsSubventions)} color="amber" icon="📋" sub="Subventions non consommées à la clôture" isText />
@@ -513,18 +795,17 @@ export function RapportACSection() {
               <SectionTitre numero="13" title="Prélèvements sur réserves (classe 106)" />
               <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 mb-4 text-xs leading-relaxed">
                 <p className="font-semibold text-foreground mb-2">
-                  Au cours de l'exercice {etab.exercice}, l'établissement a procédé à un prélèvement total sur ses réserves
-                  de <strong className="text-destructive">{formatEur(safe.prelevementsReserves.totalPrelevements)}</strong>, dont :
+                  Total prélevé : <strong className="text-destructive">{formatEur(safe.prelevementsReserves.totalPrelevements)}</strong>
                 </p>
                 <ul className="list-disc ml-4 space-y-1 text-muted-foreground">
-                  <li><strong className="text-foreground">{formatEur(safe.prelevementsReserves.prelevementsInvestissement)}</strong> pour le financement d'investissements</li>
-                  <li><strong className="text-foreground">{formatEur(safe.prelevementsReserves.prelevementsFonctionnement)}</strong> pour des dépenses exceptionnelles de fonctionnement</li>
+                  <li><strong className="text-foreground">{formatEur(safe.prelevementsReserves.prelevementsInvestissement)}</strong> pour investissements</li>
+                  <li><strong className="text-foreground">{formatEur(safe.prelevementsReserves.prelevementsFonctionnement)}</strong> pour fonctionnement</li>
                 </ul>
               </div>
             </>
           )}
 
-          {/* Section 14: Situation des réserves */}
+          {/* Section 14: Réserves */}
           <SectionTitre numero="14" title="Situation des comptes de réserves" />
           <div className="grid grid-cols-3 gap-3 mb-4">
             <KPICard label="Réserves (c/1068)" value={formatEur(R.reserves)} color="blue" icon="🏛️" isText />
@@ -549,30 +830,50 @@ export function RapportACSection() {
             </div>
           </div>
 
-          {/* Section 16: Rapprochements */}
-          <SectionTitre numero="16" title="Vérifications et rapprochements comptables" />
+          {/* Section 16: Ratios M9-6 */}
+          <SectionTitre numero="16" title="Ratios de gestion (M9-6 § IV)" />
+          <div className="overflow-x-auto mb-4">
+            <table className="w-full text-xs border">
+              <thead><tr className="bg-muted/50"><th className="p-2 text-left">Ratio</th><th className="p-2 text-right">Valeur</th><th className="p-2 text-left">Interprétation</th></tr></thead>
+              <tbody>
+                {[
+                  { label: 'Liquidité générale', value: safe.ratioLiquiditeGenerale, fmt: (v: number) => v.toFixed(2), seuil: v => v >= 1 ? '✅ Couverture correcte' : '⚠️ Insuffisante' },
+                  { label: 'Liquidité réduite', value: safe.ratioLiquiditeReduite, fmt: (v: number) => v.toFixed(2), seuil: v => v >= 0.8 ? '✅' : '⚠️' },
+                  { label: 'Liquidité immédiate', value: safe.ratioLiquiditeImmediate, fmt: (v: number) => v.toFixed(2), seuil: v => v >= 0.3 ? '✅' : '⚠️' },
+                  { label: 'Autonomie financière', value: safe.ratioAutonomieFinanciere, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: v => v >= 0.5 ? '✅ > 50%' : '⚠️ < 50%' },
+                  { label: 'Solvabilité', value: safe.ratioSolvabilite, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: v => v >= 0.5 ? '✅' : '⚠️' },
+                  { label: 'Endettement', value: safe.ratioEndettement, fmt: (v: number) => v.toFixed(2), seuil: v => v < 1 ? '✅' : '⚠️ Endettement élevé' },
+                  { label: 'Charges de personnel / Total', value: safe.ratioChargesPersonnel, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: () => '' },
+                  { label: 'Couverture des charges par le FDR', value: safe.ratioCouvertureCharges, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: v => v >= 0.08 ? '✅ > 30 jours' : '⚠️ < 30 jours' },
+                ].map(r => (
+                  <tr key={r.label} className="border-t">
+                    <td className="p-2 font-semibold">{r.label}</td>
+                    <td className="p-2 text-right font-mono font-bold">{r.fmt(r.value)}</td>
+                    <td className="p-2 text-muted-foreground">{r.seuil(r.value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Section 17: Rapprochements */}
+          <SectionTitre numero="17" title="Vérifications et rapprochements comptables" />
           <div className="flex gap-3 mb-4 flex-wrap">
             <Badge className={nbBloq > 0 ? 'bg-destructive text-destructive-foreground' : nbAnom > 0 ? 'bg-warning text-warning-foreground' : 'bg-emerald-600 text-white'}>
               {nbBloq > 0 ? `🚫 ${nbBloq} point(s) bloquant(s)` : nbAnom > 0 ? `⚠️ ${nbAnom} anomalie(s)` : '✅ Concordance vérifiée'}
             </Badge>
           </div>
-          <div className="text-xs text-muted-foreground mb-4 bg-muted/10 rounded-lg p-3">
-            Les 15 rapprochements réglementaires M9-6 ont été effectués (concordance SDE/SDR ↔ Balance,
-            équilibre FDR haut/bas, structuration FDR = BFR + Trésorerie, CAF/IAF budgétaire et comptable).
-          </div>
 
-          {/* Section 17: Pluriannuel */}
+          {/* Section 18: Pluriannuel */}
           {history.length > 0 && (
             <>
-              <SectionTitre numero="17" title="Évolution pluriannuelle des indicateurs financiers" />
+              <SectionTitre numero="18" title="Évolution pluriannuelle des indicateurs financiers" />
               <div className="overflow-x-auto mb-4">
                 <table className="w-full text-xs border">
                   <thead>
                     <tr className="bg-muted/50">
                       <th className="p-2 text-left font-bold border-r">Indicateur</th>
-                      {history.map(h => (
-                        <th key={h.exercice} className="p-2 text-right font-bold border-r">{h.exercice}</th>
-                      ))}
+                      {history.map(h => <th key={h.exercice} className="p-2 text-right font-bold border-r">{h.exercice}</th>)}
                     </tr>
                   </thead>
                   <tbody>
@@ -600,26 +901,26 @@ export function RapportACSection() {
             </>
           )}
 
-          {/* Section 18: Affectation du résultat */}
-          <SectionTitre numero="18" title="Propositions d'affectation du résultat" />
+          {/* Section 19: Affectation du résultat */}
+          <SectionTitre numero="19" title="Propositions d'affectation du résultat" />
           <div className="text-xs bg-muted/10 rounded-lg p-4 mb-4">
             <p>Le résultat de l'exercice {etab.exercice} s'élève à <strong>{formatEur(R.resultatComptable)}</strong>.</p>
             <p className="mt-2 text-muted-foreground">
               {R.resultatComptable >= 0
-                ? `Il sera proposé au conseil d'administration d'affecter cet excédent au compte de réserves (c/1068) de l'établissement. Le compte de réserves comprend le fonds de roulement, les stocks et les achats immobilisés sur fonds propres.`
-                : `Ce déficit sera imputé sur les réserves (c/1068) de l'établissement. Après affectation, les réserves s'élèveraient à ${formatEur(R.reserves + R.resultatComptable)}.`}
+                ? `Il sera proposé au conseil d'administration d'affecter cet excédent au compte de réserves (c/1068).`
+                : `Ce déficit sera imputé sur les réserves (c/1068). Après affectation : ${formatEur(R.reserves + R.resultatComptable)}.`}
             </p>
             {R.resultatComptable < 0 && R.reserves + R.resultatComptable < 0 && (
               <p className="mt-2 text-destructive font-semibold">
-                ⚠️ Attention : après affectation du déficit, les réserves deviendraient négatives. Une situation de déséquilibre structurel nécessite un plan de redressement.
+                ⚠️ Réserves négatives après affectation — Plan de redressement nécessaire.
               </p>
             )}
           </div>
 
-          {/* Section 19: Observations IA */}
-          <SectionTitre numero="19" title="Observations et analyse de l'agent comptable" />
+          {/* Section 20: Observations IA */}
+          <SectionTitre numero="20" title="Observations et analyse de l'agent comptable" />
           <Textarea value={aiObs} onChange={e => setAiObs(e.target.value)}
-            placeholder="Cliquez sur 'Générer les observations IA' ou rédigez vos observations ici. L'IA produira une analyse complète couvrant le résultat, l'autofinancement, le FDR, le BFR, la trésorerie, le patrimoine, les créances, les dettes, les reliquats et les réserves." rows={12}
+            placeholder="Cliquez sur 'Générer les observations IA' ou rédigez vos observations…" rows={12}
             className="bg-muted/30 text-sm mb-4" />
 
           {/* Signatures */}
