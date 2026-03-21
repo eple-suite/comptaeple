@@ -10,7 +10,7 @@ import { immer } from 'zustand/middleware/immer';
 import type { LigneSDE, LigneSDR, LigneBalance } from '@/lib/cofieple_types';
 import type {
   CofiepleState, EtablissementUI, TypeBudget, BudgetConfig,
-  ResultatsUI, CheckItem, AnomalieBalance,
+  ResultatsUI, CheckItem, AnomalieBalance, BudgetProfile, ImportedFileData,
 } from '@/lib/cofieple_storeTypes';
 import {
   calculerResultats, consolider, construireCheckList, analyserBalance,
