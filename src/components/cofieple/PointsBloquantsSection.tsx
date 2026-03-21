@@ -17,7 +17,7 @@ import { AlertTriangle, Ban, Eye } from 'lucide-react';
 interface PointBloquant {
   code: string; titre: string; niveau: 'PB' | 'PA' | 'PV';
   refM96: string; prescription: string;
-  calculer: (R: any, bal: any[], checkItems: any[]) => { detecte: boolean; detail: string };
+  calculer: (R: any, bal: any[], checkItems: any[], extraData?: any) => { detecte: boolean; detail: string };
 }
 
 const sumBal = (bal: any[], test: (c: string) => boolean, field: string) =>
@@ -57,6 +57,34 @@ const POINTS: PointBloquant[] = [
       const ecartC = Math.abs(R.totalChargesSde - R.totalChargesBalance);
       const ecartP = Math.abs(R.totalProduitsSdr - R.totalProduitsBalance);
       return { detecte: ecartC > 1 || ecartP > 1, detail: `Écart charges: ${formatEur(ecartC)}, Écart produits: ${formatEur(ecartP)}` };
+    },
+  },
+  {
+    code: 'PB-05', titre: 'Concordance compte 185 Budget Principal ↔ Budget Annexe', niveau: 'PB',
+    refM96: 'M9-6 §5.3.2 — Comptes de liaison',
+    prescription: 'Le compte 185 est un compte de liaison : ses soldes doivent être en miroir entre le budget principal (créditeur) et chaque budget annexe (débiteur). Les soldes doivent être strictement égaux en valeur absolue.',
+    calculer: (_R: any, _bal: any[], _checkItems: any[], extraData?: any) => {
+      if (!extraData) return { detecte: false, detail: 'Pas de données multi-budgets disponibles' };
+      const { balanceBP, balanceAnnexes } = extraData;
+      if (!balanceBP || balanceBP.length === 0) return { detecte: false, detail: 'Balance BP non chargée' };
+
+      const solde185BP = balanceBP.filter((b: any) => b.compte.startsWith('185')).reduce((s: number, b: any) => s + ((b.solCrd || 0) - (b.solDbt || 0)), 0);
+      let totalSolde185BA = 0;
+      const detailLines: string[] = [];
+      detailLines.push(`C/185 Budget Principal = ${formatEur(solde185BP)} (créditeur)`);
+
+      for (const [label, balBA] of Object.entries(balanceAnnexes as Record<string, any[]>)) {
+        if (!balBA || balBA.length === 0) continue;
+        const solde185BA = balBA.filter((b: any) => b.compte.startsWith('185')).reduce((s: number, b: any) => s + ((b.solDbt || 0) - (b.solCrd || 0)), 0);
+        totalSolde185BA += solde185BA;
+        detailLines.push(`C/185 ${label} = ${formatEur(solde185BA)} (débiteur)`);
+      }
+
+      if (totalSolde185BA === 0 && solde185BP === 0) return { detecte: false, detail: 'C/185 non utilisé (pas de budget annexe actif)' };
+
+      const ecart = Math.abs(solde185BP - totalSolde185BA);
+      detailLines.push(`Écart = ${formatEur(ecart)} ${ecart < 0.02 ? '✅' : '❌'}`);
+      return { detecte: ecart >= 0.02, detail: detailLines.join('\n') };
     },
   },
   // 🟠 ATTENTION
@@ -169,7 +197,17 @@ export function PointsBloquantsSection() {
     localStorage.setItem('cockpit_cf_points_bloquants', JSON.stringify(next));
   };
 
-  const evaluated = POINTS.map(p => ({ ...p, result: p.calculer(R, bal, checkItems) }));
+  // Build extra data for PB-05 (cross-budget C/185 concordance)
+  const extraData = {
+    balanceBP: balance.principal || [],
+    balanceAnnexes: {
+      'GRETA': balance.annexe_greta || [],
+      'CFA': balance.annexe_cfa || [],
+      'Autre': balance.annexe_autre || [],
+    },
+  };
+
+  const evaluated = POINTS.map(p => ({ ...p, result: p.calculer(R, bal, checkItems, p.code === 'PB-05' ? extraData : undefined) }));
   const pbList = evaluated.filter(p => p.niveau === 'PB');
   const paList = evaluated.filter(p => p.niveau === 'PA');
   const pvList = evaluated.filter(p => p.niveau === 'PV');
@@ -211,16 +249,32 @@ export function PointsBloquantsSection() {
                       <Badge variant="outline" className="text-[10px] font-mono">{p.code}</Badge>
                       <span className="text-sm font-bold">{p.titre}</span>
                     </div>
-                    {p.result.detecte && <div className="text-xs text-destructive font-mono mb-1">{p.result.detail}</div>}
+                    {p.result.detecte && (
+                      <div className="text-xs text-destructive font-mono mb-1 whitespace-pre-line">{p.result.detail}</div>
+                    )}
                     <div className="text-xs text-muted-foreground">{p.prescription}</div>
                     <div className="text-[10px] text-muted-foreground mt-0.5 italic">Réf. : {p.refM96}</div>
 
                     {p.result.detecte && (
-                      <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
-                        <Input value={corr.action} onChange={e => saveCorrection(p.code, 'action', e.target.value)}
-                          placeholder="Action corrective prise…" className="text-xs h-7" />
-                        <Input type="date" value={corr.date} onChange={e => saveCorrection(p.code, 'date', e.target.value)}
-                          className="text-xs h-7 w-36" />
+                      <div className="mt-2 space-y-2">
+                        {p.code === 'PB-05' ? (
+                          <>
+                            <Textarea value={corr.action} onChange={e => saveCorrection(p.code, 'action', e.target.value)}
+                              placeholder="Explication de l'écart sur le compte 185 (persistée)…" className="text-xs min-h-[60px]" />
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Date de correction Op@le :</span>
+                              <Input type="date" value={corr.date} onChange={e => saveCorrection(p.code, 'date', e.target.value)}
+                                className="text-xs h-7 w-40" />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="grid grid-cols-[1fr_auto] gap-2">
+                            <Input value={corr.action} onChange={e => saveCorrection(p.code, 'action', e.target.value)}
+                              placeholder="Action corrective prise…" className="text-xs h-7" />
+                            <Input type="date" value={corr.date} onChange={e => saveCorrection(p.code, 'date', e.target.value)}
+                              className="text-xs h-7 w-36" />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
