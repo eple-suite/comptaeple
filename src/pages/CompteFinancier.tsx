@@ -46,13 +46,30 @@ const CompteFinancier = () => {
   const checkItems = useCofiepleStore(s => s.checkItems);
   const budgets = useCofiepleStore(s => s.budgets);
   const resultats = useCofiepleStore(s => s.resultats);
+  const resultatsConsolides = useCofiepleStore(s => s.resultatsConsolides);
   const etab = useCofiepleStore(s => s.etablissement);
+  const activeBudget = useCofiepleStore(s => s.activeBudget);
+  const setActiveBudget = useCofiepleStore(s => s.setActiveBudget);
+  const balance = useCofiepleStore(s => s.balance);
 
   const nbFichiers = Object.values(fichiers).filter(Boolean).length;
   const nbBloq = checkItems.filter(c => c.bloquant).length;
   const nbAnom = checkItems.filter(c => c.statut !== 'ok').length;
   const hasBA = budgets.some(b => b.type !== 'principal');
   const hasData = !!resultats.principal;
+
+  // Budget type detection from loaded balance
+  const balancePrincipal = balance?.principal || [];
+  const detection = balancePrincipal.length > 0 ? detectBudgetType(balancePrincipal) : null;
+
+  // Budget options for the selector
+  const budgetOptions: { key: TypeBudget | 'consolide'; label: string; icon: string; hasData: boolean }[] = [
+    { key: 'principal', label: 'Budget Principal', icon: '🏛️', hasData: !!resultats.principal },
+    ...(budgets.some(b => b.type === 'annexe_greta') ? [{ key: 'annexe_greta' as TypeBudget, label: 'Budget Annexe — GRETA', icon: '📎', hasData: !!resultats.annexe_greta }] : []),
+    ...(budgets.some(b => b.type === 'annexe_cfa') ? [{ key: 'annexe_cfa' as TypeBudget, label: 'Budget Annexe — CFA', icon: '📎', hasData: !!resultats.annexe_cfa }] : []),
+    ...(budgets.some(b => b.type === 'annexe_autre') ? [{ key: 'annexe_autre' as TypeBudget, label: 'Budget Annexe — Autre', icon: '📎', hasData: !!resultats.annexe_autre }] : []),
+    ...(resultatsConsolides ? [{ key: 'consolide' as const, label: 'Vue Consolidée', icon: '📊', hasData: true }] : []),
+  ];
 
   const items: NavItem[] = [
     { id: 'accueil', label: 'Accueil', icon: <Home className="h-4 w-4" /> },
