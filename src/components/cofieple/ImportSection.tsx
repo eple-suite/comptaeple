@@ -3,6 +3,7 @@
 // Formats attendus : SDE, SDR, Balance (IMPORT BAL)
 // Conformité : M9-6 2026 — Extraction Op@le standard
 // Verrou de sécurité : concordance UAI/Op@le fichier ↔ établissement
+// Détection automatique du type de budget (principal/annexe)
 // ═══════════════════════════════════════════════════════════════
 
 import { useRef, useState } from 'react';
@@ -13,14 +14,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import { Info, Upload, Play, Loader2, CheckCircle2, XCircle, RefreshCw, ShieldAlert, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Info, Upload, Play, Loader2, CheckCircle2, XCircle, RefreshCw, ShieldAlert, ShieldCheck, AlertTriangle, Fingerprint } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { useEstablishment } from '@/contexts/EstablishmentContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { parserSDE, parserSDR, parserBalance } from '@/lib/cofieple_calculations';
 import { buildRowsFromSheetMatrix, findColumnIndex, normalizeColumnName } from '@/lib/opaleImportUtils';
+import { detectBudgetType, type BudgetTypeDetection } from '@/lib/cofieple_csvParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
+import { toast } from 'sonner';
 
 interface FileSlot {
   key: string; label: string; sublabel: string;
@@ -567,7 +570,36 @@ export function ImportSection() {
       else if (slot.type === 'sde1') setSDE1(parserSDE(rows, slot.typeBudget), slot.typeBudget);
       else if (slot.type === 'sdr') setSDR(parserSDR(rows, slot.typeBudget), slot.typeBudget);
       else if (slot.type === 'sdr1') setSDR1(parserSDR(rows, slot.typeBudget), slot.typeBudget);
-      else if (slot.type === 'bal') setBalance(parserBalance(rows, slot.typeBudget), slot.typeBudget);
+      else if (slot.type === 'bal') {
+        const parsed = parserBalance(rows, slot.typeBudget);
+        setBalance(parsed, slot.typeBudget);
+        // ── Détection automatique du type de budget ──
+        const detection = detectBudgetType(parsed);
+        const typeLabels: Record<string, string> = {
+          PRINCIPAL: 'Budget principal',
+          ANNEXE_GRETA: 'Budget annexe GRETA',
+          ANNEXE_CFA: 'Budget annexe CFA',
+          ANNEXE_SRH: 'Budget annexe SRH',
+          ANNEXE_AUTRE: 'Budget annexe (autre)',
+        };
+        const icon = detection.isAnnexe ? '📎' : '🏛️';
+        toast.info(`${icon} Type détecté : ${typeLabels[detection.type]}`, {
+          description: detection.details,
+          duration: 6000,
+        });
+        if (detection.isAnnexe && slot.typeBudget === 'principal') {
+          toast.warning('⚠️ Ce fichier semble être un budget annexe', {
+            description: `Vous l'importez dans l'emplacement "Budget principal". Vérifiez que c'est correct ou utilisez l'emplacement budget annexe approprié.`,
+            duration: 10000,
+          });
+        }
+        if (!detection.isAnnexe && slot.typeBudget !== 'principal') {
+          toast.warning('⚠️ Ce fichier semble être un budget principal', {
+            description: `Vous l'importez dans un emplacement "Budget annexe". Le compte 515100 (Trésor) est présent.`,
+            duration: 10000,
+          });
+        }
+      }
       else if (slot.type === 'bal1') setBalance1(parserBalance(rows, slot.typeBudget), slot.typeBudget);
       logImport({ fileName, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: 'success', fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
     } catch (err: any) {

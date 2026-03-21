@@ -153,6 +153,73 @@ export function detecterBudgetsAnnexes(bal: LigneBalance[]): string[] {
   return Array.from(codes);
 }
 
+// ── Détection automatique du type de budget à partir de la balance ────
+// Logique M9-6 :
+// - Budget principal : présence du compte 515100 (dépôt au Trésor) avec solde > 0
+// - Budget annexe : absence de 515100 ET présence du 185000 (liaison) en solde débiteur
+// - Sous-type : 706700 (GRETA), 706500 (CFA), 706600 (SRH)
+export type BudgetTypeDetected = 'PRINCIPAL' | 'ANNEXE_GRETA' | 'ANNEXE_CFA' | 'ANNEXE_SRH' | 'ANNEXE_AUTRE';
+
+export interface BudgetTypeDetection {
+  type: BudgetTypeDetected;
+  hasTresor: boolean;
+  hasCompte185: boolean;
+  compte185Solde: number;
+  isAnnexe: boolean;
+  confidence: 'high' | 'medium' | 'low';
+  details: string;
+}
+
+export function detectBudgetType(bal: LigneBalance[]): BudgetTypeDetection {
+  // Comptes clés (Op@le = 6 chiffres)
+  const c515100 = bal.find(l => l.compte.startsWith('515100'));
+  const c185000 = bal.find(l => l.compte.startsWith('185000') || l.compte.startsWith('18500'));
+  const c706700 = bal.find(l => l.compte.startsWith('706700')); // GRETA formation continue
+  const c706500 = bal.find(l => l.compte.startsWith('706500')); // CFA apprentissage
+  const c706600 = bal.find(l => l.compte.startsWith('706600')); // SRH restauration/hébergement
+
+  const hasTresor = !!(c515100 && (c515100.solDbt > 0 || c515100.solCrd > 0));
+  const has185Debiteur = !!(c185000 && c185000.solDbt > 0);
+  const isAnnexe = !hasTresor && has185Debiteur;
+
+  let type: BudgetTypeDetected = 'PRINCIPAL';
+  let confidence: 'high' | 'medium' | 'low' = 'high';
+  let details = '';
+
+  if (isAnnexe) {
+    if (c706700 && c706700.solCrd > 0) {
+      type = 'ANNEXE_GRETA';
+      details = `C/185000 débiteur (${c185000!.solDbt.toFixed(2)} €), C/706700 créditeur → GRETA`;
+    } else if (c706500 && c706500.solCrd > 0) {
+      type = 'ANNEXE_CFA';
+      details = `C/185000 débiteur (${c185000!.solDbt.toFixed(2)} €), C/706500 créditeur → CFA`;
+    } else if (c706600 && c706600.solCrd > 0) {
+      type = 'ANNEXE_SRH';
+      details = `C/185000 débiteur (${c185000!.solDbt.toFixed(2)} €), C/706600 créditeur → SRH`;
+    } else {
+      type = 'ANNEXE_AUTRE';
+      confidence = 'medium';
+      details = `C/185000 débiteur (${c185000!.solDbt.toFixed(2)} €), sous-type non identifié`;
+    }
+  } else if (hasTresor) {
+    details = `C/515100 présent avec solde → Budget principal`;
+  } else {
+    // Ni trésor ni 185 débiteur — probablement principal sans trésorerie significative
+    confidence = 'low';
+    details = `Ni C/515100 ni C/185000 débiteur détectés — classé principal par défaut`;
+  }
+
+  return {
+    type,
+    hasTresor,
+    hasCompte185: !!c185000,
+    compte185Solde: c185000 ? (c185000.solDbt - c185000.solCrd) : 0,
+    isAnnexe,
+    confidence,
+    details,
+  };
+}
+
 // ── Séparation BP/BA dans la balance ─────────────────────────────────
 // Dans Op@le, la balance peut être exportée avec une rupture identifiant le BA
 // On cherche des mots-clés dans les colonnes rupture
