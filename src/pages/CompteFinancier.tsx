@@ -1,8 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
-// COFIEPLE — Page Compte Financier (sous-menu Outils Métiers)
-// 14 onglets : Accueil, Import, Check-list, Superviseur,
-// Synthèse, Tableaux, Contrôles, Pluriannuel, Indicateurs,
-// Budget Annexe, Rapport Ordo, Rapport AC, Annexe, Diaporama
+// COFIEPLE — Page Compte Financier — Refonte v2.0
+// 7 modules + sous-modules : Vue d'ensemble, Rpt Ordo, Rpt AC,
+// Pluriannuel, Points Bloquants, Analyse IA, Rapport PDF
 // Conformité : M9-6 2026 · Décret 2012-1246 · Code Éducation
 // ═══════════════════════════════════════════════════════════════
 
@@ -16,7 +15,10 @@ import { RapportOrdoSection, RapportACSection } from '@/components/cofieple/Rapp
 import { DiaporamaSection } from '@/components/cofieple/DiaporamaSection';
 import { AuditControlesSection } from '@/components/cofieple/AuditControlesSection';
 import { ProgressStepper } from '@/components/cofieple/ProgressStepper';
-import { DashboardOnePage } from '@/components/cofieple/DashboardOnePage';
+import { VueEnsembleSection } from '@/components/cofieple/VueEnsembleSection';
+import { RatiosGestionSection } from '@/components/cofieple/RatiosGestionSection';
+import { PointsBloquantsSection } from '@/components/cofieple/PointsBloquantsSection';
+import { AnalyseIASection } from '@/components/cofieple/AnalyseIASection';
 import { IndicateursHorsComptables } from '@/components/cofieple/IndicateursHorsComptables';
 import { PluriannuelSection } from '@/components/cofieple/PluriannuelSection';
 import { AnnexeComptableSection } from '@/components/cofieple/AnnexeComptableSection';
@@ -24,7 +26,8 @@ import { ImportHistorySection } from '@/components/cofieple/ImportHistorySection
 import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
-  History, PenTool, BookOpen, ScrollText
+  History, PenTool, BookOpen, ScrollText, AlertTriangle, Bot,
+  Eye, Gauge
 } from 'lucide-react';
 
 interface NavItem {
@@ -52,19 +55,22 @@ const CompteFinancier = () => {
     { id: 'accueil', label: 'Accueil', icon: <Home className="h-4 w-4" /> },
     { id: 'import', label: 'Imports', icon: <Upload className="h-4 w-4" />, badge: `${nbFichiers}`, badgeType: nbFichiers >= 3 ? 'success' : 'info' },
     { id: 'journal', label: 'Journal', icon: <ScrollText className="h-4 w-4" /> },
-    { id: 'checklist', label: 'Check-List', icon: <CheckCircle2 className="h-4 w-4" />,
-      badge: hasData ? (nbBloq > 0 ? `${nbBloq} BLOQ` : nbAnom > 0 ? `${nbAnom}` : 'OK') : undefined,
-      badgeType: hasData ? (nbBloq > 0 ? 'error' : nbAnom > 0 ? 'warning' : 'success') : undefined, requiresData: true },
+    { id: 'vue_ensemble', label: 'Vue d\'ensemble', icon: <Eye className="h-4 w-4" />, requiresData: true,
+      badge: hasData ? (nbBloq > 0 ? '🔴' : '🟢') : undefined, badgeType: nbBloq > 0 ? 'error' : 'success' },
+    { id: 'rapport_ordo', label: 'Rpt Ordo', icon: <FileText className="h-4 w-4" />, requiresData: true },
+    { id: 'rapport_ac', label: 'Rpt AC', icon: <Shield className="h-4 w-4" />, requiresData: true },
+    { id: 'ratios', label: 'Ratios', icon: <Gauge className="h-4 w-4" />, requiresData: true },
     { id: 'superviseur', label: 'Superviseur', icon: <Search className="h-4 w-4" />, requiresData: true },
     { id: 'synthese', label: 'Synthèse', icon: <ClipboardList className="h-4 w-4" />, requiresData: true },
     { id: 'tableaux', label: 'Tableaux', icon: <BarChart3 className="h-4 w-4" />, requiresData: true },
     { id: 'controles', label: 'Contrôles', icon: <ShieldCheck className="h-4 w-4" />, requiresData: true,
       badge: hasData ? (nbBloq > 0 ? '🔴' : nbAnom > 0 ? '🟠' : '🟢') : undefined, badgeType: nbBloq > 0 ? 'error' : nbAnom > 0 ? 'warning' : 'success' },
+    { id: 'points_bloquants', label: 'Bloquants', icon: <AlertTriangle className="h-4 w-4" />, requiresData: true,
+      badge: hasData ? (nbBloq > 0 ? `${nbBloq}` : '0') : undefined, badgeType: nbBloq > 0 ? 'error' : 'success' },
     { id: 'pluriannuel', label: 'N à N-4', icon: <History className="h-4 w-4" /> },
     { id: 'indicateurs', label: 'Indicateurs', icon: <PenTool className="h-4 w-4" /> },
+    { id: 'analyse_ia', label: 'Analyse IA', icon: <Bot className="h-4 w-4" />, requiresData: true },
     { id: 'budget_annexe', label: 'BA', icon: <Building2 className="h-4 w-4" />, badge: hasBA ? 'BA' : undefined, badgeType: 'info' },
-    { id: 'rapport_ordo', label: 'Rpt Ordo', icon: <FileText className="h-4 w-4" />, requiresData: true },
-    { id: 'rapport_ac', label: 'Rpt AC', icon: <Shield className="h-4 w-4" />, requiresData: true },
     { id: 'annexe', label: 'Annexe', icon: <BookOpen className="h-4 w-4" />, requiresData: true },
     { id: 'diaporama', label: 'Diaporama', icon: <Monitor className="h-4 w-4" />, requiresData: true },
   ];
@@ -81,13 +87,17 @@ const CompteFinancier = () => {
       case 'accueil': return <AccueilSection />;
       case 'import': return <ImportSection />;
       case 'journal': return <ImportHistorySection />;
+      case 'vue_ensemble': return <VueEnsembleSection />;
       case 'checklist': return <CheckListSection />;
       case 'superviseur': return <SuperviseurSection />;
       case 'synthese': return <SyntheseSection />;
       case 'tableaux': return <TableauxSection />;
       case 'controles': return <AuditControlesSection />;
+      case 'ratios': return <RatiosGestionSection />;
+      case 'points_bloquants': return <PointsBloquantsSection />;
       case 'pluriannuel': return <PluriannuelSection />;
       case 'indicateurs': return <IndicateursHorsComptables />;
+      case 'analyse_ia': return <AnalyseIASection />;
       case 'budget_annexe': return <BudgetAnnexeSection />;
       case 'rapport_ordo': return <RapportOrdoSection />;
       case 'rapport_ac': return <RapportACSection />;
@@ -142,7 +152,7 @@ const CompteFinancier = () => {
         </div>
       </div>
 
-      {/* Progress Stepper — Assistant mode */}
+      {/* Progress Stepper */}
       <ProgressStepper />
 
       {/* Navigation */}
@@ -174,13 +184,6 @@ const CompteFinancier = () => {
           </div>
         </div>
       </nav>
-
-      {/* Dashboard One-Page (visible quand données disponibles et sur accueil) */}
-      {hasData && activeTab === 'accueil' && (
-        <div className="p-5 pb-0">
-          <DashboardOnePage />
-        </div>
-      )}
 
       {/* Content */}
       <div className="p-5">
