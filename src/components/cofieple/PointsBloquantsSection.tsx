@@ -207,6 +207,27 @@ const POINTS: PointBloquant[] = [
       return { detecte: pct < 0.5, detail: `Autonomie = ${(pct * 100).toFixed(1)}%` };
     },
   },
+  {
+    code: 'PV-07', titre: 'FDR de l\'annexe < 0 (C/185 insuffisant)', niveau: 'PV',
+    refM96: 'M9-6 §2.1.2.3.2', prescription: 'L\'annexe est en tension de trésorerie. Le budget principal doit abonder le C/185.',
+    calculer: (R: any, bal: any[]) => {
+      const has515 = bal.some((b: any) => b.compte?.startsWith('515'));
+      if (has515) return { detecte: false, detail: 'Budget principal — non applicable' };
+      return { detecte: (R.fdrComptable || 0) < 0, detail: `FDR annexe = ${formatEur(R.fdrComptable || 0)}` };
+    },
+  },
+  {
+    code: 'PV-08', titre: 'Forte variation C/185 vs N-1 (> 20%)', niveau: 'PV',
+    refM96: 'M9-6 §5.3.2', prescription: 'Variation significative du compte de liaison pouvant indiquer un changement d\'activité.',
+    calculer: (_R: any, bal: any[], _ci: any[], extraData?: any) => {
+      if (!extraData?.balance1) return { detecte: false, detail: 'Pas de données N-1' };
+      const s185N = bal.filter((b: any) => b.compte?.startsWith('185')).reduce((s: number, b: any) => s + ((b.solDbt || 0) - (b.solCrd || 0)), 0);
+      const bal1 = extraData.balance1 as any[];
+      const s185N1 = bal1.filter((b: any) => b.compte?.startsWith('185')).reduce((s: number, b: any) => s + ((b.solDbt || 0) - (b.solCrd || 0)), 0);
+      const variation = s185N1 !== 0 ? Math.abs((s185N - s185N1) / s185N1) : 0;
+      return { detecte: variation > 0.2 && Math.abs(s185N1) > 100, detail: `C/185 N = ${formatEur(s185N)}, C/185 N-1 = ${formatEur(s185N1)}, Variation = ${(variation * 100).toFixed(1)}%` };
+    },
+  },
 ];
 
 export function PointsBloquantsSection() {
