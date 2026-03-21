@@ -197,7 +197,17 @@ export function PointsBloquantsSection() {
     localStorage.setItem('cockpit_cf_points_bloquants', JSON.stringify(next));
   };
 
-  const evaluated = POINTS.map(p => ({ ...p, result: p.calculer(R, bal, checkItems) }));
+  // Build extra data for PB-05 (cross-budget C/185 concordance)
+  const extraData = {
+    balanceBP: balance.principal || [],
+    balanceAnnexes: {
+      'GRETA': balance.annexe_greta || [],
+      'CFA': balance.annexe_cfa || [],
+      'Autre': balance.annexe_autre || [],
+    },
+  };
+
+  const evaluated = POINTS.map(p => ({ ...p, result: p.calculer(R, bal, checkItems, p.code === 'PB-05' ? extraData : undefined) }));
   const pbList = evaluated.filter(p => p.niveau === 'PB');
   const paList = evaluated.filter(p => p.niveau === 'PA');
   const pvList = evaluated.filter(p => p.niveau === 'PV');
