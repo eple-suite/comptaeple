@@ -34,7 +34,7 @@ import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
   History, PenTool, BookOpen, ScrollText, AlertTriangle, Bot,
-  Eye, Gauge, FolderOpen, Radio, Link2, GraduationCap
+  Eye, Gauge, FolderOpen, Radio, Link2, GraduationCap, UtensilsCrossed
 } from 'lucide-react';
 
 interface NavItem {
