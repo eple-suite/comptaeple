@@ -10,7 +10,7 @@ import { immer } from 'zustand/middleware/immer';
 import type { LigneSDE, LigneSDR, LigneBalance } from '@/lib/cofieple_types';
 import type {
   CofiepleState, EtablissementUI, TypeBudget, BudgetConfig,
-  ResultatsUI, CheckItem, AnomalieBalance,
+  ResultatsUI, CheckItem, AnomalieBalance, BudgetProfile, ImportedFileData,
 } from '@/lib/cofieple_storeTypes';
 import {
   calculerResultats, consolider, construireCheckList, analyserBalance,
@@ -32,6 +32,30 @@ const ETAB_INITIAL: EtablissementUI = {
   dateArrete: '',
 };
 
+// ── Helpers BudgetProfile ────────────────────────────────────────────
+const PROFILES_KEY = 'cockpit_budget_profiles';
+
+function loadProfiles(): BudgetProfile[] {
+  try {
+    const raw = localStorage.getItem(PROFILES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveProfiles(profiles: BudgetProfile[]) {
+  localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+}
+
+function makeProfileId(): string {
+  return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+const EMPTY_FICHIERS = (): BudgetProfile['fichiers'] => ({
+  depensesN: null, depensesN1: null,
+  recettesN: null, recettesN1: null,
+  balanceN: null, balanceN1: null,
+});
+
 type Store = CofiepleState & {
   setEtablissement: (etab: Partial<EtablissementUI>) => void;
   addBudgetAnnexe: (config: BudgetConfig) => void;
@@ -50,6 +74,15 @@ type Store = CofiepleState & {
   lancerAnalyse: () => void;
   setAnalysisRunning: (v: boolean) => void;
   resetAll: () => void;
+  // ── Budget Profiles ─────────────────────────────────────────────
+  budgetProfiles: BudgetProfile[];
+  createBudgetProfile: (nom: string, type: TypeBudget, uai?: string, exercice?: string) => BudgetProfile;
+  updateBudgetProfile: (id: string, patch: Partial<Omit<BudgetProfile, 'id' | 'createdAt'>>) => void;
+  deleteBudgetProfile: (id: string) => void;
+  setBudgetProfileFichier: (profileId: string, fileKey: keyof BudgetProfile['fichiers'], data: ImportedFileData) => void;
+  setBudgetProfileCompte185: (profileId: string, solde: number) => void;
+  getBudgetProfile: (id: string) => BudgetProfile | undefined;
+  getBudgetProfilesByType: (type: TypeBudget) => BudgetProfile[];
 };
 
 export const useCofiepleStore = create<Store>()(
@@ -73,6 +106,7 @@ export const useCofiepleStore = create<Store>()(
       uaiLoading: false,
       uaiError: null,
       analysisRunning: false,
+      budgetProfiles: loadProfiles(),
 
       setEtablissement: (etab) =>
         set(state => { Object.assign(state.etablissement, etab); }),
@@ -150,6 +184,67 @@ export const useCofiepleStore = create<Store>()(
         });
       },
 
+      // ── Budget Profiles (persistés sous 'cockpit_budget_profiles') ──
+      createBudgetProfile: (nom, type, uai, exercice) => {
+        const now = new Date().toISOString();
+        const profile: BudgetProfile = {
+          id: makeProfileId(),
+          nom,
+          type,
+          uai,
+          exercice: exercice ?? String(get().etablissement.exercice),
+          fichiers: EMPTY_FICHIERS(),
+          createdAt: now,
+          updatedAt: now,
+        };
+        set(state => { state.budgetProfiles.push(profile); });
+        saveProfiles(get().budgetProfiles);
+        return profile;
+      },
+
+      updateBudgetProfile: (id, patch) => {
+        set(state => {
+          const idx = state.budgetProfiles.findIndex(p => p.id === id);
+          if (idx >= 0) {
+            Object.assign(state.budgetProfiles[idx], patch, { updatedAt: new Date().toISOString() });
+          }
+        });
+        saveProfiles(get().budgetProfiles);
+      },
+
+      deleteBudgetProfile: (id) => {
+        set(state => {
+          state.budgetProfiles = state.budgetProfiles.filter(p => p.id !== id);
+        });
+        saveProfiles(get().budgetProfiles);
+      },
+
+      setBudgetProfileFichier: (profileId, fileKey, data) => {
+        set(state => {
+          const p = state.budgetProfiles.find(p => p.id === profileId);
+          if (p) {
+            p.fichiers[fileKey] = data;
+            p.updatedAt = new Date().toISOString();
+          }
+        });
+        saveProfiles(get().budgetProfiles);
+      },
+
+      setBudgetProfileCompte185: (profileId, solde) => {
+        set(state => {
+          const p = state.budgetProfiles.find(p => p.id === profileId);
+          if (p) {
+            p.compte185Solde = solde;
+            p.updatedAt = new Date().toISOString();
+          }
+        });
+        saveProfiles(get().budgetProfiles);
+      },
+
+      getBudgetProfile: (id) => get().budgetProfiles.find(p => p.id === id),
+
+      getBudgetProfilesByType: (type) => get().budgetProfiles.filter(p => p.type === type),
+
       resetAll: () =>
         set(state => {
           Object.assign(state.etablissement, ETAB_INITIAL);
@@ -167,6 +262,8 @@ export const useCofiepleStore = create<Store>()(
           state.anomaliesBalance = [];
           state.activeTab = 'accueil';
           state.uaiError = null;
+          state.budgetProfiles = [];
+          saveProfiles([]);
         }),
     })),
     {

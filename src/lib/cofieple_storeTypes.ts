@@ -4,7 +4,7 @@
 // Conformité : M9-6 2026, Décret 2012-1246 (RGCP)
 // ═══════════════════════════════════════════════════════════════════
 
-import type { ResultatsM96, VerificationM96, CompteBalance, ServiceData } from './cofieple_types';
+import type { ResultatsM96, VerificationM96, CompteBalance, ServiceData, LigneSDE, LigneSDR, LigneBalance } from './cofieple_types';
 
 // ── Types de budget ──────────────────────────────────────────────────
 export type TypeBudget = 'principal' | 'annexe_greta' | 'annexe_cfa' | 'annexe_autre';
@@ -12,6 +12,33 @@ export type TypeBudget = 'principal' | 'annexe_greta' | 'annexe_cfa' | 'annexe_a
 export interface BudgetConfig {
   type: TypeBudget;
   libelle: string;
+}
+
+// ── Données importées par fichier ───────────────────────────────────
+export interface ImportedFileData {
+  fileName: string;
+  rowCount: number;
+  importedAt: string;         // ISO date
+}
+
+// ── Profil Budget (persisté séparément) ─────────────────────────────
+export interface BudgetProfile {
+  id: string;                 // uuid
+  nom: string;                // ex : "Lycée Charles Coeffin — Budget Principal"
+  type: TypeBudget;
+  uai?: string;
+  exercice: string;           // "2024"
+  fichiers: {
+    depensesN: ImportedFileData | null;
+    depensesN1: ImportedFileData | null;
+    recettesN: ImportedFileData | null;
+    recettesN1: ImportedFileData | null;
+    balanceN: ImportedFileData | null;
+    balanceN1: ImportedFileData | null;
+  };
+  compte185Solde?: number;    // pour la vérification croisée
+  createdAt: string;          // ISO date
+  updatedAt: string;          // ISO date
 }
 
 // ── Établissement étendu pour l'UI ──────────────────────────────────
