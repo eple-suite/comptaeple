@@ -28,13 +28,15 @@ import { LiaisonsInterBudgets } from '@/components/cofieple/LiaisonsInterBudgets
 import { IndicateursGreta } from '@/components/cofieple/IndicateursGreta';
 import { IndicateursCfa } from '@/components/cofieple/IndicateursCfa';
 import { IndicateursSrh } from '@/components/cofieple/IndicateursSrh';
+import { PerimetreComptable } from '@/components/cofieple/PerimetreComptable';
+import { VueConsolidee } from '@/components/cofieple/VueConsolidee';
 import { detectBudgetType } from '@/lib/cofieple_csvParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
   History, PenTool, BookOpen, ScrollText, AlertTriangle, Bot,
-  Eye, Gauge, FolderOpen, Radio, Link2, GraduationCap, UtensilsCrossed
+  Eye, Gauge, FolderOpen, Radio, Link2, GraduationCap, UtensilsCrossed, Layers
 } from 'lucide-react';
 
 interface NavItem {
@@ -61,19 +63,7 @@ const CompteFinancier = () => {
   const nbAnom = checkItems.filter(c => c.statut !== 'ok').length;
   const hasBA = budgets.some(b => b.type !== 'principal');
   const hasData = !!resultats.principal;
-
-  // Budget type detection from loaded balance
-  const balancePrincipal = balance?.principal || [];
-  const detection = balancePrincipal.length > 0 ? detectBudgetType(balancePrincipal) : null;
-
-  // Budget options for the selector
-  const budgetOptions: { key: TypeBudget | 'consolide'; label: string; icon: string; hasData: boolean }[] = [
-    { key: 'principal', label: 'Budget Principal', icon: '🏛️', hasData: !!resultats.principal },
-    ...(budgets.some(b => b.type === 'annexe_greta') ? [{ key: 'annexe_greta' as TypeBudget, label: 'Budget Annexe — GRETA', icon: '📎', hasData: !!resultats.annexe_greta }] : []),
-    ...(budgets.some(b => b.type === 'annexe_cfa') ? [{ key: 'annexe_cfa' as TypeBudget, label: 'Budget Annexe — CFA', icon: '📎', hasData: !!resultats.annexe_cfa }] : []),
-    ...(budgets.some(b => b.type === 'annexe_autre') ? [{ key: 'annexe_autre' as TypeBudget, label: 'Budget Annexe — Autre', icon: '📎', hasData: !!resultats.annexe_autre }] : []),
-    ...(resultatsConsolides ? [{ key: 'consolide' as const, label: 'Vue Consolidée', icon: '📊', hasData: true }] : []),
-  ];
+  const hasConsolidation = hasData && Object.values(resultats).filter(Boolean).length >= 2;
 
   const items: NavItem[] = [
     { id: 'accueil', label: 'Accueil', icon: <Home className="h-4 w-4" /> },
@@ -99,6 +89,7 @@ const CompteFinancier = () => {
     ...(budgets.some(b => b.type === 'annexe_greta') ? [{ id: 'greta', label: 'GRETA', icon: <GraduationCap className="h-4 w-4" />, requiresData: false }] : []),
     ...(budgets.some(b => b.type === 'annexe_cfa') ? [{ id: 'cfa', label: 'CFA', icon: <BookOpen className="h-4 w-4" />, requiresData: false }] : []),
     ...(budgets.some(b => b.type === 'annexe_autre') ? [{ id: 'srh', label: 'SRH', icon: <UtensilsCrossed className="h-4 w-4" />, requiresData: false }] : []),
+    ...(hasConsolidation ? [{ id: 'vue_consolidee', label: 'Consolidé', icon: <Layers className="h-4 w-4" />, requiresData: true }] : []),
     { id: 'annexe', label: 'Annexe', icon: <BookOpen className="h-4 w-4" />, requiresData: true },
     { id: 'diaporama', label: 'Diaporama', icon: <Monitor className="h-4 w-4" />, requiresData: true },
   ];
@@ -131,6 +122,7 @@ const CompteFinancier = () => {
       case 'greta': return <IndicateursGreta />;
       case 'cfa': return <IndicateursCfa />;
       case 'srh': return <IndicateursSrh />;
+      case 'vue_consolidee': return <VueConsolidee />;
       case 'rapport_ordo': return <RapportOrdoSection />;
       case 'rapport_ac': return <RapportACSection />;
       case 'annexe': return <AnnexeComptableSection />;
@@ -187,63 +179,10 @@ const CompteFinancier = () => {
       {/* Progress Stepper */}
       <ProgressStepper />
 
-      {/* Budget Selector Panel */}
+      {/* Périmètre Comptable Selector */}
       {hasData && (
         <div className="mx-1 mt-2">
-          <Card className="border-[hsl(222,25%,24%)] bg-[hsl(222,28%,16%)]">
-            <CardContent className="p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <FolderOpen className="h-4 w-4 text-warning" />
-                <span className="text-xs font-bold text-white tracking-wide uppercase">Budget analysé</span>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {budgetOptions.map(opt => {
-                  const isActive = activeBudget === opt.key || (opt.key === 'consolide' && activeBudget === 'principal' && false);
-                  const isConsolide = opt.key === 'consolide';
-                  return (
-                    <button
-                      key={opt.key}
-                      onClick={() => {
-                        if (!isConsolide) setActiveBudget(opt.key as TypeBudget);
-                      }}
-                      disabled={!opt.hasData && !isConsolide}
-                      className={`flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all ${
-                        isActive && !isConsolide
-                          ? 'bg-warning/20 border-2 border-warning text-warning shadow-[0_0_12px_hsl(var(--warning)/0.3)]'
-                          : isConsolide
-                          ? 'bg-primary/10 border border-primary/30 text-primary/80 hover:bg-primary/20 hover:text-primary cursor-pointer'
-                          : opt.hasData
-                          ? 'bg-white/5 border border-[hsl(222,25%,28%)] text-[hsl(220,15%,65%)] hover:bg-white/10 hover:text-white cursor-pointer'
-                          : 'bg-transparent border border-[hsl(222,25%,22%)] text-[hsl(220,15%,35%)] cursor-not-allowed'
-                      }`}
-                    >
-                      <Radio className={`h-3 w-3 ${isActive && !isConsolide ? 'text-warning' : 'text-current'}`} />
-                      <span>{opt.icon}</span>
-                      <span>{opt.label}</span>
-                      {opt.hasData && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
-                    </button>
-                  );
-                })}
-              </div>
-              {/* Detection info */}
-              {detection && balancePrincipal.length > 0 && (
-                <div className="mt-2 flex items-center gap-2 text-[10px] text-[hsl(220,15%,50%)]">
-                  <span className="inline-flex items-center gap-1 bg-white/5 rounded px-2 py-0.5">
-                    Type détecté automatiquement :
-                    <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
-                      detection.isAnnexe ? 'border-warning/50 text-warning' : 'border-emerald-500/50 text-emerald-400'
-                    }`}>
-                      {detection.type.replace('_', ' ')}
-                    </Badge>
-                    {detection.confidence === 'high' && <CheckCircle2 className="h-3 w-3 text-emerald-500" />}
-                  </span>
-                  <span className="text-[hsl(220,15%,40%)]">
-                    {detection.hasTresor ? '(C/515100 présent)' : '(C/515100 absent)'}
-                  </span>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <PerimetreComptable />
         </div>
       )}
 

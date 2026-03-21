@@ -87,6 +87,18 @@ const POINTS: PointBloquant[] = [
       return { detecte: ecart >= 0.02, detail: detailLines.join('\n') };
     },
   },
+  {
+    code: 'PB-06', titre: 'C/185 incohérent avec TN calculée (budget annexe)', niveau: 'PB',
+    refM96: 'M9-6 §2.1.2.3.2', prescription: 'Le solde débiteur du C/185 d\'un budget annexe doit correspondre à FDR − BFR. Un écart significatif indique une incohérence dans la balance de l\'annexe.',
+    calculer: (R: any, bal: any[]) => {
+      const has515 = bal.some((b: any) => b.compte?.startsWith('515'));
+      if (has515) return { detecte: false, detail: 'Budget principal détecté (C/515100 présent) — non applicable' };
+      const solde185 = bal.filter((b: any) => b.compte?.startsWith('185')).reduce((s: number, b: any) => s + ((b.solDbt || 0) - (b.solCrd || 0)), 0);
+      const tnAttendue = (R.fdrComptable || 0) - (R.bfr || 0);
+      const ecart = Math.abs(solde185 - tnAttendue);
+      return { detecte: ecart > 100, detail: `C/185 débiteur = ${formatEur(solde185)}, FDR − BFR = ${formatEur(tnAttendue)}, Écart = ${formatEur(ecart)}` };
+    },
+  },
   // 🟠 ATTENTION
   {
     code: 'PA-01', titre: 'FDR négatif', niveau: 'PA',
@@ -138,6 +150,26 @@ const POINTS: PointBloquant[] = [
       return { detecte: def119 > 0.01, detail: `C/119 = ${formatEur(def119)}` };
     },
   },
+  {
+    code: 'PA-08', titre: 'Budget annexe déficitaire (résultat négatif)', niveau: 'PA',
+    refM96: 'M9-6 §2.1.2.3.2', prescription: 'Un déficit du budget annexe se reporte sur le budget principal support. Le CA doit en être informé.',
+    calculer: (R: any, bal: any[]) => {
+      const has515 = bal.some((b: any) => b.compte?.startsWith('515'));
+      if (has515) return { detecte: false, detail: 'Budget principal — non applicable' };
+      const resultat = R.resultatBudgetaire || 0;
+      return { detecte: resultat < -0.01, detail: `Résultat du budget annexe = ${formatEur(resultat)}` };
+    },
+  },
+  {
+    code: 'PA-09', titre: 'C/185 en solde CRÉDITEUR côté budget annexe', niveau: 'PA',
+    refM96: 'M9-6 §5.3.2', prescription: 'Situation anormale : l\'annexe serait créancier de son budget principal. À justifier impérativement.',
+    calculer: (_R: any, bal: any[]) => {
+      const has515 = bal.some((b: any) => b.compte?.startsWith('515'));
+      if (has515) return { detecte: false, detail: 'Budget principal — non applicable' };
+      const solde185 = bal.filter((b: any) => b.compte?.startsWith('185')).reduce((s: number, b: any) => s + ((b.solDbt || 0) - (b.solCrd || 0)), 0);
+      return { detecte: solde185 < -0.01, detail: `C/185 = ${formatEur(solde185)} (créditeur = anormal pour un BA)` };
+    },
+  },
   // 🟡 VIGILANCE
   {
     code: 'PV-01', titre: 'Forte variation FDR vs N-1 (>25%)', niveau: 'PV',
@@ -175,12 +207,34 @@ const POINTS: PointBloquant[] = [
       return { detecte: pct < 0.5, detail: `Autonomie = ${(pct * 100).toFixed(1)}%` };
     },
   },
+  {
+    code: 'PV-07', titre: 'FDR de l\'annexe < 0 (C/185 insuffisant)', niveau: 'PV',
+    refM96: 'M9-6 §2.1.2.3.2', prescription: 'L\'annexe est en tension de trésorerie. Le budget principal doit abonder le C/185.',
+    calculer: (R: any, bal: any[]) => {
+      const has515 = bal.some((b: any) => b.compte?.startsWith('515'));
+      if (has515) return { detecte: false, detail: 'Budget principal — non applicable' };
+      return { detecte: (R.fdrComptable || 0) < 0, detail: `FDR annexe = ${formatEur(R.fdrComptable || 0)}` };
+    },
+  },
+  {
+    code: 'PV-08', titre: 'Forte variation C/185 vs N-1 (> 20%)', niveau: 'PV',
+    refM96: 'M9-6 §5.3.2', prescription: 'Variation significative du compte de liaison pouvant indiquer un changement d\'activité.',
+    calculer: (_R: any, bal: any[], _ci: any[], extraData?: any) => {
+      if (!extraData?.balance1) return { detecte: false, detail: 'Pas de données N-1' };
+      const s185N = bal.filter((b: any) => b.compte?.startsWith('185')).reduce((s: number, b: any) => s + ((b.solDbt || 0) - (b.solCrd || 0)), 0);
+      const bal1 = extraData.balance1 as any[];
+      const s185N1 = bal1.filter((b: any) => b.compte?.startsWith('185')).reduce((s: number, b: any) => s + ((b.solDbt || 0) - (b.solCrd || 0)), 0);
+      const variation = s185N1 !== 0 ? Math.abs((s185N - s185N1) / s185N1) : 0;
+      return { detecte: variation > 0.2 && Math.abs(s185N1) > 100, detail: `C/185 N = ${formatEur(s185N)}, C/185 N-1 = ${formatEur(s185N1)}, Variation = ${(variation * 100).toFixed(1)}%` };
+    },
+  },
 ];
 
 export function PointsBloquantsSection() {
   const resultats = useCofiepleStore(s => s.resultats);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
   const balance = useCofiepleStore(s => s.balance);
+  const balance1 = useCofiepleStore(s => s.balance1);
   const checkItems = useCofiepleStore(s => s.checkItems);
   const R = resultats[activeBudget];
   const bal = balance[activeBudget] || [];
@@ -197,7 +251,7 @@ export function PointsBloquantsSection() {
     localStorage.setItem('cockpit_cf_points_bloquants', JSON.stringify(next));
   };
 
-  // Build extra data for PB-05 (cross-budget C/185 concordance)
+  // Build extra data for cross-budget checks
   const extraData = {
     balanceBP: balance.principal || [],
     balanceAnnexes: {
@@ -205,9 +259,13 @@ export function PointsBloquantsSection() {
       'CFA': balance.annexe_cfa || [],
       'Autre': balance.annexe_autre || [],
     },
+    balance1: balance1?.[activeBudget] || [],
   };
 
-  const evaluated = POINTS.map(p => ({ ...p, result: p.calculer(R, bal, checkItems, p.code === 'PB-05' ? extraData : undefined) }));
+  const evaluated = POINTS.map(p => ({
+    ...p,
+    result: p.calculer(R, bal, checkItems, ['PB-05', 'PV-08'].includes(p.code) ? extraData : undefined),
+  }));
   const pbList = evaluated.filter(p => p.niveau === 'PB');
   const paList = evaluated.filter(p => p.niveau === 'PA');
   const pvList = evaluated.filter(p => p.niveau === 'PV');

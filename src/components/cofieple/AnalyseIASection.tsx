@@ -12,6 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
+import { getSystemPromptForBudgetType } from '@/lib/cofieple_budgetPrompts';
 import { EmptyState } from './SharedComponents';
 import { supabase } from '@/integrations/supabase/client';
 import { Bot, Loader2, Copy, RotateCcw } from 'lucide-react';
@@ -48,9 +49,13 @@ export function AnalyseIASection() {
       const scopeDesc = Object.entries(scope).filter(([, v]) => v).map(([k]) => k).join(', ');
       const lengthHint = detail === 'resume' ? '500 mots maximum, concis' : detail === 'exhaustif' ? '2000+ mots, très détaillé, chaque indicateur commenté' : '1000-1500 mots, équilibré';
 
+      const systemPrompt = getSystemPromptForBudgetType(activeBudget);
+
       const { data, error } = await supabase.functions.invoke('generate-report', {
         body: {
           type: 'analyse_ia_globale',
+          systemPrompt,
+          budgetType: activeBudget,
           etablissement: etab,
           resultats: {
             resultatBudgetaire: R.resultatBudgetaire, resultatComptable: R.resultatComptable,
