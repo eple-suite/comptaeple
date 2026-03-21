@@ -27,13 +27,14 @@ import { ImportHistorySection } from '@/components/cofieple/ImportHistorySection
 import { LiaisonsInterBudgets } from '@/components/cofieple/LiaisonsInterBudgets';
 import { IndicateursGreta } from '@/components/cofieple/IndicateursGreta';
 import { IndicateursCfa } from '@/components/cofieple/IndicateursCfa';
+import { IndicateursSrh } from '@/components/cofieple/IndicateursSrh';
 import { detectBudgetType } from '@/lib/cofieple_csvParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
   History, PenTool, BookOpen, ScrollText, AlertTriangle, Bot,
-  Eye, Gauge, FolderOpen, Radio, Link2, GraduationCap
+  Eye, Gauge, FolderOpen, Radio, Link2, GraduationCap, UtensilsCrossed
 } from 'lucide-react';
 
 interface NavItem {
@@ -97,6 +98,7 @@ const CompteFinancier = () => {
     { id: 'liaisons_185', label: 'C/185', icon: <Link2 className="h-4 w-4" />, requiresData: true },
     ...(budgets.some(b => b.type === 'annexe_greta') ? [{ id: 'greta', label: 'GRETA', icon: <GraduationCap className="h-4 w-4" />, requiresData: false }] : []),
     ...(budgets.some(b => b.type === 'annexe_cfa') ? [{ id: 'cfa', label: 'CFA', icon: <BookOpen className="h-4 w-4" />, requiresData: false }] : []),
+    ...(budgets.some(b => b.type === 'annexe_autre') ? [{ id: 'srh', label: 'SRH', icon: <UtensilsCrossed className="h-4 w-4" />, requiresData: false }] : []),
     { id: 'annexe', label: 'Annexe', icon: <BookOpen className="h-4 w-4" />, requiresData: true },
     { id: 'diaporama', label: 'Diaporama', icon: <Monitor className="h-4 w-4" />, requiresData: true },
   ];
@@ -128,6 +130,7 @@ const CompteFinancier = () => {
       case 'liaisons_185': return <LiaisonsInterBudgets />;
       case 'greta': return <IndicateursGreta />;
       case 'cfa': return <IndicateursCfa />;
+      case 'srh': return <IndicateursSrh />;
       case 'rapport_ordo': return <RapportOrdoSection />;
       case 'rapport_ac': return <RapportACSection />;
       case 'annexe': return <AnnexeComptableSection />;
