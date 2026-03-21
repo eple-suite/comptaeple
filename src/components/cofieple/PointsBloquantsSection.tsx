@@ -17,7 +17,7 @@ import { AlertTriangle, Ban, Eye } from 'lucide-react';
 interface PointBloquant {
   code: string; titre: string; niveau: 'PB' | 'PA' | 'PV';
   refM96: string; prescription: string;
-  calculer: (R: any, bal: any[], checkItems: any[]) => { detecte: boolean; detail: string };
+  calculer: (R: any, bal: any[], checkItems: any[], extraData?: any) => { detecte: boolean; detail: string };
 }
 
 const sumBal = (bal: any[], test: (c: string) => boolean, field: string) =>
