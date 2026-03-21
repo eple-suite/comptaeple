@@ -59,6 +59,34 @@ const POINTS: PointBloquant[] = [
       return { detecte: ecartC > 1 || ecartP > 1, detail: `Écart charges: ${formatEur(ecartC)}, Écart produits: ${formatEur(ecartP)}` };
     },
   },
+  {
+    code: 'PB-05', titre: 'Concordance compte 185 Budget Principal ↔ Budget Annexe', niveau: 'PB',
+    refM96: 'M9-6 §5.3.2 — Comptes de liaison',
+    prescription: 'Le compte 185 est un compte de liaison : ses soldes doivent être en miroir entre le budget principal (créditeur) et chaque budget annexe (débiteur). Les soldes doivent être strictement égaux en valeur absolue.',
+    calculer: (_R: any, _bal: any[], _checkItems: any[], extraData?: any) => {
+      if (!extraData) return { detecte: false, detail: 'Pas de données multi-budgets disponibles' };
+      const { balanceBP, balanceAnnexes } = extraData;
+      if (!balanceBP || balanceBP.length === 0) return { detecte: false, detail: 'Balance BP non chargée' };
+
+      const solde185BP = balanceBP.filter((b: any) => b.compte.startsWith('185')).reduce((s: number, b: any) => s + ((b.solCrd || 0) - (b.solDbt || 0)), 0);
+      let totalSolde185BA = 0;
+      const detailLines: string[] = [];
+      detailLines.push(`C/185 Budget Principal = ${formatEur(solde185BP)} (créditeur)`);
+
+      for (const [label, balBA] of Object.entries(balanceAnnexes as Record<string, any[]>)) {
+        if (!balBA || balBA.length === 0) continue;
+        const solde185BA = balBA.filter((b: any) => b.compte.startsWith('185')).reduce((s: number, b: any) => s + ((b.solDbt || 0) - (b.solCrd || 0)), 0);
+        totalSolde185BA += solde185BA;
+        detailLines.push(`C/185 ${label} = ${formatEur(solde185BA)} (débiteur)`);
+      }
+
+      if (totalSolde185BA === 0 && solde185BP === 0) return { detecte: false, detail: 'C/185 non utilisé (pas de budget annexe actif)' };
+
+      const ecart = Math.abs(solde185BP - totalSolde185BA);
+      detailLines.push(`Écart = ${formatEur(ecart)} ${ecart < 0.02 ? '✅' : '❌'}`);
+      return { detecte: ecart >= 0.02, detail: detailLines.join('\n') };
+    },
+  },
   // 🟠 ATTENTION
   {
     code: 'PA-01', titre: 'FDR négatif', niveau: 'PA',
