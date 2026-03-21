@@ -65,11 +65,11 @@ export function PerimetreComptable() {
   const nbBudgetsAvecDonnees = budgetStatuses.filter(b => b.hasResult).length;
   const canConsolidate = nbBudgetsAvecDonnees >= 2 && budgetStatuses.some(b => b.type === 'principal' && b.hasResult);
 
-  const availableAnnexes: { type: TypeBudget; label: string }[] = [
-    { type: 'annexe_greta', label: 'GRETA' },
-    { type: 'annexe_cfa', label: 'CFA' },
-    { type: 'annexe_autre', label: 'SRH' },
-  ].filter(a => !budgets.some(b => b.type === a.type));
+  const availableAnnexes: { type: TypeBudget; label: string }[] = ([
+    { type: 'annexe_greta' as TypeBudget, label: 'GRETA' },
+    { type: 'annexe_cfa' as TypeBudget, label: 'CFA' },
+    { type: 'annexe_autre' as TypeBudget, label: 'SRH' },
+  ] as const).filter(a => !budgets.some(b => b.type === a.type));
 
   const statusConfig = {
     complet: { badge: '✅ Complet', className: 'bg-emerald-600 text-white' },
