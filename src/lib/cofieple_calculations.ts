@@ -206,10 +206,39 @@ export function parserBalance(rows: Record<string, string>[], _typeBudget: TypeB
 // Enrichit les résultats M9-6 avec les alias nécessaires à l'UI
 export function calculerResultats(
   sde: LigneSDE[], sdr: LigneSDR[], bal: LigneBalance[],
-  _sde1: LigneSDE[], _sdr1: LigneSDR[], _bal1: LigneBalance[],
+  sde1: LigneSDE[], sdr1: LigneSDR[], _bal1: LigneBalance[],
   _typeBudget: TypeBudget
 ): ResultatsUI {
   const r = calculerResultatsM96(sde, sdr, bal);
+
+  // ── Populate N-1 from imported SDE-1/SDR-1 ──────────────────────
+  const totalChargesSdeN1 = sde1.reduce((s, row) => s + row.realise, 0);
+  const totalProduitsSdrN1 = sdr1.reduce((s, row) => s + row.realise, 0);
+  const resultatBudgetaireN1 = totalProduitsSdrN1 - totalChargesSdeN1;
+
+  // Update domaines with N-1 data from sde1/sdr1
+  const buildDomKey = (d: string) => (d || '').charAt(0) || '0';
+  if (sde1.length > 0 || sdr1.length > 0) {
+    sde1.forEach(row => {
+      const dk = buildDomKey(row.domaine);
+      if (r.domaines[dk]) r.domaines[dk].chargesReelN1 += row.realise;
+    });
+    sdr1.forEach(row => {
+      const dk = buildDomKey(row.domaine);
+      if (r.domaines[dk]) r.domaines[dk].produitsReelN1 += row.realise;
+    });
+    Object.values(r.domaines).forEach(d => {
+      d.variationCharges = d.chargesReel - d.chargesReelN1;
+      d.pctVariationCharges = d.chargesReelN1 > 0 ? (d.variationCharges / d.chargesReelN1) * 100 : 0;
+      d.variationProduits = d.produitsReel - d.produitsReelN1;
+      d.pctVariationProduits = d.produitsReelN1 > 0 ? (d.variationProduits / d.produitsReelN1) * 100 : 0;
+    });
+  }
+
+  // Override N-1 values with imported data
+  r.totalChargesSdeN1 = totalChargesSdeN1;
+  r.totalProduitsSdrN1 = totalProduitsSdrN1;
+  r.resultatBudgetaireN1 = resultatBudgetaireN1;
 
   // Enrichir les services avec les champs UI
   const parService: Record<string, ServiceDataUI> = {};
@@ -221,9 +250,7 @@ export function calculerResultats(
     };
   });
 
-  // Score de risque global (0-100) — analyse prédictive des anomalies
-  // Pondération : FDR négatif (30), trésorerie négative (25), CAF/IAF négative (20),
-  //               taux d'exécution hors norme (15), résultat déficitaire (10)
+  // Score de risque global (0-100)
   let scoreRisque = 0;
   if (r.fdrBas < 0) scoreRisque += 30;
   else if (r.joursAutonomie < 30) scoreRisque += 15;
@@ -234,7 +261,6 @@ export function calculerResultats(
   if (r.resultatBudgetaire < 0) scoreRisque += 10;
   scoreRisque = Math.min(scoreRisque, 100);
 
-  // Niveau de risque textuel (M9-6 §IV — Analyse de la santé financière)
   const niveauRisque: 'faible' | 'modéré' | 'élevé' | 'critique' =
     scoreRisque <= 15 ? 'faible' :
     scoreRisque <= 40 ? 'modéré' :
