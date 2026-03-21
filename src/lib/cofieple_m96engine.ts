@@ -145,8 +145,29 @@ export function calculerResultatsM96(
   const varBfrSoustractive = varFdrBas - (solDbtCl5 - solCrdCl5 - antDbtCl5 + antCrdCl5);
 
   // ── Trésorerie ─────────────────────────────────────────────────────
-  const tresorerie = solDbtCl5 - solCrdCl5;
-  const varTresorerieComptable = tresorerie - (antDbtCl5 - antCrdCl5);
+  // Budget Principal : TN = solde net classe 5 (C/515100 = dépôt au Trésor)
+  // Budget Annexe : TN = C/185000 solde débiteur (trésorerie virtuelle via BP support)
+  //                 Pas de C/515100, le Trésor est porté par le budget principal
+  let tresorerie: number;
+  if (isAnnexe) {
+    // Pour un budget annexe : trésorerie = C/185000 solde débiteur
+    const solDbt185 = sumBal(bal, c => c.startsWith('185'), 'solDbt');
+    const solCrd185fromCl5 = sumBal(bal, c => c.startsWith('185'), 'solCrd');
+    tresorerie = solDbt185 - solCrd185fromCl5;
+  } else {
+    tresorerie = solDbtCl5 - solCrdCl5;
+  }
+  const tresorerieClassique = solDbtCl5 - solCrdCl5; // toujours calculée pour vérification
+  const antTresoClassique = antDbtCl5 - antCrdCl5;
+  let tresorerieAnt: number;
+  if (isAnnexe) {
+    const antDbt185 = sumBal(bal, c => c.startsWith('185'), 'antDbt');
+    const antCrd185val = sumBal(bal, c => c.startsWith('185'), 'antCrd');
+    tresorerieAnt = antDbt185 - antCrd185val;
+  } else {
+    tresorerieAnt = antTresoClassique;
+  }
+  const varTresorerieComptable = tresorerie - tresorerieAnt;
   const varTresorerieTableauFinancement = varFdrBas - varBfrSynthetique;
   const fluxNetsTresorerie = varFdrCaf - varBfrSynthetique;
   const structurationTresorerie = bfr + tresorerie;
