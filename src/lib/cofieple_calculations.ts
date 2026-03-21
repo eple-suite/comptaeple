@@ -6,7 +6,7 @@
 
 import type { LigneSDE, LigneSDR, LigneBalance } from './cofieple_types';
 import { calculerResultatsM96, buildChecklist, analyserBalance as analyserBalanceEngine, calculerBudgetAnnexe } from './cofieple_m96engine';
-import { fmtEur, fmtPct, parseSDE, parseSDR, parseBalance } from './cofieple_csvParser';
+import { fmtEur, fmtPct, parseSDE, parseSDR, parseBalance, detectBudgetType } from './cofieple_csvParser';
 import type {
   TypeBudget, ResultatsUI, CheckItem, AnomalieBalance,
   ServiceDataUI, IndicateursBA,
