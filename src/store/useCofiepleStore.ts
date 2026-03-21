@@ -106,6 +106,7 @@ export const useCofiepleStore = create<Store>()(
       uaiLoading: false,
       uaiError: null,
       analysisRunning: false,
+      budgetProfiles: loadProfiles(),
 
       setEtablissement: (etab) =>
         set(state => { Object.assign(state.etablissement, etab); }),
