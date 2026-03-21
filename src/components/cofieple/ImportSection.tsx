@@ -3,6 +3,7 @@
 // Formats attendus : SDE, SDR, Balance (IMPORT BAL)
 // Conformité : M9-6 2026 — Extraction Op@le standard
 // Verrou de sécurité : concordance UAI/Op@le fichier ↔ établissement
+// Détection automatique du type de budget (principal/annexe)
 // ═══════════════════════════════════════════════════════════════
 
 import { useRef, useState } from 'react';
@@ -13,14 +14,16 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import { Info, Upload, Play, Loader2, CheckCircle2, XCircle, RefreshCw, ShieldAlert, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Info, Upload, Play, Loader2, CheckCircle2, XCircle, RefreshCw, ShieldAlert, ShieldCheck, AlertTriangle, Fingerprint } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { useEstablishment } from '@/contexts/EstablishmentContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { parserSDE, parserSDR, parserBalance } from '@/lib/cofieple_calculations';
 import { buildRowsFromSheetMatrix, findColumnIndex, normalizeColumnName } from '@/lib/opaleImportUtils';
+import { detectBudgetType, type BudgetTypeDetection } from '@/lib/cofieple_csvParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
+import { toast } from 'sonner';
 
 interface FileSlot {
   key: string; label: string; sublabel: string;
