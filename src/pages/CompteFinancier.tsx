@@ -92,6 +92,7 @@ const CompteFinancier = () => {
     { id: 'indicateurs', label: 'Indicateurs', icon: <PenTool className="h-4 w-4" /> },
     { id: 'analyse_ia', label: 'Analyse IA', icon: <Bot className="h-4 w-4" />, requiresData: true },
     { id: 'budget_annexe', label: 'BA', icon: <Building2 className="h-4 w-4" />, badge: hasBA ? 'BA' : undefined, badgeType: 'info' },
+    { id: 'liaisons_185', label: 'C/185', icon: <Link2 className="h-4 w-4" />, requiresData: true },
     { id: 'annexe', label: 'Annexe', icon: <BookOpen className="h-4 w-4" />, requiresData: true },
     { id: 'diaporama', label: 'Diaporama', icon: <Monitor className="h-4 w-4" />, requiresData: true },
   ];
