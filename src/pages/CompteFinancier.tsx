@@ -121,6 +121,7 @@ const CompteFinancier = () => {
       case 'indicateurs': return <IndicateursHorsComptables />;
       case 'analyse_ia': return <AnalyseIASection />;
       case 'budget_annexe': return <BudgetAnnexeSection />;
+      case 'liaisons_185': return <LiaisonsInterBudgets />;
       case 'rapport_ordo': return <RapportOrdoSection />;
       case 'rapport_ac': return <RapportACSection />;
       case 'annexe': return <AnnexeComptableSection />;
