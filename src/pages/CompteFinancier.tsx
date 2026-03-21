@@ -7,6 +7,7 @@
 
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
 import { AccueilSection } from '@/components/cofieple/AccueilSection';
 import { ImportSection } from '@/components/cofieple/ImportSection';
 import { CheckListSection } from '@/components/cofieple/CheckListSection';
@@ -23,11 +24,13 @@ import { IndicateursHorsComptables } from '@/components/cofieple/IndicateursHors
 import { PluriannuelSection } from '@/components/cofieple/PluriannuelSection';
 import { AnnexeComptableSection } from '@/components/cofieple/AnnexeComptableSection';
 import { ImportHistorySection } from '@/components/cofieple/ImportHistorySection';
+import { detectBudgetType } from '@/lib/cofieple_csvParser';
+import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
   History, PenTool, BookOpen, ScrollText, AlertTriangle, Bot,
-  Eye, Gauge
+  Eye, Gauge, FolderOpen, Radio
 } from 'lucide-react';
 
 interface NavItem {
