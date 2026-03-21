@@ -87,6 +87,18 @@ const POINTS: PointBloquant[] = [
       return { detecte: ecart >= 0.02, detail: detailLines.join('\n') };
     },
   },
+  {
+    code: 'PB-06', titre: 'C/185 incohérent avec TN calculée (budget annexe)', niveau: 'PB',
+    refM96: 'M9-6 §2.1.2.3.2', prescription: 'Le solde débiteur du C/185 d\'un budget annexe doit correspondre à FDR − BFR. Un écart significatif indique une incohérence dans la balance de l\'annexe.',
+    calculer: (R: any, bal: any[]) => {
+      const has515 = bal.some((b: any) => b.compte?.startsWith('515'));
+      if (has515) return { detecte: false, detail: 'Budget principal détecté (C/515100 présent) — non applicable' };
+      const solde185 = bal.filter((b: any) => b.compte?.startsWith('185')).reduce((s: number, b: any) => s + ((b.solDbt || 0) - (b.solCrd || 0)), 0);
+      const tnAttendue = (R.fdrComptable || 0) - (R.bfr || 0);
+      const ecart = Math.abs(solde185 - tnAttendue);
+      return { detecte: ecart > 100, detail: `C/185 débiteur = ${formatEur(solde185)}, FDR − BFR = ${formatEur(tnAttendue)}, Écart = ${formatEur(ecart)}` };
+    },
+  },
   // 🟠 ATTENTION
   {
     code: 'PA-01', titre: 'FDR négatif', niveau: 'PA',
