@@ -249,16 +249,32 @@ export function PointsBloquantsSection() {
                       <Badge variant="outline" className="text-[10px] font-mono">{p.code}</Badge>
                       <span className="text-sm font-bold">{p.titre}</span>
                     </div>
-                    {p.result.detecte && <div className="text-xs text-destructive font-mono mb-1">{p.result.detail}</div>}
+                    {p.result.detecte && (
+                      <div className="text-xs text-destructive font-mono mb-1 whitespace-pre-line">{p.result.detail}</div>
+                    )}
                     <div className="text-xs text-muted-foreground">{p.prescription}</div>
                     <div className="text-[10px] text-muted-foreground mt-0.5 italic">Réf. : {p.refM96}</div>
 
                     {p.result.detecte && (
-                      <div className="mt-2 grid grid-cols-[1fr_auto] gap-2">
-                        <Input value={corr.action} onChange={e => saveCorrection(p.code, 'action', e.target.value)}
-                          placeholder="Action corrective prise…" className="text-xs h-7" />
-                        <Input type="date" value={corr.date} onChange={e => saveCorrection(p.code, 'date', e.target.value)}
-                          className="text-xs h-7 w-36" />
+                      <div className="mt-2 space-y-2">
+                        {p.code === 'PB-05' ? (
+                          <>
+                            <Textarea value={corr.action} onChange={e => saveCorrection(p.code, 'action', e.target.value)}
+                              placeholder="Explication de l'écart sur le compte 185 (persistée)…" className="text-xs min-h-[60px]" />
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Date de correction Op@le :</span>
+                              <Input type="date" value={corr.date} onChange={e => saveCorrection(p.code, 'date', e.target.value)}
+                                className="text-xs h-7 w-40" />
+                            </div>
+                          </>
+                        ) : (
+                          <div className="grid grid-cols-[1fr_auto] gap-2">
+                            <Input value={corr.action} onChange={e => saveCorrection(p.code, 'action', e.target.value)}
+                              placeholder="Action corrective prise…" className="text-xs h-7" />
+                            <Input type="date" value={corr.date} onChange={e => saveCorrection(p.code, 'date', e.target.value)}
+                              className="text-xs h-7 w-36" />
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
