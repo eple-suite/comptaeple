@@ -32,6 +32,30 @@ const ETAB_INITIAL: EtablissementUI = {
   dateArrete: '',
 };
 
+// ── Helpers BudgetProfile ────────────────────────────────────────────
+const PROFILES_KEY = 'cockpit_budget_profiles';
+
+function loadProfiles(): BudgetProfile[] {
+  try {
+    const raw = localStorage.getItem(PROFILES_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+}
+
+function saveProfiles(profiles: BudgetProfile[]) {
+  localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
+}
+
+function makeProfileId(): string {
+  return crypto.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+
+const EMPTY_FICHIERS = (): BudgetProfile['fichiers'] => ({
+  depensesN: null, depensesN1: null,
+  recettesN: null, recettesN1: null,
+  balanceN: null, balanceN1: null,
+});
+
 type Store = CofiepleState & {
   setEtablissement: (etab: Partial<EtablissementUI>) => void;
   addBudgetAnnexe: (config: BudgetConfig) => void;
@@ -50,6 +74,15 @@ type Store = CofiepleState & {
   lancerAnalyse: () => void;
   setAnalysisRunning: (v: boolean) => void;
   resetAll: () => void;
+  // ── Budget Profiles ─────────────────────────────────────────────
+  budgetProfiles: BudgetProfile[];
+  createBudgetProfile: (nom: string, type: TypeBudget, uai?: string, exercice?: string) => BudgetProfile;
+  updateBudgetProfile: (id: string, patch: Partial<Omit<BudgetProfile, 'id' | 'createdAt'>>) => void;
+  deleteBudgetProfile: (id: string) => void;
+  setBudgetProfileFichier: (profileId: string, fileKey: keyof BudgetProfile['fichiers'], data: ImportedFileData) => void;
+  setBudgetProfileCompte185: (profileId: string, solde: number) => void;
+  getBudgetProfile: (id: string) => BudgetProfile | undefined;
+  getBudgetProfilesByType: (type: TypeBudget) => BudgetProfile[];
 };
 
 export const useCofiepleStore = create<Store>()(
