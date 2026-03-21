@@ -25,6 +25,7 @@ import { PluriannuelSection } from '@/components/cofieple/PluriannuelSection';
 import { AnnexeComptableSection } from '@/components/cofieple/AnnexeComptableSection';
 import { ImportHistorySection } from '@/components/cofieple/ImportHistorySection';
 import { LiaisonsInterBudgets } from '@/components/cofieple/LiaisonsInterBudgets';
+import { IndicateursGreta } from '@/components/cofieple/IndicateursGreta';
 import { detectBudgetType } from '@/lib/cofieple_csvParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import {
