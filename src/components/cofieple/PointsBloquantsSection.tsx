@@ -234,6 +234,7 @@ export function PointsBloquantsSection() {
   const resultats = useCofiepleStore(s => s.resultats);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
   const balance = useCofiepleStore(s => s.balance);
+  const balance1 = useCofiepleStore(s => s.balance1);
   const checkItems = useCofiepleStore(s => s.checkItems);
   const R = resultats[activeBudget];
   const bal = balance[activeBudget] || [];
@@ -250,7 +251,7 @@ export function PointsBloquantsSection() {
     localStorage.setItem('cockpit_cf_points_bloquants', JSON.stringify(next));
   };
 
-  // Build extra data for PB-05 (cross-budget C/185 concordance)
+  // Build extra data for cross-budget checks
   const extraData = {
     balanceBP: balance.principal || [],
     balanceAnnexes: {
@@ -258,9 +259,13 @@ export function PointsBloquantsSection() {
       'CFA': balance.annexe_cfa || [],
       'Autre': balance.annexe_autre || [],
     },
+    balance1: balance1?.[activeBudget] || [],
   };
 
-  const evaluated = POINTS.map(p => ({ ...p, result: p.calculer(R, bal, checkItems, p.code === 'PB-05' ? extraData : undefined) }));
+  const evaluated = POINTS.map(p => ({
+    ...p,
+    result: p.calculer(R, bal, checkItems, ['PB-05', 'PV-08'].includes(p.code) ? extraData : undefined),
+  }));
   const pbList = evaluated.filter(p => p.niveau === 'PB');
   const paList = evaluated.filter(p => p.niveau === 'PA');
   const pvList = evaluated.filter(p => p.niveau === 'PV');
