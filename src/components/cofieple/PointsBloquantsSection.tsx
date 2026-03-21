@@ -150,6 +150,26 @@ const POINTS: PointBloquant[] = [
       return { detecte: def119 > 0.01, detail: `C/119 = ${formatEur(def119)}` };
     },
   },
+  {
+    code: 'PA-08', titre: 'Budget annexe déficitaire (résultat négatif)', niveau: 'PA',
+    refM96: 'M9-6 §2.1.2.3.2', prescription: 'Un déficit du budget annexe se reporte sur le budget principal support. Le CA doit en être informé.',
+    calculer: (R: any, bal: any[]) => {
+      const has515 = bal.some((b: any) => b.compte?.startsWith('515'));
+      if (has515) return { detecte: false, detail: 'Budget principal — non applicable' };
+      const resultat = R.resultatBudgetaire || 0;
+      return { detecte: resultat < -0.01, detail: `Résultat du budget annexe = ${formatEur(resultat)}` };
+    },
+  },
+  {
+    code: 'PA-09', titre: 'C/185 en solde CRÉDITEUR côté budget annexe', niveau: 'PA',
+    refM96: 'M9-6 §5.3.2', prescription: 'Situation anormale : l\'annexe serait créancier de son budget principal. À justifier impérativement.',
+    calculer: (_R: any, bal: any[]) => {
+      const has515 = bal.some((b: any) => b.compte?.startsWith('515'));
+      if (has515) return { detecte: false, detail: 'Budget principal — non applicable' };
+      const solde185 = bal.filter((b: any) => b.compte?.startsWith('185')).reduce((s: number, b: any) => s + ((b.solDbt || 0) - (b.solCrd || 0)), 0);
+      return { detecte: solde185 < -0.01, detail: `C/185 = ${formatEur(solde185)} (créditeur = anormal pour un BA)` };
+    },
+  },
   // 🟡 VIGILANCE
   {
     code: 'PV-01', titre: 'Forte variation FDR vs N-1 (>25%)', niveau: 'PV',
