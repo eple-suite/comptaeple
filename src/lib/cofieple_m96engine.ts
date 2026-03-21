@@ -8,7 +8,8 @@
 import type {
   LigneSDE, LigneSDR, LigneBalance, ResultatsM96,
   ServiceData, VerificationM96, CompteBalance,
-  SensNormal, StatutVerification, ResultatsBudgetAnnexe, AnomalieBA
+  SensNormal, StatutVerification, ResultatsBudgetAnnexe, AnomalieBA,
+  DomaineData, OperationsOrdre,
 } from './cofieple_types';
 
 const EPS = 0.02;
@@ -282,6 +283,106 @@ export function calculerResultatsM96(
   const creancesAnciennes = sumBal(bal, c => c.startsWith('416'), 'solDbt');
   const fdrMobilisable = fdrComptable - stocks - creancesAnciennes;
 
+  // ── Domaines D1-D9 (exécution budgétaire par domaine) ───────────
+  const DOMAINE_LABELS: Record<string, string> = {
+    '0': 'D0 — Activités pédagogiques',
+    '1': 'D1 — Activités pédagogiques',
+    '2': 'D2 — Vie de l\'élève',
+    '3': 'D3 — Viabilisation',
+    '4': 'D4 — Entretien',
+    '5': 'D5 — Restauration / Hébergement',
+    '6': 'D6 — Administration générale',
+    '7': 'D7 — Opérations en capital',
+    '8': 'D8 — Opérations spécifiques',
+    '9': 'D9 — Opérations pour compte de tiers',
+  };
+  const domaines: Record<string, DomaineData> = {};
+  const buildDomKey = (d: string) => (d || '').charAt(0) || '0';
+
+  sde.forEach(r => {
+    const dk = buildDomKey(r.domaine);
+    if (!domaines[dk]) domaines[dk] = {
+      code: dk, libelle: DOMAINE_LABELS[dk] || `D${dk}`,
+      chargesPrev: 0, chargesReel: 0, reliquats: 0, tauxExecCharges: 0,
+      produitsPrev: 0, produitsReel: 0, plusValues: 0, tauxExecProduits: 0, solde: 0,
+      chargesReelN1: 0, produitsReelN1: 0,
+      variationCharges: 0, variationProduits: 0, pctVariationCharges: 0, pctVariationProduits: 0,
+    };
+    domaines[dk].chargesPrev += r.budget;
+    domaines[dk].chargesReel += r.realise;
+  });
+  sdr.forEach(r => {
+    const dk = buildDomKey(r.domaine);
+    if (!domaines[dk]) domaines[dk] = {
+      code: dk, libelle: DOMAINE_LABELS[dk] || `D${dk}`,
+      chargesPrev: 0, chargesReel: 0, reliquats: 0, tauxExecCharges: 0,
+      produitsPrev: 0, produitsReel: 0, plusValues: 0, tauxExecProduits: 0, solde: 0,
+      chargesReelN1: 0, produitsReelN1: 0,
+      variationCharges: 0, variationProduits: 0, pctVariationCharges: 0, pctVariationProduits: 0,
+    };
+    domaines[dk].produitsPrev += r.budget;
+    domaines[dk].produitsReel += r.realise;
+  });
+  Object.values(domaines).forEach(d => {
+    d.reliquats = d.chargesPrev - d.chargesReel;
+    d.tauxExecCharges = d.chargesPrev > 0 ? d.chargesReel / d.chargesPrev : 0;
+    d.plusValues = d.produitsReel - d.produitsPrev;
+    d.tauxExecProduits = d.produitsPrev > 0 ? d.produitsReel / d.produitsPrev : 0;
+    d.solde = d.produitsReel - d.chargesReel;
+    d.variationCharges = d.chargesReel - d.chargesReelN1;
+    d.pctVariationCharges = d.chargesReelN1 > 0 ? (d.variationCharges / d.chargesReelN1) * 100 : 0;
+    d.variationProduits = d.produitsReel - d.produitsReelN1;
+    d.pctVariationProduits = d.produitsReelN1 > 0 ? (d.variationProduits / d.produitsReelN1) * 100 : 0;
+  });
+
+  // ── Opérations d'ordre ────────────────────────────────────────────
+  const dotationsAmort = dbt68 - crd68;
+  const reprisesAmort = crd78 - dbt78;
+  const vncCessions = dbt675 - crd675;
+  const produitsCessions = (crd775 - dbt775) + (crd776 - dbt776) + (crd777 - dbt777);
+  const neutralisationSubInv = sumBal(bal, c => c.startsWith('139'), 'dbt') - sumBal(bal, c => c.startsWith('139'), 'crd');
+  const totalChargesOO = dotationsAmort + vncCessions;
+  const totalProduitsOO = reprisesAmort + produitsCessions + neutralisationSubInv;
+  const operationsOrdre: OperationsOrdre = {
+    dotationsAmort, reprisesAmort, vncCessions, produitsCessions,
+    neutralisationSubInv, totalChargesOO, totalProduitsOO,
+    soldeOO: totalProduitsOO - totalChargesOO,
+  };
+
+  // ── DGP / DGR (Délai global de paiement / recouvrement) ──────────
+  const dgpJours = totalChargesSde > 0 ? (dettesFournisseurs / totalChargesSde) * 365 : 0;
+  const dgrJours = totalProduitsSdr > 0 ? (totalCreancesCl4 / totalProduitsSdr) * 365 : 0;
+
+  // ── 12 Ratios M9-6 ────────────────────────────────────────────────
+  const actifCirculant = solDbtCl3 + solDbtCl4only + solDbtCl5;
+  const passifCirculant = solCrdCl4 + solCrdCl5;
+  const ratioLiquiditeGenerale = passifCirculant > 0 ? actifCirculant / passifCirculant : 0;
+  const ratioLiquiditeReduite = passifCirculant > 0 ? (solDbtCl4only + solDbtCl5) / passifCirculant : 0;
+  const ratioLiquiditeImmediate = passifCirculant > 0 ? solDbtCl5 / passifCirculant : 0;
+  const ratioAutonomieFinanciere = totalProduitsSdr > 0 ? ressourcesPropres / totalProduitsSdr : 0;
+  const capitauxPropres = sumBal(bal, c => ['10','11','12'].some(p => c.startsWith(p)), 'solCrd')
+    - sumBal(bal, c => ['10','11','12'].some(p => c.startsWith(p)), 'solDbt');
+  const totalPassif = capitauxPropres + totalDettes + sumBal(bal, c => c.startsWith('15'), 'solCrd');
+  const ratioSolvabilite = totalPassif > 0 ? capitauxPropres / totalPassif : 0;
+  const totalEndettement = totalDettes + sumBal(bal, c => c.startsWith('16'), 'solCrd');
+  const ratioEndettement = capitauxPropres > 0 ? totalEndettement / capitauxPropres : 0;
+  const chargesPersonnel = sde.filter(r => r.compte.startsWith('64')).reduce((s, r) => s + r.realise, 0);
+  const ratioChargesPersonnel = totalChargesSde > 0 ? chargesPersonnel / totalChargesSde : 0;
+  const investissementsRealises = sde.filter(r => /^(20|21|23)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const ratioInvestissement = totalChargesSde > 0 ? investissementsRealises / totalChargesSde : 0;
+  const ratioRecettesPropres = totalProduitsSdr > 0 ? recettesAutogenerees / totalProduitsSdr : 0;
+  const ratioCouvertureCharges = totalChargesSde > 0 ? fdrComptable / totalChargesSde : 0;
+
+  // ── N-1 placeholders (populated from sde1/sdr1/bal1 in calculerResultats) ──
+  const totalChargesSdeN1 = 0;
+  const totalProduitsSdrN1 = 0;
+  const resultatBudgetaireN1 = 0;
+  const fdrComptableN1 = fdrBasBE;
+  const bfrN1 = bfrBE;
+  const tresorerieN1 = antDbtCl5 - antCrdCl5;
+  const cafBudgetaireN1 = 0;
+  const reservesN1Solde = reservesN1;
+
   return {
     resultatBudgetaire, resultatComptable, excedent, deficit,
     cafBudgetaire, cafComptable,
@@ -306,7 +407,6 @@ export function calculerResultatsM96(
       ecartFrngVsPrelevements,
       coherent: coherentPrelevements,
     },
-    // REPROFI indicators
     joursFdr, joursTresorerie,
     fdrPartEncaissee, fdrPartNonEncaissee, fdrPctEncaissee, fdrPctNonEncaissee,
     tmcap, tmnr,
@@ -317,15 +417,18 @@ export function calculerResultatsM96(
     patrimoineOriginesPctFP, patrimoineOriginesPctSub,
     variationPatrimoine,
     tresoComposition: {
-      autonomieFinanciere,
-      depotsCautions,
-      reglementsEnAttente,
-      avancesRecues,
-      reliquatsSubventions,
-      tresorerieSpecifique,
+      autonomieFinanciere, depotsCautions, reglementsEnAttente,
+      avancesRecues, reliquatsSubventions, tresorerieSpecifique,
     },
-    fdrMobilisable,
-    resultatN1,
+    fdrMobilisable, resultatN1,
+    // New fields
+    domaines, operationsOrdre,
+    dgpJours, dgrJours,
+    ratioLiquiditeGenerale, ratioLiquiditeReduite, ratioLiquiditeImmediate,
+    ratioAutonomieFinanciere, ratioSolvabilite, ratioEndettement,
+    ratioChargesPersonnel, ratioInvestissement, ratioRecettesPropres, ratioCouvertureCharges,
+    totalChargesSdeN1, totalProduitsSdrN1, resultatBudgetaireN1,
+    fdrComptableN1, bfrN1, tresorerieN1, cafBudgetaireN1, reservesN1Solde,
   };
 }
 

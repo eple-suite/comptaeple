@@ -79,6 +79,28 @@ export interface PrelevementsReserves {
   coherent: boolean;                 // true si écart < seuil
 }
 
+export interface DomaineData {
+  code: string; libelle: string;
+  chargesPrev: number; chargesReel: number; reliquats: number; tauxExecCharges: number;
+  produitsPrev: number; produitsReel: number; plusValues: number; tauxExecProduits: number;
+  solde: number;
+  // N-1
+  chargesReelN1: number; produitsReelN1: number;
+  variationCharges: number; variationProduits: number;
+  pctVariationCharges: number; pctVariationProduits: number;
+}
+
+export interface OperationsOrdre {
+  dotationsAmort: number;       // 68 → charges non décaissables
+  reprisesAmort: number;        // 78 → produits non encaissables
+  vncCessions: number;          // 675 → VNC cessions
+  produitsCessions: number;     // 775/776/777 → produits de cessions
+  neutralisationSubInv: number; // 139 → neutralisation subventions
+  totalChargesOO: number;
+  totalProduitsOO: number;
+  soldeOO: number;
+}
+
 export interface ResultatsM96 {
   resultatBudgetaire: number; resultatComptable: number;
   excedent: number; deficit: number;
@@ -105,14 +127,14 @@ export interface ResultatsM96 {
   joursAutonomie: number; ratioFdrBfr: number;
   prelevementsReserves: PrelevementsReserves;
   // REPROFI indicators
-  joursFdr: number;                    // FDR / (charges expl / 365)
-  joursTresorerie: number;             // Trésorerie / (charges expl / 365)
-  fdrPartEncaissee: number;            // Trésorerie libre dans le FDR
-  fdrPartNonEncaissee: number;         // Créances dans le FDR
-  fdrPctEncaissee: number;             // % encaissée
-  fdrPctNonEncaissee: number;          // % non encaissée
-  tmcap: number;                       // Taux moyen charges à payer (dettes fournisseurs / charges)
-  tmnr: number;                        // Taux moyen non-recouvrement (créances impayées / recettes)
+  joursFdr: number;
+  joursTresorerie: number;
+  fdrPartEncaissee: number;
+  fdrPartNonEncaissee: number;
+  fdrPctEncaissee: number;
+  fdrPctNonEncaissee: number;
+  tmcap: number;
+  tmnr: number;
   creancesEtat: number;
   creancesCollectivite: number;
   creancesFamilles: number;
@@ -130,15 +152,42 @@ export interface ResultatsM96 {
   patrimoineOriginesPctSub: number;
   variationPatrimoine: number;
   tresoComposition: {
-    autonomieFinanciere: number;      // Trésorerie libre
-    depotsCautions: number;           // Compte 165/275
-    reglementsEnAttente: number;      // Comptes 511/5117
-    avancesRecues: number;            // Avances familles/tiers
-    reliquatsSubventions: number;     // Reliquats sub non consommées
-    tresorerieSpecifique: number;     // Trésorerie fléchée
+    autonomieFinanciere: number;
+    depotsCautions: number;
+    reglementsEnAttente: number;
+    avancesRecues: number;
+    reliquatsSubventions: number;
+    tresorerieSpecifique: number;
   };
-  fdrMobilisable: number;             // FDR - stocks - créances anciennes - 416
-  resultatN1: number;                 // Résultat N-1 (comptes 120/129)
+  fdrMobilisable: number;
+  resultatN1: number;
+  // Domaines D1-D9
+  domaines: Record<string, DomaineData>;
+  // Opérations d'ordre
+  operationsOrdre: OperationsOrdre;
+  // DGP / DGR
+  dgpJours: number;  // Délai global de paiement
+  dgrJours: number;  // Délai global de recouvrement
+  // Ratios M9-6
+  ratioLiquiditeGenerale: number;
+  ratioLiquiditeReduite: number;
+  ratioLiquiditeImmediate: number;
+  ratioAutonomieFinanciere: number;
+  ratioSolvabilite: number;
+  ratioEndettement: number;
+  ratioChargesPersonnel: number;
+  ratioInvestissement: number;
+  ratioRecettesPropres: number;
+  ratioCouvertureCharges: number;
+  // N-1 comparisons from imported data
+  totalChargesSdeN1: number;
+  totalProduitsSdrN1: number;
+  resultatBudgetaireN1: number;
+  fdrComptableN1: number;
+  bfrN1: number;
+  tresorerieN1: number;
+  cafBudgetaireN1: number;
+  reservesN1Solde: number;
 }
 
 export interface ResultatsBudgetAnnexe {
