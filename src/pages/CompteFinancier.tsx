@@ -25,13 +25,14 @@ import { PluriannuelSection } from '@/components/cofieple/PluriannuelSection';
 import { AnnexeComptableSection } from '@/components/cofieple/AnnexeComptableSection';
 import { ImportHistorySection } from '@/components/cofieple/ImportHistorySection';
 import { LiaisonsInterBudgets } from '@/components/cofieple/LiaisonsInterBudgets';
+import { IndicateursGreta } from '@/components/cofieple/IndicateursGreta';
 import { detectBudgetType } from '@/lib/cofieple_csvParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
   History, PenTool, BookOpen, ScrollText, AlertTriangle, Bot,
-  Eye, Gauge, FolderOpen, Radio, Link2
+  Eye, Gauge, FolderOpen, Radio, Link2, GraduationCap
 } from 'lucide-react';
 
 interface NavItem {
@@ -93,6 +94,7 @@ const CompteFinancier = () => {
     { id: 'analyse_ia', label: 'Analyse IA', icon: <Bot className="h-4 w-4" />, requiresData: true },
     { id: 'budget_annexe', label: 'BA', icon: <Building2 className="h-4 w-4" />, badge: hasBA ? 'BA' : undefined, badgeType: 'info' },
     { id: 'liaisons_185', label: 'C/185', icon: <Link2 className="h-4 w-4" />, requiresData: true },
+    ...(budgets.some(b => b.type === 'annexe_greta') ? [{ id: 'greta', label: 'GRETA', icon: <GraduationCap className="h-4 w-4" />, requiresData: false }] : []),
     { id: 'annexe', label: 'Annexe', icon: <BookOpen className="h-4 w-4" />, requiresData: true },
     { id: 'diaporama', label: 'Diaporama', icon: <Monitor className="h-4 w-4" />, requiresData: true },
   ];
@@ -122,6 +124,7 @@ const CompteFinancier = () => {
       case 'analyse_ia': return <AnalyseIASection />;
       case 'budget_annexe': return <BudgetAnnexeSection />;
       case 'liaisons_185': return <LiaisonsInterBudgets />;
+      case 'greta': return <IndicateursGreta />;
       case 'rapport_ordo': return <RapportOrdoSection />;
       case 'rapport_ac': return <RapportACSection />;
       case 'annexe': return <AnnexeComptableSection />;
