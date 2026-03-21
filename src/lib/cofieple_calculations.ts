@@ -209,7 +209,9 @@ export function calculerResultats(
   sde1: LigneSDE[], sdr1: LigneSDR[], _bal1: LigneBalance[],
   _typeBudget: TypeBudget
 ): ResultatsUI {
-  const r = calculerResultatsM96(sde, sdr, bal);
+  // Detect if this is an annexe budget based on balance data
+  const isAnnexe = _typeBudget !== 'principal' || (bal.length > 0 && detectBudgetType(bal).isAnnexe);
+  const r = calculerResultatsM96(sde, sdr, bal, { isAnnexe });
 
   // ── Populate N-1 from imported SDE-1/SDR-1 ──────────────────────
   const totalChargesSdeN1 = sde1.reduce((s, row) => s + row.realise, 0);
