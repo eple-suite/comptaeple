@@ -22,13 +22,11 @@ interface LignePrevisionnel {
 }
 
 const mockPrev: LignePrevisionnel[] = [
-  { chapitre: "A1", libelle: "Activités pédagogiques", realiseN2: 42000, realiseN1: 43500, budgetN: 45000, estimationN: 44000, previsionN1: 45500, tendance: 3.4 },
-  { chapitre: "A2", libelle: "Viabilisation", realiseN2: 78000, realiseN1: 82000, budgetN: 85000, estimationN: 84000, previsionN1: 87000, tendance: 3.6 },
-  { chapitre: "B", libelle: "Bourses nationales", realiseN2: 118000, realiseN1: 119000, budgetN: 120000, estimationN: 118500, previsionN1: 120000, tendance: 0.0 },
-  { chapitre: "C", libelle: "Restauration / Hébergement", realiseN2: 260000, realiseN1: 272000, budgetN: 280000, estimationN: 275000, previsionN1: 285000, tendance: 1.8 },
-  { chapitre: "G", libelle: "Personnels rémunérés", realiseN2: 48000, realiseN1: 52000, budgetN: 55000, estimationN: 53000, previsionN1: 56000, tendance: 1.8 },
-  { chapitre: "N", libelle: "SRH", realiseN2: 12000, realiseN1: 13500, budgetN: 15000, estimationN: 14000, previsionN1: 15500, tendance: 3.3 },
-  { chapitre: "R", libelle: "Voyages et sorties", realiseN2: 28000, realiseN1: 32000, budgetN: 35000, estimationN: 33000, previsionN1: 34000, tendance: -2.9 },
+  { chapitre: "AP", libelle: "Activités Pédagogiques", realiseN2: 42000, realiseN1: 43500, budgetN: 45000, estimationN: 44000, previsionN1: 45500, tendance: 3.4 },
+  { chapitre: "VE", libelle: "Vie de l'Élève", realiseN2: 158000, realiseN1: 163000, budgetN: 168000, estimationN: 165000, previsionN1: 170000, tendance: 1.2 },
+  { chapitre: "ALO", libelle: "Administration et Logistique", realiseN2: 148000, realiseN1: 155000, budgetN: 162000, estimationN: 158000, previsionN1: 165000, tendance: 1.9 },
+  { chapitre: "SRH", libelle: "Restauration & Hébergement", realiseN2: 260000, realiseN1: 272000, budgetN: 280000, estimationN: 275000, previsionN1: 285000, tendance: 1.8 },
+  { chapitre: "OPC", libelle: "Opérations en Capital", realiseN2: 28000, realiseN1: 32000, budgetN: 35000, estimationN: 33000, previsionN1: 34000, tendance: -2.9 },
 ];
 
 const year = new Date().getFullYear();
