@@ -660,7 +660,7 @@ const SATD = () => {
         existingCount={satds.length}
       />
       <SatdCalculateur open={openCalc} onOpenChange={setOpenCalc} />
-      <SatdAssistant open={openAssistant} onOpenChange={setOpenAssistant} context={assistantCtx} />
+      <SatdAssistant open={openAssistant} onOpenChange={setOpenAssistant} context={assistantCtx} selectedSatd={selectedSatd} />
     </div>
   );
 };
