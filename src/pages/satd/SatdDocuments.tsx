@@ -323,6 +323,10 @@ export default function SatdDocuments({ satds, tiers }: Props) {
                     <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => genererAvisAvantPoursuites(s)}>
                       <Printer className="h-3 w-3 mr-1" /> Avis avant poursuites
                     </Button>
+                    {/* Demande autorisation ordonnateur */}
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => genererDemandeAutorisation(s)}>
+                      <FileText className="h-3 w-3 mr-1" /> Demande autorisation
+                    </Button>
                     {/* 3 documents SATD */}
                     {(s.statut !== "relance" && s.statut !== "avis_poursuites") && (
                       <>
@@ -341,6 +345,12 @@ export default function SatdDocuments({ satds, tiers }: Props) {
                     <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => genererDemandeFicoba(s)}>
                       <FileText className="h-3 w-3 mr-1" /> FICOBA
                     </Button>
+                    {/* Mainlevée */}
+                    {(s.statut === "termine" || s.statut === "suspendu") && (
+                      <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => genererMainlevee(s)}>
+                        <FileText className="h-3 w-3 mr-1" /> Mainlevée
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
