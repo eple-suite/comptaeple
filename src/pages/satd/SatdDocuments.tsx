@@ -167,6 +167,8 @@ export default function SatdDocuments({ satds, tiers }: Props) {
     doc.text("à tiers détenteur (SATD) conformément aux articles L. 262-1 et suivants du", 20, 153);
     doc.text("Livre des procédures fiscales.", 20, 159);
     doc.text("L'Agent Comptable", 130, 190);
+    doc.setFontSize(7);
+    doc.text("Art. L. 1617-5 al. 4 du CGCT — Envoi obligatoire avant toute poursuite", 20, 270);
 
     doc.save(`avis_avant_poursuites_${satd.reference}.pdf`);
   };
@@ -185,11 +187,73 @@ export default function SatdDocuments({ satds, tiers }: Props) {
     doc.text(`Adresse : ${satd.debiteurAdresse}, ${satd.debiteurCP} ${satd.debiteurVille}`, 20, 90);
     doc.text(`Montant de la créance : ${satd.montantGlobal.toFixed(2)} €`, 20, 97);
     doc.text("Madame, Monsieur le Directeur,", 20, 112);
-    doc.text("Dans le cadre d'une procédure de recouvrement forcé, je sollicite l'accès au", 20, 122);
-    doc.text("fichier FICOBA afin d'identifier les comptes bancaires du débiteur susmentionné.", 20, 128);
-    doc.text("L'Agent Comptable", 130, 170);
+    doc.text("En application de l'article L. 151 A du Livre des procédures fiscales, je sollicite", 20, 122);
+    doc.text("la communication des informations relatives aux comptes bancaires détenus par le", 20, 128);
+    doc.text("débiteur susmentionné, dans le cadre d'une procédure de recouvrement forcé.", 20, 134);
+    doc.text("Cette demande est motivée par l'existence d'une créance certaine, liquide et exigible", 20, 144);
+    doc.text(`d'un montant de ${satd.montantGlobal.toFixed(2)} €, pour laquelle les voies amiables sont restées vaines.`, 20, 150);
+    doc.text("L'Agent Comptable", 130, 180);
+    doc.setFontSize(7);
+    doc.text("Art. L. 151 A du LPF — Droit de communication du comptable public", 20, 270);
 
     doc.save(`demande_ficoba_${satd.reference}.pdf`);
+  };
+
+  const genererDemandeAutorisation = (satd: Satd) => {
+    const doc = new jsPDF();
+    doc.setFontSize(9);
+    doc.text("L'Agent Comptable", 20, 15);
+    doc.text(satd.organisme, 20, 20);
+    doc.text("à", 20, 32);
+    doc.text("Monsieur/Madame le/la Chef d'Établissement", 20, 38);
+    doc.text(`${satd.organisme}`, 20, 43);
+    doc.text(`Fait le ${new Date().toLocaleDateString("fr-FR")}`, 120, 55);
+    doc.setFontSize(12);
+    doc.text("DEMANDE D'AUTORISATION DE POURSUITES", 20, 70);
+    doc.setFontSize(9);
+    doc.text(`Réf : ${satd.reference}`, 20, 78);
+    doc.text("Monsieur/Madame le/la Chef d'Établissement,", 20, 92);
+    doc.text("Conformément à l'article L. 1617-5 alinéa 2 du Code général des collectivités", 20, 100);
+    doc.text("territoriales, j'ai l'honneur de solliciter votre autorisation pour engager une", 20, 106);
+    doc.text("procédure de recouvrement forcé (SATD) à l'encontre de :", 20, 112);
+    doc.text(`Débiteur : ${satd.debiteur}`, 25, 124);
+    doc.text(`Montant : ${satd.montantGlobal.toFixed(2)} €`, 25, 131);
+    doc.text(`Motif : ${satd.motif}`, 25, 138);
+    doc.text("Les relances amiables et l'avis avant poursuites sont restés sans effet.", 20, 152);
+    doc.text("Je vous prie de bien vouloir m'accorder ou me refuser cette autorisation par", 20, 162);
+    doc.text("écrit. En cas de refus, celui-ci devra être motivé.", 20, 168);
+    doc.text("L'Agent Comptable", 20, 195);
+    doc.text("Signature : ____________________", 20, 203);
+    doc.text("VISA DE L'ORDONNATEUR", 120, 195);
+    doc.text("□ Autorisé    □ Refusé", 120, 203);
+    doc.text("Date : ____________________", 120, 211);
+    doc.text("Signature : ____________________", 120, 219);
+    doc.setFontSize(7);
+    doc.text("Art. L. 1617-5 al. 2 du CGCT — Autorisation préalable obligatoire", 20, 270);
+    doc.save(`demande_autorisation_${satd.reference}.pdf`);
+  };
+
+  const genererMainlevee = (satd: Satd) => {
+    const td = getTiers(satd, tiers);
+    const doc = new jsPDF();
+    doc.setFontSize(9);
+    doc.text(satd.organisme, 20, 15);
+    doc.text(td ? `${td.nom}` : "Tiers détenteur", 120, 40);
+    doc.text(td ? td.adresse : "", 120, 45);
+    doc.text(td ? `${td.codePostal} ${td.ville}` : "", 120, 50);
+    doc.text(`Fait le ${new Date().toLocaleDateString("fr-FR")}`, 120, 60);
+    doc.setFontSize(12);
+    doc.text("MAINLEVÉE DE SAISIE ADMINISTRATIVE", 20, 75);
+    doc.text("À TIERS DÉTENTEUR", 20, 82);
+    doc.setFontSize(9);
+    doc.text(`Réf : ${satd.reference}`, 20, 92);
+    doc.text("Madame, Monsieur,", 20, 105);
+    doc.text("Je vous informe que la saisie administrative à tiers détenteur notifiée le", 20, 113);
+    doc.text(`${new Date(satd.dateCreation).toLocaleDateString("fr-FR")} pour un montant de ${satd.montantGlobal.toFixed(2)} €`, 20, 119);
+    doc.text(`à l'encontre de ${satd.debiteur} est levée.`, 20, 125);
+    doc.text("Cette mainlevée prend effet à compter de la réception de la présente.", 20, 138);
+    doc.text("L'Agent Comptable", 130, 170);
+    doc.save(`mainlevee_${satd.reference}.pdf`);
   };
 
   const genererRegistreComplet = () => {
@@ -259,6 +323,10 @@ export default function SatdDocuments({ satds, tiers }: Props) {
                     <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => genererAvisAvantPoursuites(s)}>
                       <Printer className="h-3 w-3 mr-1" /> Avis avant poursuites
                     </Button>
+                    {/* Demande autorisation ordonnateur */}
+                    <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => genererDemandeAutorisation(s)}>
+                      <FileText className="h-3 w-3 mr-1" /> Demande autorisation
+                    </Button>
                     {/* 3 documents SATD */}
                     {(s.statut !== "relance" && s.statut !== "avis_poursuites") && (
                       <>
@@ -277,6 +345,12 @@ export default function SatdDocuments({ satds, tiers }: Props) {
                     <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => genererDemandeFicoba(s)}>
                       <FileText className="h-3 w-3 mr-1" /> FICOBA
                     </Button>
+                    {/* Mainlevée */}
+                    {(s.statut === "termine" || s.statut === "suspendu") && (
+                      <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => genererMainlevee(s)}>
+                        <FileText className="h-3 w-3 mr-1" /> Mainlevée
+                      </Button>
+                    )}
                   </div>
                 </div>
               );
