@@ -1632,3 +1632,21 @@ function IndicatorBadge({ icon, label, value }: { icon: React.ReactNode; label: 
     </div>
   );
 }
+
+function CommentaireBox({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <div className="mb-4">
+      <div className="flex items-center gap-1 mb-1">
+        <MessageSquare className="h-3 w-3 text-muted-foreground" />
+        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">{label}</span>
+      </div>
+      <Textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder || `Saisissez ici les faits caractéristiques de cette rubrique…`}
+        rows={2}
+        className="bg-muted/30 text-xs"
+      />
+    </div>
+  );
+}
