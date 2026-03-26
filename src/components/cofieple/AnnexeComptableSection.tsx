@@ -525,7 +525,7 @@ export function AnnexeComptableSection() {
     setExportingPdf(true);
     try {
       const auditLogs = await getAuditHistory(etab.uai, etab.exercice);
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       const pageW = doc.internal.pageSize.getWidth();
       const margin = 15;
       let y = 20;
@@ -638,7 +638,7 @@ export function AnnexeComptableSection() {
     if (!R) return;
     setExportingPdf(true);
     try {
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
       const pageW = doc.internal.pageSize.getWidth();
       const margin = 15;
       let y = 20;
