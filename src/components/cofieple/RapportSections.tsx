@@ -1,23 +1,28 @@
 // ═══════════════════════════════════════════════════════════════
 // COFIEPLE — Rapport Ordonnateur + Rapport Agent Comptable
 // Modèle REPROFI 25 pages — M9-6 2026, Décret 2012-1246
-// Version enrichie : domaines D1-D9, N/N-1, opérations d'ordre,
-// DGP/DGR, 12 ratios, composition FDR/BFR/Trésorerie
+// Version enrichie : saisie complémentaire AC, graphiques variés,
+// PDF officiel, pas de visa comptable supérieur
 // ═══════════════════════════════════════════════════════════════
 
-import { useState, useEffect } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { useState, useEffect, useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Bot, Printer, Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Bot, Printer, Loader2, Plus, Trash2, Download, MessageSquare, Scale, PieChart as PieChartIcon, BarChart3, ArrowRight } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
 import { supabase } from '@/integrations/supabase/client';
+import { generateRapportACPdf } from '@/lib/pdfRapportAC';
+import { toast } from 'sonner';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell, Legend,
+  PieChart, Pie,
 } from 'recharts';
 
 interface Indicators {
@@ -97,7 +102,6 @@ export function RapportOrdoSection() {
     setAiLoading(false);
   }
 
-  // Chart data for domain-level execution
   const domChartData = domainesList.map(d => ({
     name: `D${d.code}`,
     Dépenses: d.chargesReel,
@@ -119,7 +123,6 @@ export function RapportOrdoSection() {
 
       <Card className="max-w-4xl mx-auto print:shadow-none">
         <CardContent className="p-8">
-          {/* Header officiel */}
           <div className="flex justify-between items-start border-b-2 border-foreground pb-4 mb-5">
             <div>
               <h1 className="text-xl font-black tracking-tight">RAPPORT DE L'ORDONNATEUR</h1>
@@ -140,7 +143,6 @@ export function RapportOrdoSection() {
             Présenté par l'ordonnateur : <strong>{etab.ordonnateur || '—'}</strong> · Arrêté au : {dateArrete}
           </p>
 
-          {/* 1. Présentation de l'établissement */}
           <SectionTitre numero="1" title="Présentation de l'établissement" />
           {ind && ind.effectif_eleves > 0 && (
             <div className="mb-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -158,7 +160,6 @@ export function RapportOrdoSection() {
             placeholder="Cliquez sur 'Générer le texte IA' ou saisissez votre texte ici…" rows={4}
             className="mb-4 bg-muted/30 text-sm" />
 
-          {/* 2. Exécution budgétaire globale */}
           <SectionTitre numero="2" title={`Exécution budgétaire de l'exercice ${etab.exercice}`} />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <KPICard label="Crédits ouverts" value={formatEur(R.totalChargesPrev)} color="blue" icon="💸" sub="Budget voté + DBM" isText />
@@ -167,7 +168,6 @@ export function RapportOrdoSection() {
             <KPICard label="Recettes réalisées" value={formatEur(R.totalProduitsSdr)} color={R.totalProduitsSdr >= R.totalProduitsPrev ? 'green' : 'red'} icon="✅" sub={`Taux : ${(R.tauxExecProduits * 100).toFixed(1)} %`} isText />
           </div>
 
-          {/* N vs N-1 comparison */}
           {hasN1 && (
             <div className="overflow-x-auto mb-4">
               <table className="w-full text-xs border">
@@ -208,7 +208,6 @@ export function RapportOrdoSection() {
             <KPICard label="DGR" value={`${Math.round(R.dgrJours ?? 0)} jours`} color={(R.dgrJours ?? 0) > 60 ? 'red' : 'green'} icon="⏱️" sub="Délai global recouvrement" isText />
           </div>
 
-          {/* 3. Exécution par domaine D1-D9 */}
           {domainesList.length > 0 && (
             <>
               <SectionTitre numero="3" title={`Exécution par domaine — Exercice ${etab.exercice}`} />
@@ -279,7 +278,6 @@ export function RapportOrdoSection() {
                 </table>
               </div>
 
-              {/* Graphique dépenses/recettes par domaine */}
               {domChartData.length > 1 && (
                 <div className="mb-4">
                   <ResponsiveContainer width="100%" height={220}>
@@ -296,7 +294,6 @@ export function RapportOrdoSection() {
                 </div>
               )}
 
-              {/* Écarts significatifs (> 10%) */}
               {hasN1 && (() => {
                 const ecarts = domainesList.filter(d => Math.abs(d.pctVariationCharges) > 10 || Math.abs(d.pctVariationProduits) > 10);
                 if (ecarts.length === 0) return null;
@@ -326,7 +323,6 @@ export function RapportOrdoSection() {
             </>
           )}
 
-          {/* 4. Opérations d'ordre */}
           <SectionTitre numero="4" title="Opérations d'ordre" />
           <div className="overflow-x-auto mb-4">
             <table className="w-full text-xs border">
@@ -353,11 +349,9 @@ export function RapportOrdoSection() {
           </div>
           <div className="text-xs text-muted-foreground mb-4 bg-muted/10 rounded p-3">
             Les opérations d'ordre n'ont aucun impact sur la trésorerie. Elles correspondent aux dotations aux amortissements,
-            reprises sur provisions et neutralisations de subventions d'investissement. Le résultat comptable intègre ces opérations,
-            tandis que la CAF/IAF les exclut pour mesurer l'impact réel sur les fonds propres.
+            reprises sur provisions et neutralisations de subventions d'investissement.
           </div>
 
-          {/* 5. SRH */}
           {ind && ind.nb_repas_servis > 0 && (
             <>
               <SectionTitre numero="5" title="Service de restauration et d'hébergement (SRH)" />
@@ -369,7 +363,6 @@ export function RapportOrdoSection() {
             </>
           )}
 
-          {/* 6. Situation financière */}
           <SectionTitre numero="6" title="Situation financière et patrimoniale" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <KPICard label="FDR" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub={`${Math.round(R.joursFdr ?? 0)} jours`} isText />
@@ -378,7 +371,6 @@ export function RapportOrdoSection() {
             <KPICard label="Réserves" value={formatEur(R.reserves)} color="blue" icon="🏛️" sub="Compte 1068" isText />
           </div>
 
-          {/* N-1 financial comparison */}
           {(R.fdrComptableN1 ?? 0) !== 0 && (
             <div className="overflow-x-auto mb-4">
               <table className="w-full text-xs border">
@@ -404,7 +396,6 @@ export function RapportOrdoSection() {
             </div>
           )}
 
-          {/* 7. Points d'attention */}
           <SectionTitre numero="7" title="Points d'attention et perspectives" />
           <Textarea value={aiText3} onChange={e => setAiText3(e.target.value)}
             placeholder="Cliquez sur 'Générer le texte IA' ou saisissez votre texte ici…" rows={4}
@@ -416,7 +407,7 @@ export function RapportOrdoSection() {
             </div>
           )}
 
-          {/* Signatures */}
+          {/* Signatures — Ordonnateur + Secrétaire général */}
           <div className="flex justify-between mt-8 pt-5 border-t text-xs text-muted-foreground">
             <div>
               <strong className="block text-foreground">L'ordonnateur</strong>
@@ -436,9 +427,13 @@ export function RapportOrdoSection() {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// RAPPORT DE L'AGENT COMPTABLE — 25 sections REPROFI
-// M9-6 § V.2 — Décret 2012-1246 art. 195-199
+// RAPPORT DE L'AGENT COMPTABLE — Version enrichie
+// Saisie complémentaire, graphiques, PDF officiel
+// PAS de visa du comptable supérieur
 // ═══════════════════════════════════════════════════════════════
+
+interface Prelevement { objet: string; montant: number; dateCA: string; }
+
 export function RapportACSection() {
   const etab = useCofiepleStore(s => s.etablissement);
   const resultats = useCofiepleStore(s => s.resultats);
@@ -449,6 +444,14 @@ export function RapportACSection() {
   const [aiObs, setAiObs] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+
+  // ── Saisie complémentaire ──────────────────────────────────
+  const [prelevements, setPrelevements] = useState<Prelevement[]>([]);
+  const [explicationsResultat, setExplicationsResultat] = useState('');
+  const [commentaireFDR, setCommentaireFDR] = useState('');
+  const [commentaireTresorerie, setCommentaireTresorerie] = useState('');
+  const [commentaireCreances, setCommentaireCreances] = useState('');
+  const [commentaireGeneral, setCommentaireGeneral] = useState('');
 
   useEffect(() => {
     if (!etab.uai || !R) return;
@@ -468,7 +471,6 @@ export function RapportACSection() {
 
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'agent comptable (M9-6 § V.2)." />;
 
-  // Safe defaults for REPROFI properties
   const safe = {
     fdrPartEncaissee: R.fdrPartEncaissee ?? 0,
     fdrPartNonEncaissee: R.fdrPartNonEncaissee ?? 0,
@@ -520,6 +522,71 @@ export function RapportACSection() {
   const nbBloq = checkItems.filter(c => c.bloquant).length;
   const nbAnom = checkItems.filter(c => c.statut !== 'ok').length;
 
+  // ── Derived data ──────────────────────────────────────────
+  const totalPrelev = prelevements.reduce((s, p) => s + p.montant, 0);
+  const resultatHorsPrelev = R.resultatComptable + totalPrelev;
+
+  // ── Balance scale data (résultat) ─────────────────────────
+  const balanceData = [
+    { name: 'Dépenses', value: R.totalChargesSde, fill: 'hsl(0, 70%, 55%)' },
+    { name: 'Recettes', value: R.totalProduitsSdr, fill: 'hsl(160, 45%, 45%)' },
+  ];
+
+  // ── Pie data for trésorerie composition ───────────────────
+  const tresoData = useMemo(() => {
+    const tc = safe.tresoComposition;
+    return [
+      { name: 'Autonomie financière', value: Math.abs(tc.autonomieFinanciere), fill: 'hsl(215, 70%, 50%)' },
+      { name: 'Dépôts & cautions', value: tc.depotsCautions, fill: 'hsl(160, 45%, 45%)' },
+      { name: 'Règlements en attente', value: tc.reglementsEnAttente, fill: 'hsl(38, 92%, 50%)' },
+      { name: 'Reliquats subventions', value: tc.reliquatsSubventions, fill: 'hsl(280, 50%, 50%)' },
+    ].filter(d => d.value > 0);
+  }, [safe.tresoComposition]);
+
+  // ── FDR composition bar data ──────────────────────────────
+  const fdrComposData = [
+    { name: 'Encaissé', value: safe.fdrPartEncaissee, fill: 'hsl(160, 45%, 45%)' },
+    { name: 'Non encaissé', value: safe.fdrPartNonEncaissee, fill: 'hsl(38, 92%, 50%)' },
+  ];
+
+  // ── Evolution chart ───────────────────────────────────────
+  const hasN1Financial = safe.fdrComptableN1 !== 0 || safe.bfrN1 !== 0 || safe.tresorerieN1 !== 0;
+  const evolutionData = hasN1Financial ? [
+    { exercice: 'N-1', FDR: safe.fdrComptableN1, BFR: safe.bfrN1, Trésorerie: safe.tresorerieN1 },
+    { exercice: 'N', FDR: R.fdrComptable, BFR: R.bfr, Trésorerie: R.tresorerie },
+  ] : [];
+
+  // ── Smart analysis text ───────────────────────────────────
+  const smartAnalysis = useMemo(() => {
+    const parts: string[] = [];
+    // Résultat analysis
+    if (R.resultatComptable < 0 && totalPrelev > 0) {
+      parts.push(`📊 Le déficit de ${formatEur(R.resultatComptable)} s'explique principalement par ${prelevements.length} prélèvement(s) sur fonds de roulement (${formatEur(totalPrelev)}), autorisés par le CA. Sans ces prélèvements, le résultat aurait été ${resultatHorsPrelev >= 0 ? 'excédentaire' : 'déficitaire'} de ${formatEur(Math.abs(resultatHorsPrelev))}.`);
+    } else if (R.resultatComptable < 0) {
+      parts.push(`📊 Le résultat déficitaire (${formatEur(R.resultatComptable)}) devra être imputé sur les réserves. Après affectation, les réserves s'élèveraient à ${formatEur(R.reserves + R.resultatComptable)}.`);
+    }
+    // FDR analysis
+    if (safe.fdrPctEncaissee > 80) {
+      parts.push(`🏦 Le FDR est très largement encaissé (${safe.fdrPctEncaissee.toFixed(0)} %), signe d'une bonne autonomie financière.`);
+    } else if (safe.fdrPctEncaissee < 40) {
+      parts.push(`⚠️ La part encaissée du FDR est faible (${safe.fdrPctEncaissee.toFixed(0)} %). L'autonomie financière repose en grande partie sur des créances non encore recouvrées.`);
+    }
+    // Trésorerie
+    if (safe.joursTresorerie < 15) {
+      parts.push(`🔴 La trésorerie ne couvre que ${Math.round(safe.joursTresorerie)} jours de fonctionnement. Situation tendue.`);
+    } else if (safe.joursTresorerie > 90) {
+      parts.push(`💚 La trésorerie couvre ${Math.round(safe.joursTresorerie)} jours — marge confortable, possibilité de prélèvement.`);
+    }
+    // FDR mobilisable
+    const joursMobilisable = R.totalChargesSde > 0 ? Math.round(safe.fdrMobilisable / (R.totalChargesSde / 365)) : 0;
+    if (joursMobilisable < 30) {
+      parts.push(`⚠️ Le FDR mobilisable (${formatEur(safe.fdrMobilisable)}, ${joursMobilisable} jours) est inférieur au seuil recommandé de 30 jours.`);
+    }
+    return parts;
+  }, [R, safe, totalPrelev, prelevements, resultatHorsPrelev]);
+
+  const pct = (v: number, t: number) => t > 0 ? `${((v / t) * 100).toFixed(1)} %` : '—';
+
   async function genererIA() {
     setAiLoading(true);
     try {
@@ -554,27 +621,172 @@ export function RapportACSection() {
     setAiLoading(false);
   }
 
-  const pct = (v: number, t: number) => t > 0 ? `${((v / t) * 100).toFixed(1)} %` : '—';
+  function handleExportPdf() {
+    try {
+      generateRapportACPdf({
+        etab, R: { ...R, ...safe } as any,
+        saisieComplementaire: {
+          prelevements,
+          explicationsResultat,
+          commentaireFDR,
+          commentaireTresorerie,
+          commentaireCreances,
+          commentaireGeneral,
+        },
+        aiText: aiObs,
+        history,
+        nbAnom, nbBloq,
+      });
+      toast.success('Rapport PDF généré avec succès');
+    } catch (e) {
+      console.error(e);
+      toast.error('Erreur lors de la génération du PDF');
+    }
+  }
 
-  // Chart data for FDR/BFR/Trésorerie evolution from balance N-1 data
-  const hasN1Financial = safe.fdrComptableN1 !== 0 || safe.bfrN1 !== 0 || safe.tresorerieN1 !== 0;
-  const evolutionData = hasN1Financial ? [
-    { exercice: `N-1`, FDR: safe.fdrComptableN1, BFR: safe.bfrN1, Trésorerie: safe.tresorerieN1 },
-    { exercice: `N`, FDR: R.fdrComptable, BFR: R.bfr, Trésorerie: R.tresorerie },
-  ] : [];
+  function addPrelevement() {
+    setPrelevements([...prelevements, { objet: '', montant: 0, dateCA: '' }]);
+  }
+  function updatePrelevement(i: number, field: keyof Prelevement, value: string | number) {
+    const updated = [...prelevements];
+    (updated[i] as any)[field] = value;
+    setPrelevements(updated);
+  }
+  function removePrelevement(i: number) {
+    setPrelevements(prelevements.filter((_, idx) => idx !== i));
+  }
 
   return (
     <div className="space-y-4">
+      {/* Action bar */}
       <div className="flex gap-3 flex-wrap">
         <Button onClick={genererIA} disabled={aiLoading}>
           {aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bot className="h-4 w-4 mr-2" />}
           {aiLoading ? 'Génération IA…' : 'Générer les observations IA'}
         </Button>
-        <Button variant="outline" onClick={() => window.print()}>
-          <Printer className="h-4 w-4 mr-2" /> Imprimer / PDF
+        <Button variant="default" className="bg-[hsl(215,70%,45%)] hover:bg-[hsl(215,70%,40%)]" onClick={handleExportPdf}>
+          <Download className="h-4 w-4 mr-2" /> Rapport PDF officiel
         </Button>
       </div>
 
+      {/* ════════════════════════════════════════════════════════ */}
+      {/* SAISIE COMPLÉMENTAIRE — Questions à l'agent comptable  */}
+      {/* ════════════════════════════════════════════════════════ */}
+      <Card className="border-warning/30 bg-warning/5">
+        <CardHeader className="py-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-warning" />
+            Saisie complémentaire de l'agent comptable
+            <Badge variant="outline" className="ml-auto text-[10px] border-warning/50 text-warning">Enrichit le rapport</Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-5 pt-0">
+          {/* Prélèvements sur FDR */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Label className="text-xs font-bold">Prélèvements sur fonds de roulement autorisés par le CA</Label>
+              <Button variant="ghost" size="sm" onClick={addPrelevement} className="h-7 text-xs gap-1">
+                <Plus className="h-3 w-3" /> Ajouter
+              </Button>
+            </div>
+            {prelevements.length === 0 && (
+              <p className="text-xs text-muted-foreground italic">Aucun prélèvement déclaré — cliquez sur « Ajouter » si l'établissement a prélevé sur son fonds de roulement.</p>
+            )}
+            {prelevements.map((p, i) => (
+              <div key={i} className="flex gap-2 items-end mb-2">
+                <div className="flex-1">
+                  <Label className="text-[10px] text-muted-foreground">Objet</Label>
+                  <Input value={p.objet} onChange={e => updatePrelevement(i, 'objet', e.target.value)} placeholder="Ex: Acquisition mobilier" className="h-8 text-xs" />
+                </div>
+                <div className="w-32">
+                  <Label className="text-[10px] text-muted-foreground">Montant (€)</Label>
+                  <Input type="number" value={p.montant || ''} onChange={e => updatePrelevement(i, 'montant', parseFloat(e.target.value) || 0)} className="h-8 text-xs font-mono" />
+                </div>
+                <div className="w-32">
+                  <Label className="text-[10px] text-muted-foreground">Date du CA</Label>
+                  <Input value={p.dateCA} onChange={e => updatePrelevement(i, 'dateCA', e.target.value)} placeholder="01/03/2024" className="h-8 text-xs" />
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => removePrelevement(i)} className="h-8 w-8 p-0 text-destructive">
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            ))}
+            {totalPrelev > 0 && (
+              <div className="bg-background rounded-lg p-3 mt-2 text-xs border">
+                <p className="font-bold">Total prélevé : <span className="text-destructive">{formatEur(totalPrelev)}</span></p>
+                <p className="text-muted-foreground mt-1">
+                  Résultat hors prélèvements : <strong className={resultatHorsPrelev >= 0 ? 'text-emerald-600' : 'text-destructive'}>{formatEur(resultatHorsPrelev)}</strong>
+                  {resultatHorsPrelev >= 0 && ' → Le déficit est structurellement prévisible et résulte des prélèvements autorisés par le CA.'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Explications résultat */}
+          <div>
+            <Label className="text-xs font-bold">Explications sur le résultat de l'exercice</Label>
+            <Textarea value={explicationsResultat} onChange={e => setExplicationsResultat(e.target.value)}
+              placeholder="Ex: Le résultat déficitaire s'explique par les prélèvements votés en CA du 12/03/2024 pour l'acquisition de…"
+              rows={2} className="mt-1 text-xs bg-background" />
+          </div>
+
+          {/* Commentaire FDR */}
+          <div>
+            <Label className="text-xs font-bold">Commentaire sur le fonds de roulement</Label>
+            <Textarea value={commentaireFDR} onChange={e => setCommentaireFDR(e.target.value)}
+              placeholder="Ex: La part non encaissée élevée s'explique par une créance de l'État en attente de notification…"
+              rows={2} className="mt-1 text-xs bg-background" />
+          </div>
+
+          {/* Commentaire trésorerie */}
+          <div>
+            <Label className="text-xs font-bold">Commentaire sur la trésorerie</Label>
+            <Textarea value={commentaireTresorerie} onChange={e => setCommentaireTresorerie(e.target.value)}
+              placeholder="Ex: La trésorerie inclut des reliquats de subventions État pour un montant important…"
+              rows={2} className="mt-1 text-xs bg-background" />
+          </div>
+
+          {/* Commentaire créances */}
+          <div>
+            <Label className="text-xs font-bold">Commentaire sur les créances</Label>
+            <Textarea value={commentaireCreances} onChange={e => setCommentaireCreances(e.target.value)}
+              placeholder="Ex: Les créances familles incluent des impayés de restauration faisant l'objet de poursuites…"
+              rows={2} className="mt-1 text-xs bg-background" />
+          </div>
+
+          {/* Commentaire général */}
+          <div>
+            <Label className="text-xs font-bold">Observations générales</Label>
+            <Textarea value={commentaireGeneral} onChange={e => setCommentaireGeneral(e.target.value)}
+              placeholder="Toute observation complémentaire de l'agent comptable…"
+              rows={2} className="mt-1 text-xs bg-background" />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* ════════════════════════════════════════════════════════ */}
+      {/* ANALYSE INTELLIGENTE                                     */}
+      {/* ════════════════════════════════════════════════════════ */}
+      {smartAnalysis.length > 0 && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Bot className="h-4 w-4 text-primary" /> Analyse automatique
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2 text-xs leading-relaxed">
+              {smartAnalysis.map((text, i) => (
+                <p key={i}>{text}</p>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ════════════════════════════════════════════════════════ */}
+      {/* RAPPORT VISUEL                                           */}
+      {/* ════════════════════════════════════════════════════════ */}
       <Card className="max-w-4xl mx-auto">
         <CardContent className="p-8">
           {/* Header */}
@@ -597,59 +809,288 @@ export function RapportACSection() {
             <span>Agent comptable : <strong>{etab.agentComptable || '—'}</strong></span>
           </div>
 
-          {/* Section 1: Rappel réglementaire */}
+          {/* §1 Rappel */}
           <SectionTitre numero="1" title="Rappel des dispositions réglementaires" />
           <div className="text-xs leading-relaxed mb-4 bg-muted/30 rounded-lg p-4">
             L'agent comptable informe le conseil d'administration de l'état du patrimoine, des stocks,
             des créances, des reliquats de subventions. Il présente et explique les différents indicateurs
-            financiers mentionnés à la pièce 14 du compte financier. L'analyse des données financières
-            s'effectue à partir du résultat, de la capacité d'autofinancement ainsi que des divers
-            indicateurs et de leur évolution. Elle est présentée par l'agent comptable qui explique,
-            notamment en fonction de la composition du fonds de roulement, la marge dont dispose
-            l'établissement pour financer des actions sur fonds propres.
+            financiers mentionnés à la pièce 14 du compte financier.
           </div>
 
-          {/* Section 2: Résultat + CAF/IAF */}
+          {/* §2 Résultat — Balance graphique */}
           <SectionTitre numero="2" title="Présentation du résultat et de l'autofinancement" />
-          <div className="overflow-x-auto mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            {/* Balance scale chart */}
+            <div>
+              <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1"><Scale className="h-3 w-3" /> Balance dépenses / recettes</p>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={balanceData} layout="vertical" barCategoryGap="30%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tickFormatter={v => `${(v / 1000).toFixed(0)}k`} fontSize={10} />
+                  <YAxis type="category" dataKey="name" width={80} fontSize={11} />
+                  <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                    {balanceData.map((entry, idx) => (
+                      <Cell key={idx} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            {/* KPIs */}
+            <div className="space-y-3">
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs border">
+                  <tbody>
+                    <tr className="border-b bg-muted/20">
+                      <td className="p-2 font-semibold">Charges nettes</td>
+                      <td className="p-2 text-right font-mono">{formatEur(R.totalChargesSde)}</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="p-2 font-semibold">Produits nets</td>
+                      <td className="p-2 text-right font-mono">{formatEur(R.totalProduitsSdr)}</td>
+                    </tr>
+                    <tr className={`border-b font-bold ${R.resultatComptable >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
+                      <td className="p-2">RÉSULTAT</td>
+                      <td className="p-2 text-right font-mono">{formatEur(R.resultatComptable)}</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="p-2">Charges non décaissables</td>
+                      <td className="p-2 text-right font-mono">{formatEur(safe.chargesNonDecaissables)}</td>
+                    </tr>
+                    <tr className="border-b">
+                      <td className="p-2">Produits non encaissables</td>
+                      <td className="p-2 text-right font-mono">{formatEur(safe.produitsNonEncaissables)}</td>
+                    </tr>
+                    <tr className={`font-bold ${safe.cafComptable >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
+                      <td className="p-2">{safe.cafComptable >= 0 ? 'CAF' : 'IAF'}</td>
+                      <td className="p-2 text-right font-mono">{formatEur(safe.cafComptable)}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              {totalPrelev > 0 && (
+                <div className="bg-warning/10 border border-warning/30 rounded-lg p-3 text-xs">
+                  <p className="font-bold text-warning">⚠ Prélèvements sur FDR : {formatEur(totalPrelev)}</p>
+                  <p className="text-muted-foreground mt-1">Résultat hors prélèvements : <strong className={resultatHorsPrelev >= 0 ? 'text-emerald-600' : 'text-destructive'}>{formatEur(resultatHorsPrelev)}</strong></p>
+                </div>
+              )}
+            </div>
+          </div>
+          {explicationsResultat && (
+            <div className="bg-muted/10 rounded-lg p-3 mb-4 text-xs italic border-l-4 border-warning">
+              {explicationsResultat}
+            </div>
+          )}
+
+          {/* §3 FDR — Composition graphique */}
+          <SectionTitre numero="3" title="Analyse du fonds de roulement" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div>
+              <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1"><BarChart3 className="h-3 w-3" /> Composition du FDR</p>
+              <ResponsiveContainer width="100%" height={160}>
+                <BarChart data={fdrComposData} layout="vertical" barCategoryGap="25%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tickFormatter={v => `${(v / 1000).toFixed(0)}k`} fontSize={10} />
+                  <YAxis type="category" dataKey="name" width={100} fontSize={10} />
+                  <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                    {fdrComposData.map((entry, idx) => (
+                      <Cell key={idx} fill={entry.fill} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-2">
+              <table className="w-full text-xs border">
+                <tbody>
+                  <tr className="border-b bg-muted/20"><td className="p-2 font-semibold" colSpan={2}>FDR comptable</td><td className="p-2 text-right font-mono font-bold">{formatEur(R.fdrComptable)}</td></tr>
+                  <tr className="border-b"><td className="p-2" colSpan={2}>Part encaissée (autonomie)</td><td className="p-2 text-right font-mono">{formatEur(safe.fdrPartEncaissee)} ({safe.fdrPctEncaissee.toFixed(1)} %)</td></tr>
+                  <tr className="border-b"><td className="p-2" colSpan={2}>Part non encaissée</td><td className="p-2 text-right font-mono">{formatEur(safe.fdrPartNonEncaissee)} ({safe.fdrPctNonEncaissee.toFixed(1)} %)</td></tr>
+                  <tr className="border-b"><td className="p-2" colSpan={2}>FDR mobilisable</td><td className="p-2 text-right font-mono font-bold">{formatEur(safe.fdrMobilisable)}</td></tr>
+                  <tr className="border-b"><td className="p-2" colSpan={2}>Jours FDR</td><td className="p-2 text-right font-mono font-bold">{Math.round(safe.joursFdr)} j</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+          {commentaireFDR && (
+            <div className="bg-muted/10 rounded-lg p-3 mb-4 text-xs italic border-l-4 border-primary">
+              {commentaireFDR}
+            </div>
+          )}
+
+          {/* §4 BFR */}
+          <SectionTitre numero="4" title="Besoin en fonds de roulement" />
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" sub={R.bfr < 0 ? 'Dégagement en FDR' : 'Besoin en FDR'} isText />
+            <KPICard label="Créances" value={formatEur(safe.totalCreances)} color="blue" icon="📋" isText />
+            <KPICard label="Dettes" value={formatEur(safe.totalDettes)} color="amber" icon="📋" isText />
+          </div>
+          <div className="bg-muted/20 rounded-lg p-3 mb-4 text-xs">
+            <strong>Vérification FDR = BFR + Trésorerie :</strong>{' '}
+            {formatEur(R.fdrComptable)} = {formatEur(R.bfr)} + {formatEur(R.tresorerie)} = {formatEur(R.bfr + R.tresorerie)}
+            <span className={Math.abs(R.fdrComptable - R.bfr - R.tresorerie) < 1 ? ' text-emerald-600 font-bold' : ' text-destructive font-bold'}>
+              {Math.abs(R.fdrComptable - R.bfr - R.tresorerie) < 1 ? ' ✓ Vérifié' : ' ⚠ Écart'}
+            </span>
+          </div>
+
+          {/* §5 Trésorerie — Pie chart */}
+          <SectionTitre numero="5" title="Composition de la trésorerie" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            {tresoData.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1"><PieChartIcon className="h-3 w-3" /> Répartition de la trésorerie</p>
+                <ResponsiveContainer width="100%" height={220}>
+                  <PieChart>
+                    <Pie data={tresoData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      labelLine={true} fontSize={9}>
+                      {tresoData.map((entry, idx) => (
+                        <Cell key={idx} fill={entry.fill} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            <div>
+              <table className="w-full text-xs border">
+                <thead><tr className="bg-muted/50"><th className="p-2 text-left">Composante</th><th className="p-2 text-right">Montant</th><th className="p-2 text-right">%</th></tr></thead>
+                <tbody>
+                  <tr className="border-b"><td className="p-2">Autonomie financière</td><td className="p-2 text-right font-mono">{formatEur(safe.tresoComposition.autonomieFinanciere)}</td><td className="p-2 text-right">{pct(Math.abs(safe.tresoComposition.autonomieFinanciere), R.tresorerie)}</td></tr>
+                  <tr className="border-b"><td className="p-2">Dépôts & cautions</td><td className="p-2 text-right font-mono">{formatEur(safe.tresoComposition.depotsCautions)}</td><td className="p-2 text-right">{pct(safe.tresoComposition.depotsCautions, R.tresorerie)}</td></tr>
+                  <tr className="border-b"><td className="p-2">Règlements en attente</td><td className="p-2 text-right font-mono">{formatEur(safe.tresoComposition.reglementsEnAttente)}</td><td className="p-2 text-right">{pct(safe.tresoComposition.reglementsEnAttente, R.tresorerie)}</td></tr>
+                  <tr className="border-b"><td className="p-2">Reliquats subventions</td><td className="p-2 text-right font-mono">{formatEur(safe.tresoComposition.reliquatsSubventions)}</td><td className="p-2 text-right">{pct(safe.tresoComposition.reliquatsSubventions, R.tresorerie)}</td></tr>
+                  <tr className="bg-muted/20 font-bold"><td className="p-2">TOTAL</td><td className="p-2 text-right font-mono">{formatEur(R.tresorerie)}</td><td className="p-2 text-right">100 %</td></tr>
+                </tbody>
+              </table>
+              <p className="text-xs text-muted-foreground mt-2">
+                <strong>{Math.round(safe.joursTresorerie)} jours</strong> de fonctionnement couverts par la trésorerie.
+              </p>
+            </div>
+          </div>
+          {commentaireTresorerie && (
+            <div className="bg-muted/10 rounded-lg p-3 mb-4 text-xs italic border-l-4 border-primary">
+              {commentaireTresorerie}
+            </div>
+          )}
+
+          {/* §6 TMcap/TMnr + DGP/DGR */}
+          <SectionTitre numero="6" title="Délais et taux de charges à payer / non-recouvrement" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <div className="bg-muted/30 rounded-lg p-4 text-xs">
+              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMcap</div>
+              <div className="text-2xl font-bold font-mono">{safe.tmcap.toFixed(2)} %</div>
+            </div>
+            <div className="bg-muted/30 rounded-lg p-4 text-xs">
+              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMnr</div>
+              <div className="text-2xl font-bold font-mono">{safe.tmnr.toFixed(2)} %</div>
+            </div>
+            <div className={`bg-muted/30 rounded-lg p-4 text-xs ${safe.dgpJours > 30 ? 'border border-destructive/30' : ''}`}>
+              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">DGP</div>
+              <div className={`text-2xl font-bold font-mono ${safe.dgpJours > 30 ? 'text-destructive' : ''}`}>{Math.round(safe.dgpJours)} j</div>
+            </div>
+            <div className={`bg-muted/30 rounded-lg p-4 text-xs ${safe.dgrJours > 60 ? 'border border-warning/30' : ''}`}>
+              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">DGR</div>
+              <div className={`text-2xl font-bold font-mono ${safe.dgrJours > 60 ? 'text-warning' : ''}`}>{Math.round(safe.dgrJours)} j</div>
+            </div>
+          </div>
+
+          {/* §7 Patrimoine */}
+          <SectionTitre numero="7" title="État du patrimoine" />
+          <table className="w-full text-xs border mb-4">
+            <tbody>
+              <tr className="border-b bg-muted/20"><td className="p-2 font-semibold">Immobilisations brutes</td><td className="p-2 text-right font-mono">{formatEur(R.totalImmo)}</td></tr>
+              <tr className="border-b"><td className="p-2">Amortissements</td><td className="p-2 text-right font-mono">- {formatEur(R.totalAmortissements)}</td></tr>
+              <tr className="border-b font-bold"><td className="p-2">Valeur résiduelle</td><td className="p-2 text-right font-mono">{formatEur(safe.valeurNette)}</td></tr>
+              <tr className="border-b"><td className="p-2">Fonds propres ({safe.patrimoineOriginesPctFP.toFixed(1)} %)</td><td className="p-2 text-right font-mono">{formatEur(safe.patrimoineOriginesFondsPropres)}</td></tr>
+              <tr className="border-b"><td className="p-2">Subv. investissement ({safe.patrimoineOriginesPctSub.toFixed(1)} %)</td><td className="p-2 text-right font-mono">{formatEur(safe.patrimoineOriginesSubventions)}</td></tr>
+            </tbody>
+          </table>
+
+          {/* §8 Créances/Dettes */}
+          <SectionTitre numero="8" title="Créances et dettes" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
             <table className="w-full text-xs border">
+              <thead><tr className="bg-muted/50"><th className="p-2 text-left">Créance</th><th className="p-2 text-right">Montant</th></tr></thead>
               <tbody>
-                <tr className="border-b bg-muted/20">
-                  <td className="p-2 font-semibold">Charges nettes (classe 6)</td>
-                  <td className="p-2 text-right font-mono">{formatEur(R.totalChargesSde)}</td>
-                  <td className="p-2 font-semibold">Produits nets (classe 7)</td>
-                  <td className="p-2 text-right font-mono">{formatEur(R.totalProduitsSdr)}</td>
-                </tr>
-                <tr className="border-b">
-                  <td className="p-2 font-semibold">Charges non décaissables (68+675)</td>
-                  <td className="p-2 text-right font-mono">{formatEur(safe.chargesNonDecaissables)}</td>
-                  <td className="p-2 font-semibold">Produits non encaissables (78+775…)</td>
-                  <td className="p-2 text-right font-mono">{formatEur(safe.produitsNonEncaissables)}</td>
-                </tr>
-                <tr className={`border-b font-bold ${R.resultatComptable >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
-                  <td className="p-2" colSpan={2}>RÉSULTAT DE L'EXERCICE</td>
-                  <td className="p-2 text-right font-mono" colSpan={2}>{formatEur(R.resultatComptable)}</td>
-                </tr>
-                <tr className={`font-bold ${safe.cafComptable >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
-                  <td className="p-2" colSpan={2}>{safe.cafComptable >= 0 ? 'CAF (Capacité d\'autofinancement)' : 'IAF (Insuffisance d\'autofinancement)'}</td>
-                  <td className="p-2 text-right font-mono" colSpan={2}>{formatEur(safe.cafComptable)}</td>
-                </tr>
+                {safe.creancesEtat > 0 && <tr className="border-b"><td className="p-2">État</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesEtat)}</td></tr>}
+                {safe.creancesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesCollectivite)}</td></tr>}
+                {safe.creancesFamilles > 0 && <tr className="border-b"><td className="p-2">Familles</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesFamilles)}</td></tr>}
+                {safe.creancesAutres > 0 && <tr className="border-b"><td className="p-2">Autres</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesAutres)}</td></tr>}
+                <tr className="font-bold bg-muted/20"><td className="p-2">TOTAL</td><td className="p-2 text-right font-mono">{formatEur(safe.totalCreances)}</td></tr>
+              </tbody>
+            </table>
+            <table className="w-full text-xs border">
+              <thead><tr className="bg-muted/50"><th className="p-2 text-left">Dette</th><th className="p-2 text-right">Montant</th></tr></thead>
+              <tbody>
+                {safe.dettesFournisseurs > 0 && <tr className="border-b"><td className="p-2">Fournisseurs</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesFournisseurs)}</td></tr>}
+                {safe.dettesEtat > 0 && <tr className="border-b"><td className="p-2">État</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesEtat)}</td></tr>}
+                {safe.dettesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesCollectivite)}</td></tr>}
+                {safe.dettesAutres > 0 && <tr className="border-b"><td className="p-2">Autres</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesAutres)}</td></tr>}
+                <tr className="font-bold bg-muted/20"><td className="p-2">TOTAL</td><td className="p-2 text-right font-mono">{formatEur(safe.totalDettes)}</td></tr>
               </tbody>
             </table>
           </div>
+          {commentaireCreances && (
+            <div className="bg-muted/10 rounded-lg p-3 mb-4 text-xs italic border-l-4 border-primary">
+              {commentaireCreances}
+            </div>
+          )}
 
-          {/* Section 3: Variation FDR */}
-          <SectionTitre numero="3" title="Variation du fonds de roulement" />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label={safe.cafComptable >= 0 ? 'CAF' : 'IAF'} value={formatEur(safe.cafComptable)} color={safe.cafComptable >= 0 ? 'green' : 'red'} icon="🔄" sub="Autofinancement" isText />
-            <KPICard label="Investissements" value={formatEur(safe.prelevementsReserves.prelevementsInvestissement)} color="amber" icon="🏗️" sub="Achats immobilisés" isText />
-            <KPICard label="Variation FDR" value={formatEur(safe.varFdrBas)} color={safe.varFdrBas >= 0 ? 'green' : 'red'} icon="📈" sub="FDR BF - FDR BE" isText />
-            <KPICard label="FDR clôture" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub={`${Math.round(safe.joursFdr)} jours`} isText />
+          {/* §9 Réserves + prélèvements */}
+          <SectionTitre numero="9" title="Réserves et affectation du résultat" />
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <KPICard label="Réserves (c/1068)" value={formatEur(R.reserves)} color="blue" icon="🏛️" isText />
+            <KPICard label="Dont SRH" value={formatEur(R.reservesSRH)} color="blue" icon="🍽️" isText />
+            <KPICard label="Variation" value={formatEur(safe.prelevementsReserves.variationReserves)} color={safe.prelevementsReserves.variationReserves >= 0 ? 'green' : 'red'} icon="📈" isText />
+          </div>
+          <div className="text-xs bg-muted/10 rounded-lg p-4 mb-4">
+            <p>Résultat de l'exercice : <strong>{formatEur(R.resultatComptable)}</strong></p>
+            <p className="mt-1 text-muted-foreground">
+              {R.resultatComptable >= 0
+                ? `Proposition d'affectation au compte de réserves (c/1068).`
+                : `Imputation sur les réserves. Après affectation : ${formatEur(R.reserves + R.resultatComptable)}.`}
+            </p>
           </div>
 
-          {/* N-1 evolution chart */}
+          {/* §10 Ratios */}
+          <SectionTitre numero="10" title="Ratios de gestion (M9-6 § IV)" />
+          <table className="w-full text-xs border mb-4">
+            <thead><tr className="bg-muted/50"><th className="p-2 text-left">Ratio</th><th className="p-2 text-right">Valeur</th><th className="p-2 text-left">Interprétation</th></tr></thead>
+            <tbody>
+              {[
+                { label: 'Liquidité générale', value: safe.ratioLiquiditeGenerale, fmt: (v: number) => v.toFixed(2), seuil: (v: number) => v >= 1 ? '✅ Correcte' : '⚠️ Insuffisante' },
+                { label: 'Liquidité réduite', value: safe.ratioLiquiditeReduite, fmt: (v: number) => v.toFixed(2), seuil: (v: number) => v >= 0.8 ? '✅' : '⚠️' },
+                { label: 'Liquidité immédiate', value: safe.ratioLiquiditeImmediate, fmt: (v: number) => v.toFixed(2), seuil: (v: number) => v >= 0.3 ? '✅' : '⚠️' },
+                { label: 'Autonomie financière', value: safe.ratioAutonomieFinanciere, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: (v: number) => v >= 0.5 ? '✅ > 50%' : '⚠️ < 50%' },
+                { label: 'Solvabilité', value: safe.ratioSolvabilite, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: (v: number) => v >= 0.5 ? '✅' : '⚠️' },
+                { label: 'Endettement', value: safe.ratioEndettement, fmt: (v: number) => v.toFixed(2), seuil: (v: number) => v < 1 ? '✅' : '⚠️ Élevé' },
+                { label: 'Couverture charges', value: safe.ratioCouvertureCharges, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: (v: number) => v >= 0.08 ? '✅ > 30 j' : '⚠️ < 30 j' },
+              ].map(r => (
+                <tr key={r.label} className="border-t">
+                  <td className="p-2 font-semibold">{r.label}</td>
+                  <td className="p-2 text-right font-mono font-bold">{r.fmt(r.value)}</td>
+                  <td className="p-2 text-muted-foreground">{r.seuil(r.value)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* §11 Vérifications */}
+          <SectionTitre numero="11" title="Vérifications comptables" />
+          <div className="flex gap-3 mb-4 flex-wrap">
+            <Badge className={nbBloq > 0 ? 'bg-destructive text-destructive-foreground' : nbAnom > 0 ? 'bg-warning text-warning-foreground' : 'bg-emerald-600 text-white'}>
+              {nbBloq > 0 ? `🚫 ${nbBloq} point(s) bloquant(s)` : nbAnom > 0 ? `⚠️ ${nbAnom} anomalie(s)` : '✅ Concordance vérifiée'}
+            </Badge>
+          </div>
+
+          {/* §12 Évolution N/N-1 */}
           {evolutionData.length > 0 && (
-            <div className="mb-4">
+            <>
+              <SectionTitre numero="12" title="Évolution N / N-1" />
               <ResponsiveContainer width="100%" height={180}>
                 <BarChart data={evolutionData} barCategoryGap="25%">
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
@@ -663,211 +1104,13 @@ export function RapportACSection() {
                   <Bar dataKey="Trésorerie" fill="hsl(160, 45%, 45%)" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
-            </div>
-          )}
-
-          {/* Section 4: Composition FDR */}
-          <SectionTitre numero="4" title="Présentation du fonds de roulement" />
-          <div className="overflow-x-auto mb-4">
-            <table className="w-full text-xs border">
-              <tbody>
-                <tr className="border-b bg-muted/20"><td className="p-2 font-semibold" colSpan={2}>Composition du FDR</td><td className="p-2 text-right font-mono">{formatEur(R.fdrComptable)}</td></tr>
-                <tr className="border-b"><td className="p-2" colSpan={2}>Part encaissée (autonomie financière)</td><td className="p-2 text-right font-mono">{formatEur(safe.fdrPartEncaissee)} ({safe.fdrPctEncaissee.toFixed(1)} %)</td></tr>
-                <tr className="border-b"><td className="p-2" colSpan={2}>Part non encaissée (créances & CCA)</td><td className="p-2 text-right font-mono">{formatEur(safe.fdrPartNonEncaissee)} ({safe.fdrPctNonEncaissee.toFixed(1)} %)</td></tr>
-                <tr className="border-b"><td className="p-2" colSpan={2}>Jours de fonctionnement</td><td className="p-2 text-right font-mono font-bold">{Math.round(safe.joursFdr)} jours</td></tr>
-                <tr className="border-b"><td className="p-2" colSpan={2}>FDR mobilisable (hors stocks, créances anciennes, c/416)</td><td className="p-2 text-right font-mono font-bold">{formatEur(safe.fdrMobilisable)}</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Section 5: BFR */}
-          <SectionTitre numero="5" title="Présentation du besoin en fonds de roulement" />
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" sub={R.bfr < 0 ? 'Dégagement en FDR' : 'Besoin en FDR'} isText />
-            <KPICard label="Créances (cl.4 débit)" value={formatEur(safe.totalCreances)} color="blue" icon="📋" isText />
-            <KPICard label="Dettes (cl.4 crédit)" value={formatEur(safe.totalDettes)} color="amber" icon="📋" isText />
-          </div>
-
-          {/* Section 6: Trésorerie */}
-          <SectionTitre numero="6" title="Présentation de la trésorerie" />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label="Trésorerie" value={formatEur(R.tresorerie)} color={R.tresorerie >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(safe.joursTresorerie)} jours`} isText />
-            <KPICard label="FDR" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" isText />
-            <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" isText />
-            <KPICard label="FDR = BFR + Tréso" value={formatEur(R.bfr + R.tresorerie)} color="blue" icon="⚖️" sub="Vérification" isText />
-          </div>
-
-          {/* Section 7: Composition trésorerie */}
-          <SectionTitre numero="7" title="Composition de la trésorerie" />
-          <div className="overflow-x-auto mb-4">
-            <table className="w-full text-xs border">
-              <thead><tr className="bg-muted/50"><th className="p-2 text-left">Composante</th><th className="p-2 text-right">Montant</th><th className="p-2 text-right">% Trésorerie</th></tr></thead>
-              <tbody>
-                <tr className="border-b"><td className="p-2">Autonomie financière</td><td className="p-2 text-right font-mono">{formatEur(safe.tresoComposition.autonomieFinanciere)}</td><td className="p-2 text-right font-mono">{pct(Math.abs(safe.tresoComposition.autonomieFinanciere), R.tresorerie)}</td></tr>
-                <tr className="border-b"><td className="p-2">Dépôts et cautions</td><td className="p-2 text-right font-mono">{formatEur(safe.tresoComposition.depotsCautions)}</td><td className="p-2 text-right font-mono">{pct(safe.tresoComposition.depotsCautions, R.tresorerie)}</td></tr>
-                <tr className="border-b"><td className="p-2">Règlements en attente</td><td className="p-2 text-right font-mono">{formatEur(safe.tresoComposition.reglementsEnAttente)}</td><td className="p-2 text-right font-mono">{pct(safe.tresoComposition.reglementsEnAttente, R.tresorerie)}</td></tr>
-                <tr className="border-b"><td className="p-2">Reliquats de subventions</td><td className="p-2 text-right font-mono">{formatEur(safe.tresoComposition.reliquatsSubventions)}</td><td className="p-2 text-right font-mono">{pct(safe.tresoComposition.reliquatsSubventions, R.tresorerie)}</td></tr>
-                <tr className="border-b font-bold bg-muted/20"><td className="p-2">TRÉSORERIE TOTALE</td><td className="p-2 text-right font-mono">{formatEur(R.tresorerie)}</td><td className="p-2 text-right">100 %</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Section 8: TMcap & TMnr + DGP/DGR */}
-          <SectionTitre numero="8" title="Délais et taux de charges à payer / non-recouvrement" />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <div className="bg-muted/30 rounded-lg p-4 text-xs">
-              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMcap</div>
-              <div className="text-2xl font-bold font-mono">{safe.tmcap.toFixed(2)} %</div>
-              <div className="text-muted-foreground mt-1">Charges à payer / Charges totales</div>
-            </div>
-            <div className="bg-muted/30 rounded-lg p-4 text-xs">
-              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMnr</div>
-              <div className="text-2xl font-bold font-mono">{safe.tmnr.toFixed(2)} %</div>
-              <div className="text-muted-foreground mt-1">Non-recouvrement / Recettes totales</div>
-            </div>
-            <div className={`bg-muted/30 rounded-lg p-4 text-xs ${safe.dgpJours > 30 ? 'border border-destructive/30' : ''}`}>
-              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">DGP</div>
-              <div className={`text-2xl font-bold font-mono ${safe.dgpJours > 30 ? 'text-destructive' : ''}`}>{Math.round(safe.dgpJours)} jours</div>
-              <div className="text-muted-foreground mt-1">Délai global de paiement {safe.dgpJours > 30 ? '⚠️ > 30j' : '✅ ≤ 30j'}</div>
-            </div>
-            <div className={`bg-muted/30 rounded-lg p-4 text-xs ${safe.dgrJours > 60 ? 'border border-warning/30' : ''}`}>
-              <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">DGR</div>
-              <div className={`text-2xl font-bold font-mono ${safe.dgrJours > 60 ? 'text-warning' : ''}`}>{Math.round(safe.dgrJours)} jours</div>
-              <div className="text-muted-foreground mt-1">Délai global de recouvrement</div>
-            </div>
-          </div>
-
-          {/* Section 9: État du patrimoine */}
-          <SectionTitre numero="9" title="État du patrimoine" />
-          <div className="overflow-x-auto mb-4">
-            <table className="w-full text-xs border">
-              <tbody>
-                <tr className="border-b bg-muted/20"><td className="p-2 font-semibold">Immobilisations brutes (classe 2)</td><td className="p-2 text-right font-mono">{formatEur(R.totalImmo)}</td></tr>
-                <tr className="border-b"><td className="p-2">Amortissements cumulés (compte 28)</td><td className="p-2 text-right font-mono">- {formatEur(R.totalAmortissements)}</td></tr>
-                <tr className="border-b font-bold"><td className="p-2">Valeur résiduelle du patrimoine</td><td className="p-2 text-right font-mono">{formatEur(safe.valeurNette)}</td></tr>
-                <tr className="border-b"><td className="p-2">Variation annuelle</td><td className="p-2 text-right font-mono">{formatEur(safe.variationPatrimoine)}</td></tr>
-                <tr className="border-b"><td className="p-2">Origines — Fonds propres</td><td className="p-2 text-right font-mono">{formatEur(safe.patrimoineOriginesFondsPropres)} ({safe.patrimoineOriginesPctFP.toFixed(1)} %)</td></tr>
-                <tr className="border-b"><td className="p-2">Origines — Subventions d'investissement</td><td className="p-2 text-right font-mono">{formatEur(safe.patrimoineOriginesSubventions)} ({safe.patrimoineOriginesPctSub.toFixed(1)} %)</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Section 10: Créances */}
-          <SectionTitre numero="10" title="État des créances" />
-          <div className="overflow-x-auto mb-4">
-            <table className="w-full text-xs border">
-              <thead><tr className="bg-muted/50"><th className="p-2 text-left">Origine</th><th className="p-2 text-right">Montant</th><th className="p-2 text-right">%</th></tr></thead>
-              <tbody>
-                {safe.creancesEtat > 0 && <tr className="border-b"><td className="p-2">État</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesEtat)}</td><td className="p-2 text-right font-mono">{pct(safe.creancesEtat, safe.totalCreances)}</td></tr>}
-                {safe.creancesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité de rattachement</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesCollectivite)}</td><td className="p-2 text-right font-mono">{pct(safe.creancesCollectivite, safe.totalCreances)}</td></tr>}
-                {safe.creancesFamilles > 0 && <tr className="border-b"><td className="p-2">Familles (DP, internes)</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesFamilles)}</td><td className="p-2 text-right font-mono">{pct(safe.creancesFamilles, safe.totalCreances)}</td></tr>}
-                {safe.creancesAutres > 0 && <tr className="border-b"><td className="p-2">Autres débiteurs</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesAutres)}</td><td className="p-2 text-right font-mono">{pct(safe.creancesAutres, safe.totalCreances)}</td></tr>}
-                <tr className="border-b font-bold bg-muted/20"><td className="p-2">TOTAL CRÉANCES</td><td className="p-2 text-right font-mono">{formatEur(safe.totalCreances)}</td><td className="p-2 text-right">100 %</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Section 11: Dettes */}
-          <SectionTitre numero="11" title="État des dettes" />
-          <div className="overflow-x-auto mb-4">
-            <table className="w-full text-xs border">
-              <thead><tr className="bg-muted/50"><th className="p-2 text-left">Type</th><th className="p-2 text-right">Montant</th><th className="p-2 text-right">%</th></tr></thead>
-              <tbody>
-                {safe.dettesFournisseurs > 0 && <tr className="border-b"><td className="p-2">Fournisseurs</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesFournisseurs)}</td><td className="p-2 text-right font-mono">{pct(safe.dettesFournisseurs, safe.totalDettes)}</td></tr>}
-                {safe.dettesEtat > 0 && <tr className="border-b"><td className="p-2">État (subventions, bourses)</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesEtat)}</td><td className="p-2 text-right font-mono">{pct(safe.dettesEtat, safe.totalDettes)}</td></tr>}
-                {safe.dettesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité de rattachement</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesCollectivite)}</td><td className="p-2 text-right font-mono">{pct(safe.dettesCollectivite, safe.totalDettes)}</td></tr>}
-                {safe.dettesAutres > 0 && <tr className="border-b"><td className="p-2">Autres créditeurs</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesAutres)}</td><td className="p-2 text-right font-mono">{pct(safe.dettesAutres, safe.totalDettes)}</td></tr>}
-                <tr className="border-b font-bold bg-muted/20"><td className="p-2">TOTAL DETTES</td><td className="p-2 text-right font-mono">{formatEur(safe.totalDettes)}</td><td className="p-2 text-right">100 %</td></tr>
-              </tbody>
-            </table>
-          </div>
-
-          {/* Section 12: Reliquats */}
-          <SectionTitre numero="12" title="État des reliquats de subventions" />
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <KPICard label="Reliquats subventions" value={formatEur(safe.reliquatsSubventions)} color="amber" icon="📋" sub="Subventions non consommées à la clôture" isText />
-            <KPICard label="% de la trésorerie" value={pct(safe.reliquatsSubventions, R.tresorerie)} color="blue" icon="📊" sub="Poids des reliquats dans la trésorerie" isText />
-          </div>
-
-          {/* Section 13: Prélèvements sur réserves */}
-          {safe.prelevementsReserves.totalPrelevements > 0 && (
-            <>
-              <SectionTitre numero="13" title="Prélèvements sur réserves (classe 106)" />
-              <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 mb-4 text-xs leading-relaxed">
-                <p className="font-semibold text-foreground mb-2">
-                  Total prélevé : <strong className="text-destructive">{formatEur(safe.prelevementsReserves.totalPrelevements)}</strong>
-                </p>
-                <ul className="list-disc ml-4 space-y-1 text-muted-foreground">
-                  <li><strong className="text-foreground">{formatEur(safe.prelevementsReserves.prelevementsInvestissement)}</strong> pour investissements</li>
-                  <li><strong className="text-foreground">{formatEur(safe.prelevementsReserves.prelevementsFonctionnement)}</strong> pour fonctionnement</li>
-                </ul>
-              </div>
             </>
           )}
 
-          {/* Section 14: Réserves */}
-          <SectionTitre numero="14" title="Situation des comptes de réserves" />
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <KPICard label="Réserves (c/1068)" value={formatEur(R.reserves)} color="blue" icon="🏛️" isText />
-            <KPICard label="Dont SRH (c/106870)" value={formatEur(R.reservesSRH)} color="blue" icon="🍽️" isText />
-            <KPICard label="Variation annuelle" value={formatEur(safe.prelevementsReserves.variationReserves)} color={safe.prelevementsReserves.variationReserves >= 0 ? 'green' : 'red'} icon="📈" isText />
-          </div>
-
-          {/* Section 15: Fonds mobilisables */}
-          <SectionTitre numero="15" title="Situation des fonds mobilisables" />
-          <div className="bg-muted/30 rounded-lg p-4 mb-4 text-xs">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">FDR mobilisable</div>
-                <div className="text-2xl font-bold font-mono">{formatEur(safe.fdrMobilisable)}</div>
-                <div className="text-muted-foreground mt-1">= FDR brut − Stocks − Créances anciennes − Compte 416</div>
-              </div>
-              <div>
-                <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">Jours d'autonomie mobilisable</div>
-                <div className="text-2xl font-bold font-mono">{R.totalChargesSde > 0 ? Math.round(safe.fdrMobilisable / (R.totalChargesSde / 365)) : 0} jours</div>
-                <div className="text-muted-foreground mt-1">Base de décision pour le CA (seuil recommandé : 30 jours)</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Section 16: Ratios M9-6 */}
-          <SectionTitre numero="16" title="Ratios de gestion (M9-6 § IV)" />
-          <div className="overflow-x-auto mb-4">
-            <table className="w-full text-xs border">
-              <thead><tr className="bg-muted/50"><th className="p-2 text-left">Ratio</th><th className="p-2 text-right">Valeur</th><th className="p-2 text-left">Interprétation</th></tr></thead>
-              <tbody>
-                {[
-                  { label: 'Liquidité générale', value: safe.ratioLiquiditeGenerale, fmt: (v: number) => v.toFixed(2), seuil: v => v >= 1 ? '✅ Couverture correcte' : '⚠️ Insuffisante' },
-                  { label: 'Liquidité réduite', value: safe.ratioLiquiditeReduite, fmt: (v: number) => v.toFixed(2), seuil: v => v >= 0.8 ? '✅' : '⚠️' },
-                  { label: 'Liquidité immédiate', value: safe.ratioLiquiditeImmediate, fmt: (v: number) => v.toFixed(2), seuil: v => v >= 0.3 ? '✅' : '⚠️' },
-                  { label: 'Autonomie financière', value: safe.ratioAutonomieFinanciere, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: v => v >= 0.5 ? '✅ > 50%' : '⚠️ < 50%' },
-                  { label: 'Solvabilité', value: safe.ratioSolvabilite, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: v => v >= 0.5 ? '✅' : '⚠️' },
-                  { label: 'Endettement', value: safe.ratioEndettement, fmt: (v: number) => v.toFixed(2), seuil: v => v < 1 ? '✅' : '⚠️ Endettement élevé' },
-                  { label: 'Charges de personnel / Total', value: safe.ratioChargesPersonnel, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: () => '' },
-                  { label: 'Couverture des charges par le FDR', value: safe.ratioCouvertureCharges, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: v => v >= 0.08 ? '✅ > 30 jours' : '⚠️ < 30 jours' },
-                ].map(r => (
-                  <tr key={r.label} className="border-t">
-                    <td className="p-2 font-semibold">{r.label}</td>
-                    <td className="p-2 text-right font-mono font-bold">{r.fmt(r.value)}</td>
-                    <td className="p-2 text-muted-foreground">{r.seuil(r.value)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Section 17: Rapprochements */}
-          <SectionTitre numero="17" title="Vérifications et rapprochements comptables" />
-          <div className="flex gap-3 mb-4 flex-wrap">
-            <Badge className={nbBloq > 0 ? 'bg-destructive text-destructive-foreground' : nbAnom > 0 ? 'bg-warning text-warning-foreground' : 'bg-emerald-600 text-white'}>
-              {nbBloq > 0 ? `🚫 ${nbBloq} point(s) bloquant(s)` : nbAnom > 0 ? `⚠️ ${nbAnom} anomalie(s)` : '✅ Concordance vérifiée'}
-            </Badge>
-          </div>
-
-          {/* Section 18: Pluriannuel */}
+          {/* §13 Pluriannuel */}
           {history.length > 0 && (
             <>
-              <SectionTitre numero="18" title="Évolution pluriannuelle des indicateurs financiers" />
+              <SectionTitre numero="13" title="Évolution pluriannuelle" />
               <div className="overflow-x-auto mb-4">
                 <table className="w-full text-xs border">
                   <thead>
@@ -878,8 +1121,7 @@ export function RapportACSection() {
                   </thead>
                   <tbody>
                     {[
-                      { label: 'Résultat budgétaire', key: 'resultat_budgetaire' },
-                      { label: 'FRNG (FDR)', key: 'fdr' },
+                      { label: 'FDR', key: 'fdr' },
                       { label: 'BFR', key: 'bfr' },
                       { label: 'Trésorerie', key: 'tresorerie' },
                       { label: 'CAF/IAF', key: 'caf' },
@@ -901,39 +1143,24 @@ export function RapportACSection() {
             </>
           )}
 
-          {/* Section 19: Affectation du résultat */}
-          <SectionTitre numero="19" title="Propositions d'affectation du résultat" />
-          <div className="text-xs bg-muted/10 rounded-lg p-4 mb-4">
-            <p>Le résultat de l'exercice {etab.exercice} s'élève à <strong>{formatEur(R.resultatComptable)}</strong>.</p>
-            <p className="mt-2 text-muted-foreground">
-              {R.resultatComptable >= 0
-                ? `Il sera proposé au conseil d'administration d'affecter cet excédent au compte de réserves (c/1068).`
-                : `Ce déficit sera imputé sur les réserves (c/1068). Après affectation : ${formatEur(R.reserves + R.resultatComptable)}.`}
-            </p>
-            {R.resultatComptable < 0 && R.reserves + R.resultatComptable < 0 && (
-              <p className="mt-2 text-destructive font-semibold">
-                ⚠️ Réserves négatives après affectation — Plan de redressement nécessaire.
-              </p>
-            )}
-          </div>
-
-          {/* Section 20: Observations IA */}
-          <SectionTitre numero="20" title="Observations et analyse de l'agent comptable" />
+          {/* §14 Observations IA */}
+          <SectionTitre numero="14" title="Observations de l'agent comptable" />
           <Textarea value={aiObs} onChange={e => setAiObs(e.target.value)}
             placeholder="Cliquez sur 'Générer les observations IA' ou rédigez vos observations…" rows={12}
             className="bg-muted/30 text-sm mb-4" />
 
-          {/* Signatures */}
-          <div className="flex justify-between mt-8 pt-5 border-t text-xs text-muted-foreground">
-            <div>
-              <strong className="block text-foreground">L'agent comptable</strong>
-              <div className="mt-8">{etab.agentComptable || '……………………'}</div>
-              <span>Signature et cachet</span>
-            </div>
-            <div className="text-right">
-              <strong className="block text-foreground">Visa du comptable supérieur</strong>
-              <div className="mt-8">……………………</div>
-              <span>Signature et cachet</span>
+          {/* Signature — Agent comptable seul */}
+          <div className="mt-8 pt-5 border-t text-xs text-muted-foreground">
+            <div className="flex justify-between">
+              <div>
+                <strong className="block text-foreground text-sm">L'agent comptable</strong>
+                <div className="mt-12">{etab.agentComptable || '……………………'}</div>
+                <span>Signature et cachet</span>
+              </div>
+              <div className="text-right">
+                <p>Fait à {etab.commune || '………………'},</p>
+                <p>le ……… / ……… / {etab.exercice + 1}</p>
+              </div>
             </div>
           </div>
         </CardContent>

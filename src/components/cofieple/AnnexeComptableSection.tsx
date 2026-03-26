@@ -1298,23 +1298,18 @@ export function AnnexeComptableSection() {
         </TabsContent>
       </Tabs>
 
-      {/* Signatures */}
+      {/* Signature — Comptable seul pour l'annexe */}
       <Card className="print:shadow-none print:border-0 mt-6">
         <CardContent className="p-8">
           <div className="flex justify-between text-xs text-muted-foreground">
             <div>
-              <strong className="block text-foreground text-sm">L'ordonnateur</strong>
-              <div className="mt-12">{etab.ordonnateur || '……………………'}</div>
-              <span>Signature et cachet</span>
-            </div>
-            <div className="text-center">
-              <p>Fait à {etab.commune || '………………'},</p>
-              <p>le ……… / ……… / {etab.exercice + 1}</p>
-            </div>
-            <div className="text-right">
               <strong className="block text-foreground text-sm">L'agent comptable</strong>
               <div className="mt-12">{etab.agentComptable || '……………………'}</div>
               <span>Signature et cachet</span>
+            </div>
+            <div className="text-right">
+              <p>Fait à {etab.commune || '………………'},</p>
+              <p>le ……… / ……… / {etab.exercice + 1}</p>
             </div>
           </div>
         </CardContent>
