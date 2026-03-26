@@ -89,12 +89,15 @@ export function calculerResultatsM96(
   const produitsNonEncaissables = (crd78 - dbt78) + (crd775 - dbt775) + (crd776 - dbt776) + (crd777 - dbt777);
   const cafComptable = resultatComptable + chargesNonDecaissables - produitsNonEncaissables;
 
-  // ── CAF budgétaire ─────────────────────────────────────────────────
+  // ── CAF budgétaire (M9-6 § IV.3 / REPROFI) ─────────────────────────
+  // CAF budgétaire = Résultat de la section de fonctionnement
+  //                = Résultat budgétaire total + Charges d'investissement − Produits d'investissement
+  // Les charges d'investissement (classe 2) et produits d'investissement (classe 1 financement)
+  // sont retirés du résultat total pour isoler le fonctionnement.
+  // Les dotations (68) et reprises (78) sont déjà dans le fonctionnement → ne pas les ajouter.
   const chInvSde = sde.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const finProdSdr = sdr.filter(r => /^(101|104|131|134)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const dotBudg = sde.filter(r => r.compte.startsWith('68')).reduce((s, r) => s + r.realise, 0);
-  const reprBudg = sdr.filter(r => r.compte.startsWith('78')).reduce((s, r) => s + r.realise, 0);
-  const cafBudgetaire = resultatBudgetaire - chInvSde + finProdSdr + dotBudg - reprBudg;
+  const cafBudgetaire = resultatBudgetaire + chInvSde - finProdSdr;
 
   // ── FDR par le haut (ressources permanentes - emplois permanents) ──
   const solCrdCl1     = sumBal(bal, c => c.charAt(0) === '1', 'solCrd');
