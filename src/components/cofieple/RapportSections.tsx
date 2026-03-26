@@ -79,10 +79,20 @@ export function RapportOrdoSection() {
   const [aiText1, setAiText1] = useState('');
   const [aiText3, setAiText3] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  // Commentaires ordonnateur sur chaque rubrique (REPROFI-style "Faits caractéristiques")
+  const [commentairePresentation, setCommentairePresentation] = useState('');
   const [commentaireResultat, setCommentaireResultat] = useState('');
+  const [commentaireRepartition, setCommentaireRepartition] = useState('');
+  const [commentaireEvolution, setCommentaireEvolution] = useState('');
+  const [commentaireDomaines, setCommentaireDomaines] = useState('');
+  const [commentaireFDR, setCommentaireFDR] = useState('');
+  const [commentaireTresorerie, setCommentaireTresorerie] = useState('');
+  const [commentaireOO, setCommentaireOO] = useState('');
   const [commentaireSRH, setCommentaireSRH] = useState('');
   const [commentaireSubventions, setCommentaireSubventions] = useState('');
+  const [commentairePatrimoine, setCommentairePatrimoine] = useState('');
   const [commentairePerspectives, setCommentairePerspectives] = useState('');
+  const [commentairePilotage, setCommentairePilotage] = useState('');
 
   const depNatureDataRaw = useMemo(() => {
     if (!R) return [];
@@ -305,7 +315,8 @@ export function RapportOrdoSection() {
           )}
           <Textarea value={aiText1} onChange={e => setAiText1(e.target.value)}
             placeholder="Cliquez sur 'Générer commentaires IA' ou saisissez votre texte ici…" rows={4}
-            className="mb-4 bg-muted/30 text-sm" />
+            className="mb-2 bg-muted/30 text-sm" />
+          <CommentaireBox label="Commentaire sur la présentation" value={commentairePresentation} onChange={setCommentairePresentation} />
 
           {/* §2 Dashboard — KPI principaux */}
           <SectionTitre numero="2" title="Tableau de bord financier" />
