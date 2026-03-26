@@ -79,10 +79,20 @@ export function RapportOrdoSection() {
   const [aiText1, setAiText1] = useState('');
   const [aiText3, setAiText3] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  // Commentaires ordonnateur sur chaque rubrique (REPROFI-style "Faits caractéristiques")
+  const [commentairePresentation, setCommentairePresentation] = useState('');
   const [commentaireResultat, setCommentaireResultat] = useState('');
+  const [commentaireRepartition, setCommentaireRepartition] = useState('');
+  const [commentaireEvolution, setCommentaireEvolution] = useState('');
+  const [commentaireDomaines, setCommentaireDomaines] = useState('');
+  const [commentaireFDR, setCommentaireFDR] = useState('');
+  const [commentaireTresorerie, setCommentaireTresorerie] = useState('');
+  const [commentaireOO, setCommentaireOO] = useState('');
   const [commentaireSRH, setCommentaireSRH] = useState('');
   const [commentaireSubventions, setCommentaireSubventions] = useState('');
+  const [commentairePatrimoine, setCommentairePatrimoine] = useState('');
   const [commentairePerspectives, setCommentairePerspectives] = useState('');
+  const [commentairePilotage, setCommentairePilotage] = useState('');
 
   const depNatureDataRaw = useMemo(() => {
     if (!R) return [];
@@ -305,7 +315,8 @@ export function RapportOrdoSection() {
           )}
           <Textarea value={aiText1} onChange={e => setAiText1(e.target.value)}
             placeholder="Cliquez sur 'Générer commentaires IA' ou saisissez votre texte ici…" rows={4}
-            className="mb-4 bg-muted/30 text-sm" />
+            className="mb-2 bg-muted/30 text-sm" />
+          <CommentaireBox label="Commentaire sur la présentation" value={commentairePresentation} onChange={setCommentairePresentation} />
 
           {/* §2 Dashboard — KPI principaux */}
           <SectionTitre numero="2" title="Tableau de bord financier" />
@@ -364,9 +375,7 @@ export function RapportOrdoSection() {
               </div>
             </div>
           </div>
-          <Textarea value={commentaireResultat} onChange={e => setCommentaireResultat(e.target.value)}
-            placeholder="Commentaire de l'ordonnateur sur le résultat budgétaire et l'exécution…" rows={2}
-            className="mb-4 bg-muted/30 text-xs" />
+          <CommentaireBox label="Commentaire sur le résultat et l'exécution" value={commentaireResultat} onChange={setCommentaireResultat} />
 
           {/* §3 Répartition dépenses + recettes */}
           <SectionTitre numero="3" title="Répartition des dépenses et des recettes" />
@@ -406,6 +415,7 @@ export function RapportOrdoSection() {
               </div>
             )}
           </div>
+          <CommentaireBox label="Commentaire sur la répartition des dépenses et recettes" value={commentaireRepartition} onChange={setCommentaireRepartition} />
 
           {/* §4 Évolution par domaine */}
           {hasN1 && (
@@ -443,6 +453,7 @@ export function RapportOrdoSection() {
               </div>
             </>
           )}
+          <CommentaireBox label="Commentaire sur l'évolution N / N-1" value={commentaireEvolution} onChange={setCommentaireEvolution} />
 
           {/* §5 Exécution par domaine D1-D9 */}
           {domainesList.length > 0 && (
@@ -535,6 +546,7 @@ export function RapportOrdoSection() {
               })()}
             </>
           )}
+          <CommentaireBox label="Commentaire sur l'exécution par domaine" value={commentaireDomaines} onChange={setCommentaireDomaines} />
 
           {/* §6 FDR — Jauge avec seuil 30 jours */}
           <SectionTitre numero="6" title="Fonds de roulement — autonomie financière" />
@@ -626,6 +638,7 @@ export function RapportOrdoSection() {
               </div>
             </div>
           </div>
+          <CommentaireBox label="Commentaire sur le fonds de roulement" value={commentaireFDR} onChange={setCommentaireFDR} />
 
           {/* §7 Trésorerie annuelle */}
           <SectionTitre numero="7" title="Trésorerie" />
@@ -635,6 +648,7 @@ export function RapportOrdoSection() {
             <KPICard label="DGR" value={`${Math.round(safe.dgrJours)} jours`} color={safe.dgrJours > 60 ? 'red' : 'green'} icon="⏱️" sub="Délai global recouvrement" isText />
             <KPICard label="Réserves" value={formatEur(R.reserves)} color="blue" icon="🏛️" sub="Compte 1068" isText />
           </div>
+          <CommentaireBox label="Commentaire sur la trésorerie" value={commentaireTresorerie} onChange={setCommentaireTresorerie} />
 
           {/* §8 Opérations d'ordre */}
           <SectionTitre numero="8" title="Opérations d'ordre" />
@@ -658,6 +672,7 @@ export function RapportOrdoSection() {
           <div className="text-xs text-muted-foreground mb-4 bg-muted/10 rounded p-3">
             💡 <strong>Pour le CA :</strong> Les opérations d'ordre sont des écritures purement comptables (amortissements, provisions). Elles n'ont aucun impact sur la trésorerie. Un solde d'OO négatif est normal et traduit la politique d'amortissement du patrimoine.
           </div>
+          <CommentaireBox label="Commentaire sur les opérations d'ordre" value={commentaireOO} onChange={setCommentaireOO} />
 
           {/* §9 Focus SRH */}
           {(srhDomaine || (ind && ind.nb_repas_servis > 0)) && (
@@ -714,9 +729,7 @@ export function RapportOrdoSection() {
               <div className="text-xs text-muted-foreground mb-2 bg-muted/10 rounded p-3">
                 💡 <strong>Pour le CA :</strong> Le SRH doit être équilibré (recettes = dépenses). Un excédent est affecté aux réserves SRH (c/106870). Un déficit chronique nécessite une révision des tarifs de restauration.
               </div>
-              <Textarea value={commentaireSRH} onChange={e => setCommentaireSRH(e.target.value)}
-                placeholder="Commentaire sur le SRH (coût repas, équilibre, activité)…" rows={2}
-                className="mb-4 bg-muted/30 text-xs" />
+              <CommentaireBox label="Commentaire sur le SRH" value={commentaireSRH} onChange={setCommentaireSRH} />
             </>
           )}
 
@@ -755,9 +768,9 @@ export function RapportOrdoSection() {
               </div>
             </div>
           </div>
-          <Textarea value={commentaireSubventions} onChange={e => setCommentaireSubventions(e.target.value)}
-            placeholder="Commentaire sur les subventions (état de notification, reliquats, créances anciennes)…" rows={2}
-            className="mb-4 bg-muted/30 text-xs" />
+          <CommentaireBox label="Commentaire sur les subventions et financements" value={commentaireSubventions} onChange={setCommentaireSubventions} />
+
+          {/* §11 Situation patrimoniale */}
 
           {/* §11 Situation patrimoniale */}
           <SectionTitre numero="11" title="Situation patrimoniale" />
@@ -766,16 +779,49 @@ export function RapportOrdoSection() {
             <KPICard label="Amortissements" value={formatEur(R.totalAmortissements)} color="amber" icon="📉" isText />
             <KPICard label="Valeur nette" value={formatEur(safe.valeurNette)} color={safe.valeurNette >= 0 ? 'green' : 'red'} icon="🏢" isText />
           </div>
+          <CommentaireBox label="Commentaire sur la situation patrimoniale" value={commentairePatrimoine} onChange={setCommentairePatrimoine} />
 
-          {/* §12 Points d'attention */}
-          <SectionTitre numero="12" title="Points d'attention et perspectives" />
+          {/* §12 Pilotage budgétaire (REPROFI) */}
+          <SectionTitre numero="12" title="Pilotage budgétaire — Budget initial vs exécuté" />
+          <div className="overflow-x-auto mb-4">
+            <table className="w-full text-xs border">
+              <thead><tr className="bg-slate-700 text-white">
+                <th className="p-2 text-left">Agrégat</th>
+                <th className="p-2 text-right">Budget initial</th>
+                <th className="p-2 text-right">Budget exécuté</th>
+                <th className="p-2 text-right">Écart</th>
+                <th className="p-2 text-right">Écart %</th>
+              </tr></thead>
+              <tbody>
+                {[
+                  { label: 'Charges totales', bi: R.totalChargesPrev, be: R.totalChargesSde },
+                  { label: 'Produits totaux', bi: R.totalProduitsPrev, be: R.totalProduitsSdr },
+                  { label: 'Résultat', bi: R.totalProduitsPrev - R.totalChargesPrev, be: R.resultatBudgetaire },
+                ].map(row => {
+                  const ecart = row.be - row.bi;
+                  const pctE = row.bi !== 0 ? (ecart / Math.abs(row.bi)) * 100 : 0;
+                  return (
+                    <tr key={row.label} className="border-t">
+                      <td className="p-2 font-semibold">{row.label}</td>
+                      <td className="p-2 text-right font-mono text-muted-foreground">{formatEur(row.bi)}</td>
+                      <td className="p-2 text-right font-mono font-bold">{formatEur(row.be)}</td>
+                      <td className={`p-2 text-right font-mono ${ecart >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>{ecart >= 0 ? '+' : ''}{formatEur(ecart)}</td>
+                      <td className={`p-2 text-right font-mono ${ecart >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>{pctE >= 0 ? '+' : ''}{pctE.toFixed(1)} %</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <CommentaireBox label="Commentaire sur le pilotage budgétaire" value={commentairePilotage} onChange={setCommentairePilotage} />
+
+          {/* §13 Points d'attention */}
+          <SectionTitre numero="13" title="Points d'attention et perspectives" />
           <Textarea value={aiText3} onChange={e => setAiText3(e.target.value)}
             placeholder="Cliquez sur 'Générer commentaires IA' ou saisissez votre texte ici…" rows={4}
             className="mb-4 bg-muted/30 text-sm" />
 
-          <Textarea value={commentairePerspectives} onChange={e => setCommentairePerspectives(e.target.value)}
-            placeholder="Perspectives pour l'exercice suivant (investissements prévus, évolution des effectifs, projets)…" rows={3}
-            className="mb-4 bg-muted/30 text-xs" />
+          <CommentaireBox label="Perspectives pour l'exercice suivant" value={commentairePerspectives} onChange={setCommentairePerspectives} />
 
           {ind && ind.montant_fonds_social > 0 && (
             <div className="mb-4 bg-muted/30 rounded-lg p-3 text-xs">
@@ -1618,6 +1664,24 @@ function IndicatorBadge({ icon, label, value }: { icon: React.ReactNode; label: 
         <div className="text-muted-foreground">{label}</div>
         <div className="font-bold">{value}</div>
       </div>
+    </div>
+  );
+}
+
+function CommentaireBox({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  return (
+    <div className="mb-4">
+      <div className="flex items-center gap-1 mb-1">
+        <MessageSquare className="h-3 w-3 text-muted-foreground" />
+        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">{label}</span>
+      </div>
+      <Textarea
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder || `Saisissez ici les faits caractéristiques de cette rubrique…`}
+        rows={2}
+        className="bg-muted/30 text-xs"
+      />
     </div>
   );
 }
