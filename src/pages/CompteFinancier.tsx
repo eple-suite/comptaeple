@@ -5,7 +5,9 @@
 // Conformité : M9-6 2026 · Décret 2012-1246 · Code Éducation
 // ═══════════════════════════════════════════════════════════════
 
+import { useEffect } from 'react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
+import { useEstablishment } from '@/contexts/EstablishmentContext';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
 import { AccueilSection } from '@/components/cofieple/AccueilSection';
@@ -46,6 +48,8 @@ interface NavItem {
 }
 
 const CompteFinancier = () => {
+  const { selectedEstablishment } = useEstablishment();
+  const switchEstablishment = useCofiepleStore(s => s.switchEstablishment);
   const activeTab = useCofiepleStore(s => s.activeTab);
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
   const fichiers = useCofiepleStore(s => s.fichierCharge);
@@ -57,6 +61,13 @@ const CompteFinancier = () => {
   const activeBudget = useCofiepleStore(s => s.activeBudget);
   const setActiveBudget = useCofiepleStore(s => s.setActiveBudget);
   const balance = useCofiepleStore(s => s.balance);
+
+  // ── Cloisonnement : réinitialiser les données quand on change d'établissement ──
+  useEffect(() => {
+    if (selectedEstablishment?.id) {
+      switchEstablishment(selectedEstablishment.id);
+    }
+  }, [selectedEstablishment?.id, switchEstablishment]);
 
   const nbFichiers = Object.values(fichiers).filter(Boolean).length;
   const nbBloq = checkItems.filter(c => c.bloquant).length;
