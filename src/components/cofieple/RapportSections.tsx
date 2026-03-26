@@ -203,7 +203,7 @@ export function RapportOrdoSection() {
     { name: 'Créances Coll.', value: safe.creancesCollectivite, fill: 'hsl(280,50%,50%)' },
   ].filter(d => d.value > 0);
 
-
+  const genererIA = async () => {
     setAiLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-report', {
@@ -232,7 +232,7 @@ export function RapportOrdoSection() {
       setAiText3((parts[1] || '').trim());
     } catch (e) { console.error(e); }
     setAiLoading(false);
-  }
+  };
 
   return (
     <div className="space-y-4">
