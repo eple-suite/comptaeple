@@ -57,6 +57,8 @@ const EMPTY_FICHIERS = (): BudgetProfile['fichiers'] => ({
 });
 
 type Store = CofiepleState & {
+  currentEstablishmentId: string | null;
+  switchEstablishment: (id: string) => void;
   setEtablissement: (etab: Partial<EtablissementUI>) => void;
   addBudgetAnnexe: (config: BudgetConfig) => void;
   removeBudgetAnnexe: (type: TypeBudget) => void;
@@ -88,6 +90,7 @@ type Store = CofiepleState & {
 export const useCofiepleStore = create<Store>()(
   persist(
     immer((set, get) => ({
+      currentEstablishmentId: null,
       etablissement: ETAB_INITIAL,
       budgets: [{ type: 'principal' as TypeBudget, libelle: 'Budget principal' }],
       sde: BUDGETS_VIDES(),
@@ -107,6 +110,15 @@ export const useCofiepleStore = create<Store>()(
       uaiError: null,
       analysisRunning: false,
       budgetProfiles: loadProfiles(),
+
+      switchEstablishment: (id) => {
+        const current = get().currentEstablishmentId;
+        if (current && current !== id) {
+          // Establishment changed — reset all data to avoid cross-contamination
+          get().resetAll();
+        }
+        set(state => { state.currentEstablishmentId = id; });
+      },
 
       setEtablissement: (etab) =>
         set(state => { Object.assign(state.etablissement, etab); }),
@@ -269,6 +281,7 @@ export const useCofiepleStore = create<Store>()(
     {
       name: 'cofieple-store',
       partialize: (state) => ({
+        currentEstablishmentId: state.currentEstablishmentId,
         etablissement: state.etablissement,
         budgets: state.budgets,
         sde: state.sde,
