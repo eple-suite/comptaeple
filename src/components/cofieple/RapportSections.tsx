@@ -453,6 +453,7 @@ export function RapportOrdoSection() {
               </div>
             </>
           )}
+          <CommentaireBox label="Commentaire sur l'évolution N / N-1" value={commentaireEvolution} onChange={setCommentaireEvolution} />
 
           {/* §5 Exécution par domaine D1-D9 */}
           {domainesList.length > 0 && (
@@ -545,6 +546,7 @@ export function RapportOrdoSection() {
               })()}
             </>
           )}
+          <CommentaireBox label="Commentaire sur l'exécution par domaine" value={commentaireDomaines} onChange={setCommentaireDomaines} />
 
           {/* §6 FDR — Jauge avec seuil 30 jours */}
           <SectionTitre numero="6" title="Fonds de roulement — autonomie financière" />
@@ -636,6 +638,7 @@ export function RapportOrdoSection() {
               </div>
             </div>
           </div>
+          <CommentaireBox label="Commentaire sur le fonds de roulement" value={commentaireFDR} onChange={setCommentaireFDR} />
 
           {/* §7 Trésorerie annuelle */}
           <SectionTitre numero="7" title="Trésorerie" />
@@ -645,6 +648,7 @@ export function RapportOrdoSection() {
             <KPICard label="DGR" value={`${Math.round(safe.dgrJours)} jours`} color={safe.dgrJours > 60 ? 'red' : 'green'} icon="⏱️" sub="Délai global recouvrement" isText />
             <KPICard label="Réserves" value={formatEur(R.reserves)} color="blue" icon="🏛️" sub="Compte 1068" isText />
           </div>
+          <CommentaireBox label="Commentaire sur la trésorerie" value={commentaireTresorerie} onChange={setCommentaireTresorerie} />
 
           {/* §8 Opérations d'ordre */}
           <SectionTitre numero="8" title="Opérations d'ordre" />
