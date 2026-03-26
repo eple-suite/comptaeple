@@ -89,15 +89,18 @@ export function calculerResultatsM96(
   const produitsNonEncaissables = (crd78 - dbt78) + (crd775 - dbt775) + (crd776 - dbt776) + (crd777 - dbt777);
   const cafComptable = resultatComptable + chargesNonDecaissables - produitsNonEncaissables;
 
-  // ── CAF budgétaire (M9-6 § IV.3 / REPROFI) ─────────────────────────
-  // CAF budgétaire = Résultat de la section de fonctionnement
-  //                = Résultat budgétaire total + Charges d'investissement − Produits d'investissement
-  // Les charges d'investissement (classe 2) et produits d'investissement (classe 1 financement)
-  // sont retirés du résultat total pour isoler le fonctionnement.
-  // Les dotations (68) et reprises (78) sont déjà dans le fonctionnement → ne pas les ajouter.
+  // ── CAF budgétaire (M9-6 § IV.3 / REPROFI — Bilan de santé financière)
+  // REPROFI standard : CAF = Produits encaissables − Charges décaissables
+  //   Charges décaissables = Total SDE − Charges d'ordre SDE (cpt 68* + 675*)
+  //   Produits encaissables = Total SDR − Produits d'ordre SDR (cpt 78* + 775* + 776* + 777*)
+  // Équivalent : CAF = Résultat budgétaire + Charges OO(SDE) − Produits OO(SDR)
+  const chargesOrdre_SDE = sde.filter(r => /^(68|675)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const produitsOrdre_SDR = sdr.filter(r => /^(78|775|776|777)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const cafBudgetaire = resultatBudgetaire + chargesOrdre_SDE - produitsOrdre_SDR;
+
+  // Charges d'investissement (SDE classe 2) — conservé pour d'autres calculs
   const chInvSde = sde.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const finProdSdr = sdr.filter(r => /^(101|104|131|134)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const cafBudgetaire = resultatBudgetaire + chInvSde - finProdSdr;
+  const finProdSdr = sdr.filter(r => /^(10|13)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
 
   // ── FDR par le haut (ressources permanentes - emplois permanents) ──
   const solCrdCl1     = sumBal(bal, c => c.charAt(0) === '1', 'solCrd');
