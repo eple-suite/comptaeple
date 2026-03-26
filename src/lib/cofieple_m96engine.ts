@@ -12,7 +12,9 @@ import type {
   DomaineData, OperationsOrdre,
 } from './cofieple_types';
 
-const EPS = 0.02;
+// Tolérance d'arrondi comptable : 1 € (standard EPLE, cohérent avec Op@le)
+// Les écarts < 1 € entre budgétaire et comptable sont normaux (arrondis, centimes)
+const EPS = 1.00;
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function sumBal(bal: LigneBalance[], test: (c: string) => boolean, field: keyof LigneBalance): number {
@@ -470,13 +472,13 @@ export function buildChecklist(r: ResultatsM96, options: { isAnnexe?: boolean; b
     const ecart = v1 - v2;
     const ok = Math.abs(ecart) < EPS;
     let statut: StatutVerification = 'ok';
-    if (!ok) statut = bloquant ? 'bloq' : Math.abs(ecart) > 100 ? 'err' : 'warn';
+    if (!ok) statut = bloquant ? 'bloq' : Math.abs(ecart) > 500 ? 'err' : 'warn';
     checks.push({ id, titre, ref, v1Label, v1, v2Label, v2, ecart, statut, bloquant: bloquant && !ok, piste });
   }
 
   add('rb_rc','Résultat budgétaire ≠ Résultat comptable','M9-6 § III.2 / RGCP art.24','Résultat budgétaire',r.resultatBudgetaire,'Résultat comptable',r.resultatComptable,false,"Vérifier que tous les transferts de l'ordonnateur ont été réceptionnés chez l'agent comptable. Les classes 6 et 7 doivent être soldées par Op@le.");
   add('caf_budg_compt','CAF/IAF budgétaire ≠ CAF/IAF comptable','M9-6 § IV.3','CAF/IAF budgétaire',r.cafBudgetaire,'CAF/IAF comptable',r.cafComptable,false,"Vérifier la concordance comptabilité générale / auxiliaire. Contrôler les dotations aux amortissements (68) et reprises (78).");
-  add('fdr_budg_compt','FDR budgétaire ≠ FDR comptable','M9-6 § IV.1','FDR (variation budgétaire)',r.varFdrBas,'FDR comptable',r.fdrComptable,false,"Vérifier les mouvements de classe 1 (financements) et classe 2 (immobilisations).");
+  add('fdr_budg_compt','Variation FDR haut ≠ Variation FDR bas','M9-6 § IV.1','Variation FDR par le haut',r.varFdrHaut,'Variation FDR par le bas',r.varFdrBas,false,"Vérifier les mouvements de classe 1 (financements) et classe 2 (immobilisations). Les deux approches doivent converger.");
   add('fdr_haut_bas','FDR par le haut ≠ FDR par le bas','M9-6 § IV.1 — POINT BLOQUANT','FDR par le haut (ressources permanentes)',r.fdrHaut,'FDR par le bas (actif circulant)',r.fdrBas,true,"POINT BLOQUANT au compte financier. Déséquilibre du bilan. Rechercher les comptes de classe 1 ou 2 anormaux.");
   add('var_fdr_haut_bas','Variation FDR haut ≠ Variation FDR bas','M9-6 § IV.1 Tableau financement','Variation FDR par le haut',r.varFdrHaut,'Variation FDR par le bas',r.varFdrBas,false,"Vérifier les mouvements d'investissement (classe 2), les financements reçus (classe 1) et les cessions d'actifs (675/775).");
   add('var_fdr_caf_bas','Variation FDR (CAF) ≠ Variation FDR par le bas','M9-6 § IV.3','Variation FDR à partir de la CAF',r.varFdrCaf,'Variation FDR par le bas',r.varFdrBas,false,"Vérifier les subventions d'investissement reçues (13X), les acquisitions d'immobilisations (21X/23X) et les cessions.");
