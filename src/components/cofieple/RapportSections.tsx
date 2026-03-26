@@ -415,6 +415,7 @@ export function RapportOrdoSection() {
               </div>
             )}
           </div>
+          <CommentaireBox label="Commentaire sur la répartition des dépenses et recettes" value={commentaireRepartition} onChange={setCommentaireRepartition} />
 
           {/* §4 Évolution par domaine */}
           {hasN1 && (
