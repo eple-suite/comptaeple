@@ -1062,7 +1062,7 @@ export function RapportACSection() {
             totalChargesReel: R.totalChargesSde, totalProduitsReel: R.totalProduitsSdr,
             reserves: R.reserves, joursAutonomie: R.joursAutonomie,
             joursFdr: R.joursFdr, joursTresorerie: R.joursTresorerie,
-            bfr: R.bfr, tmcap: R.tmcap, tmnr: R.tmnr,
+            tmcap: R.tmcap, tmnr: R.tmnr,
             fdrPctEncaissee: R.fdrPctEncaissee, fdrPctNonEncaissee: R.fdrPctNonEncaissee,
             totalCreances: R.totalCreances, totalDettes: R.totalDettes,
             reliquatsSubventions: R.reliquatsSubventions,
