@@ -262,15 +262,26 @@ export function calculerResultatsM96(
 
   const tauxExecCharges  = totalChargesPrev > 0 ? totalChargesSde / totalChargesPrev : 0;
   const tauxExecProduits = totalProduitsPrev > 0 ? totalProduitsSdr / totalProduitsPrev : 0;
-  const joursAutonomie   = totalChargesSde > 0 ? (tresorerie / (totalChargesSde / 365)) : 0;
+
+  // ── Charges de fonctionnement (hors investissement) ────────────────
+  // Le dénominateur REPROFI utilise uniquement les charges de fonctionnement,
+  // c'est-à-dire le total SDE moins les charges d'investissement (classe 2)
+  const chargesFonctionnement = totalChargesSde - chInvSde;
+
+  // ── Jours d'autonomie financière (REPROFI) ─────────────────────────
+  // = FDR / charges quotidiennes de fonctionnement
+  // REPROFI utilise le FDR (pas la trésorerie) car il mesure la capacité
+  // de l'établissement à faire face à ses charges sans recettes nouvelles
+  const chargesFonctQuotidiennes = chargesFonctionnement / 365;
+  const joursAutonomie   = chargesFonctQuotidiennes > 0 ? (fdrComptable / chargesFonctQuotidiennes) : 0;
   const ratioFdrBfr      = bfr !== 0 ? fdrBas / bfr : 0;
   const ressourcesPropres = sdr.filter(r => /^7[0-6]/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const recettesAutogenerees = sdr.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
 
   // ── REPROFI — Jours FDR et Trésorerie ─────────────────────────────
-  const chargesExplQuotidiennes = totalChargesSde / 365;
-  const joursFdr = chargesExplQuotidiennes > 0 ? fdrComptable / chargesExplQuotidiennes : 0;
-  const joursTresorerie = chargesExplQuotidiennes > 0 ? tresorerie / chargesExplQuotidiennes : 0;
+  // Dénominateur = charges de fonctionnement quotidiennes (hors investissement)
+  const joursFdr = chargesFonctQuotidiennes > 0 ? fdrComptable / chargesFonctQuotidiennes : 0;
+  const joursTresorerie = chargesFonctQuotidiennes > 0 ? tresorerie / chargesFonctQuotidiennes : 0;
 
   // ── REPROFI — Composition FDR (encaissé / non encaissé) ───────────
   const fdrPartEncaissee = Math.max(0, tresorerie > 0 ? Math.min(tresorerie, fdrComptable) : 0);
