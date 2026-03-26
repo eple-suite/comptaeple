@@ -188,7 +188,22 @@ export function RapportOrdoSection() {
   const recettesOrigineData = recettesOrigineDataRaw;
   const autoComments = autoCommentsRaw;
 
-  async function genererIA() {
+  const execData = [
+    { name: 'Dépenses', Prévu: R.totalChargesPrev, Réalisé: R.totalChargesSde, taux: R.tauxExecCharges },
+    { name: 'Recettes', Prévu: R.totalProduitsPrev, Réalisé: R.totalProduitsSdr, taux: R.tauxExecProduits },
+  ];
+  const srhDomaine = domainesList.find(d => d.code === '5');
+  const srhRecettes = srhDomaine?.produitsReel ?? 0;
+  const srhDepenses = srhDomaine?.chargesReel ?? 0;
+  const srhSolde = srhRecettes - srhDepenses;
+  const subventionsData = [
+    { name: 'Reçues', value: safe.totalCreances > 0 ? R.totalProduitsSdr - safe.totalCreances : R.totalProduitsSdr, fill: 'hsl(160,45%,45%)' },
+    { name: 'En attente', value: safe.reliquatsSubventions, fill: 'hsl(38,92%,50%)' },
+    { name: 'Créances État', value: safe.creancesEtat, fill: 'hsl(215,70%,50%)' },
+    { name: 'Créances Coll.', value: safe.creancesCollectivite, fill: 'hsl(280,50%,50%)' },
+  ].filter(d => d.value > 0);
+
+
     setAiLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-report', {
