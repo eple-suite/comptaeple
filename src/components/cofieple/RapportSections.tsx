@@ -1,8 +1,9 @@
 // ═══════════════════════════════════════════════════════════════
 // COFIEPLE — Rapport Ordonnateur + Rapport Agent Comptable
 // Modèle REPROFI 25 pages — M9-6 2026, Décret 2012-1246
-// Version enrichie : saisie complémentaire AC, graphiques variés,
-// PDF officiel, pas de visa comptable supérieur
+// Version enrichie : dashboard financier complet, graphiques variés,
+// commentaires d'analyse pour CA non spécialiste,
+// PDF officiel AC, pas de visa comptable supérieur
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useMemo } from 'react';
@@ -12,7 +13,12 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Bot, Printer, Loader2, Plus, Trash2, Download, MessageSquare, Scale, PieChart as PieChartIcon, BarChart3, ArrowRight } from 'lucide-react';
+import {
+  Bot, Printer, Loader2, Plus, Trash2, Download, MessageSquare,
+  Scale, PieChart as PieChartIcon, BarChart3, ArrowRight, TrendingUp,
+  TrendingDown, AlertTriangle, CheckCircle2, Info, Target, Utensils,
+  Building2, Users, GraduationCap, Wallet, ShieldCheck, Clock,
+} from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
@@ -22,7 +28,8 @@ import { toast } from 'sonner';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell, Legend,
-  PieChart, Pie,
+  PieChart, Pie, LineChart, Line, AreaChart, Area,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
 
 interface Indicators {
@@ -53,9 +60,15 @@ function useExtraIndicators() {
   return ind;
 }
 
+// ── Smart commentary helper ─────────────────────────────────
+function genAutoComment(label: string, value: number, seuil: number, unit: string, bienSi: 'sup' | 'inf', contextHaut: string, contextBas: string): string {
+  const ok = bienSi === 'sup' ? value >= seuil : value <= seuil;
+  return ok ? `✅ ${label} : ${contextHaut}` : `⚠️ ${label} : ${contextBas}`;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // RAPPORT DE L'ORDONNATEUR — M9-6 § V.1
-// Enrichi : D1-D9, N/N-1, écarts significatifs, opérations d'ordre
+// Dashboard financier complet avec commentaires pour CA
 // ═══════════════════════════════════════════════════════════════
 export function RapportOrdoSection() {
   const etab = useCofiepleStore(s => s.etablissement);
@@ -66,6 +79,64 @@ export function RapportOrdoSection() {
   const [aiText1, setAiText1] = useState('');
   const [aiText3, setAiText3] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [commentaireResultat, setCommentaireResultat] = useState('');
+  const [commentaireSRH, setCommentaireSRH] = useState('');
+  const [commentaireSubventions, setCommentaireSubventions] = useState('');
+  const [commentairePerspectives, setCommentairePerspectives] = useState('');
+
+  const depNatureDataRaw = useMemo(() => {
+    if (!R) return [];
+    const cn = R.chargesNature ?? {};
+    const labels: Record<string, string> = { '60': 'Achats', '61': 'Serv. extérieurs', '62': 'Autres serv. ext.', '63': 'Impôts', '64': 'Personnel', '65': 'Autres charges', '66': 'Charges fin.', '67': 'Charges except.', '68': 'Dotations amort.', '20': 'Investissement', '21': 'Immobilisations' };
+    const colors = ['hsl(215,70%,50%)', 'hsl(160,45%,45%)', 'hsl(38,92%,50%)', 'hsl(0,72%,55%)', 'hsl(280,50%,50%)', 'hsl(190,60%,40%)', 'hsl(340,65%,50%)', 'hsl(120,40%,40%)', 'hsl(30,70%,50%)', 'hsl(250,50%,50%)'];
+    return Object.entries(cn).filter(([, v]) => v > 50).sort(([, a], [, b]) => b - a).slice(0, 10).map(([k, v], i) => ({ name: labels[k] || `Cpt ${k}`, value: v, fill: colors[i % colors.length] }));
+  }, [R]);
+
+  const recettesOrigineDataRaw = useMemo(() => {
+    if (!R) return [];
+    const po = R.produitsOrigine ?? {};
+    let etat = 0, collectivite = 0, propres = 0, autres = 0;
+    Object.entries(po).forEach(([k, v]) => {
+      if (['741', '744', '745', '746'].some(p => k.startsWith(p))) etat += v;
+      else if (['742', '743', '747'].some(p => k.startsWith(p))) collectivite += v;
+      else if (['70', '71', '72', '75', '76'].some(p => k.startsWith(p))) propres += v;
+      else autres += v;
+    });
+    return [
+      { name: 'État', value: etat, fill: 'hsl(215,70%,50%)' },
+      { name: 'Collectivité', value: collectivite, fill: 'hsl(160,45%,45%)' },
+      { name: 'Ress. propres', value: propres, fill: 'hsl(38,92%,50%)' },
+      { name: 'Autres', value: autres, fill: 'hsl(280,50%,50%)' },
+    ].filter(d => d.value > 0);
+  }, [R]);
+
+  const autoCommentsRaw = useMemo(() => {
+    if (!R) return [];
+    const c: string[] = [];
+    const safeR = {
+      joursFdr: R.joursFdr ?? 0, joursTresorerie: R.joursTresorerie ?? 0,
+      prelevementsReserves: R.prelevementsReserves ?? { totalPrelevements: 0 },
+    };
+    if (R.resultatBudgetaire >= 0) {
+      c.push(`✅ L'exercice ${etab.exercice} dégage un excédent de ${formatEur(R.resultatBudgetaire)}. Le budget a été maîtrisé.`);
+    } else {
+      const prelev = safeR.prelevementsReserves.totalPrelevements;
+      if (prelev > 0) {
+        const horsP = R.resultatBudgetaire + prelev;
+        c.push(`📊 Le résultat est déficitaire de ${formatEur(Math.abs(R.resultatBudgetaire))} en raison de ${formatEur(prelev)} de prélèvements sur FDR votés en CA. ${horsP >= 0 ? `Sans ces prélèvements, le résultat aurait été excédentaire de ${formatEur(horsP)}.` : `Hors prélèvements, le résultat reste déficitaire de ${formatEur(Math.abs(horsP))}.`}`);
+      } else {
+        c.push(`⚠️ Le résultat est déficitaire de ${formatEur(Math.abs(R.resultatBudgetaire))}. Ce déficit sera imputé sur les réserves (solde actuel : ${formatEur(R.reserves)}).`);
+      }
+    }
+    if (R.tauxExecCharges < 0.75) c.push(`⚠️ Taux d'exécution des dépenses faible (${(R.tauxExecCharges * 100).toFixed(1)}%).`);
+    else if (R.tauxExecCharges > 0.95) c.push(`✅ Crédits consommés à ${(R.tauxExecCharges * 100).toFixed(1)}%.`);
+    if (safeR.joursFdr >= 30) c.push(`✅ Le FDR couvre ${Math.round(safeR.joursFdr)} jours (seuil : 30 j).`);
+    else if (safeR.joursFdr > 0) c.push(`🔴 Le FDR ne couvre que ${Math.round(safeR.joursFdr)} jours (< 30 j).`);
+    if (safeR.joursTresorerie < 15) c.push(`🔴 Trésorerie tendue : ${Math.round(safeR.joursTresorerie)} jours.`);
+    if (R.cafBudgetaire >= 0) c.push(`✅ CAF de ${formatEur(R.cafBudgetaire)}.`);
+    else c.push(`⚠️ IAF de ${formatEur(Math.abs(R.cafBudgetaire))}.`);
+    return c;
+  }, [R, etab.exercice]);
 
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'ordonnateur (M9-6 § V.1)." />;
 
@@ -76,7 +147,63 @@ export function RapportOrdoSection() {
   const domaines = R.domaines ?? {};
   const domainesList = Object.values(domaines).filter(d => d.chargesReel > 0 || d.produitsReel > 0).sort((a, b) => a.code.localeCompare(b.code));
 
-  async function genererIA() {
+  const safe = {
+    joursFdr: R.joursFdr ?? 0,
+    joursTresorerie: R.joursTresorerie ?? 0,
+    tmcap: R.tmcap ?? 0,
+    tmnr: R.tmnr ?? 0,
+    dgpJours: R.dgpJours ?? 0,
+    dgrJours: R.dgrJours ?? 0,
+    fdrMobilisable: R.fdrMobilisable ?? 0,
+    fdrPartEncaissee: R.fdrPartEncaissee ?? 0,
+    fdrPartNonEncaissee: R.fdrPartNonEncaissee ?? 0,
+    fdrPctEncaissee: R.fdrPctEncaissee ?? 0,
+    cafComptable: R.cafComptable ?? 0,
+    ratioLiquiditeGenerale: R.ratioLiquiditeGenerale ?? 0,
+    ratioAutonomieFinanciere: R.ratioAutonomieFinanciere ?? 0,
+    ratioSolvabilite: R.ratioSolvabilite ?? 0,
+    ratioCouvertureCharges: R.ratioCouvertureCharges ?? 0,
+    ratioChargesPersonnel: R.ratioChargesPersonnel ?? 0,
+    prelevementsReserves: R.prelevementsReserves ?? { totalPrelevements: 0, prelevementsInvestissement: 0, prelevementsFonctionnement: 0, variationReserves: 0 },
+    tresoComposition: R.tresoComposition ?? { autonomieFinanciere: 0, depotsCautions: 0, reglementsEnAttente: 0, reliquatsSubventions: 0 },
+    totalCreances: R.totalCreances ?? 0,
+    totalDettes: R.totalDettes ?? 0,
+    creancesEtat: R.creancesEtat ?? 0,
+    creancesCollectivite: R.creancesCollectivite ?? 0,
+    creancesFamilles: R.creancesFamilles ?? 0,
+    creancesAutres: R.creancesAutres ?? 0,
+    reliquatsSubventions: R.reliquatsSubventions ?? 0,
+    valeurNette: R.valeurNette ?? 0,
+  };
+
+  // ── Chart data ─────────────────────────────────────────────
+  const domChartData = domainesList.map(d => ({
+    name: `D${d.code}`,
+    Dépenses: d.chargesReel,
+    Recettes: d.produitsReel,
+    Solde: d.solde,
+  }));
+
+  const depNatureData = depNatureDataRaw;
+  const recettesOrigineData = recettesOrigineDataRaw;
+  const autoComments = autoCommentsRaw;
+
+  const execData = [
+    { name: 'Dépenses', Prévu: R.totalChargesPrev, Réalisé: R.totalChargesSde, taux: R.tauxExecCharges },
+    { name: 'Recettes', Prévu: R.totalProduitsPrev, Réalisé: R.totalProduitsSdr, taux: R.tauxExecProduits },
+  ];
+  const srhDomaine = domainesList.find(d => d.code === '5');
+  const srhRecettes = srhDomaine?.produitsReel ?? 0;
+  const srhDepenses = srhDomaine?.chargesReel ?? 0;
+  const srhSolde = srhRecettes - srhDepenses;
+  const subventionsData = [
+    { name: 'Reçues', value: safe.totalCreances > 0 ? R.totalProduitsSdr - safe.totalCreances : R.totalProduitsSdr, fill: 'hsl(160,45%,45%)' },
+    { name: 'En attente', value: safe.reliquatsSubventions, fill: 'hsl(38,92%,50%)' },
+    { name: 'Créances État', value: safe.creancesEtat, fill: 'hsl(215,70%,50%)' },
+    { name: 'Créances Coll.', value: safe.creancesCollectivite, fill: 'hsl(280,50%,50%)' },
+  ].filter(d => d.value > 0);
+
+
     setAiLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('generate-report', {
@@ -89,6 +216,11 @@ export function RapportOrdoSection() {
             joursAutonomie: R.joursAutonomie, reserves: R.reserves,
             tauxExecCharges: R.tauxExecCharges, tauxExecProduits: R.tauxExecProduits,
             domaines, operationsOrdre: oo,
+            joursFdr: safe.joursFdr, joursTresorerie: safe.joursTresorerie,
+            fdrMobilisable: safe.fdrMobilisable, fdrPctEncaissee: safe.fdrPctEncaissee,
+            dgpJours: safe.dgpJours, dgrJours: safe.dgrJours,
+            tmcap: safe.tmcap, tmnr: safe.tmnr,
+            ratioAutonomieFinanciere: safe.ratioAutonomieFinanciere,
           },
           indicateurs: ind,
         },
@@ -102,27 +234,41 @@ export function RapportOrdoSection() {
     setAiLoading(false);
   }
 
-  const domChartData = domainesList.map(d => ({
-    name: `D${d.code}`,
-    Dépenses: d.chargesReel,
-    Recettes: d.produitsReel,
-    Solde: d.solde,
-  }));
-
   return (
     <div className="space-y-4">
       <div className="flex gap-3 flex-wrap">
         <Button onClick={genererIA} disabled={aiLoading}>
           {aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bot className="h-4 w-4 mr-2" />}
-          {aiLoading ? 'Génération IA…' : 'Générer le texte IA'}
+          {aiLoading ? 'Génération IA…' : 'Générer commentaires IA'}
         </Button>
         <Button variant="outline" onClick={() => window.print()}>
           <Printer className="h-4 w-4 mr-2" /> Imprimer / PDF
         </Button>
       </div>
 
-      <Card className="max-w-4xl mx-auto print:shadow-none">
+      {/* ═══════════ ANALYSE AUTO POUR LE CA ═══════════ */}
+      {autoComments.length > 0 && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Bot className="h-4 w-4 text-primary" />
+              Synthèse pour le conseil d'administration
+              <Badge variant="outline" className="ml-auto text-[10px] border-primary/30">Commentaires automatiques</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2 text-xs leading-relaxed">
+              {autoComments.map((text, i) => (
+                <p key={i}>{text}</p>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      <Card className="max-w-5xl mx-auto print:shadow-none">
         <CardContent className="p-8">
+          {/* Header officiel */}
           <div className="flex justify-between items-start border-b-2 border-foreground pb-4 mb-5">
             <div>
               <h1 className="text-xl font-black tracking-tight">RAPPORT DE L'ORDONNATEUR</h1>
@@ -143,74 +289,165 @@ export function RapportOrdoSection() {
             Présenté par l'ordonnateur : <strong>{etab.ordonnateur || '—'}</strong> · Arrêté au : {dateArrete}
           </p>
 
+          {/* §1 Présentation */}
           <SectionTitre numero="1" title="Présentation de l'établissement" />
           {ind && ind.effectif_eleves > 0 && (
             <div className="mb-4 grid grid-cols-2 lg:grid-cols-4 gap-2">
-              <IndicatorBadge icon="🎓" label="Élèves" value={`${ind.effectif_eleves}`} />
-              <IndicatorBadge icon="🍽️" label="DP" value={`${ind.effectif_dp}`} />
-              <IndicatorBadge icon="🛏️" label="Internes" value={`${ind.effectif_internes}`} />
-              <IndicatorBadge icon="📚" label="Boursiers" value={`${ind.effectif_boursiers} (${tauxBoursiers} %)`} />
-              {ind.nb_repas_servis > 0 && <IndicatorBadge icon="🍴" label="Repas/an" value={`${ind.nb_repas_servis.toLocaleString('fr-FR')}`} />}
-              {ind.effectif_personnel > 0 && <IndicatorBadge icon="👥" label="Personnel" value={`${ind.effectif_personnel} ETP`} />}
-              {ind.etp_ressources_propres > 0 && <IndicatorBadge icon="💼" label="ETP ress. propres" value={`${ind.etp_ressources_propres}`} />}
-              {ind.surface_batiments > 0 && <IndicatorBadge icon="🏢" label="Surface" value={`${ind.surface_batiments.toLocaleString('fr-FR')} m²`} />}
+              <IndicatorBadge icon={<GraduationCap className="h-4 w-4 text-primary" />} label="Élèves" value={`${ind.effectif_eleves}`} />
+              <IndicatorBadge icon={<Utensils className="h-4 w-4 text-warning" />} label="DP" value={`${ind.effectif_dp}`} />
+              <IndicatorBadge icon={<Building2 className="h-4 w-4 text-muted-foreground" />} label="Internes" value={`${ind.effectif_internes}`} />
+              <IndicatorBadge icon={<Users className="h-4 w-4 text-emerald-600" />} label="Boursiers" value={`${ind.effectif_boursiers} (${tauxBoursiers} %)`} />
+              {ind.nb_repas_servis > 0 && <IndicatorBadge icon={<Utensils className="h-4 w-4 text-warning" />} label="Repas/an" value={`${ind.nb_repas_servis.toLocaleString('fr-FR')}`} />}
+              {ind.effectif_personnel > 0 && <IndicatorBadge icon={<Users className="h-4 w-4 text-primary" />} label="Personnel" value={`${ind.effectif_personnel} ETP`} />}
+              {ind.etp_ressources_propres > 0 && <IndicatorBadge icon={<Wallet className="h-4 w-4 text-emerald-600" />} label="ETP ress. propres" value={`${ind.etp_ressources_propres}`} />}
+              {ind.surface_batiments > 0 && <IndicatorBadge icon={<Building2 className="h-4 w-4 text-muted-foreground" />} label="Surface" value={`${ind.surface_batiments.toLocaleString('fr-FR')} m²`} />}
             </div>
           )}
           <Textarea value={aiText1} onChange={e => setAiText1(e.target.value)}
-            placeholder="Cliquez sur 'Générer le texte IA' ou saisissez votre texte ici…" rows={4}
+            placeholder="Cliquez sur 'Générer commentaires IA' ou saisissez votre texte ici…" rows={4}
             className="mb-4 bg-muted/30 text-sm" />
 
-          <SectionTitre numero="2" title={`Exécution budgétaire de l'exercice ${etab.exercice}`} />
+          {/* §2 Dashboard — KPI principaux */}
+          <SectionTitre numero="2" title="Tableau de bord financier" />
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label="Crédits ouverts" value={formatEur(R.totalChargesPrev)} color="blue" icon="💸" sub="Budget voté + DBM" isText />
-            <KPICard label="Dépenses réalisées" value={formatEur(R.totalChargesSde)} color="amber" icon="✅" sub={`Taux : ${(R.tauxExecCharges * 100).toFixed(1)} %`} isText />
-            <KPICard label="Prévisions recettes" value={formatEur(R.totalProduitsPrev)} color="blue" icon="💰" sub="Budget voté + DBM" isText />
-            <KPICard label="Recettes réalisées" value={formatEur(R.totalProduitsSdr)} color={R.totalProduitsSdr >= R.totalProduitsPrev ? 'green' : 'red'} icon="✅" sub={`Taux : ${(R.tauxExecProduits * 100).toFixed(1)} %`} isText />
+            <KPICard label="Résultat budgétaire" value={formatEur(R.resultatBudgetaire)} color={R.resultatBudgetaire >= 0 ? 'green' : 'red'} icon="📊" sub={R.resultatBudgetaire >= 0 ? 'Excédent' : 'Déficit'} isText />
+            <KPICard label="CAF / IAF" value={formatEur(R.cafBudgetaire)} color={R.cafBudgetaire >= 0 ? 'green' : 'red'} icon="🔄" sub={R.cafBudgetaire >= 0 ? 'Capacité' : 'Insuffisance'} isText />
+            <KPICard label="FDR" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub={`${Math.round(safe.joursFdr)} jours`} isText />
+            <KPICard label="Trésorerie" value={formatEur(R.tresorerie)} color={R.tresorerie >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(safe.joursTresorerie)} jours`} isText />
           </div>
 
-          {hasN1 && (
-            <div className="overflow-x-auto mb-4">
-              <table className="w-full text-xs border">
-                <thead><tr className="bg-slate-700 text-white">
-                  <th className="p-2 text-left">Agrégat</th>
-                  <th className="p-2 text-right">N ({etab.exercice})</th>
-                  <th className="p-2 text-right">N-1 ({etab.exercice - 1})</th>
-                  <th className="p-2 text-right">Variation</th>
-                  <th className="p-2 text-right">%</th>
-                </tr></thead>
-                <tbody>
-                  {[
-                    { label: 'Dépenses réalisées', vN: R.totalChargesSde, vN1: R.totalChargesSdeN1 },
-                    { label: 'Recettes réalisées', vN: R.totalProduitsSdr, vN1: R.totalProduitsSdrN1 },
-                    { label: 'Résultat budgétaire', vN: R.resultatBudgetaire, vN1: R.resultatBudgetaireN1 },
-                  ].map(row => {
-                    const v = row.vN - (row.vN1 ?? 0);
-                    const pct = (row.vN1 ?? 0) > 0 ? (v / (row.vN1 ?? 1)) * 100 : 0;
-                    return (
-                      <tr key={row.label} className="border-t">
-                        <td className="p-2 font-semibold">{row.label}</td>
-                        <td className="p-2 text-right font-mono">{formatEur(row.vN)}</td>
-                        <td className="p-2 text-right font-mono text-muted-foreground">{formatEur(row.vN1 ?? 0)}</td>
-                        <td className={`p-2 text-right font-mono ${v >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>{v >= 0 ? '+' : ''}{formatEur(v)}</td>
-                        <td className={`p-2 text-right font-mono ${v >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>{pct >= 0 ? '+' : ''}{pct.toFixed(1)} %</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          {/* Balance dépenses/recettes — graphique visuel */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+            <div>
+              <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1">
+                <Scale className="h-3 w-3" /> Balance dépenses / recettes
+              </p>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={[
+                  { name: 'Dépenses', value: R.totalChargesSde, fill: 'hsl(0,70%,55%)' },
+                  { name: 'Recettes', value: R.totalProduitsSdr, fill: 'hsl(160,45%,45%)' },
+                ]} layout="vertical" barCategoryGap="30%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tickFormatter={v => `${(v / 1000).toFixed(0)}k`} fontSize={10} />
+                  <YAxis type="category" dataKey="name" width={80} fontSize={11} />
+                  <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                    <Cell fill="hsl(0,70%,55%)" />
+                    <Cell fill="hsl(160,45%,45%)" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="text-center text-xs mt-2 font-semibold">
+                Solde : <span className={R.resultatBudgetaire >= 0 ? 'text-emerald-600' : 'text-destructive'}>{formatEur(R.resultatBudgetaire)}</span>
+              </div>
             </div>
+
+            {/* Taux d'exécution budgétaire */}
+            <div>
+              <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1">
+                <Target className="h-3 w-3" /> Taux d'exécution budgétaire
+              </p>
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={execData} barCategoryGap="25%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
+                  <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                  <Legend wrapperStyle={{ fontSize: 10 }} />
+                  <Bar dataKey="Prévu" fill="hsl(215,70%,50%)" opacity={0.4} radius={[2, 2, 0, 0]} />
+                  <Bar dataKey="Réalisé" fill="hsl(215,70%,50%)" radius={[2, 2, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+              <div className="flex justify-around text-xs mt-2">
+                <span>Dépenses : <strong className={R.tauxExecCharges >= 0.85 ? 'text-emerald-600' : 'text-warning'}>{(R.tauxExecCharges * 100).toFixed(1)} %</strong></span>
+                <span>Recettes : <strong className={R.tauxExecProduits >= 0.9 ? 'text-emerald-600' : 'text-warning'}>{(R.tauxExecProduits * 100).toFixed(1)} %</strong></span>
+              </div>
+            </div>
+          </div>
+          <Textarea value={commentaireResultat} onChange={e => setCommentaireResultat(e.target.value)}
+            placeholder="Commentaire de l'ordonnateur sur le résultat budgétaire et l'exécution…" rows={2}
+            className="mb-4 bg-muted/30 text-xs" />
+
+          {/* §3 Répartition dépenses + recettes */}
+          <SectionTitre numero="3" title="Répartition des dépenses et des recettes" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            {depNatureData.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1">
+                  <PieChartIcon className="h-3 w-3" /> Dépenses par nature
+                </p>
+                <ResponsiveContainer width="100%" height={260}>
+                  <PieChart>
+                    <Pie data={depNatureData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      labelLine={true} fontSize={9}>
+                      {depNatureData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            {recettesOrigineData.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1">
+                  <PieChartIcon className="h-3 w-3" /> Recettes par origine (État / Coll. / Propres)
+                </p>
+                <ResponsiveContainer width="100%" height={260}>
+                  <PieChart>
+                    <Pie data={recettesOrigineData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      labelLine={true} fontSize={9}>
+                      {recettesOrigineData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+          </div>
+
+          {/* §4 Évolution par domaine */}
+          {hasN1 && (
+            <>
+              <SectionTitre numero="4" title={`Évolution N / N-1`} />
+              <div className="overflow-x-auto mb-4">
+                <table className="w-full text-xs border">
+                  <thead><tr className="bg-slate-700 text-white">
+                    <th className="p-2 text-left">Agrégat</th>
+                    <th className="p-2 text-right">N ({etab.exercice})</th>
+                    <th className="p-2 text-right">N-1 ({etab.exercice - 1})</th>
+                    <th className="p-2 text-right">Variation</th>
+                    <th className="p-2 text-right">%</th>
+                  </tr></thead>
+                  <tbody>
+                    {[
+                      { label: 'Dépenses réalisées', vN: R.totalChargesSde, vN1: R.totalChargesSdeN1 },
+                      { label: 'Recettes réalisées', vN: R.totalProduitsSdr, vN1: R.totalProduitsSdrN1 },
+                      { label: 'Résultat budgétaire', vN: R.resultatBudgetaire, vN1: R.resultatBudgetaireN1 },
+                    ].map(row => {
+                      const v = row.vN - (row.vN1 ?? 0);
+                      const pct = (row.vN1 ?? 0) > 0 ? (v / (row.vN1 ?? 1)) * 100 : 0;
+                      return (
+                        <tr key={row.label} className="border-t">
+                          <td className="p-2 font-semibold">{row.label}</td>
+                          <td className="p-2 text-right font-mono">{formatEur(row.vN)}</td>
+                          <td className="p-2 text-right font-mono text-muted-foreground">{formatEur(row.vN1 ?? 0)}</td>
+                          <td className={`p-2 text-right font-mono ${v >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>{v >= 0 ? '+' : ''}{formatEur(v)}</td>
+                          <td className={`p-2 text-right font-mono ${v >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>{pct >= 0 ? '+' : ''}{pct.toFixed(1)} %</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
 
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label="Résultat budg." value={formatEur(R.resultatBudgetaire)} color={R.resultatBudgetaire >= 0 ? 'green' : 'red'} icon="📊" sub={R.resultatBudgetaire >= 0 ? 'Excédent' : 'Déficit'} isText />
-            <KPICard label="CAF/IAF" value={formatEur(R.cafBudgetaire)} color={R.cafBudgetaire >= 0 ? 'green' : 'red'} icon="🔄" sub={R.cafBudgetaire >= 0 ? 'Capacité' : 'Insuffisance'} isText />
-            <KPICard label="DGP" value={`${Math.round(R.dgpJours ?? 0)} jours`} color={(R.dgpJours ?? 0) > 30 ? 'red' : 'green'} icon="⏱️" sub="Délai global paiement" isText />
-            <KPICard label="DGR" value={`${Math.round(R.dgrJours ?? 0)} jours`} color={(R.dgrJours ?? 0) > 60 ? 'red' : 'green'} icon="⏱️" sub="Délai global recouvrement" isText />
-          </div>
-
+          {/* §5 Exécution par domaine D1-D9 */}
           {domainesList.length > 0 && (
             <>
-              <SectionTitre numero="3" title={`Exécution par domaine — Exercice ${etab.exercice}`} />
+              <SectionTitre numero="5" title={`Exécution par domaine — Exercice ${etab.exercice}`} />
               <div className="overflow-x-auto mb-4">
                 <table className="w-full text-xs border">
                   <thead><tr className="bg-slate-700 text-white">
@@ -220,45 +457,26 @@ export function RapportOrdoSection() {
                     <th className="p-2 text-right">Taux exéc.</th>
                     <th className="p-2 text-right">Prév. recettes</th>
                     <th className="p-2 text-right">Recettes</th>
-                    <th className="p-2 text-right">+/- values</th>
                     <th className="p-2 text-right">Solde</th>
-                    {hasN1 && <>
-                      <th className="p-2 text-right">Var. dép. %</th>
-                      <th className="p-2 text-right">Var. rec. %</th>
-                    </>}
                   </tr></thead>
                   <tbody>
-                    {domainesList.map(d => {
-                      const significant = Math.abs(d.pctVariationCharges) > 10 || Math.abs(d.pctVariationProduits) > 10;
-                      return (
-                        <tr key={d.code} className={`border-t ${significant ? 'bg-warning/5' : ''}`}>
-                          <td className="p-2 font-semibold">{d.libelle}</td>
-                          <td className="p-2 text-right font-mono">{formatEur(d.chargesPrev)}</td>
-                          <td className="p-2 text-right font-mono font-bold">{formatEur(d.chargesReel)}</td>
-                          <td className="p-2 text-right">
-                            <span className={`font-semibold ${d.tauxExecCharges >= 0.9 ? 'text-emerald-600' : d.tauxExecCharges >= 0.7 ? 'text-warning' : 'text-destructive'}`}>
-                              {(d.tauxExecCharges * 100).toFixed(1)} %
-                            </span>
-                          </td>
-                          <td className="p-2 text-right font-mono">{formatEur(d.produitsPrev)}</td>
-                          <td className="p-2 text-right font-mono font-bold">{formatEur(d.produitsReel)}</td>
-                          <td className={`p-2 text-right font-mono ${d.plusValues >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
-                            {d.plusValues !== 0 ? formatEur(d.plusValues) : '—'}
-                          </td>
-                          <td className={`p-2 text-right font-mono font-bold ${d.solde >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
-                            {formatEur(d.solde)}
-                          </td>
-                          {hasN1 && <>
-                            <td className={`p-2 text-right font-mono text-xs ${d.pctVariationCharges > 0 ? 'text-destructive' : 'text-emerald-600'}`}>
-                              {d.chargesReelN1 > 0 ? `${d.pctVariationCharges >= 0 ? '+' : ''}${d.pctVariationCharges.toFixed(1)} %` : '—'}
-                            </td>
-                            <td className={`p-2 text-right font-mono text-xs ${d.pctVariationProduits >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
-                              {d.produitsReelN1 > 0 ? `${d.pctVariationProduits >= 0 ? '+' : ''}${d.pctVariationProduits.toFixed(1)} %` : '—'}
-                            </td>
-                          </>}
-                        </tr>
-                      );
-                    })}
+                    {domainesList.map(d => (
+                      <tr key={d.code} className="border-t">
+                        <td className="p-2 font-semibold">{d.libelle}</td>
+                        <td className="p-2 text-right font-mono">{formatEur(d.chargesPrev)}</td>
+                        <td className="p-2 text-right font-mono font-bold">{formatEur(d.chargesReel)}</td>
+                        <td className="p-2 text-right">
+                          <span className={`font-semibold ${d.tauxExecCharges >= 0.9 ? 'text-emerald-600' : d.tauxExecCharges >= 0.7 ? 'text-warning' : 'text-destructive'}`}>
+                            {(d.tauxExecCharges * 100).toFixed(1)} %
+                          </span>
+                        </td>
+                        <td className="p-2 text-right font-mono">{formatEur(d.produitsPrev)}</td>
+                        <td className="p-2 text-right font-mono font-bold">{formatEur(d.produitsReel)}</td>
+                        <td className={`p-2 text-right font-mono font-bold ${d.solde >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
+                          {formatEur(d.solde)}
+                        </td>
+                      </tr>
+                    ))}
                     <tr className="bg-slate-800 text-white font-bold">
                       <td className="p-2">TOTAL</td>
                       <td className="p-2 text-right font-mono">{formatEur(R.totalChargesPrev)}</td>
@@ -266,13 +484,9 @@ export function RapportOrdoSection() {
                       <td className="p-2 text-right">{(R.tauxExecCharges * 100).toFixed(1)} %</td>
                       <td className="p-2 text-right font-mono">{formatEur(R.totalProduitsPrev)}</td>
                       <td className="p-2 text-right font-mono">{formatEur(R.totalProduitsSdr)}</td>
-                      <td className={`p-2 text-right font-mono ${(R.totalProduitsSdr - R.totalProduitsPrev) >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
-                        {formatEur(R.totalProduitsSdr - R.totalProduitsPrev)}
-                      </td>
                       <td className={`p-2 text-right font-mono ${R.resultatBudgetaire >= 0 ? 'text-emerald-300' : 'text-red-300'}`}>
                         {formatEur(R.resultatBudgetaire)}
                       </td>
-                      {hasN1 && <td colSpan={2}></td>}
                     </tr>
                   </tbody>
                 </table>
@@ -287,119 +501,281 @@ export function RapportOrdoSection() {
                       <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
                       <Tooltip formatter={(v: number) => [formatEur(v), '']} />
                       <Legend wrapperStyle={{ fontSize: 10 }} />
-                      <Bar dataKey="Dépenses" fill="hsl(38, 92%, 50%)" radius={[2, 2, 0, 0]} />
-                      <Bar dataKey="Recettes" fill="hsl(160, 45%, 45%)" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="Dépenses" fill="hsl(38,92%,50%)" radius={[2, 2, 0, 0]} />
+                      <Bar dataKey="Recettes" fill="hsl(160,45%,45%)" radius={[2, 2, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
               )}
 
+              {/* Écarts significatifs N/N-1 */}
               {hasN1 && (() => {
                 const ecarts = domainesList.filter(d => Math.abs(d.pctVariationCharges) > 10 || Math.abs(d.pctVariationProduits) > 10);
                 if (ecarts.length === 0) return null;
                 return (
-                  <>
-                    <SectionTitre numero="3bis" title="Écarts significatifs N / N-1 (> 10%)" />
-                    <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 mb-4 text-xs space-y-2">
-                      {ecarts.map(d => (
-                        <div key={d.code}>
-                          <strong>{d.libelle}</strong> :
-                          {Math.abs(d.pctVariationCharges) > 10 && (
-                            <span className={d.pctVariationCharges > 0 ? ' text-destructive' : ' text-emerald-600'}>
-                              {' '}Dépenses {d.pctVariationCharges > 0 ? '+' : ''}{d.pctVariationCharges.toFixed(1)} % ({formatEur(d.variationCharges)})
-                            </span>
-                          )}
-                          {Math.abs(d.pctVariationProduits) > 10 && (
-                            <span className={d.pctVariationProduits >= 0 ? ' text-emerald-600' : ' text-destructive'}>
-                              {' '}Recettes {d.pctVariationProduits >= 0 ? '+' : ''}{d.pctVariationProduits.toFixed(1)} % ({formatEur(d.variationProduits)})
-                            </span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </>
+                  <div className="bg-warning/5 border border-warning/20 rounded-lg p-4 mb-4 text-xs space-y-2">
+                    <p className="font-bold flex items-center gap-1"><AlertTriangle className="h-3 w-3 text-warning" /> Écarts significatifs N / N-1 (&gt; 10%)</p>
+                    {ecarts.map(d => (
+                      <div key={d.code}>
+                        <strong>{d.libelle}</strong> :
+                        {Math.abs(d.pctVariationCharges) > 10 && (
+                          <span className={d.pctVariationCharges > 0 ? ' text-destructive' : ' text-emerald-600'}>
+                            {' '}Dépenses {d.pctVariationCharges > 0 ? '+' : ''}{d.pctVariationCharges.toFixed(1)} % ({formatEur(d.variationCharges)})
+                          </span>
+                        )}
+                        {Math.abs(d.pctVariationProduits) > 10 && (
+                          <span className={d.pctVariationProduits >= 0 ? ' text-emerald-600' : ' text-destructive'}>
+                            {' '}Recettes {d.pctVariationProduits >= 0 ? '+' : ''}{d.pctVariationProduits.toFixed(1)} % ({formatEur(d.variationProduits)})
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 );
               })()}
             </>
           )}
 
-          <SectionTitre numero="4" title="Opérations d'ordre" />
+          {/* §6 FDR — Jauge avec seuil 30 jours */}
+          <SectionTitre numero="6" title="Fonds de roulement — autonomie financière" />
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-4">
+            {/* Jauge FDR en jours */}
+            <div className="flex flex-col items-center">
+              <p className="text-xs text-muted-foreground font-semibold mb-3">FDR en jours de fonctionnement</p>
+              <div className="relative w-48 h-28">
+                <svg viewBox="0 0 200 110" className="w-full h-full">
+                  {/* Fond */}
+                  <path d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="hsl(var(--muted))" strokeWidth="16" strokeLinecap="round" />
+                  {/* Seuil 30 jours - ligne de repère */}
+                  {(() => {
+                    const maxJ = Math.max(90, safe.joursFdr + 10);
+                    const seuilAngle = Math.min(1, 30 / maxJ);
+                    const angle = Math.PI * (1 - seuilAngle);
+                    const x = 100 + 80 * Math.cos(angle);
+                    const y = 100 - 80 * Math.sin(angle);
+                    return <circle cx={x} cy={y} r="4" fill="hsl(38,92%,50%)" />;
+                  })()}
+                  {/* Valeur */}
+                  {(() => {
+                    const maxJ = Math.max(90, safe.joursFdr + 10);
+                    const pct = Math.min(1, Math.max(0, safe.joursFdr / maxJ));
+                    const angle = Math.PI * (1 - pct);
+                    const x = 100 + 80 * Math.cos(angle);
+                    const y = 100 - 80 * Math.sin(angle);
+                    const color = safe.joursFdr >= 30 ? 'hsl(160,45%,45%)' : safe.joursFdr >= 15 ? 'hsl(38,92%,50%)' : 'hsl(0,72%,55%)';
+                    // Draw arc
+                    const endAngle = Math.PI;
+                    const startAngle = angle;
+                    const large = (endAngle - startAngle) > Math.PI ? 1 : 0;
+                    const sx = 100 + 80 * Math.cos(endAngle);
+                    const sy = 100 - 80 * Math.sin(endAngle);
+                    return (
+                      <>
+                        <path d={`M ${sx} ${sy} A 80 80 0 ${large} 0 ${x} ${y}`} fill="none" stroke={color} strokeWidth="16" strokeLinecap="round" />
+                        <text x="100" y="85" textAnchor="middle" fontSize="28" fontWeight="900" fill={color}>{Math.round(safe.joursFdr)}</text>
+                        <text x="100" y="102" textAnchor="middle" fontSize="11" fill="hsl(var(--muted-foreground))">jours</text>
+                      </>
+                    );
+                  })()}
+                  {/* Labels */}
+                  <text x="20" y="108" fontSize="8" fill="hsl(var(--muted-foreground))">0</text>
+                  <text x="180" y="108" fontSize="8" fill="hsl(var(--muted-foreground))" textAnchor="end">{Math.max(90, Math.round(safe.joursFdr) + 10)}</text>
+                </svg>
+              </div>
+              <div className="flex items-center gap-2 mt-1 text-[10px] text-muted-foreground">
+                <span className="w-2 h-2 rounded-full bg-warning inline-block" /> Seuil 30 j
+              </div>
+            </div>
+
+            {/* FDR composition */}
+            <div>
+              <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1"><BarChart3 className="h-3 w-3" /> Composition du FDR</p>
+              <ResponsiveContainer width="100%" height={140}>
+                <BarChart data={[
+                  { name: 'Encaissé', value: safe.fdrPartEncaissee, fill: 'hsl(160,45%,45%)' },
+                  { name: 'Non encaissé', value: safe.fdrPartNonEncaissee, fill: 'hsl(38,92%,50%)' },
+                ]} layout="vertical" barCategoryGap="25%">
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis type="number" tickFormatter={v => `${(v / 1000).toFixed(0)}k`} fontSize={10} />
+                  <YAxis type="category" dataKey="name" width={90} fontSize={10} />
+                  <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                    <Cell fill="hsl(160,45%,45%)" />
+                    <Cell fill="hsl(38,92%,50%)" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Structure FDR = BFR + Tréso */}
+            <div>
+              <p className="text-xs text-muted-foreground font-semibold mb-2">Structure bilantielle</p>
+              <table className="w-full text-xs border">
+                <tbody>
+                  <tr className="border-b bg-muted/20"><td className="p-2 font-semibold">FDR</td><td className="p-2 text-right font-mono font-bold">{formatEur(R.fdrComptable)}</td></tr>
+                  <tr className="border-b"><td className="p-2">= BFR</td><td className="p-2 text-right font-mono">{formatEur(R.bfr)}</td></tr>
+                  <tr className="border-b"><td className="p-2">+ Trésorerie</td><td className="p-2 text-right font-mono">{formatEur(R.tresorerie)}</td></tr>
+                  <tr><td className="p-2 font-semibold">FDR mobilisable</td><td className="p-2 text-right font-mono font-bold">{formatEur(safe.fdrMobilisable)}</td></tr>
+                </tbody>
+              </table>
+              <div className="text-[10px] text-muted-foreground mt-2 text-center">
+                {Math.abs(R.fdrComptable - R.bfr - R.tresorerie) < 1
+                  ? <span className="text-emerald-600 font-bold">✅ Vérifié : FDR = BFR + Tréso</span>
+                  : <span className="text-destructive font-bold">⚠ Écart : {formatEur(R.fdrComptable - R.bfr - R.tresorerie)}</span>
+                }
+              </div>
+            </div>
+          </div>
+
+          {/* §7 Trésorerie annuelle */}
+          <SectionTitre numero="7" title="Trésorerie" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+            <KPICard label="Trésorerie nette" value={formatEur(R.tresorerie)} color={R.tresorerie >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(safe.joursTresorerie)} jours`} isText />
+            <KPICard label="DGP" value={`${Math.round(safe.dgpJours)} jours`} color={safe.dgpJours > 30 ? 'red' : 'green'} icon="⏱️" sub="Délai global paiement" isText />
+            <KPICard label="DGR" value={`${Math.round(safe.dgrJours)} jours`} color={safe.dgrJours > 60 ? 'red' : 'green'} icon="⏱️" sub="Délai global recouvrement" isText />
+            <KPICard label="Réserves" value={formatEur(R.reserves)} color="blue" icon="🏛️" sub="Compte 1068" isText />
+          </div>
+
+          {/* §8 Opérations d'ordre */}
+          <SectionTitre numero="8" title="Opérations d'ordre" />
           <div className="overflow-x-auto mb-4">
             <table className="w-full text-xs border">
               <thead><tr className="bg-muted/50"><th className="p-2 text-left">Opération</th><th className="p-2 text-right">Charges (OO)</th><th className="p-2 text-right">Produits (OO)</th></tr></thead>
               <tbody>
                 <tr className="border-t"><td className="p-2">Dotations aux amortissements (68)</td><td className="p-2 text-right font-mono">{formatEur(oo.dotationsAmort)}</td><td className="p-2 text-right font-mono">—</td></tr>
-                <tr className="border-t"><td className="p-2">Reprises sur amortissements et provisions (78)</td><td className="p-2 text-right font-mono">—</td><td className="p-2 text-right font-mono">{formatEur(oo.reprisesAmort)}</td></tr>
+                <tr className="border-t"><td className="p-2">Reprises sur amortissements/provisions (78)</td><td className="p-2 text-right font-mono">—</td><td className="p-2 text-right font-mono">{formatEur(oo.reprisesAmort)}</td></tr>
                 <tr className="border-t"><td className="p-2">VNC des éléments cédés (675)</td><td className="p-2 text-right font-mono">{formatEur(oo.vncCessions)}</td><td className="p-2 text-right font-mono">—</td></tr>
-                <tr className="border-t"><td className="p-2">Produits de cessions d'éléments d'actif (775/776/777)</td><td className="p-2 text-right font-mono">—</td><td className="p-2 text-right font-mono">{formatEur(oo.produitsCessions)}</td></tr>
-                <tr className="border-t"><td className="p-2">Neutralisation subventions d'investissement (139)</td><td className="p-2 text-right font-mono">—</td><td className="p-2 text-right font-mono">{formatEur(oo.neutralisationSubInv)}</td></tr>
+                <tr className="border-t"><td className="p-2">Produits de cessions (775/776/777)</td><td className="p-2 text-right font-mono">—</td><td className="p-2 text-right font-mono">{formatEur(oo.produitsCessions)}</td></tr>
+                <tr className="border-t"><td className="p-2">Neutralisation subventions d'investissement</td><td className="p-2 text-right font-mono">—</td><td className="p-2 text-right font-mono">{formatEur(oo.neutralisationSubInv)}</td></tr>
                 <tr className="border-t font-bold bg-muted/20">
-                  <td className="p-2">TOTAL Opérations d'ordre</td>
+                  <td className="p-2">TOTAL OO</td>
                   <td className="p-2 text-right font-mono">{formatEur(oo.totalChargesOO)}</td>
                   <td className="p-2 text-right font-mono">{formatEur(oo.totalProduitsOO)}</td>
-                </tr>
-                <tr className="font-bold">
-                  <td className="p-2">Solde des opérations d'ordre</td>
-                  <td className="p-2 text-right font-mono" colSpan={2}>
-                    <span className={oo.soldeOO >= 0 ? 'text-emerald-600' : 'text-destructive'}>{formatEur(oo.soldeOO)}</span>
-                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div className="text-xs text-muted-foreground mb-4 bg-muted/10 rounded p-3">
-            Les opérations d'ordre n'ont aucun impact sur la trésorerie. Elles correspondent aux dotations aux amortissements,
-            reprises sur provisions et neutralisations de subventions d'investissement.
+            💡 <strong>Pour le CA :</strong> Les opérations d'ordre sont des écritures purement comptables (amortissements, provisions). Elles n'ont aucun impact sur la trésorerie. Un solde d'OO négatif est normal et traduit la politique d'amortissement du patrimoine.
           </div>
 
-          {ind && ind.nb_repas_servis > 0 && (
+          {/* §9 Focus SRH */}
+          {(srhDomaine || (ind && ind.nb_repas_servis > 0)) && (
             <>
-              <SectionTitre numero="5" title="Service de restauration et d'hébergement (SRH)" />
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 mb-4">
-                <IndicatorBadge icon="🍽️" label="Repas élèves" value={ind.nb_repas_servis.toLocaleString('fr-FR')} />
-                {ind.nb_repas_commensaux > 0 && <IndicatorBadge icon="🍴" label="Repas commensaux" value={ind.nb_repas_commensaux.toLocaleString('fr-FR')} />}
-                {ind.cout_denrees_repas > 0 && <IndicatorBadge icon="€" label="Coût denrées/repas" value={`${ind.cout_denrees_repas.toFixed(2)} €`} />}
+              <SectionTitre numero="9" title="Focus — Service de restauration et d'hébergement (SRH)" />
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
+                {srhDomaine && (
+                  <>
+                    <KPICard label="Recettes SRH" value={formatEur(srhRecettes)} color="green" icon="🍽️" isText />
+                    <KPICard label="Dépenses SRH" value={formatEur(srhDepenses)} color="amber" icon="🍽️" isText />
+                    <KPICard label="Solde SRH" value={formatEur(srhSolde)} color={srhSolde >= 0 ? 'green' : 'red'} icon="📊" sub={srhSolde >= 0 ? 'Excédent' : 'Déficit'} isText />
+                    {srhDomaine.tauxExecCharges > 0 && (
+                      <KPICard label="Taux exéc. SRH" value={`${(srhDomaine.tauxExecCharges * 100).toFixed(1)} %`} color={srhDomaine.tauxExecCharges >= 0.85 ? 'green' : 'amber'} icon="✅" isText />
+                    )}
+                  </>
+                )}
               </div>
+              {ind && ind.nb_repas_servis > 0 && (
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-4">
+                  <IndicatorBadge icon={<Utensils className="h-4 w-4 text-warning" />} label="Repas élèves" value={ind.nb_repas_servis.toLocaleString('fr-FR')} />
+                  {ind.nb_repas_commensaux > 0 && <IndicatorBadge icon={<Utensils className="h-4 w-4 text-muted-foreground" />} label="Repas commensaux" value={ind.nb_repas_commensaux.toLocaleString('fr-FR')} />}
+                  {ind.cout_denrees_repas > 0 && (
+                    <>
+                      <IndicatorBadge icon={<Wallet className="h-4 w-4 text-primary" />} label="Coût denrées/repas" value={`${ind.cout_denrees_repas.toFixed(2)} €`} />
+                      {srhDepenses > 0 && ind.nb_repas_servis > 0 && (
+                        <IndicatorBadge icon={<Target className="h-4 w-4 text-emerald-600" />} label="Coût complet/repas" value={`${(srhDepenses / (ind.nb_repas_servis + (ind.nb_repas_commensaux || 0))).toFixed(2)} €`} />
+                      )}
+                    </>
+                  )}
+                </div>
+              )}
+              {srhDomaine && (
+                <div className="mb-4">
+                  <ResponsiveContainer width="100%" height={160}>
+                    <BarChart data={[
+                      { name: 'Dépenses', value: srhDepenses, fill: 'hsl(38,92%,50%)' },
+                      { name: 'Recettes', value: srhRecettes, fill: 'hsl(160,45%,45%)' },
+                      { name: 'Solde', value: srhSolde, fill: srhSolde >= 0 ? 'hsl(160,45%,45%)' : 'hsl(0,72%,55%)' },
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={{ fontSize: 10 }} />
+                      <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
+                      <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                      <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                      <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                        <Cell fill="hsl(38,92%,50%)" />
+                        <Cell fill="hsl(160,45%,45%)" />
+                        <Cell fill={srhSolde >= 0 ? 'hsl(160,45%,45%)' : 'hsl(0,72%,55%)'} />
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+              <div className="text-xs text-muted-foreground mb-2 bg-muted/10 rounded p-3">
+                💡 <strong>Pour le CA :</strong> Le SRH doit être équilibré (recettes = dépenses). Un excédent est affecté aux réserves SRH (c/106870). Un déficit chronique nécessite une révision des tarifs de restauration.
+              </div>
+              <Textarea value={commentaireSRH} onChange={e => setCommentaireSRH(e.target.value)}
+                placeholder="Commentaire sur le SRH (coût repas, équilibre, activité)…" rows={2}
+                className="mb-4 bg-muted/30 text-xs" />
             </>
           )}
 
-          <SectionTitre numero="6" title="Situation financière et patrimoniale" />
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
-            <KPICard label="FDR" value={formatEur(R.fdrComptable)} color={R.fdrComptable >= 0 ? 'green' : 'red'} icon="🏦" sub={`${Math.round(R.joursFdr ?? 0)} jours`} isText />
-            <KPICard label="BFR" value={formatEur(R.bfr)} color="amber" icon="📊" sub={R.bfr < 0 ? 'DFR' : 'BFR'} isText />
-            <KPICard label="Trésorerie" value={formatEur(R.tresorerie)} color={R.tresorerie >= 0 ? 'green' : 'red'} icon="💳" sub={`${Math.round(R.joursTresorerie ?? 0)} jours`} isText />
-            <KPICard label="Réserves" value={formatEur(R.reserves)} color="blue" icon="🏛️" sub="Compte 1068" isText />
-          </div>
-
-          {(R.fdrComptableN1 ?? 0) !== 0 && (
-            <div className="overflow-x-auto mb-4">
+          {/* §10 Suivi des subventions */}
+          <SectionTitre numero="10" title="Suivi des subventions et financements" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            {subventionsData.length > 0 && (
+              <div>
+                <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1">
+                  <PieChartIcon className="h-3 w-3" /> Situation des financements
+                </p>
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie data={subventionsData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      labelLine={true} fontSize={9}>
+                      {subventionsData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )}
+            <div>
               <table className="w-full text-xs border">
-                <thead><tr className="bg-muted/50"><th className="p-2 text-left">Indicateur</th><th className="p-2 text-right">N</th><th className="p-2 text-right">N-1</th><th className="p-2 text-right">Variation</th></tr></thead>
                 <tbody>
-                  {[
-                    { label: 'FDR', vN: R.fdrComptable, vN1: R.fdrComptableN1 ?? 0 },
-                    { label: 'BFR', vN: R.bfr, vN1: R.bfrN1 ?? 0 },
-                    { label: 'Trésorerie', vN: R.tresorerie, vN1: R.tresorerieN1 ?? 0 },
-                    { label: 'Réserves', vN: R.reserves, vN1: R.reservesN1Solde ?? 0 },
-                  ].map(row => (
-                    <tr key={row.label} className="border-t">
-                      <td className="p-2 font-semibold">{row.label}</td>
-                      <td className="p-2 text-right font-mono">{formatEur(row.vN)}</td>
-                      <td className="p-2 text-right font-mono text-muted-foreground">{formatEur(row.vN1)}</td>
-                      <td className={`p-2 text-right font-mono font-bold ${(row.vN - row.vN1) >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
-                        {(row.vN - row.vN1) >= 0 ? '+' : ''}{formatEur(row.vN - row.vN1)}
-                      </td>
-                    </tr>
-                  ))}
+                  {safe.creancesEtat > 0 && <tr className="border-b"><td className="p-2">Créances sur l'État</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesEtat)}</td></tr>}
+                  {safe.creancesCollectivite > 0 && <tr className="border-b"><td className="p-2">Créances sur la collectivité</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesCollectivite)}</td></tr>}
+                  {safe.creancesFamilles > 0 && <tr className="border-b"><td className="p-2">Créances familles</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesFamilles)}</td></tr>}
+                  {safe.reliquatsSubventions > 0 && <tr className="border-b"><td className="p-2">Reliquats de subventions</td><td className="p-2 text-right font-mono">{formatEur(safe.reliquatsSubventions)}</td></tr>}
+                  <tr className="font-bold bg-muted/20"><td className="p-2">Total créances</td><td className="p-2 text-right font-mono">{formatEur(safe.totalCreances)}</td></tr>
                 </tbody>
               </table>
+              <div className="text-xs text-muted-foreground mt-2 bg-muted/10 rounded p-2">
+                💡 Les reliquats de subventions sont des fonds affectés non encore utilisés. Ils ne sont pas disponibles pour le fonctionnement courant.
+              </div>
             </div>
-          )}
+          </div>
+          <Textarea value={commentaireSubventions} onChange={e => setCommentaireSubventions(e.target.value)}
+            placeholder="Commentaire sur les subventions (état de notification, reliquats, créances anciennes)…" rows={2}
+            className="mb-4 bg-muted/30 text-xs" />
 
-          <SectionTitre numero="7" title="Points d'attention et perspectives" />
+          {/* §11 Situation patrimoniale */}
+          <SectionTitre numero="11" title="Situation patrimoniale" />
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <KPICard label="Immobilisations" value={formatEur(R.totalImmo)} color="blue" icon="🏗️" isText />
+            <KPICard label="Amortissements" value={formatEur(R.totalAmortissements)} color="amber" icon="📉" isText />
+            <KPICard label="Valeur nette" value={formatEur(safe.valeurNette)} color={safe.valeurNette >= 0 ? 'green' : 'red'} icon="🏢" isText />
+          </div>
+
+          {/* §12 Points d'attention */}
+          <SectionTitre numero="12" title="Points d'attention et perspectives" />
           <Textarea value={aiText3} onChange={e => setAiText3(e.target.value)}
-            placeholder="Cliquez sur 'Générer le texte IA' ou saisissez votre texte ici…" rows={4}
+            placeholder="Cliquez sur 'Générer commentaires IA' ou saisissez votre texte ici…" rows={4}
             className="mb-4 bg-muted/30 text-sm" />
+
+          <Textarea value={commentairePerspectives} onChange={e => setCommentairePerspectives(e.target.value)}
+            placeholder="Perspectives pour l'exercice suivant (investissements prévus, évolution des effectifs, projets)…" rows={3}
+            className="mb-4 bg-muted/30 text-xs" />
 
           {ind && ind.montant_fonds_social > 0 && (
             <div className="mb-4 bg-muted/30 rounded-lg p-3 text-xs">
@@ -407,7 +783,7 @@ export function RapportOrdoSection() {
             </div>
           )}
 
-          {/* Signatures — Ordonnateur + Secrétaire général */}
+          {/* Signatures */}
           <div className="flex justify-between mt-8 pt-5 border-t text-xs text-muted-foreground">
             <div>
               <strong className="block text-foreground">L'ordonnateur</strong>
@@ -549,6 +925,38 @@ export function RapportACSection() {
     { name: 'Non encaissé', value: safe.fdrPartNonEncaissee, fill: 'hsl(38, 92%, 50%)' },
   ];
 
+  // ── Créances/Dettes pie data ──────────────────────────────
+  const creancesPieData = useMemo(() => [
+    { name: 'État', value: safe.creancesEtat, fill: 'hsl(215,70%,50%)' },
+    { name: 'Collectivité', value: safe.creancesCollectivite, fill: 'hsl(160,45%,45%)' },
+    { name: 'Familles', value: safe.creancesFamilles, fill: 'hsl(38,92%,50%)' },
+    { name: 'Autres', value: safe.creancesAutres, fill: 'hsl(280,50%,50%)' },
+  ].filter(d => d.value > 0), [safe]);
+
+  const dettesPieData = useMemo(() => [
+    { name: 'Fournisseurs', value: safe.dettesFournisseurs, fill: 'hsl(0,70%,55%)' },
+    { name: 'État', value: safe.dettesEtat, fill: 'hsl(215,70%,50%)' },
+    { name: 'Collectivité', value: safe.dettesCollectivite, fill: 'hsl(160,45%,45%)' },
+    { name: 'Autres', value: safe.dettesAutres, fill: 'hsl(38,92%,50%)' },
+  ].filter(d => d.value > 0), [safe]);
+
+  // ── Radar ratios ──────────────────────────────────────────
+  const radarRatiosData = useMemo(() => [
+    { subject: 'Liquidité gén.', value: Math.min(safe.ratioLiquiditeGenerale * 50, 100) },
+    { subject: 'Liquidité réd.', value: Math.min(safe.ratioLiquiditeReduite * 60, 100) },
+    { subject: 'Liquidité imm.', value: Math.min(safe.ratioLiquiditeImmediate * 100, 100) },
+    { subject: 'Autonomie fin.', value: Math.min(safe.ratioAutonomieFinanciere * 100, 100) },
+    { subject: 'Solvabilité', value: Math.min(safe.ratioSolvabilite * 100, 100) },
+    { subject: 'Couverture ch.', value: Math.min(safe.ratioCouvertureCharges * 500, 100) },
+  ], [safe]);
+
+  // ── Patrimoine bar data ───────────────────────────────────
+  const patrimoineData = [
+    { name: 'Brut', value: R.totalImmo, fill: 'hsl(215,70%,50%)' },
+    { name: 'Amort.', value: -R.totalAmortissements, fill: 'hsl(0,70%,55%)' },
+    { name: 'Net', value: safe.valeurNette, fill: 'hsl(160,45%,45%)' },
+  ];
+
   // ── Evolution chart ───────────────────────────────────────
   const hasN1Financial = safe.fdrComptableN1 !== 0 || safe.bfrN1 !== 0 || safe.tresorerieN1 !== 0;
   const evolutionData = hasN1Financial ? [
@@ -559,28 +967,34 @@ export function RapportACSection() {
   // ── Smart analysis text ───────────────────────────────────
   const smartAnalysis = useMemo(() => {
     const parts: string[] = [];
-    // Résultat analysis
     if (R.resultatComptable < 0 && totalPrelev > 0) {
       parts.push(`📊 Le déficit de ${formatEur(R.resultatComptable)} s'explique principalement par ${prelevements.length} prélèvement(s) sur fonds de roulement (${formatEur(totalPrelev)}), autorisés par le CA. Sans ces prélèvements, le résultat aurait été ${resultatHorsPrelev >= 0 ? 'excédentaire' : 'déficitaire'} de ${formatEur(Math.abs(resultatHorsPrelev))}.`);
     } else if (R.resultatComptable < 0) {
       parts.push(`📊 Le résultat déficitaire (${formatEur(R.resultatComptable)}) devra être imputé sur les réserves. Après affectation, les réserves s'élèveraient à ${formatEur(R.reserves + R.resultatComptable)}.`);
     }
-    // FDR analysis
     if (safe.fdrPctEncaissee > 80) {
       parts.push(`🏦 Le FDR est très largement encaissé (${safe.fdrPctEncaissee.toFixed(0)} %), signe d'une bonne autonomie financière.`);
     } else if (safe.fdrPctEncaissee < 40) {
       parts.push(`⚠️ La part encaissée du FDR est faible (${safe.fdrPctEncaissee.toFixed(0)} %). L'autonomie financière repose en grande partie sur des créances non encore recouvrées.`);
     }
-    // Trésorerie
     if (safe.joursTresorerie < 15) {
       parts.push(`🔴 La trésorerie ne couvre que ${Math.round(safe.joursTresorerie)} jours de fonctionnement. Situation tendue.`);
     } else if (safe.joursTresorerie > 90) {
       parts.push(`💚 La trésorerie couvre ${Math.round(safe.joursTresorerie)} jours — marge confortable, possibilité de prélèvement.`);
     }
-    // FDR mobilisable
     const joursMobilisable = R.totalChargesSde > 0 ? Math.round(safe.fdrMobilisable / (R.totalChargesSde / 365)) : 0;
     if (joursMobilisable < 30) {
       parts.push(`⚠️ Le FDR mobilisable (${formatEur(safe.fdrMobilisable)}, ${joursMobilisable} jours) est inférieur au seuil recommandé de 30 jours.`);
+    }
+    // Ratios commentary
+    if (safe.ratioLiquiditeGenerale < 1) {
+      parts.push(`⚠️ Le ratio de liquidité générale (${safe.ratioLiquiditeGenerale.toFixed(2)}) est inférieur à 1. L'établissement pourrait avoir des difficultés à faire face à ses engagements à court terme.`);
+    }
+    if (safe.tmcap > 10) {
+      parts.push(`⚠️ Le TMcap (${safe.tmcap.toFixed(1)}%) est élevé, indiquant un retard dans le règlement des fournisseurs.`);
+    }
+    if (safe.tmnr > 5) {
+      parts.push(`⚠️ Le TMnr (${safe.tmnr.toFixed(1)}%) indique un taux de non-recouvrement significatif. Des relances actives sont recommandées.`);
     }
     return parts;
   }, [R, safe, totalPrelev, prelevements, resultatHorsPrelev]);
@@ -595,14 +1009,14 @@ export function RapportACSection() {
           type: 'agent_comptable', etablissement: etab,
           resultats: {
             resultatBudgetaire: R.resultatBudgetaire, resultatComptable: R.resultatComptable,
-            fdrComptable: R.fdrComptable, tresorerieNette: R.tresorerie,
-            cafComptable: R.cafComptable, cafBudgetaire: R.cafBudgetaire,
+            fdrComptable: R.fdrComptable, bfr: R.bfr, tresorerie: R.tresorerie,
+            cafBudgetaire: R.cafBudgetaire, cafComptable: R.cafComptable,
             chargesNonDecaissables: R.chargesNonDecaissables,
             produitsNonEncaissables: R.produitsNonEncaissables,
             totalChargesReel: R.totalChargesSde, totalProduitsReel: R.totalProduitsSdr,
             reserves: R.reserves, joursAutonomie: R.joursAutonomie,
             joursFdr: R.joursFdr, joursTresorerie: R.joursTresorerie,
-            bfr: R.bfr, tmcap: R.tmcap, tmnr: R.tmnr,
+            tmcap: R.tmcap, tmnr: R.tmnr,
             fdrPctEncaissee: R.fdrPctEncaissee, fdrPctNonEncaissee: R.fdrPctNonEncaissee,
             totalCreances: R.totalCreances, totalDettes: R.totalDettes,
             reliquatsSubventions: R.reliquatsSubventions,
@@ -722,39 +1136,30 @@ export function RapportACSection() {
             )}
           </div>
 
-          {/* Explications résultat */}
           <div>
             <Label className="text-xs font-bold">Explications sur le résultat de l'exercice</Label>
             <Textarea value={explicationsResultat} onChange={e => setExplicationsResultat(e.target.value)}
               placeholder="Ex: Le résultat déficitaire s'explique par les prélèvements votés en CA du 12/03/2024 pour l'acquisition de…"
               rows={2} className="mt-1 text-xs bg-background" />
           </div>
-
-          {/* Commentaire FDR */}
           <div>
             <Label className="text-xs font-bold">Commentaire sur le fonds de roulement</Label>
             <Textarea value={commentaireFDR} onChange={e => setCommentaireFDR(e.target.value)}
               placeholder="Ex: La part non encaissée élevée s'explique par une créance de l'État en attente de notification…"
               rows={2} className="mt-1 text-xs bg-background" />
           </div>
-
-          {/* Commentaire trésorerie */}
           <div>
             <Label className="text-xs font-bold">Commentaire sur la trésorerie</Label>
             <Textarea value={commentaireTresorerie} onChange={e => setCommentaireTresorerie(e.target.value)}
               placeholder="Ex: La trésorerie inclut des reliquats de subventions État pour un montant important…"
               rows={2} className="mt-1 text-xs bg-background" />
           </div>
-
-          {/* Commentaire créances */}
           <div>
             <Label className="text-xs font-bold">Commentaire sur les créances</Label>
             <Textarea value={commentaireCreances} onChange={e => setCommentaireCreances(e.target.value)}
               placeholder="Ex: Les créances familles incluent des impayés de restauration faisant l'objet de poursuites…"
               rows={2} className="mt-1 text-xs bg-background" />
           </div>
-
-          {/* Commentaire général */}
           <div>
             <Label className="text-xs font-bold">Observations générales</Label>
             <Textarea value={commentaireGeneral} onChange={e => setCommentaireGeneral(e.target.value)}
@@ -787,7 +1192,7 @@ export function RapportACSection() {
       {/* ════════════════════════════════════════════════════════ */}
       {/* RAPPORT VISUEL                                           */}
       {/* ════════════════════════════════════════════════════════ */}
-      <Card className="max-w-4xl mx-auto">
+      <Card className="max-w-5xl mx-auto">
         <CardContent className="p-8">
           {/* Header */}
           <div className="flex justify-between items-start border-b-2 border-foreground pb-4 mb-5">
@@ -820,7 +1225,6 @@ export function RapportACSection() {
           {/* §2 Résultat — Balance graphique */}
           <SectionTitre numero="2" title="Présentation du résultat et de l'autofinancement" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            {/* Balance scale chart */}
             <div>
               <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1"><Scale className="h-3 w-3" /> Balance dépenses / recettes</p>
               <ResponsiveContainer width="100%" height={200}>
@@ -837,34 +1241,19 @@ export function RapportACSection() {
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            {/* KPIs */}
             <div className="space-y-3">
               <div className="overflow-x-auto">
                 <table className="w-full text-xs border">
                   <tbody>
-                    <tr className="border-b bg-muted/20">
-                      <td className="p-2 font-semibold">Charges nettes</td>
-                      <td className="p-2 text-right font-mono">{formatEur(R.totalChargesSde)}</td>
-                    </tr>
-                    <tr className="border-b">
-                      <td className="p-2 font-semibold">Produits nets</td>
-                      <td className="p-2 text-right font-mono">{formatEur(R.totalProduitsSdr)}</td>
-                    </tr>
+                    <tr className="border-b bg-muted/20"><td className="p-2 font-semibold">Charges nettes</td><td className="p-2 text-right font-mono">{formatEur(R.totalChargesSde)}</td></tr>
+                    <tr className="border-b"><td className="p-2 font-semibold">Produits nets</td><td className="p-2 text-right font-mono">{formatEur(R.totalProduitsSdr)}</td></tr>
                     <tr className={`border-b font-bold ${R.resultatComptable >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
-                      <td className="p-2">RÉSULTAT</td>
-                      <td className="p-2 text-right font-mono">{formatEur(R.resultatComptable)}</td>
+                      <td className="p-2">RÉSULTAT</td><td className="p-2 text-right font-mono">{formatEur(R.resultatComptable)}</td>
                     </tr>
-                    <tr className="border-b">
-                      <td className="p-2">Charges non décaissables</td>
-                      <td className="p-2 text-right font-mono">{formatEur(safe.chargesNonDecaissables)}</td>
-                    </tr>
-                    <tr className="border-b">
-                      <td className="p-2">Produits non encaissables</td>
-                      <td className="p-2 text-right font-mono">{formatEur(safe.produitsNonEncaissables)}</td>
-                    </tr>
+                    <tr className="border-b"><td className="p-2">Charges non décaissables</td><td className="p-2 text-right font-mono">{formatEur(safe.chargesNonDecaissables)}</td></tr>
+                    <tr className="border-b"><td className="p-2">Produits non encaissables</td><td className="p-2 text-right font-mono">{formatEur(safe.produitsNonEncaissables)}</td></tr>
                     <tr className={`font-bold ${safe.cafComptable >= 0 ? 'text-emerald-700' : 'text-destructive'}`}>
-                      <td className="p-2">{safe.cafComptable >= 0 ? 'CAF' : 'IAF'}</td>
-                      <td className="p-2 text-right font-mono">{formatEur(safe.cafComptable)}</td>
+                      <td className="p-2">{safe.cafComptable >= 0 ? 'CAF' : 'IAF'}</td><td className="p-2 text-right font-mono">{formatEur(safe.cafComptable)}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -878,9 +1267,7 @@ export function RapportACSection() {
             </div>
           </div>
           {explicationsResultat && (
-            <div className="bg-muted/10 rounded-lg p-3 mb-4 text-xs italic border-l-4 border-warning">
-              {explicationsResultat}
-            </div>
+            <div className="bg-muted/10 rounded-lg p-3 mb-4 text-xs italic border-l-4 border-warning">{explicationsResultat}</div>
           )}
 
           {/* §3 FDR — Composition graphique */}
@@ -895,9 +1282,7 @@ export function RapportACSection() {
                   <YAxis type="category" dataKey="name" width={100} fontSize={10} />
                   <Tooltip formatter={(v: number) => [formatEur(v), '']} />
                   <Bar dataKey="value" radius={[0, 4, 4, 0]}>
-                    {fdrComposData.map((entry, idx) => (
-                      <Cell key={idx} fill={entry.fill} />
-                    ))}
+                    {fdrComposData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -915,9 +1300,7 @@ export function RapportACSection() {
             </div>
           </div>
           {commentaireFDR && (
-            <div className="bg-muted/10 rounded-lg p-3 mb-4 text-xs italic border-l-4 border-primary">
-              {commentaireFDR}
-            </div>
+            <div className="bg-muted/10 rounded-lg p-3 mb-4 text-xs italic border-l-4 border-primary">{commentaireFDR}</div>
           )}
 
           {/* §4 BFR */}
@@ -946,9 +1329,7 @@ export function RapportACSection() {
                     <Pie data={tresoData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85}
                       label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                       labelLine={true} fontSize={9}>
-                      {tresoData.map((entry, idx) => (
-                        <Cell key={idx} fill={entry.fill} />
-                      ))}
+                      {tresoData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
                     </Pie>
                     <Tooltip formatter={(v: number) => [formatEur(v), '']} />
                   </PieChart>
@@ -972,9 +1353,7 @@ export function RapportACSection() {
             </div>
           </div>
           {commentaireTresorerie && (
-            <div className="bg-muted/10 rounded-lg p-3 mb-4 text-xs italic border-l-4 border-primary">
-              {commentaireTresorerie}
-            </div>
+            <div className="bg-muted/10 rounded-lg p-3 mb-4 text-xs italic border-l-4 border-primary">{commentaireTresorerie}</div>
           )}
 
           {/* §6 TMcap/TMnr + DGP/DGR */}
@@ -982,11 +1361,11 @@ export function RapportACSection() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <div className="bg-muted/30 rounded-lg p-4 text-xs">
               <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMcap</div>
-              <div className="text-2xl font-bold font-mono">{safe.tmcap.toFixed(2)} %</div>
+              <div className={`text-2xl font-bold font-mono ${safe.tmcap > 10 ? 'text-destructive' : ''}`}>{safe.tmcap.toFixed(2)} %</div>
             </div>
             <div className="bg-muted/30 rounded-lg p-4 text-xs">
               <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMnr</div>
-              <div className="text-2xl font-bold font-mono">{safe.tmnr.toFixed(2)} %</div>
+              <div className={`text-2xl font-bold font-mono ${safe.tmnr > 5 ? 'text-warning' : ''}`}>{safe.tmnr.toFixed(2)} %</div>
             </div>
             <div className={`bg-muted/30 rounded-lg p-4 text-xs ${safe.dgpJours > 30 ? 'border border-destructive/30' : ''}`}>
               <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">DGP</div>
@@ -998,46 +1377,86 @@ export function RapportACSection() {
             </div>
           </div>
 
-          {/* §7 Patrimoine */}
+          {/* §7 Patrimoine — avec graphique */}
           <SectionTitre numero="7" title="État du patrimoine" />
-          <table className="w-full text-xs border mb-4">
-            <tbody>
-              <tr className="border-b bg-muted/20"><td className="p-2 font-semibold">Immobilisations brutes</td><td className="p-2 text-right font-mono">{formatEur(R.totalImmo)}</td></tr>
-              <tr className="border-b"><td className="p-2">Amortissements</td><td className="p-2 text-right font-mono">- {formatEur(R.totalAmortissements)}</td></tr>
-              <tr className="border-b font-bold"><td className="p-2">Valeur résiduelle</td><td className="p-2 text-right font-mono">{formatEur(safe.valeurNette)}</td></tr>
-              <tr className="border-b"><td className="p-2">Fonds propres ({safe.patrimoineOriginesPctFP.toFixed(1)} %)</td><td className="p-2 text-right font-mono">{formatEur(safe.patrimoineOriginesFondsPropres)}</td></tr>
-              <tr className="border-b"><td className="p-2">Subv. investissement ({safe.patrimoineOriginesPctSub.toFixed(1)} %)</td><td className="p-2 text-right font-mono">{formatEur(safe.patrimoineOriginesSubventions)}</td></tr>
-            </tbody>
-          </table>
-
-          {/* §8 Créances/Dettes */}
-          <SectionTitre numero="8" title="Créances et dettes" />
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div>
+              <ResponsiveContainer width="100%" height={180}>
+                <BarChart data={patrimoineData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                  <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
+                  <Tooltip formatter={(v: number) => [formatEur(Math.abs(v)), '']} />
+                  <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
+                  <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                    {patrimoineData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
             <table className="w-full text-xs border">
-              <thead><tr className="bg-muted/50"><th className="p-2 text-left">Créance</th><th className="p-2 text-right">Montant</th></tr></thead>
               <tbody>
-                {safe.creancesEtat > 0 && <tr className="border-b"><td className="p-2">État</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesEtat)}</td></tr>}
-                {safe.creancesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesCollectivite)}</td></tr>}
-                {safe.creancesFamilles > 0 && <tr className="border-b"><td className="p-2">Familles</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesFamilles)}</td></tr>}
-                {safe.creancesAutres > 0 && <tr className="border-b"><td className="p-2">Autres</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesAutres)}</td></tr>}
-                <tr className="font-bold bg-muted/20"><td className="p-2">TOTAL</td><td className="p-2 text-right font-mono">{formatEur(safe.totalCreances)}</td></tr>
-              </tbody>
-            </table>
-            <table className="w-full text-xs border">
-              <thead><tr className="bg-muted/50"><th className="p-2 text-left">Dette</th><th className="p-2 text-right">Montant</th></tr></thead>
-              <tbody>
-                {safe.dettesFournisseurs > 0 && <tr className="border-b"><td className="p-2">Fournisseurs</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesFournisseurs)}</td></tr>}
-                {safe.dettesEtat > 0 && <tr className="border-b"><td className="p-2">État</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesEtat)}</td></tr>}
-                {safe.dettesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesCollectivite)}</td></tr>}
-                {safe.dettesAutres > 0 && <tr className="border-b"><td className="p-2">Autres</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesAutres)}</td></tr>}
-                <tr className="font-bold bg-muted/20"><td className="p-2">TOTAL</td><td className="p-2 text-right font-mono">{formatEur(safe.totalDettes)}</td></tr>
+                <tr className="border-b bg-muted/20"><td className="p-2 font-semibold">Immobilisations brutes</td><td className="p-2 text-right font-mono">{formatEur(R.totalImmo)}</td></tr>
+                <tr className="border-b"><td className="p-2">Amortissements</td><td className="p-2 text-right font-mono">- {formatEur(R.totalAmortissements)}</td></tr>
+                <tr className="border-b font-bold"><td className="p-2">Valeur résiduelle</td><td className="p-2 text-right font-mono">{formatEur(safe.valeurNette)}</td></tr>
+                <tr className="border-b"><td className="p-2">Fonds propres ({safe.patrimoineOriginesPctFP.toFixed(1)} %)</td><td className="p-2 text-right font-mono">{formatEur(safe.patrimoineOriginesFondsPropres)}</td></tr>
+                <tr className="border-b"><td className="p-2">Subv. investissement ({safe.patrimoineOriginesPctSub.toFixed(1)} %)</td><td className="p-2 text-right font-mono">{formatEur(safe.patrimoineOriginesSubventions)}</td></tr>
               </tbody>
             </table>
           </div>
-          {commentaireCreances && (
-            <div className="bg-muted/10 rounded-lg p-3 mb-4 text-xs italic border-l-4 border-primary">
-              {commentaireCreances}
+
+          {/* §8 Créances/Dettes — avec pie charts */}
+          <SectionTitre numero="8" title="Créances et dettes" />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div>
+              <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1"><PieChartIcon className="h-3 w-3" /> Créances par origine</p>
+              {creancesPieData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie data={creancesPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      labelLine={true} fontSize={9}>
+                      {creancesPieData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <table className="w-full text-xs border">
+                  <tbody>
+                    {safe.creancesEtat > 0 && <tr className="border-b"><td className="p-2">État</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesEtat)}</td></tr>}
+                    {safe.creancesCollectivite > 0 && <tr className="border-b"><td className="p-2">Collectivité</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesCollectivite)}</td></tr>}
+                    {safe.creancesFamilles > 0 && <tr className="border-b"><td className="p-2">Familles</td><td className="p-2 text-right font-mono">{formatEur(safe.creancesFamilles)}</td></tr>}
+                    <tr className="font-bold bg-muted/20"><td className="p-2">TOTAL</td><td className="p-2 text-right font-mono">{formatEur(safe.totalCreances)}</td></tr>
+                  </tbody>
+                </table>
+              )}
             </div>
+            <div>
+              <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1"><PieChartIcon className="h-3 w-3" /> Dettes par type</p>
+              {dettesPieData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={200}>
+                  <PieChart>
+                    <Pie data={dettesPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70}
+                      label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                      labelLine={true} fontSize={9}>
+                      {dettesPieData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
+                    </Pie>
+                    <Tooltip formatter={(v: number) => [formatEur(v), '']} />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <table className="w-full text-xs border">
+                  <tbody>
+                    {safe.dettesFournisseurs > 0 && <tr className="border-b"><td className="p-2">Fournisseurs</td><td className="p-2 text-right font-mono">{formatEur(safe.dettesFournisseurs)}</td></tr>}
+                    <tr className="font-bold bg-muted/20"><td className="p-2">TOTAL</td><td className="p-2 text-right font-mono">{formatEur(safe.totalDettes)}</td></tr>
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+          {commentaireCreances && (
+            <div className="bg-muted/10 rounded-lg p-3 mb-4 text-xs italic border-l-4 border-primary">{commentaireCreances}</div>
           )}
 
           {/* §9 Réserves + prélèvements */}
@@ -1056,28 +1475,41 @@ export function RapportACSection() {
             </p>
           </div>
 
-          {/* §10 Ratios */}
+          {/* §10 Ratios — avec radar */}
           <SectionTitre numero="10" title="Ratios de gestion (M9-6 § IV)" />
-          <table className="w-full text-xs border mb-4">
-            <thead><tr className="bg-muted/50"><th className="p-2 text-left">Ratio</th><th className="p-2 text-right">Valeur</th><th className="p-2 text-left">Interprétation</th></tr></thead>
-            <tbody>
-              {[
-                { label: 'Liquidité générale', value: safe.ratioLiquiditeGenerale, fmt: (v: number) => v.toFixed(2), seuil: (v: number) => v >= 1 ? '✅ Correcte' : '⚠️ Insuffisante' },
-                { label: 'Liquidité réduite', value: safe.ratioLiquiditeReduite, fmt: (v: number) => v.toFixed(2), seuil: (v: number) => v >= 0.8 ? '✅' : '⚠️' },
-                { label: 'Liquidité immédiate', value: safe.ratioLiquiditeImmediate, fmt: (v: number) => v.toFixed(2), seuil: (v: number) => v >= 0.3 ? '✅' : '⚠️' },
-                { label: 'Autonomie financière', value: safe.ratioAutonomieFinanciere, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: (v: number) => v >= 0.5 ? '✅ > 50%' : '⚠️ < 50%' },
-                { label: 'Solvabilité', value: safe.ratioSolvabilite, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: (v: number) => v >= 0.5 ? '✅' : '⚠️' },
-                { label: 'Endettement', value: safe.ratioEndettement, fmt: (v: number) => v.toFixed(2), seuil: (v: number) => v < 1 ? '✅' : '⚠️ Élevé' },
-                { label: 'Couverture charges', value: safe.ratioCouvertureCharges, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: (v: number) => v >= 0.08 ? '✅ > 30 j' : '⚠️ < 30 j' },
-              ].map(r => (
-                <tr key={r.label} className="border-t">
-                  <td className="p-2 font-semibold">{r.label}</td>
-                  <td className="p-2 text-right font-mono font-bold">{r.fmt(r.value)}</td>
-                  <td className="p-2 text-muted-foreground">{r.seuil(r.value)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
+            <div>
+              <p className="text-xs text-muted-foreground font-semibold mb-2">Profil des ratios</p>
+              <ResponsiveContainer width="100%" height={240}>
+                <RadarChart data={radarRatiosData}>
+                  <PolarGrid stroke="hsl(var(--border))" />
+                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} />
+                  <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} />
+                  <Radar name="Ratios" dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.25} strokeWidth={2} />
+                </RadarChart>
+              </ResponsiveContainer>
+            </div>
+            <table className="w-full text-xs border">
+              <thead><tr className="bg-muted/50"><th className="p-2 text-left">Ratio</th><th className="p-2 text-right">Valeur</th><th className="p-2 text-left">Interprétation</th></tr></thead>
+              <tbody>
+                {[
+                  { label: 'Liquidité générale', value: safe.ratioLiquiditeGenerale, fmt: (v: number) => v.toFixed(2), seuil: (v: number) => v >= 1 ? '✅ Correcte' : '⚠️ Insuffisante' },
+                  { label: 'Liquidité réduite', value: safe.ratioLiquiditeReduite, fmt: (v: number) => v.toFixed(2), seuil: (v: number) => v >= 0.8 ? '✅' : '⚠️' },
+                  { label: 'Liquidité immédiate', value: safe.ratioLiquiditeImmediate, fmt: (v: number) => v.toFixed(2), seuil: (v: number) => v >= 0.3 ? '✅' : '⚠️' },
+                  { label: 'Autonomie financière', value: safe.ratioAutonomieFinanciere, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: (v: number) => v >= 0.5 ? '✅ > 50%' : '⚠️ < 50%' },
+                  { label: 'Solvabilité', value: safe.ratioSolvabilite, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: (v: number) => v >= 0.5 ? '✅' : '⚠️' },
+                  { label: 'Endettement', value: safe.ratioEndettement, fmt: (v: number) => v.toFixed(2), seuil: (v: number) => v < 1 ? '✅' : '⚠️ Élevé' },
+                  { label: 'Couverture charges', value: safe.ratioCouvertureCharges, fmt: (v: number) => `${(v * 100).toFixed(1)} %`, seuil: (v: number) => v >= 0.08 ? '✅ > 30 j' : '⚠️ < 30 j' },
+                ].map(r => (
+                  <tr key={r.label} className="border-t">
+                    <td className="p-2 font-semibold">{r.label}</td>
+                    <td className="p-2 text-right font-mono font-bold">{r.fmt(r.value)}</td>
+                    <td className="p-2 text-muted-foreground">{r.seuil(r.value)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
           {/* §11 Vérifications */}
           <SectionTitre numero="11" title="Vérifications comptables" />
@@ -1178,10 +1610,10 @@ function SectionTitre({ numero, title }: { numero: string; title: string }) {
   );
 }
 
-function IndicatorBadge({ icon, label, value }: { icon: string; label: string; value: string }) {
+function IndicatorBadge({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="bg-muted/30 rounded-lg p-2 text-xs flex items-center gap-2">
-      <span>{icon}</span>
+      {typeof icon === 'string' ? <span>{icon}</span> : icon}
       <div>
         <div className="text-muted-foreground">{label}</div>
         <div className="font-bold">{value}</div>
