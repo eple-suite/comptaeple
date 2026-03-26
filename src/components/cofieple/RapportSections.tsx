@@ -84,6 +84,60 @@ export function RapportOrdoSection() {
   const [commentaireSubventions, setCommentaireSubventions] = useState('');
   const [commentairePerspectives, setCommentairePerspectives] = useState('');
 
+  const depNatureDataRaw = useMemo(() => {
+    if (!R) return [];
+    const cn = R.chargesNature ?? {};
+    const labels: Record<string, string> = { '60': 'Achats', '61': 'Serv. extérieurs', '62': 'Autres serv. ext.', '63': 'Impôts', '64': 'Personnel', '65': 'Autres charges', '66': 'Charges fin.', '67': 'Charges except.', '68': 'Dotations amort.', '20': 'Investissement', '21': 'Immobilisations' };
+    const colors = ['hsl(215,70%,50%)', 'hsl(160,45%,45%)', 'hsl(38,92%,50%)', 'hsl(0,72%,55%)', 'hsl(280,50%,50%)', 'hsl(190,60%,40%)', 'hsl(340,65%,50%)', 'hsl(120,40%,40%)', 'hsl(30,70%,50%)', 'hsl(250,50%,50%)'];
+    return Object.entries(cn).filter(([, v]) => v > 50).sort(([, a], [, b]) => b - a).slice(0, 10).map(([k, v], i) => ({ name: labels[k] || `Cpt ${k}`, value: v, fill: colors[i % colors.length] }));
+  }, [R]);
+
+  const recettesOrigineDataRaw = useMemo(() => {
+    if (!R) return [];
+    const po = R.produitsOrigine ?? {};
+    let etat = 0, collectivite = 0, propres = 0, autres = 0;
+    Object.entries(po).forEach(([k, v]) => {
+      if (['741', '744', '745', '746'].some(p => k.startsWith(p))) etat += v;
+      else if (['742', '743', '747'].some(p => k.startsWith(p))) collectivite += v;
+      else if (['70', '71', '72', '75', '76'].some(p => k.startsWith(p))) propres += v;
+      else autres += v;
+    });
+    return [
+      { name: 'État', value: etat, fill: 'hsl(215,70%,50%)' },
+      { name: 'Collectivité', value: collectivite, fill: 'hsl(160,45%,45%)' },
+      { name: 'Ress. propres', value: propres, fill: 'hsl(38,92%,50%)' },
+      { name: 'Autres', value: autres, fill: 'hsl(280,50%,50%)' },
+    ].filter(d => d.value > 0);
+  }, [R]);
+
+  const autoCommentsRaw = useMemo(() => {
+    if (!R) return [];
+    const c: string[] = [];
+    const safeR = {
+      joursFdr: R.joursFdr ?? 0, joursTresorerie: R.joursTresorerie ?? 0,
+      prelevementsReserves: R.prelevementsReserves ?? { totalPrelevements: 0 },
+    };
+    if (R.resultatBudgetaire >= 0) {
+      c.push(`✅ L'exercice ${etab.exercice} dégage un excédent de ${formatEur(R.resultatBudgetaire)}. Le budget a été maîtrisé.`);
+    } else {
+      const prelev = safeR.prelevementsReserves.totalPrelevements;
+      if (prelev > 0) {
+        const horsP = R.resultatBudgetaire + prelev;
+        c.push(`📊 Le résultat est déficitaire de ${formatEur(Math.abs(R.resultatBudgetaire))} en raison de ${formatEur(prelev)} de prélèvements sur FDR votés en CA. ${horsP >= 0 ? `Sans ces prélèvements, le résultat aurait été excédentaire de ${formatEur(horsP)}.` : `Hors prélèvements, le résultat reste déficitaire de ${formatEur(Math.abs(horsP))}.`}`);
+      } else {
+        c.push(`⚠️ Le résultat est déficitaire de ${formatEur(Math.abs(R.resultatBudgetaire))}. Ce déficit sera imputé sur les réserves (solde actuel : ${formatEur(R.reserves)}).`);
+      }
+    }
+    if (R.tauxExecCharges < 0.75) c.push(`⚠️ Taux d'exécution des dépenses faible (${(R.tauxExecCharges * 100).toFixed(1)}%).`);
+    else if (R.tauxExecCharges > 0.95) c.push(`✅ Crédits consommés à ${(R.tauxExecCharges * 100).toFixed(1)}%.`);
+    if (safeR.joursFdr >= 30) c.push(`✅ Le FDR couvre ${Math.round(safeR.joursFdr)} jours (seuil : 30 j).`);
+    else if (safeR.joursFdr > 0) c.push(`🔴 Le FDR ne couvre que ${Math.round(safeR.joursFdr)} jours (< 30 j).`);
+    if (safeR.joursTresorerie < 15) c.push(`🔴 Trésorerie tendue : ${Math.round(safeR.joursTresorerie)} jours.`);
+    if (R.cafBudgetaire >= 0) c.push(`✅ CAF de ${formatEur(R.cafBudgetaire)}.`);
+    else c.push(`⚠️ IAF de ${formatEur(Math.abs(R.cafBudgetaire))}.`);
+    return c;
+  }, [R, etab.exercice]);
+
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'ordonnateur (M9-6 § V.1)." />;
 
   const dateArrete = etab.dateArrete ? new Date(etab.dateArrete).toLocaleDateString('fr-FR') : '—';
