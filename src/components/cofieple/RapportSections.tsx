@@ -375,9 +375,7 @@ export function RapportOrdoSection() {
               </div>
             </div>
           </div>
-          <Textarea value={commentaireResultat} onChange={e => setCommentaireResultat(e.target.value)}
-            placeholder="Commentaire de l'ordonnateur sur le résultat budgétaire et l'exécution…" rows={2}
-            className="mb-4 bg-muted/30 text-xs" />
+          <CommentaireBox label="Commentaire sur le résultat et l'exécution" value={commentaireResultat} onChange={setCommentaireResultat} />
 
           {/* §3 Répartition dépenses + recettes */}
           <SectionTitre numero="3" title="Répartition des dépenses et des recettes" />
