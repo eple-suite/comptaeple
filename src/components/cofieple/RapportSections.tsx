@@ -672,6 +672,7 @@ export function RapportOrdoSection() {
           <div className="text-xs text-muted-foreground mb-4 bg-muted/10 rounded p-3">
             💡 <strong>Pour le CA :</strong> Les opérations d'ordre sont des écritures purement comptables (amortissements, provisions). Elles n'ont aucun impact sur la trésorerie. Un solde d'OO négatif est normal et traduit la politique d'amortissement du patrimoine.
           </div>
+          <CommentaireBox label="Commentaire sur les opérations d'ordre" value={commentaireOO} onChange={setCommentaireOO} />
 
           {/* §9 Focus SRH */}
           {(srhDomaine || (ind && ind.nb_repas_servis > 0)) && (
@@ -728,9 +729,9 @@ export function RapportOrdoSection() {
               <div className="text-xs text-muted-foreground mb-2 bg-muted/10 rounded p-3">
                 💡 <strong>Pour le CA :</strong> Le SRH doit être équilibré (recettes = dépenses). Un excédent est affecté aux réserves SRH (c/106870). Un déficit chronique nécessite une révision des tarifs de restauration.
               </div>
-              <Textarea value={commentaireSRH} onChange={e => setCommentaireSRH(e.target.value)}
-                placeholder="Commentaire sur le SRH (coût repas, équilibre, activité)…" rows={2}
-                className="mb-4 bg-muted/30 text-xs" />
+              <CommentaireBox label="Commentaire sur le SRH" value={commentaireSRH} onChange={setCommentaireSRH} />
+            </>
+          )}
             </>
           )}
 
@@ -769,9 +770,9 @@ export function RapportOrdoSection() {
               </div>
             </div>
           </div>
-          <Textarea value={commentaireSubventions} onChange={e => setCommentaireSubventions(e.target.value)}
-            placeholder="Commentaire sur les subventions (état de notification, reliquats, créances anciennes)…" rows={2}
-            className="mb-4 bg-muted/30 text-xs" />
+          <CommentaireBox label="Commentaire sur les subventions et financements" value={commentaireSubventions} onChange={setCommentaireSubventions} />
+
+          {/* §11 Situation patrimoniale */}
 
           {/* §11 Situation patrimoniale */}
           <SectionTitre numero="11" title="Situation patrimoniale" />
@@ -780,16 +781,49 @@ export function RapportOrdoSection() {
             <KPICard label="Amortissements" value={formatEur(R.totalAmortissements)} color="amber" icon="📉" isText />
             <KPICard label="Valeur nette" value={formatEur(safe.valeurNette)} color={safe.valeurNette >= 0 ? 'green' : 'red'} icon="🏢" isText />
           </div>
+          <CommentaireBox label="Commentaire sur la situation patrimoniale" value={commentairePatrimoine} onChange={setCommentairePatrimoine} />
 
-          {/* §12 Points d'attention */}
-          <SectionTitre numero="12" title="Points d'attention et perspectives" />
+          {/* §12 Pilotage budgétaire (REPROFI) */}
+          <SectionTitre numero="12" title="Pilotage budgétaire — Budget initial vs exécuté" />
+          <div className="overflow-x-auto mb-4">
+            <table className="w-full text-xs border">
+              <thead><tr className="bg-slate-700 text-white">
+                <th className="p-2 text-left">Agrégat</th>
+                <th className="p-2 text-right">Budget initial</th>
+                <th className="p-2 text-right">Budget exécuté</th>
+                <th className="p-2 text-right">Écart</th>
+                <th className="p-2 text-right">Écart %</th>
+              </tr></thead>
+              <tbody>
+                {[
+                  { label: 'Charges totales', bi: R.totalChargesPrev, be: R.totalChargesSde },
+                  { label: 'Produits totaux', bi: R.totalProduitsPrev, be: R.totalProduitsSdr },
+                  { label: 'Résultat', bi: R.totalProduitsPrev - R.totalChargesPrev, be: R.resultatBudgetaire },
+                ].map(row => {
+                  const ecart = row.be - row.bi;
+                  const pctE = row.bi !== 0 ? (ecart / Math.abs(row.bi)) * 100 : 0;
+                  return (
+                    <tr key={row.label} className="border-t">
+                      <td className="p-2 font-semibold">{row.label}</td>
+                      <td className="p-2 text-right font-mono text-muted-foreground">{formatEur(row.bi)}</td>
+                      <td className="p-2 text-right font-mono font-bold">{formatEur(row.be)}</td>
+                      <td className={`p-2 text-right font-mono ${ecart >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>{ecart >= 0 ? '+' : ''}{formatEur(ecart)}</td>
+                      <td className={`p-2 text-right font-mono ${ecart >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>{pctE >= 0 ? '+' : ''}{pctE.toFixed(1)} %</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          <CommentaireBox label="Commentaire sur le pilotage budgétaire" value={commentairePilotage} onChange={setCommentairePilotage} />
+
+          {/* §13 Points d'attention */}
+          <SectionTitre numero="13" title="Points d'attention et perspectives" />
           <Textarea value={aiText3} onChange={e => setAiText3(e.target.value)}
             placeholder="Cliquez sur 'Générer commentaires IA' ou saisissez votre texte ici…" rows={4}
             className="mb-4 bg-muted/30 text-sm" />
 
-          <Textarea value={commentairePerspectives} onChange={e => setCommentairePerspectives(e.target.value)}
-            placeholder="Perspectives pour l'exercice suivant (investissements prévus, évolution des effectifs, projets)…" rows={3}
-            className="mb-4 bg-muted/30 text-xs" />
+          <CommentaireBox label="Perspectives pour l'exercice suivant" value={commentairePerspectives} onChange={setCommentairePerspectives} />
 
           {ind && ind.montant_fonds_social > 0 && (
             <div className="mb-4 bg-muted/30 rounded-lg p-3 text-xs">
