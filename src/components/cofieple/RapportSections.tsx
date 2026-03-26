@@ -732,8 +732,6 @@ export function RapportOrdoSection() {
               <CommentaireBox label="Commentaire sur le SRH" value={commentaireSRH} onChange={setCommentaireSRH} />
             </>
           )}
-            </>
-          )}
 
           {/* §10 Suivi des subventions */}
           <SectionTitre numero="10" title="Suivi des subventions et financements" />
