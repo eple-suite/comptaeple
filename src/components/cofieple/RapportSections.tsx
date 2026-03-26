@@ -232,7 +232,7 @@ export function RapportOrdoSection() {
       setAiText3((parts[1] || '').trim());
     } catch (e) { console.error(e); }
     setAiLoading(false);
-  }
+  };
 
   return (
     <div className="space-y-4">
