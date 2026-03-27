@@ -56,6 +56,60 @@ const EMPTY_FICHIERS = (): BudgetProfile['fichiers'] => ({
   balanceN: null, balanceN1: null,
 });
 
+// ── Per-establishment data persistence ──────────────────────────────
+const EST_DATA_PREFIX = 'cofieple_est_';
+
+interface EstablishmentSnapshot {
+  etablissement: EtablissementUI;
+  budgets: BudgetConfig[];
+  sde: Record<TypeBudget, any[]>;
+  sde1: Record<TypeBudget, any[]>;
+  sdr: Record<TypeBudget, any[]>;
+  sdr1: Record<TypeBudget, any[]>;
+  balance: Record<TypeBudget, any[]>;
+  balance1: Record<TypeBudget, any[]>;
+  fichierCharge: Record<string, boolean>;
+  resultats: Record<TypeBudget, ResultatsUI | null>;
+  resultatsConsolides: ResultatsUI | null;
+  checkItems: CheckItem[];
+  anomaliesBalance: AnomalieBalance[];
+  activeBudget: TypeBudget;
+}
+
+function saveEstablishmentSnapshot(estId: string, state: EstablishmentSnapshot) {
+  try {
+    localStorage.setItem(`${EST_DATA_PREFIX}${estId}`, JSON.stringify(state));
+  } catch (e) {
+    console.warn('Failed to save establishment data:', e);
+  }
+}
+
+function loadEstablishmentSnapshot(estId: string): EstablishmentSnapshot | null {
+  try {
+    const raw = localStorage.getItem(`${EST_DATA_PREFIX}${estId}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+}
+
+function extractSnapshot(state: any): EstablishmentSnapshot {
+  return {
+    etablissement: state.etablissement,
+    budgets: state.budgets,
+    sde: state.sde,
+    sde1: state.sde1,
+    sdr: state.sdr,
+    sdr1: state.sdr1,
+    balance: state.balance,
+    balance1: state.balance1,
+    fichierCharge: state.fichierCharge,
+    resultats: state.resultats,
+    resultatsConsolides: state.resultatsConsolides,
+    checkItems: state.checkItems,
+    anomaliesBalance: state.anomaliesBalance,
+    activeBudget: state.activeBudget,
+  };
+}
+
 type Store = CofiepleState & {
   currentEstablishmentId: string | null;
   switchEstablishment: (id: string) => void;
@@ -113,11 +167,53 @@ export const useCofiepleStore = create<Store>()(
 
       switchEstablishment: (id) => {
         const current = get().currentEstablishmentId;
-        if (current && current !== id) {
-          // Establishment changed — reset all data to avoid cross-contamination
-          get().resetAll();
+        if (current === id) return; // same establishment, no action needed
+
+        // Save current establishment data before switching
+        if (current) {
+          saveEstablishmentSnapshot(current, extractSnapshot(get()));
         }
-        set(state => { state.currentEstablishmentId = id; });
+
+        // Try to restore saved data for the target establishment
+        const saved = loadEstablishmentSnapshot(id);
+        if (saved) {
+          set(state => {
+            state.currentEstablishmentId = id;
+            state.etablissement = saved.etablissement;
+            state.budgets = saved.budgets;
+            state.sde = saved.sde;
+            state.sde1 = saved.sde1;
+            state.sdr = saved.sdr;
+            state.sdr1 = saved.sdr1;
+            state.balance = saved.balance;
+            state.balance1 = saved.balance1;
+            state.fichierCharge = saved.fichierCharge;
+            state.resultats = saved.resultats;
+            state.resultatsConsolides = saved.resultatsConsolides;
+            state.checkItems = saved.checkItems;
+            state.anomaliesBalance = saved.anomaliesBalance;
+            state.activeBudget = saved.activeBudget;
+          });
+        } else {
+          // No saved data — fresh state for this establishment
+          set(state => {
+            state.currentEstablishmentId = id;
+            Object.assign(state.etablissement, ETAB_INITIAL);
+            state.budgets = [{ type: 'principal' as TypeBudget, libelle: 'Budget principal' }];
+            state.sde = BUDGETS_VIDES();
+            state.sde1 = BUDGETS_VIDES();
+            state.sdr = BUDGETS_VIDES();
+            state.sdr1 = BUDGETS_VIDES();
+            state.balance = BUDGETS_VIDES();
+            state.balance1 = BUDGETS_VIDES();
+            state.fichierCharge = {};
+            state.resultats = { principal: null, annexe_greta: null, annexe_cfa: null, annexe_autre: null };
+            state.resultatsConsolides = null;
+            state.checkItems = [];
+            state.anomaliesBalance = [];
+            state.activeBudget = 'principal' as TypeBudget;
+          });
+        }
       },
 
       setEtablissement: (etab) =>
