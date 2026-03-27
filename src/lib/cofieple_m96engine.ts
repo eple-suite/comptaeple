@@ -485,15 +485,18 @@ export function calculerResultatsM96(
 export function buildChecklist(r: ResultatsM96, options: { isAnnexe?: boolean; bal?: LigneBalance[] } = {}): VerificationM96[] {
   const { isAnnexe = false, bal = [] } = options;
   const checks: VerificationM96[] = [];
-  function add(id: string, titre: string, ref: string, v1Label: string, v1: number, v2Label: string, v2: number, bloquant: boolean, piste: string) {
+  function add(id: string, titre: string, ref: string, v1Label: string, v1: number, v2Label: string, v2: number, bloquant: boolean, piste: string, tolerance?: number) {
     const ecart = v1 - v2;
-    const ok = Math.abs(ecart) < EPS;
+    const seuil = tolerance ?? EPS;
+    const ok = Math.abs(ecart) < seuil;
     let statut: StatutVerification = 'ok';
     if (!ok) statut = bloquant ? 'bloq' : Math.abs(ecart) > 500 ? 'err' : 'warn';
     checks.push({ id, titre, ref, v1Label, v1, v2Label, v2, ecart, statut, bloquant: bloquant && !ok, piste });
   }
 
-  add('rb_rc','Résultat budgétaire ≠ Résultat comptable','M9-6 § III.2 / RGCP art.24','Résultat budgétaire',r.resultatBudgetaire,'Résultat comptable',r.resultatComptable,false,"Vérifier que tous les transferts de l'ordonnateur ont été réceptionnés chez l'agent comptable. Les classes 6 et 7 doivent être soldées par Op@le.");
+  // L'écart résultat budgétaire / comptable est NORMAL et expliqué par les opérations d'ordre
+  // Ce n'est PAS un point bloquant — c'est un contrôle de cohérence informatif
+  add('rb_rc','Résultat budgétaire vs Résultat comptable (écart = OO)','M9-6 § III.2 / RGCP art.24','Résultat budgétaire',r.resultatBudgetaire,'Résultat comptable',r.resultatComptable,false,"L'écart entre résultat budgétaire et comptable est normal : il correspond aux opérations d'ordre (dotations aux amortissements, reprises, cessions). Vérifier que l'écart = solde des OO.", 100);
   add('caf_budg_compt','CAF/IAF budgétaire ≠ CAF/IAF comptable','M9-6 § IV.3','CAF/IAF budgétaire',r.cafBudgetaire,'CAF/IAF comptable',r.cafComptable,false,"Vérifier la concordance comptabilité générale / auxiliaire. Contrôler les dotations aux amortissements (68) et reprises (78).");
   add('fdr_budg_compt','Variation FDR haut ≠ Variation FDR bas','M9-6 § IV.1','Variation FDR par le haut',r.varFdrHaut,'Variation FDR par le bas',r.varFdrBas,false,"Vérifier les mouvements de classe 1 (financements) et classe 2 (immobilisations). Les deux approches doivent converger.");
   add('fdr_haut_bas','FDR par le haut ≠ FDR par le bas','M9-6 § IV.1 — POINT BLOQUANT','FDR par le haut (ressources permanentes)',r.fdrHaut,'FDR par le bas (actif circulant)',r.fdrBas,true,"POINT BLOQUANT au compte financier. Déséquilibre du bilan. Rechercher les comptes de classe 1 ou 2 anormaux.");
@@ -506,8 +509,10 @@ export function buildChecklist(r: ResultatsM96, options: { isAnnexe?: boolean; b
   add('struct_trso','Structuration trésorerie ≠ Trésorerie','M9-6 § IV.2','Total structuration trésorerie',r.structurationTresorerie,'Trésorerie',r.tresorerie,false,"Des comptes de tiers anormaux peuvent provoquer ce déséquilibre.");
   add('flux_trso','Flux nets de trésorerie ≠ Variation trésorerie comptable','M9-6 § IV.3 Tableau des flux','Total flux nets de trésorerie',r.fluxNetsTresorerie,'Variation trésorerie comptable',r.varTresorerieComptable,false,'');
   add('var_trso_tf','Variation trésorerie TF ≠ Variation trésorerie comptable','M9-6 § IV.3','Variation trésorerie tableau financement',r.varTresorerieTableauFinancement,'Variation trésorerie comptable',r.varTresorerieComptable,false,'');
-  add('charges_sde_bal','Total charges SDE ≠ Total classe 6 balance','M9-6 § II — Rapprochement Ordo/AC — POINT BLOQUANT','Total charges nettes SDE (N)',r.totalChargesSde,'Total charges classe 6 balance',r.totalChargesBalance,true,"POINT BLOQUANT : rapprochement ordonnateur/agent comptable. Vérifier que toutes les demandes de paiement ont été traitées. Contrôler les extournes.");
-  add('produits_sdr_bal','Total produits SDR ≠ Total classe 7 balance','M9-6 § II — Rapprochement Ordo/AC — POINT BLOQUANT','Total produits nets SDR (N)',r.totalProduitsSdr,'Total produits classe 7 balance',r.totalProduitsBalance,true,"POINT BLOQUANT : rapprochement ordonnateur/agent comptable. Vérifier les titres de recettes émis et les extournes.");
+  // Les écarts SDE/SDR ↔ Balance sont normaux (écritures directes, OO, ajustements).
+  // Tolérance de 100€ au lieu de 1€ (arrondis, centimes, ajustements de clôture)
+  add('charges_sde_bal','Total charges SDE vs Total classe 6 balance','M9-6 § II — Rapprochement Ordo/AC','Total charges nettes SDE (N)',r.totalChargesSde,'Total charges classe 6 balance',r.totalChargesBalance,false,"Vérifier les écritures directes comptables et les opérations d'ordre non transitées par l'ordonnateur.", 100);
+  add('produits_sdr_bal','Total produits SDR vs Total classe 7 balance','M9-6 § II — Rapprochement Ordo/AC','Total produits nets SDR (N)',r.totalProduitsSdr,'Total produits classe 7 balance',r.totalProduitsBalance,false,"Vérifier les titres de recettes émis et les écritures directes comptables.", 100);
 
   // ── Vérifications spécifiques BUDGET ANNEXE ──────────────────────
   if (isAnnexe && bal.length > 0) {

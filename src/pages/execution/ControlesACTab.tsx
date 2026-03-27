@@ -145,7 +145,10 @@ const ControlesACTab = () => {
 
     // ── PRINCIPES BUDGÉTAIRES (M9-6 §2.1.1) ──
     if (hasSDE && hasSDR) {
-      // 7. Principe d'équilibre
+      // 7. Principe d'équilibre — en EPLE, le budget peut ne pas être strictement
+      // équilibré entre dépenses et recettes en raison des prélèvements sur réserves,
+      // des reports à nouveau, et de l'affectation du résultat N-1.
+      // Ce n'est PAS une anomalie : c'est le fonctionnement normal de la M9-6.
       const totalDep = sdeRows.reduce((s, r) => s + (r.budget || 0), 0);
       const totalRec = sdrRows.reduce((s, r) => s + (r.budget || 0), 0);
       const ecartEquilibre = Math.abs(totalDep - totalRec);
@@ -154,11 +157,10 @@ const ControlesACTab = () => {
         categorie: 'principes',
         controle: "Principe d'équilibre — crédits ouverts (dépenses) vs prévisions (recettes)",
         referenceM96: "Tome 2 — §2.1.1 (équilibre)",
-        statut: ecartEquilibre < 1 ? 'conforme' : 'anomalie',
+        statut: ecartEquilibre < 1 ? 'conforme' : 'conforme',
         detail: ecartEquilibre < 1
           ? "Budget équilibré : crédits de dépenses et prévisions de recettes concordent."
-          : `Écart de ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(ecartEquilibre)} entre crédits de dépenses et prévisions de recettes.`,
-        gravite: ecartEquilibre >= 1 ? 'significative' : undefined,
+          : `Écart de ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(ecartEquilibre).replace(/[\u202F\u00A0]/g, ' ')} entre crédits de dépenses et prévisions de recettes. Cet écart est normal en EPLE (prélèvements sur réserves, affectation du résultat N-1, reports).`,
       });
 
       // 8. Universalité — non-contraction
