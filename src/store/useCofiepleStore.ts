@@ -230,23 +230,41 @@ export const useCofiepleStore = create<Store>()(
           state.budgets = state.budgets.filter(b => b.type !== type || b.type === 'principal');
         }),
 
-      setSDE: (data, type) =>
-        set(state => { state.sde[type] = data; state.fichierCharge[`sde_${type}`] = true; }),
+      setSDE: (data, type) => {
+        set(state => { state.sde[type] = data; state.fichierCharge[`sde_${type}`] = true; });
+        const estId = get().currentEstablishmentId;
+        if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+      },
 
-      setSDE1: (data, type) =>
-        set(state => { state.sde1[type] = data; state.fichierCharge[`sde1_${type}`] = true; }),
+      setSDE1: (data, type) => {
+        set(state => { state.sde1[type] = data; state.fichierCharge[`sde1_${type}`] = true; });
+        const estId = get().currentEstablishmentId;
+        if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+      },
 
-      setSDR: (data, type) =>
-        set(state => { state.sdr[type] = data; state.fichierCharge[`sdr_${type}`] = true; }),
+      setSDR: (data, type) => {
+        set(state => { state.sdr[type] = data; state.fichierCharge[`sdr_${type}`] = true; });
+        const estId = get().currentEstablishmentId;
+        if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+      },
 
-      setSDR1: (data, type) =>
-        set(state => { state.sdr1[type] = data; state.fichierCharge[`sdr1_${type}`] = true; }),
+      setSDR1: (data, type) => {
+        set(state => { state.sdr1[type] = data; state.fichierCharge[`sdr1_${type}`] = true; });
+        const estId = get().currentEstablishmentId;
+        if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+      },
 
-      setBalance: (data, type) =>
-        set(state => { state.balance[type] = data; state.fichierCharge[`bal_${type}`] = true; }),
+      setBalance: (data, type) => {
+        set(state => { state.balance[type] = data; state.fichierCharge[`bal_${type}`] = true; });
+        const estId = get().currentEstablishmentId;
+        if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+      },
 
-      setBalance1: (data, type) =>
-        set(state => { state.balance1[type] = data; state.fichierCharge[`bal1_${type}`] = true; }),
+      setBalance1: (data, type) => {
+        set(state => { state.balance1[type] = data; state.fichierCharge[`bal1_${type}`] = true; });
+        const estId = get().currentEstablishmentId;
+        if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+      },
 
       setFichierCharge: (key, val) =>
         set(state => { state.fichierCharge[key] = val; }),
