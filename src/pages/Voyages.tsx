@@ -547,7 +547,34 @@ const Voyages = () => {
           {selectedVoyage ? (
             <VoyageElevesTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
           ) : (
-            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour voir les élèves.</p>
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
+          )}
+        </TabsContent>
+
+        {/* TAB: Import SIECLE */}
+        <TabsContent value="import-siecle">
+          {selectedVoyage ? (
+            <VoyageImportSiecleTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
+          )}
+        </TabsContent>
+
+        {/* TAB: Encaissements */}
+        <TabsContent value="encaissements">
+          {selectedVoyage ? (
+            <VoyageEncaissementsTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
+          )}
+        </TabsContent>
+
+        {/* TAB: Créances */}
+        <TabsContent value="creances">
+          {selectedVoyage ? (
+            <VoyageCreancesTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
           )}
         </TabsContent>
 
@@ -565,7 +592,16 @@ const Voyages = () => {
           {selectedVoyage ? (
             <VoyageRecettesTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
           ) : (
-            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour gérer les recettes.</p>
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
+          )}
+        </TabsContent>
+
+        {/* TAB: Courriers PDF */}
+        <TabsContent value="courriers-pdf">
+          {selectedVoyage ? (
+            <VoyageCourriersPdfTab voyage={selectedVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
           )}
         </TabsContent>
 
@@ -574,7 +610,7 @@ const Voyages = () => {
           {selectedVoyage ? (
             <VoyageDocumentsJuridiqueTab voyage={selectedVoyage} />
           ) : (
-            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour accéder au pack juridique.</p>
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
           )}
         </TabsContent>
 
@@ -583,7 +619,7 @@ const Voyages = () => {
           {selectedVoyage ? (
             <VoyageBilanTab voyage={selectedVoyage} />
           ) : (
-            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour voir le bilan financier.</p>
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
           )}
         </TabsContent>
       </Tabs>
