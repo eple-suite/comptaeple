@@ -55,10 +55,11 @@ const SituationRecettesTab = () => {
     return Array.from(map.values());
   }, [sdrRows, hasData]);
 
-  // Détection : droits constatés (budget > 0) sans titre émis (aor = 0)
+  // Détection : prévisions significatives (> 100 €) sans titre émis (aor = 0)
+  // Les lignes avec de petits montants résiduels ne sont pas signalées
   const droitsSansTitre = useMemo(() => {
     if (!hasData) return [];
-    return sdrRows.filter(r => (r.budget || 0) > 0 && (r.aor || 0) === 0 && (r.realise || 0) === 0);
+    return sdrRows.filter(r => (r.budget || 0) > 100 && (r.aor || 0) === 0 && (r.realise || 0) === 0);
   }, [sdrRows, hasData]);
 
   const totaux = useMemo(() => {
