@@ -400,6 +400,7 @@ export const useCofiepleStore = create<Store>()(
         // Auto-save after analysis
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       // ── Budget Profiles (persistés sous 'cockpit_budget_profiles') ──
