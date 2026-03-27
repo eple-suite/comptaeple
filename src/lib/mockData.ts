@@ -187,6 +187,6 @@ export const mockComptesTiers = [
 ];
 
 export const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(value);
+  new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(value).replace(/[\u202F\u00A0]/g, ' ');
 
 export const formatPercent = (value: number) => `${value.toFixed(1)} %`;

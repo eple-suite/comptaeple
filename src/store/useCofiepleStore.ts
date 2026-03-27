@@ -5,7 +5,9 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
+import { immer } from 'zustand/middleware/immer';
+import { idbStorage, migrateLocalStorageToIDB } from '@/lib/idbStorage';
 import { immer } from 'zustand/middleware/immer';
 import type { LigneSDE, LigneSDR, LigneBalance } from '@/lib/cofieple_types';
 import type {
