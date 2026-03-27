@@ -536,36 +536,3 @@ function buildCoherence(sde: LigneSDE[], sdr: LigneSDR[]) {
   return result.sort((a, b) => a.service.localeCompare(b.service) || b.ecart - a.ecart);
 }
 
-function buildControles(sde: LigneSDE[], sdr: LigneSDR[], hasSDE: boolean, hasSDR: boolean) {
-  const items: { id: string; controle: string; ref: string; statut: string; detail: string; gravite?: string }[] = [];
-
-  if (hasSDE) {
-    const cd = sde.filter(r => (r.disponible ?? 0) < 0);
-    items.push({ id: 'dep-01', controle: 'Disponibilité des crédits', ref: '§2.3.4 / §2.1.1', statut: cd.length === 0 ? 'conforme' : 'anomalie', detail: cd.length === 0 ? 'Aucun dépassement.' : `${cd.length} ligne(s) en dépassement.`, gravite: cd.length > 0 ? 'majeure' : undefined });
-
-    const iv = sde.filter(r => !r.compte || !r.service);
-    items.push({ id: 'dep-02', controle: 'Exacte imputation budgétaire', ref: '§2.3.4', statut: iv.length === 0 ? 'conforme' : 'anomalie', detail: iv.length === 0 ? 'Imputations complètes.' : `${iv.length} ligne(s) incomplètes.`, gravite: iv.length > 0 ? 'significative' : undefined });
-
-    const es = sde.filter(r => (r.engage || 0) > 0 && (r.realise || 0) === 0);
-    items.push({ id: 'dep-03', controle: 'Engagements sans demande de paiement', ref: '§2.3.2', statut: es.length === 0 ? 'conforme' : 'anomalie', detail: es.length === 0 ? 'Tous les engagements ont une DP.' : `${es.length} engagement(s) sans DP.`, gravite: es.length > 0 ? 'mineure' : undefined });
-  }
-
-  if (hasSDR) {
-    const ps = sdr.filter(r => (r.budget || 0) > 0 && (r.aor || 0) === 0 && (r.realise || 0) === 0);
-    items.push({ id: 'rec-01', controle: 'Titres de recettes émis', ref: '§2.2.2', statut: ps.length === 0 ? 'conforme' : 'anomalie', detail: ps.length === 0 ? 'Tous les droits ont un titre.' : `${ps.length} ligne(s) sans titre.`, gravite: ps.length > 0 ? 'significative' : undefined });
-
-    const tt = sdr.reduce((s, r) => s + (r.aor || 0), 0);
-    const te = sdr.reduce((s, r) => s + (r.realise || 0), 0);
-    const rar = tt - te;
-    items.push({ id: 'rec-02', controle: 'Recouvrement', ref: '§2.2.5', statut: rar <= 0 ? 'conforme' : 'anomalie', detail: rar <= 0 ? 'Titres recouvrés.' : `Reste à recouvrer : ${fmt(rar)}.`, gravite: rar > 0 ? 'mineure' : undefined });
-  }
-
-  if (hasSDE && hasSDR) {
-    const td = sde.reduce((s, r) => s + (r.budget || 0), 0);
-    const tr = sdr.reduce((s, r) => s + (r.budget || 0), 0);
-    const eq = Math.abs(td - tr);
-    items.push({ id: 'prin-01', controle: 'Principe d\'équilibre', ref: '§2.1.1', statut: eq < 1 ? 'conforme' : 'anomalie', detail: eq < 1 ? 'Budget équilibré.' : `Écart de ${fmt(eq)}.`, gravite: eq >= 1 ? 'significative' : undefined });
-  }
-
-  return items;
-}
