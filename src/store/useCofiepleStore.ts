@@ -80,30 +80,34 @@ interface EstablishmentSnapshot {
 
 function saveEstablishmentSnapshot(estId: string, state: EstablishmentSnapshot) {
   try {
-    localStorage.setItem(`${EST_DATA_PREFIX}${estId}`, JSON.stringify(state));
+    // Use IndexedDB for large payloads (async, fire-and-forget)
+    idbStorage.setItem(`${EST_DATA_PREFIX}${estId}`, JSON.stringify(state));
   } catch (e) {
     console.warn('Failed to save establishment data:', e);
   }
 }
 
-function loadEstablishmentSnapshot(estId: string): EstablishmentSnapshot | null {
+async function loadEstablishmentSnapshot(estId: string): Promise<EstablishmentSnapshot | null> {
   try {
-    const raw = localStorage.getItem(`${EST_DATA_PREFIX}${estId}`);
+    // Try IndexedDB first, then fallback to localStorage for migration
+    const raw = await idbStorage.getItem(`${EST_DATA_PREFIX}${estId}`)
+      ?? localStorage.getItem(`${EST_DATA_PREFIX}${estId}`);
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 
 function saveManualEtablissement(estId: string, etablissement: EtablissementUI) {
   try {
-    localStorage.setItem(`${ETAB_MANUAL_PREFIX}${estId}`, JSON.stringify(etablissement));
+    idbStorage.setItem(`${ETAB_MANUAL_PREFIX}${estId}`, JSON.stringify(etablissement));
   } catch (e) {
     console.warn('Failed to save manual establishment data:', e);
   }
 }
 
-function loadManualEtablissement(estId: string): Partial<EtablissementUI> | null {
+async function loadManualEtablissement(estId: string): Promise<Partial<EtablissementUI> | null> {
   try {
-    const raw = localStorage.getItem(`${ETAB_MANUAL_PREFIX}${estId}`);
+    const raw = await idbStorage.getItem(`${ETAB_MANUAL_PREFIX}${estId}`)
+      ?? localStorage.getItem(`${ETAB_MANUAL_PREFIX}${estId}`);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
