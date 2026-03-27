@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { idbStorage, migrateLocalStorageToIDB } from '@/lib/idbStorage';
+import { saveFullState, loadAllSnapshots, saveEstablishmentIdentity, loadEstablishmentIdentity } from '@/lib/cofiepleBackendSync';
 import type { LigneSDE, LigneSDR, LigneBalance } from '@/lib/cofieple_types';
 import type {
   CofiepleState, EtablissementUI, TypeBudget, BudgetConfig,
