@@ -50,6 +50,7 @@ interface NavItem {
 const CompteFinancier = () => {
   const { selectedEstablishment } = useEstablishment();
   const switchEstablishment = useCofiepleStore(s => s.switchEstablishment);
+  const syncFromBackend = useCofiepleStore(s => s.syncFromBackend);
   const activeTab = useCofiepleStore(s => s.activeTab);
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
   const fichiers = useCofiepleStore(s => s.fichierCharge);
