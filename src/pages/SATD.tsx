@@ -36,6 +36,7 @@ import SatdAssistant from "./satd/SatdAssistant";
 import SatdRelancesTab from "./satd/SatdRelancesTab";
 import SatdSurendettementTab from "./satd/SatdSurendettementTab";
 import SatdAlertesCreancesTab from "./satd/SatdAlertesCreancesTab";
+import SatdIntelligence from "./satd/SatdIntelligence";
 
 const SATD = () => {
   const { selectedEstablishment } = useEstablishment();
@@ -285,8 +286,9 @@ const SATD = () => {
         <KpiCard title="Prescriptions ≤6m" value={`${prescriptionsProches}`} icon={Scale} variant={prescriptionsProches > 0 ? "destructive" : "default"} />
       </div>
 
-      <Tabs defaultValue="registre">
+      <Tabs defaultValue="intelligence">
         <TabsList className="flex-wrap">
+          <TabsTrigger value="intelligence">🧠 Intelligence</TabsTrigger>
           <TabsTrigger value="registre">📋 Registre ({filtered.length})</TabsTrigger>
           <TabsTrigger value="poursuivre">⚖️ Poursuivre</TabsTrigger>
           <TabsTrigger value="relances">📧 Relances</TabsTrigger>
@@ -297,6 +299,11 @@ const SATD = () => {
           <TabsTrigger value="documents">📄 Documents</TabsTrigger>
           <TabsTrigger value="statistiques">📊 Statistiques</TabsTrigger>
         </TabsList>
+
+        {/* === INTELLIGENCE === */}
+        <TabsContent value="intelligence" className="mt-4">
+          <SatdIntelligence satds={satds} tiers={tiersDetenteurs} onOpenAssistant={(ctx) => { setAssistantCtx(ctx); setOpenAssistant(true); }} />
+        </TabsContent>
 
         {/* === REGISTRE === */}
         <TabsContent value="registre" className="space-y-4 mt-4">
