@@ -58,6 +58,7 @@ const EMPTY_FICHIERS = (): BudgetProfile['fichiers'] => ({
 
 // ── Per-establishment data persistence ──────────────────────────────
 const EST_DATA_PREFIX = 'cofieple_est_';
+const ETAB_MANUAL_PREFIX = 'cofieple_etab_manual_';
 
 interface EstablishmentSnapshot {
   etablissement: EtablissementUI;
@@ -89,6 +90,23 @@ function loadEstablishmentSnapshot(estId: string): EstablishmentSnapshot | null 
     const raw = localStorage.getItem(`${EST_DATA_PREFIX}${estId}`);
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
+}
+
+function saveManualEtablissement(estId: string, etablissement: EtablissementUI) {
+  try {
+    localStorage.setItem(`${ETAB_MANUAL_PREFIX}${estId}`, JSON.stringify(etablissement));
+  } catch (e) {
+    console.warn('Failed to save manual establishment data:', e);
+  }
+}
+
+function loadManualEtablissement(estId: string): Partial<EtablissementUI> | null {
+  try {
+    const raw = localStorage.getItem(`${ETAB_MANUAL_PREFIX}${estId}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
 }
 
 function extractSnapshot(state: any): EstablishmentSnapshot {
@@ -167,7 +185,15 @@ export const useCofiepleStore = create<Store>()(
 
       switchEstablishment: (id) => {
         const current = get().currentEstablishmentId;
-        if (current === id) return; // same establishment, no action needed
+        if (current === id) {
+          const manual = loadManualEtablissement(id);
+          if (manual) {
+            set(state => {
+              state.etablissement = { ...state.etablissement, ...manual };
+            });
+          }
+          return;
+        }
 
         // Save current establishment data before switching
         if (current) {
@@ -176,10 +202,13 @@ export const useCofiepleStore = create<Store>()(
 
         // Try to restore saved data for the target establishment
         const saved = loadEstablishmentSnapshot(id);
+        const manual = loadManualEtablissement(id);
         if (saved) {
           set(state => {
             state.currentEstablishmentId = id;
-            state.etablissement = saved.etablissement;
+            state.etablissement = manual
+              ? { ...saved.etablissement, ...manual }
+              : saved.etablissement;
             state.budgets = saved.budgets;
             state.sde = saved.sde;
             state.sde1 = saved.sde1;
@@ -198,7 +227,9 @@ export const useCofiepleStore = create<Store>()(
           // No saved data — fresh state for this establishment
           set(state => {
             state.currentEstablishmentId = id;
-            Object.assign(state.etablissement, ETAB_INITIAL);
+            state.etablissement = manual
+              ? { ...ETAB_INITIAL, ...manual }
+              : { ...ETAB_INITIAL };
             state.budgets = [{ type: 'principal' as TypeBudget, libelle: 'Budget principal' }];
             state.sde = BUDGETS_VIDES();
             state.sde1 = BUDGETS_VIDES();
@@ -219,7 +250,11 @@ export const useCofiepleStore = create<Store>()(
       setEtablissement: (etab) => {
         set(state => { Object.assign(state.etablissement, etab); });
         const estId = get().currentEstablishmentId;
-        if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        if (estId) {
+          const currentState = get();
+          saveEstablishmentSnapshot(estId, extractSnapshot(currentState));
+          saveManualEtablissement(estId, currentState.etablissement);
+        }
       },
 
       addBudgetAnnexe: (config) =>
