@@ -216,8 +216,11 @@ export const useCofiepleStore = create<Store>()(
         }
       },
 
-      setEtablissement: (etab) =>
-        set(state => { Object.assign(state.etablissement, etab); }),
+      setEtablissement: (etab) => {
+        set(state => { Object.assign(state.etablissement, etab); });
+        const estId = get().currentEstablishmentId;
+        if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+      },
 
       addBudgetAnnexe: (config) =>
         set(state => {
@@ -308,6 +311,9 @@ export const useCofiepleStore = create<Store>()(
           state.anomaliesBalance = anomaliesBalance;
           state.analysisRunning = false;
         });
+        // Auto-save after analysis
+        const estId = get().currentEstablishmentId;
+        if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
       },
 
       // ── Budget Profiles (persistés sous 'cockpit_budget_profiles') ──
