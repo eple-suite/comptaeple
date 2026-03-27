@@ -24,7 +24,7 @@ function fmt(n: number): string {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(n);
 }
 
-export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation }: RapportParams) {
+export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation, nomOrdonnateur, nomSecretaireGeneral }: RapportParams) {
   const date = dateSituation || new Date().toLocaleDateString('fr-FR');
   const exercice = etab.exercice || new Date().getFullYear();
   const nomEtab = etab.nom || 'Établissement';
@@ -393,7 +393,8 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   });
 
   // ════════════════════════════════════════════════════════════
-  // 7. SIGNATURES
+  // 7. SIGNATURES — Ordonnateur + Secrétaire Général uniquement
+  // (Rapport budgétaire : PAS de signature de l'agent comptable)
   // ════════════════════════════════════════════════════════════
   doc.addPage();
   drawSectionHeader(doc, '7. SIGNATURES', '');
@@ -404,29 +405,34 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   doc.text(`Fait à ${etab.commune || '_______________'}, le ${date}`, 14, ySig);
 
   ySig += 20;
-  // 3 colonnes de signatures
-  const colW = (pw - 28) / 3;
+  // 2 colonnes de signatures (ordonnateur + secrétaire général)
+  const colW = (pw - 28) / 2;
 
   doc.setFont('helvetica', 'bold');
   doc.text("L'ordonnateur", 14, ySig);
-  doc.text("L'agent comptable", 14 + colW, ySig);
-  doc.text("Vu, le secrétaire général", 14 + colW * 2, ySig);
+  doc.text("Vu, le secrétaire général", 14 + colW, ySig);
 
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text(etab.ordonnateur || '(Nom et prénom)', 14, ySig + 8);
-  doc.text(etab.agentComptable || '(Nom et prénom)', 14 + colW, ySig + 8);
-  doc.text('(Nom et prénom)', 14 + colW * 2, ySig + 8);
+  const ordoName = nomOrdonnateur || etab.ordonnateur || '(Nom et prénom)';
+  const sgName = nomSecretaireGeneral || etab.secretaireGeneral || '(Nom et prénom)';
+  doc.text(ordoName, 14, ySig + 8);
+  doc.text(sgName, 14 + colW, ySig + 8);
 
   // Signature lines
   ySig += 30;
   doc.setDrawColor(0);
   doc.line(14, ySig, 14 + colW - 10, ySig);
-  doc.line(14 + colW, ySig, 14 + colW * 2 - 10, ySig);
-  doc.line(14 + colW * 2, ySig, pw - 14, ySig);
+  doc.line(14 + colW, ySig, pw - 14, ySig);
+
+  // Espaces pour le cachet
+  doc.setFontSize(7);
+  doc.setTextColor(150, 150, 150);
+  doc.text('Signature et cachet', 14, ySig + 5);
+  doc.text('Signature et cachet', 14 + colW, ySig + 5);
 
   // Mention légale finale
-  ySig += 30;
+  ySig += 25;
   doc.setFillColor(240, 243, 248);
   doc.rect(14, ySig, pw - 28, 24, 'F');
   doc.setFontSize(7);
