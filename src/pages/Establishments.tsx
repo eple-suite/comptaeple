@@ -337,6 +337,12 @@ const Establishments = () => {
                       <TableCell className="font-mono text-sm">
                         {e.opale_number || "—"}
                       </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {(e as any).ordonnateur || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {(e as any).agent_comptable || "—"}
+                      </TableCell>
                       <TableCell className="text-right">
                         <Button
                           size="sm"
