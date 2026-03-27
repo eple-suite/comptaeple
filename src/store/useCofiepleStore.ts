@@ -220,6 +220,15 @@ export const useCofiepleStore = create<Store>()(
       switchEstablishment: async (id) => {
         const current = get().currentEstablishmentId;
         if (current === id) {
+          // Already on this establishment — just load identity from backend
+          const identity = await loadEstablishmentIdentity(id);
+          if (identity) {
+            set(state => {
+              if (identity.ordonnateur) state.etablissement.ordonnateur = identity.ordonnateur;
+              if (identity.agent_comptable) state.etablissement.agentComptable = identity.agent_comptable;
+              if (identity.secretaire_general) state.etablissement.secretaireGeneral = identity.secretaire_general;
+            });
+          }
           const manual = await loadManualEtablissement(id);
           if (manual) {
             set(state => {
@@ -234,17 +243,23 @@ export const useCofiepleStore = create<Store>()(
           saveEstablishmentSnapshot(current, extractSnapshot(get()));
         }
 
-        // Try to restore saved data for the target establishment
-        const [saved, manual] = await Promise.all([
+        // Try to restore saved data for the target establishment (IDB first)
+        const [saved, manual, identity] = await Promise.all([
           loadEstablishmentSnapshot(id),
           loadManualEtablissement(id),
+          loadEstablishmentIdentity(id),
         ]);
+
         if (saved) {
           set(state => {
             state.currentEstablishmentId = id;
             state.etablissement = manual
               ? { ...saved.etablissement, ...manual }
               : saved.etablissement;
+            // Apply backend identity over local
+            if (identity?.ordonnateur) state.etablissement.ordonnateur = identity.ordonnateur;
+            if (identity?.agent_comptable) state.etablissement.agentComptable = identity.agent_comptable;
+            if (identity?.secretaire_general) state.etablissement.secretaireGeneral = identity.secretaire_general;
             state.budgets = saved.budgets;
             state.sde = saved.sde;
             state.sde1 = saved.sde1;
@@ -260,12 +275,15 @@ export const useCofiepleStore = create<Store>()(
             state.activeBudget = saved.activeBudget;
           });
         } else {
-          // No saved data — fresh state for this establishment
+          // No local data — set fresh state then try backend
           set(state => {
             state.currentEstablishmentId = id;
             state.etablissement = manual
               ? { ...ETAB_INITIAL, ...manual }
               : { ...ETAB_INITIAL };
+            if (identity?.ordonnateur) state.etablissement.ordonnateur = identity.ordonnateur;
+            if (identity?.agent_comptable) state.etablissement.agentComptable = identity.agent_comptable;
+            if (identity?.secretaire_general) state.etablissement.secretaireGeneral = identity.secretaire_general;
             state.budgets = [{ type: 'principal' as TypeBudget, libelle: 'Budget principal' }];
             state.sde = BUDGETS_VIDES();
             state.sde1 = BUDGETS_VIDES();
@@ -280,6 +298,8 @@ export const useCofiepleStore = create<Store>()(
             state.anomaliesBalance = [];
             state.activeBudget = 'principal' as TypeBudget;
           });
+          // Try to restore from backend (new device scenario)
+          setTimeout(() => get().syncFromBackend(), 500);
         }
       },
 
