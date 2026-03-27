@@ -8,7 +8,7 @@ const corsHeaders = {
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
-    const { type, etablissement, resultats, anomalies, bloquants, indicateurs, historique, scopeDescription, detailLevel, systemPrompt } = await req.json();
+    const { type, etablissement, resultats, anomalies, bloquants, indicateurs, historique, scopeDescription, detailLevel, systemPrompt: incomingSystemPrompt } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -18,7 +18,7 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
-    const etab = etablissement;
+    const etab = etablissement || {};
     const R = resultats || {};
     const toNum = (n: unknown) => (typeof n === "number" && Number.isFinite(n) ? n : 0);
     const fmtEur = (n: unknown) =>
@@ -30,13 +30,13 @@ serve(async (req) => {
       ? `\nHistorique pluriannuel :\n${historique.map((h: any) => `- ${h.exercice} : FDR ${fmtEur(h.fdr)}, Tréso ${fmtEur(h.tresorerie)}, CAF ${fmtEur(h.caf)}, Réserves ${fmtEur(h.reserves)}, ${Math.round(h.jours_autonomie)} jours`).join('\n')}`
       : '';
 
-    let systemPrompt: string, userPrompt: string;
+    let resolvedSystemPrompt: string, userPrompt: string;
 
     if (type === 'ordonnateur') {
-      systemPrompt = `Tu es expert en comptabilité publique française EPLE, M9-6 2026 et Décret 2012-1246. Tu rédiges des textes officiels pour le conseil d'administration. Style institutionnel, en français. N'invente pas de données. Intègre les indicateurs hors-comptables quand ils sont fournis.`;
+      resolvedSystemPrompt = `Tu es expert en comptabilité publique française EPLE, M9-6 2026 et Décret 2012-1246. Tu rédiges des textes officiels pour le conseil d'administration. Style institutionnel, en français. N'invente pas de données. Intègre les indicateurs hors-comptables quand ils sont fournis.`;
       userPrompt = `Rédige deux paragraphes séparés par "---" pour le rapport de l'ordonnateur.\nPARAGRAPHE 1 — Présentation de l'établissement (4-6 lignes) :\n${etab.nom} — UAI ${etab.uai} — ${etab.type} — Ex. ${etab.exercice}\n${etab.academie}${indBlock}\nOrdonnateur : ${etab.ordonnateur}\n---\nPARAGRAPHE 2 — Points d'attention (4-6 lignes) :\nRésultat budgétaire : ${fmtEur(R.resultatBudgetaire)}\nFDR : ${fmtEur(R.fdrComptable)}\nTrésorerie : ${fmtEur(R.tresorerieNette ?? R.tresorerie)}\nCAF : ${fmtEur(R.cafBudgetaire)}\nCharges : ${fmtEur(R.totalChargesReel)} / Produits : ${fmtEur(R.totalProduitsReel)}${histBlock}`;
     } else if (type === 'agent_comptable') {
-      systemPrompt = `Tu es expert en comptabilité publique française EPLE, M9-6 2026 et Décret 2012-1246. Tu rédiges le rapport financier de l'agent comptable sur le modèle REPROFI. Style institutionnel, prose soutenue, paragraphes développés. N'invente pas de données. N'utilise JAMAIS de listes à puces. Rédige en texte continu.
+      resolvedSystemPrompt = `Tu es expert en comptabilité publique française EPLE, M9-6 2026 et Décret 2012-1246. Tu rédiges le rapport financier de l'agent comptable sur le modèle REPROFI. Style institutionnel, prose soutenue, paragraphes développés. N'invente pas de données. N'utilise JAMAIS de listes à puces. Rédige en texte continu.
 
 STRUCTURE OBLIGATOIRE du rapport (8-12 paragraphes, chacun développé sur 4-8 lignes) :
 
@@ -84,12 +84,12 @@ INDICATEURS FINANCIERS :
 - CAF/IAF comptable : ${fmtEur(R.cafComptable || 0)}
 - CAF/IAF budgétaire : ${fmtEur(R.cafBudgetaire || 0)}
 - FDR : ${fmtEur(R.fdrComptable)} (${Math.round(R.joursFdr || 0)} jours)
-- FDR part encaissée : ${(R.fdrPctEncaissee || 0).toFixed(1)}% — part non encaissée : ${(R.fdrPctNonEncaissee || 0).toFixed(1)}%
+- FDR part encaissée : ${toNum(R.fdrPctEncaissee).toFixed(1)}% — part non encaissée : ${toNum(R.fdrPctNonEncaissee).toFixed(1)}%
 - FDR mobilisable : ${fmtEur(R.fdrMobilisable || 0)}
 - BFR : ${fmtEur(R.bfr || 0)}
-- Trésorerie : ${fmtEur(R.tresorerieNette)} (${Math.round(R.joursTresorerie || 0)} jours)
-- TMcap : ${(R.tmcap || 0).toFixed(2)}%
-- TMnr : ${(R.tmnr || 0).toFixed(2)}%
+- Trésorerie : ${fmtEur(R.tresorerieNette ?? R.tresorerie)} (${Math.round(toNum(R.joursTresorerie))} jours)
+- TMcap : ${toNum(R.tmcap).toFixed(2)}%
+- TMnr : ${toNum(R.tmnr).toFixed(2)}%
 - Charges SDE : ${fmtEur(R.totalChargesReel)}
 - Produits SDR : ${fmtEur(R.totalProduitsReel)}
 - Créances totales : ${fmtEur(R.totalCreances || 0)}
@@ -97,12 +97,12 @@ INDICATEURS FINANCIERS :
 - Reliquats subventions : ${fmtEur(R.reliquatsSubventions || 0)}
 - Patrimoine (valeur nette) : ${fmtEur(R.valeurNette || 0)}
 - Variation patrimoine : ${fmtEur(R.variationPatrimoine || 0)}
-- Origines patrimoine : fonds propres ${(R.patrimoineOriginesPctFP || 0).toFixed(1)}%
+- Origines patrimoine : fonds propres ${toNum(R.patrimoineOriginesPctFP).toFixed(1)}%
 - Réserves (c/1068) : ${fmtEur(R.reserves || 0)}
-- Jours autonomie : ${Math.round(R.joursAutonomie)}${prelevBlock}${indBlock}${histBlock}`;
+- Jours autonomie : ${Math.round(toNum(R.joursAutonomie))}${prelevBlock}${indBlock}${histBlock}`;
     } else if (type === 'analyse_ia_globale') {
-      systemPrompt = typeof systemPrompt === 'string' && systemPrompt.trim().length > 0
-        ? systemPrompt
+      resolvedSystemPrompt = typeof incomingSystemPrompt === 'string' && incomingSystemPrompt.trim().length > 0
+        ? incomingSystemPrompt
         : `Tu es expert en comptabilité publique française EPLE, M9-6 2026 et Décret 2012-1246. Tu produis une analyse structurée, pédagogique et exploitable en réunion.`;
 
       userPrompt = `Rédige une analyse financière globale en français, structurée en sections avec titres courts, sans inventer de données.
@@ -139,7 +139,7 @@ Contrainte : termine avec un bloc "Actions prioritaires" en 5 points maximum.`;
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userPrompt }],
+        messages: [{ role: "system", content: resolvedSystemPrompt }, { role: "user", content: userPrompt }],
       }),
     });
 
