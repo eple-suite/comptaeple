@@ -24,7 +24,9 @@ import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
 import { supabase } from '@/integrations/supabase/client';
 import { generateRapportACPdf } from '@/lib/pdfRapportAC';
+import { generateRapportExecution } from '@/lib/rapportExecutionPdf';
 import { toast } from 'sonner';
+import type { LigneSDE, LigneSDR } from '@/lib/cofieple_types';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell, Legend,
