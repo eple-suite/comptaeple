@@ -1711,12 +1711,19 @@ export function RapportACSection() {
             placeholder="Cliquez sur 'Générer les observations IA' ou rédigez vos observations…" rows={12}
             className="bg-muted/30 text-sm mb-4" />
 
+          {/* Signataire — Saisie du nom */}
+          <SectionTitre numero="15" title="Signataire" />
+          <div className="mb-6 max-w-xs">
+            <Label className="text-xs font-bold">Nom de l'agent comptable</Label>
+            <Input value={nomAgentComptable} onChange={e => setNomAgentComptable(e.target.value)} placeholder="Prénom NOM" className="mt-1" />
+          </div>
+
           {/* Signature — Agent comptable seul */}
           <div className="mt-8 pt-5 border-t text-xs text-muted-foreground">
             <div className="flex justify-between">
               <div>
                 <strong className="block text-foreground text-sm">L'agent comptable</strong>
-                <div className="mt-12">{etab.agentComptable || '……………………'}</div>
+                <div className="mt-12">{nomAgentComptable || etab.agentComptable || '……………………'}</div>
                 <span>Signature et cachet</span>
               </div>
               <div className="text-right">
