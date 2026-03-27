@@ -66,9 +66,12 @@ const CompteFinancier = () => {
   // ── Cloisonnement : réinitialiser les données quand on change d'établissement ──
   useEffect(() => {
     if (selectedEstablishment?.id) {
-      switchEstablishment(selectedEstablishment.id);
+      switchEstablishment(selectedEstablishment.id).then(() => {
+        // After local restore, also sync from backend (ensures identity + data on new devices)
+        syncFromBackend();
+      });
     }
-  }, [selectedEstablishment?.id, switchEstablishment]);
+  }, [selectedEstablishment?.id, switchEstablishment, syncFromBackend]);
 
   const nbFichiers = Object.values(fichiers).filter(Boolean).length;
   const nbBloq = checkItems.filter(c => c.bloquant).length;
