@@ -695,12 +695,22 @@ function getSensNormal(compte: string): SensNormal {
   return 'debiteur';
 }
 
-export function analyserBalance(bal: LigneBalance[]): CompteBalance[] {
+export function analyserBalance(bal: LigneBalance[], options?: { hasAnnexe?: boolean }): CompteBalance[] {
+  const hasAnnexe = options?.hasAnnexe ?? false;
+
   return bal.filter(b => b.compte && b.compte.length >= 3).map(b => {
     const sensNormal = getSensNormal(b.compte);
     const hasDbt = b.solDbt > 0;
     const hasCrd = b.solCrd > 0;
     const soldeNul = b.solDbt === 0 && b.solCrd === 0;
+
+    // Skip account 185000 analysis when no budget annexe exists
+    // A budget principal without annexe budgets should not flag 185000
+    const is185 = b.compte.startsWith('185');
+    if (is185 && !hasAnnexe) {
+      return { compte: b.compte, intitule: b.intituleReduit, classe: b.classe, sensNormal: 'mixte' as SensNormal, solDbt: b.solDbt, solCrd: b.solCrd, anomalie: false, typeAnomalie: undefined, commentaire: '', budgetScope: b.budgetScope };
+    }
+
     let anomalie = false;
     let typeAnomalie: CompteBalance['typeAnomalie'] = undefined;
     let commentaire = '';

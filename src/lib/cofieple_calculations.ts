@@ -344,8 +344,8 @@ export function construireCheckList(r: ResultatsUI, _activeBudget: TypeBudget, b
 // Sens normal : Classe 1 créditeur (sauf 119), Classe 2 débiteur (sauf 28/29),
 // Classe 3 débiteur (sauf 39), Classe 4 variable, Classe 5 débiteur (sauf 519),
 // Classe 6 débiteur, Classe 7 créditeur
-export function analyserBalance(bal: LigneBalance[]): AnomalieBalance[] {
-  const comptes = analyserBalanceEngine(bal);
+export function analyserBalance(bal: LigneBalance[], options?: { hasAnnexe?: boolean }): AnomalieBalance[] {
+  const comptes = analyserBalanceEngine(bal, options);
 
   // Comptes critiques dont l'anomalie est bloquante pour le compte financier
   // (provoquent un déséquilibre FDR, BFR ou un résultat faussé)
