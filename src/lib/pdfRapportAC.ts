@@ -69,7 +69,7 @@ interface RapportACData {
 }
 
 function fmt(n: number): string {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(n);
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(n).replace(/[\u202F\u00A0]/g, ' ');
 }
 function pct(v: number, t: number): string {
   return t > 0 ? `${((v / t) * 100).toFixed(1)} %` : '—';

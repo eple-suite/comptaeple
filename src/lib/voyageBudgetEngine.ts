@@ -191,5 +191,5 @@ export function evaluerSeuilCCP(montant: number): { niveau: 'ok' | 'warning' | '
 }
 
 function formatEuro(n: number): string {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n);
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(n).replace(/[\u202F\u00A0]/g, ' ');
 }
