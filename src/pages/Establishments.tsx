@@ -288,19 +288,20 @@ const Establishments = () => {
                 <TableHead>N° Op@le</TableHead>
                 <TableHead>Ordonnateur</TableHead>
                 <TableHead>Agent comptable</TableHead>
+                <TableHead>Secrétaire général</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                   <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                     Chargement...
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
+                   <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">
                     {establishments.length === 0
                       ? "Aucun établissement. Cliquez sur « Ajouter » pour commencer."
                       : "Aucun résultat pour cette recherche."}
@@ -338,10 +339,13 @@ const Establishments = () => {
                         {e.opale_number || "—"}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {(e as any).ordonnateur || "—"}
+                        {e.ordonnateur || "—"}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {(e as any).agent_comptable || "—"}
+                        {e.agent_comptable || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {e.secretaire_general || "—"}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button
