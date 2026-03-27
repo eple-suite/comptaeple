@@ -444,16 +444,16 @@ export function PluriannuelSection() {
                 </CardHeader>
                 <CardContent className="p-3">
                   <ResponsiveContainer width="100%" height={220}>
-                    <LineChart data={chartData}>
+                    <LineChart data={significantData.map(d => ({ exercice: String(d.exercice), Réserves: d.reserves, 'Jours autonomie': d.jours_autonomie }))}>
                       <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                       <XAxis dataKey="exercice" tick={{ fontSize: 11 }} />
                       <YAxis yAxisId="eur" tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
                       <YAxis yAxisId="jours" orientation="right" tick={{ fontSize: 10 }} unit=" j." />
                       <Tooltip />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
-                      <ReferenceLine yAxisId="jours" y={30} stroke="hsl(var(--destructive))" strokeDasharray="4 4" label={{ value: 'Seuil 30j', fill: 'hsl(var(--destructive))', fontSize: 10 }} />
+                      <ReferenceLine yAxisId="jours" y={30} stroke="hsl(0, 84%, 60%)" strokeDasharray="4 4" />
                       <Line yAxisId="eur" type="monotone" dataKey="Réserves" stroke="hsl(280, 60%, 55%)" strokeWidth={2} dot={{ r: 3 }} />
-                      <Bar yAxisId="jours" dataKey={(d: any) => significantData.find(s => String(s.exercice) === d.exercice)?.jours_autonomie || 0} fill="hsl(38, 92%, 50%)" name="Jours autonomie" radius={[3, 3, 0, 0]} />
+                      <Line yAxisId="jours" type="monotone" dataKey="Jours autonomie" stroke="hsl(38, 92%, 50%)" strokeWidth={2} dot={{ r: 3 }} />
                     </LineChart>
                   </ResponsiveContainer>
                 </CardContent>
