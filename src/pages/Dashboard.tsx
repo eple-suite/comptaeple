@@ -247,7 +247,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="pt-4">
             <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={mockEvolutionData}>
+              <LineChart data={r ? [{ year: (r as any).exercice || 'N', fdr: r.fdrComptable, tresorerie: r.tresorerie, bfr: r.bfr }] : mockEvolutionData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,90%)" vertical={false} />
                 <XAxis dataKey="year" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
@@ -285,20 +285,18 @@ const Dashboard = () => {
           <CardContent className="flex items-center justify-center pt-4">
             <ResponsiveContainer width="100%" height={280}>
               <RPieChart>
-                <Pie
-                  data={mockRepartitionCharges}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={65}
-                  outerRadius={105}
-                  paddingAngle={3}
-                  dataKey="value"
-                  label={({ name, value }) => `${name} ${value}%`}
-                  style={{ fontSize: '11px' }}
-                >
-                  {mockRepartitionCharges.map((entry, index) => (
-                    <Cell key={index} fill={entry.fill} />
-                  ))}
+                {(() => {
+                  const pieData = r && r.services ? Object.entries(r.services).filter(([, s]) => s.chargesReel > 0).map(([k, s], i) => ({
+                    name: s.libelle || k, value: Math.round(((s.chargesReel / r.totalChargesReel) * 100) * 10) / 10,
+                    fill: `hsl(${(i * 47 + 200) % 360}, 55%, 50%)`
+                  })) : mockRepartitionCharges;
+                  return (
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={65} outerRadius={105} paddingAngle={3} dataKey="value"
+                      label={({ name, value }) => `${name} ${value}%`} style={{ fontSize: '11px' }}>
+                      {pieData.map((entry, index) => <Cell key={index} fill={entry.fill} />)}
+                    </Pie>
+                  );
+                })()}
                 </Pie>
                 <Tooltip formatter={(v: number) => `${v} %`} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(220,13%,90%)', fontSize: '12px' }} />
               </RPieChart>
@@ -327,7 +325,11 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="pt-4">
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={mockTresorerieDetail} layout="vertical">
+              <BarChart data={r ? [
+                { label: "Dépôt au Trésor (515)", montant: r.tresorerie },
+                { label: "Créances (Cl.4)", montant: r.totalCreances || 0 },
+                { label: "Dettes fournisseurs (401)", montant: r.dettesFournisseurs || 0 },
+              ] : mockTresorerieDetail} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,90%)" horizontal={false} />
                 <XAxis type="number" fontSize={11} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k€`} tickLine={false} axisLine={false} />
                 <YAxis type="category" dataKey="label" width={150} fontSize={11} tickLine={false} axisLine={false} />
