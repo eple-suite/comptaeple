@@ -28,6 +28,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Voyage, CATEGORIES_PRESTATIONS, MODES_PAIEMENT } from "./types";
 import { formatCurrency } from "@/lib/mockData";
 import { toast } from "sonner";
+import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { createStyledPDF, savePDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
 import { validerEquilibreBudgetaire } from "@/lib/voyageBudgetEngine";
@@ -72,9 +73,10 @@ const DOC_CATEGORIES = [
 ];
 
 export const VoyageCourriersPdfTab = ({ voyage }: Props) => {
-  const [nomChefEts, setNomChefEts] = useState("");
-  const [nomGestionnaire, setNomGestionnaire] = useState("");
-  const [nomAgentComptable, setNomAgentComptable] = useState("");
+  const { selectedEstablishment } = useEstablishment();
+  const [nomChefEts, setNomChefEts] = useState(selectedEstablishment?.ordonnateur || "");
+  const [nomGestionnaire, setNomGestionnaire] = useState(selectedEstablishment?.secretaire_general || "");
+  const [nomAgentComptable, setNomAgentComptable] = useState(selectedEstablishment?.agent_comptable || "");
   const [nomRegisseur, setNomRegisseur] = useState("");
   const [nomMandataire, setNomMandataire] = useState("");
   const [fonctionMandataire, setFonctionMandataire] = useState("Professeur référent");
