@@ -8,6 +8,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { idbStorage, migrateLocalStorageToIDB } from '@/lib/idbStorage';
+import { saveFullState, loadAllSnapshots, saveEstablishmentIdentity, loadEstablishmentIdentity } from '@/lib/cofiepleBackendSync';
 import type { LigneSDE, LigneSDR, LigneBalance } from '@/lib/cofieple_types';
 import type {
   CofiepleState, EtablissementUI, TypeBudget, BudgetConfig,
@@ -133,6 +134,33 @@ function extractSnapshot(state: any): EstablishmentSnapshot {
   };
 }
 
+// ── Debounced backend sync ─────────────────────────────────────
+let _syncTimer: ReturnType<typeof setTimeout> | null = null;
+
+function debouncedBackendSync(state: any) {
+  if (_syncTimer) clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(async () => {
+    try {
+      const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
+      if (!user || !state.etablissement?.uai) return;
+      await saveFullState(user.id, state.etablissement.uai, state.etablissement.exercice, {
+        budgets: state.budgets,
+        sde: state.sde, sde1: state.sde1,
+        sdr: state.sdr, sdr1: state.sdr1,
+        balance: state.balance, balance1: state.balance1,
+        fichierCharge: state.fichierCharge,
+        resultats: state.resultats,
+        checkItems: state.checkItems,
+        anomaliesBalance: state.anomaliesBalance,
+        etablissement: state.etablissement,
+      });
+      console.info('[Backend] Snapshot synced for', state.etablissement.uai);
+    } catch (e) {
+      console.warn('[Backend] Sync failed:', e);
+    }
+  }, 2000); // 2s debounce
+}
+
 type Store = CofiepleState & {
   currentEstablishmentId: string | null;
   switchEstablishment: (id: string) => Promise<void>;
@@ -153,6 +181,7 @@ type Store = CofiepleState & {
   lancerAnalyse: () => void;
   setAnalysisRunning: (v: boolean) => void;
   resetAll: () => void;
+  syncFromBackend: () => Promise<void>;
   // ── Budget Profiles ─────────────────────────────────────────────
   budgetProfiles: BudgetProfile[];
   createBudgetProfile: (nom: string, type: TypeBudget, uai?: string, exercice?: string) => BudgetProfile;
@@ -191,6 +220,15 @@ export const useCofiepleStore = create<Store>()(
       switchEstablishment: async (id) => {
         const current = get().currentEstablishmentId;
         if (current === id) {
+          // Already on this establishment — just load identity from backend
+          const identity = await loadEstablishmentIdentity(id);
+          if (identity) {
+            set(state => {
+              if (identity.ordonnateur) state.etablissement.ordonnateur = identity.ordonnateur;
+              if (identity.agent_comptable) state.etablissement.agentComptable = identity.agent_comptable;
+              if (identity.secretaire_general) state.etablissement.secretaireGeneral = identity.secretaire_general;
+            });
+          }
           const manual = await loadManualEtablissement(id);
           if (manual) {
             set(state => {
@@ -205,17 +243,23 @@ export const useCofiepleStore = create<Store>()(
           saveEstablishmentSnapshot(current, extractSnapshot(get()));
         }
 
-        // Try to restore saved data for the target establishment
-        const [saved, manual] = await Promise.all([
+        // Try to restore saved data for the target establishment (IDB first)
+        const [saved, manual, identity] = await Promise.all([
           loadEstablishmentSnapshot(id),
           loadManualEtablissement(id),
+          loadEstablishmentIdentity(id),
         ]);
+
         if (saved) {
           set(state => {
             state.currentEstablishmentId = id;
             state.etablissement = manual
               ? { ...saved.etablissement, ...manual }
               : saved.etablissement;
+            // Apply backend identity over local
+            if (identity?.ordonnateur) state.etablissement.ordonnateur = identity.ordonnateur;
+            if (identity?.agent_comptable) state.etablissement.agentComptable = identity.agent_comptable;
+            if (identity?.secretaire_general) state.etablissement.secretaireGeneral = identity.secretaire_general;
             state.budgets = saved.budgets;
             state.sde = saved.sde;
             state.sde1 = saved.sde1;
@@ -231,12 +275,15 @@ export const useCofiepleStore = create<Store>()(
             state.activeBudget = saved.activeBudget;
           });
         } else {
-          // No saved data — fresh state for this establishment
+          // No local data — set fresh state then try backend
           set(state => {
             state.currentEstablishmentId = id;
             state.etablissement = manual
               ? { ...ETAB_INITIAL, ...manual }
               : { ...ETAB_INITIAL };
+            if (identity?.ordonnateur) state.etablissement.ordonnateur = identity.ordonnateur;
+            if (identity?.agent_comptable) state.etablissement.agentComptable = identity.agent_comptable;
+            if (identity?.secretaire_general) state.etablissement.secretaireGeneral = identity.secretaire_general;
             state.budgets = [{ type: 'principal' as TypeBudget, libelle: 'Budget principal' }];
             state.sde = BUDGETS_VIDES();
             state.sde1 = BUDGETS_VIDES();
@@ -251,6 +298,8 @@ export const useCofiepleStore = create<Store>()(
             state.anomaliesBalance = [];
             state.activeBudget = 'principal' as TypeBudget;
           });
+          // Try to restore from backend (new device scenario)
+          setTimeout(() => get().syncFromBackend(), 500);
         }
       },
 
@@ -261,7 +310,16 @@ export const useCofiepleStore = create<Store>()(
           const currentState = get();
           saveEstablishmentSnapshot(estId, extractSnapshot(currentState));
           saveManualEtablissement(estId, currentState.etablissement);
+          // Sync identity fields to backend
+          const identityFields: Record<string, string> = {};
+          if (etab.ordonnateur !== undefined) identityFields.ordonnateur = etab.ordonnateur;
+          if (etab.agentComptable !== undefined) identityFields.agent_comptable = etab.agentComptable;
+          if (etab.secretaireGeneral !== undefined) identityFields.secretaire_general = etab.secretaireGeneral;
+          if (Object.keys(identityFields).length > 0) {
+            saveEstablishmentIdentity(estId, identityFields);
+          }
         }
+        debouncedBackendSync(get());
       },
 
       addBudgetAnnexe: (config) =>
@@ -279,36 +337,42 @@ export const useCofiepleStore = create<Store>()(
         set(state => { state.sde[type] = data; state.fichierCharge[`sde_${type}`] = true; });
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       setSDE1: (data, type) => {
         set(state => { state.sde1[type] = data; state.fichierCharge[`sde1_${type}`] = true; });
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       setSDR: (data, type) => {
         set(state => { state.sdr[type] = data; state.fichierCharge[`sdr_${type}`] = true; });
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       setSDR1: (data, type) => {
         set(state => { state.sdr1[type] = data; state.fichierCharge[`sdr1_${type}`] = true; });
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       setBalance: (data, type) => {
         set(state => { state.balance[type] = data; state.fichierCharge[`bal_${type}`] = true; });
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       setBalance1: (data, type) => {
         set(state => { state.balance1[type] = data; state.fichierCharge[`bal1_${type}`] = true; });
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       setFichierCharge: (key, val) =>
@@ -356,6 +420,7 @@ export const useCofiepleStore = create<Store>()(
         // Auto-save after analysis
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       // ── Budget Profiles (persistés sous 'cockpit_budget_profiles') ──
@@ -418,6 +483,72 @@ export const useCofiepleStore = create<Store>()(
       getBudgetProfile: (id) => get().budgetProfiles.find(p => p.id === id),
 
       getBudgetProfilesByType: (type) => get().budgetProfiles.filter(p => p.type === type),
+
+      syncFromBackend: async () => {
+        try {
+          const { supabase } = await import('@/integrations/supabase/client');
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+          const state = get();
+          const uai = state.etablissement?.uai;
+          const exercice = state.etablissement?.exercice;
+          if (!uai) return;
+
+          // Load identity from establishments table
+          const estId = state.currentEstablishmentId;
+          if (estId) {
+            const identity = await loadEstablishmentIdentity(estId);
+            if (identity) {
+              set(s => {
+                if (identity.ordonnateur) s.etablissement.ordonnateur = identity.ordonnateur;
+                if (identity.agent_comptable) s.etablissement.agentComptable = identity.agent_comptable;
+                if (identity.secretaire_general) s.etablissement.secretaireGeneral = identity.secretaire_general;
+              });
+            }
+          }
+
+          // Load snapshots from backend
+          const snapshots = await loadAllSnapshots(user.id, uai, exercice);
+          const principal = snapshots.principal;
+          if (principal) {
+            set(s => {
+              s.sde.principal = principal.sde || [];
+              s.sde1.principal = principal.sde1 || [];
+              s.sdr.principal = principal.sdr || [];
+              s.sdr1.principal = principal.sdr1 || [];
+              s.balance.principal = principal.balance || [];
+              s.balance1.principal = principal.balance1 || [];
+              Object.assign(s.fichierCharge, principal.fichierCharge || {});
+              if (principal.resultats) s.resultats.principal = principal.resultats;
+              if (principal.checkItems?.length) s.checkItems = principal.checkItems;
+              if (principal.anomaliesBalance?.length) s.anomaliesBalance = principal.anomaliesBalance;
+              if (principal.budgets?.length) s.budgets = principal.budgets;
+            });
+            console.info('[Backend] Restored principal snapshot for', uai);
+          }
+          // Restore annexes
+          for (const bt of ['annexe_greta', 'annexe_cfa', 'annexe_autre'] as TypeBudget[]) {
+            const snap = snapshots[bt];
+            if (snap) {
+              set(s => {
+                s.sde[bt] = snap.sde || [];
+                s.sde1[bt] = snap.sde1 || [];
+                s.sdr[bt] = snap.sdr || [];
+                s.sdr1[bt] = snap.sdr1 || [];
+                s.balance[bt] = snap.balance || [];
+                s.balance1[bt] = snap.balance1 || [];
+                Object.assign(s.fichierCharge, snap.fichierCharge || {});
+                if (snap.resultats) s.resultats[bt] = snap.resultats;
+              });
+              console.info('[Backend] Restored', bt, 'snapshot for', uai);
+            }
+          }
+          // Also save locally
+          if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        } catch (e) {
+          console.warn('[Backend] syncFromBackend failed:', e);
+        }
+      },
 
       resetAll: () =>
         set(state => {

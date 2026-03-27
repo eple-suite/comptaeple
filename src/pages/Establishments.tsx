@@ -286,19 +286,21 @@ const Establishments = () => {
                 <TableHead>Académie</TableHead>
                 <TableHead>Ville</TableHead>
                 <TableHead>N° Op@le</TableHead>
+                <TableHead>Ordonnateur</TableHead>
+                <TableHead>Agent comptable</TableHead>
                 <TableHead className="text-right">Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                     Chargement...
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={10} className="text-center py-8 text-muted-foreground">
                     {establishments.length === 0
                       ? "Aucun établissement. Cliquez sur « Ajouter » pour commencer."
                       : "Aucun résultat pour cette recherche."}
@@ -334,6 +336,12 @@ const Establishments = () => {
                       </TableCell>
                       <TableCell className="font-mono text-sm">
                         {e.opale_number || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {(e as any).ordonnateur || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {(e as any).agent_comptable || "—"}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button

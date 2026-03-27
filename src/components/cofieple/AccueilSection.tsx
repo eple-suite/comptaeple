@@ -132,11 +132,12 @@ export function AccueilSection() {
           {/* Champs éditables spécifiques au Compte Financier */}
           <div className="pt-2 border-t border-border">
             <p className="text-xs text-muted-foreground font-medium mb-3 uppercase tracking-wider">Paramètres du compte financier</p>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
               <FormField label="Exercice" value={String(etab.exercice)} onChange={v => setEtablissement({ exercice: parseInt(v) || 2025 })} type="number" />
               <FormField label="Date d'arrêté" value={etab.dateArrete} onChange={v => setEtablissement({ dateArrete: v })} type="date" />
               <FormField label="Ordonnateur" value={etab.ordonnateur} onChange={v => setEtablissement({ ordonnateur: v })} placeholder="Prénom NOM" />
               <FormField label="Agent comptable" value={etab.agentComptable} onChange={v => setEtablissement({ agentComptable: v })} placeholder="Prénom NOM" />
+              <FormField label="Secrétaire général(e)" value={etab.secretaireGeneral || ''} onChange={v => setEtablissement({ secretaireGeneral: v })} placeholder="Prénom NOM" />
             </div>
           </div>
 
