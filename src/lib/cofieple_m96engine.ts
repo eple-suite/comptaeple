@@ -734,12 +734,12 @@ export function analyserBalance(bal: LigneBalance[], options?: { hasAnnexe?: boo
 
   return bal.filter(b => b.compte && b.compte.length >= 3).map(b => {
     const sensNormal = getSensNormal(b.compte);
-    const hasDbt = b.solDbt > 0;
-    const hasCrd = b.solCrd > 0;
-    const soldeNul = b.solDbt === 0 && b.solCrd === 0;
+    // Use NET balance to determine actual sense — not raw columns
+    // An aggregated account can have both solDbt and solCrd > 0 (sub-accounts)
+    const soldeNet = (b.solDbt || 0) - (b.solCrd || 0);
+    const soldeNul = Math.abs(soldeNet) < 0.01;
 
     // Skip account 185000 analysis when no budget annexe exists
-    // A budget principal without annexe budgets should not flag 185000
     const is185 = b.compte.startsWith('185');
     if (is185 && !hasAnnexe) {
       return { compte: b.compte, intitule: b.intituleReduit, classe: b.classe, sensNormal: 'mixte' as SensNormal, solDbt: b.solDbt, solCrd: b.solCrd, anomalie: false, typeAnomalie: undefined, commentaire: '', budgetScope: b.budgetScope };
@@ -748,11 +748,13 @@ export function analyserBalance(bal: LigneBalance[], options?: { hasAnnexe?: boo
     let anomalie = false;
     let typeAnomalie: CompteBalance['typeAnomalie'] = undefined;
     let commentaire = '';
-    if (!soldeNul) {
-      if (sensNormal === 'debiteur' && hasCrd) {
+    if (!soldeNul && sensNormal !== 'mixte') {
+      // A "debiteur" account is anomalous only if its NET balance is credit (< 0)
+      if (sensNormal === 'debiteur' && soldeNet < -0.01) {
         anomalie = true; typeAnomalie = 'anormalement_crediteur';
         commentaire = 'Solde créditeur anormal pour un compte de nature débitrice (M9-6 Plan comptable EPLE).';
-      } else if (sensNormal === 'crediteur' && hasDbt) {
+      // A "crediteur" account is anomalous only if its NET balance is debit (> 0)
+      } else if (sensNormal === 'crediteur' && soldeNet > 0.01) {
         anomalie = true; typeAnomalie = 'anormalement_debiteur';
         commentaire = 'Solde débiteur anormal pour un compte de nature créditrice (M9-6 Plan comptable EPLE).';
       }
