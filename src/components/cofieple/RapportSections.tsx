@@ -76,6 +76,8 @@ export function RapportOrdoSection() {
   const etab = useCofiepleStore(s => s.etablissement);
   const resultats = useCofiepleStore(s => s.resultats);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
+  const sdeRows = useCofiepleStore(s => s.sde[activeBudget]) as LigneSDE[];
+  const sdrRows = useCofiepleStore(s => s.sdr[activeBudget]) as LigneSDR[];
   const R = resultats[activeBudget];
   const ind = useExtraIndicators();
   const [aiText1, setAiText1] = useState('');
