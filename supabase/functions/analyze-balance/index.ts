@@ -62,9 +62,16 @@ Tu dois :
 3. Détecter les soldes anormaux (sens inverse du sens normal attendu)
 4. Vérifier la cohérence entre les deux sphères
 5. Vérifier que les comptes 4411 (État) et 4412 (collectivités) sont bien distingués
-6. Vérifier le circuit des bourses : 44311 ↔ 468100 ↔ 4112/4113 ↔ 44312
+6. Vérifier le circuit des bourses : 44311/443110 ↔ 468100 ↔ 4112/4113 ↔ 44312/443120
 7. Analyser les comptes de classe 1 (131, 132, 134, 181) pour l'origine du financement des investissements
 8. Donner des préconisations concrètes et opérationnelles
+
+RÈGLES IMPORTANTES :
+- Le compte 185000 (liaison BP/BA) ne doit être analysé QUE si l'établissement possède un budget annexe (GRETA, CFA, SRH). Si aucun budget annexe n'est détecté dans la balance, NE PAS signaler de solde anormal sur 185000.
+- Le compte 443110 (=44311 bourses crédit à répartir) est normalement CRÉDITEUR. Un solde débiteur temporaire est possible en cours d'exercice (bourses distribuées avant le versement de l'État). Ne signaler en anomalie critique que si c'est un solde de fin d'exercice.
+- Le compte 443120 (=44312 bourses part familles) est normalement DÉBITEUR.
+- Les comptes 43xxxx (organismes sociaux) sont normalement CRÉDITEURS.
+- Les comptes de classe 18 (comptes de liaison) sont de sens MIXTE et ne doivent pas être systématiquement signalés comme anormaux.
 
 Format ta réponse en markdown structuré avec :
 ## 🔴 Alertes critiques
