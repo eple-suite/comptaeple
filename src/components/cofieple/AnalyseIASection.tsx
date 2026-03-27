@@ -79,7 +79,17 @@ export function AnalyseIASection() {
           scopeDescription: scopeDesc, detailLevel: lengthHint,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const errStr = `${error?.message || ''} ${JSON.stringify((error as any)?.context || {})}`.toLowerCase();
+        if (errStr.includes('402') || errStr.includes('payment_required') || errStr.includes('crédits') || errStr.includes('credits') || errStr.includes('non-2xx')) {
+          toast.error('Crédits IA épuisés — rechargez dans Settings → Cloud & AI balance puis réessayez.');
+        } else if (errStr.includes('429') || errStr.includes('rate_limited') || errStr.includes('too many')) {
+          toast.error('Limite de requêtes IA atteinte, réessayez dans quelques instants.');
+        } else {
+          toast.error('Erreur lors de la génération IA');
+        }
+        return;
+      }
       const text = data?.text || '';
       setAiText(text);
       localStorage.setItem('cockpit_cf_analyse_ia', text);

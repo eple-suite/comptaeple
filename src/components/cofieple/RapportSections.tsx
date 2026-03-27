@@ -274,13 +274,15 @@ export function RapportOrdoSection() {
         },
       });
       if (error) {
-        const msg = error?.message || '';
-        if (msg.includes('402') || msg.includes('crédits') || msg.includes('credits')) {
+        const errStr = `${error?.message || ''} ${JSON.stringify((error as any)?.context || {})}`.toLowerCase();
+        if (errStr.includes('402') || errStr.includes('payment_required') || errStr.includes('crédits') || errStr.includes('credits') || errStr.includes('non-2xx')) {
           toast.error('Crédits IA temporairement épuisés. Le rapport peut être généré sans les commentaires IA.');
+        } else if (errStr.includes('429') || errStr.includes('rate_limited') || errStr.includes('too many')) {
+          toast.error('Limite de requêtes IA atteinte, réessayez dans quelques instants.');
         } else {
           toast.error('Erreur lors de la génération des commentaires IA.');
         }
-        throw error;
+        return;
       }
       const text = data?.text || '';
       const parts = text.split('---');
@@ -1168,13 +1170,15 @@ export function RapportACSection() {
         },
       });
       if (error) {
-        const errStr = JSON.stringify(error) + (error?.message || '') + (error?.context?.body || '');
+        const errStr = `${error?.message || ''} ${JSON.stringify((error as any)?.context || {})}`.toLowerCase();
         if (errStr.includes('402') || errStr.includes('payment_required') || errStr.includes('crédits') || errStr.includes('credits') || errStr.includes('non-2xx')) {
           toast.error('Crédits IA épuisés — rechargez dans Settings → Cloud & AI balance. Le rapport PDF peut être généré sans les observations IA.', { duration: 8000 });
+        } else if (errStr.includes('429') || errStr.includes('rate_limited') || errStr.includes('too many')) {
+          toast.error('Limite de requêtes IA atteinte, réessayez dans quelques instants.', { duration: 6000 });
         } else {
           toast.error('Erreur lors de la génération des observations IA : ' + (error?.message || 'erreur inconnue'));
         }
-        throw error;
+        return;
       }
       setAiObs(data?.text || '');
       toast.success('Observations IA générées');
