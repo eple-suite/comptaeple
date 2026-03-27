@@ -317,36 +317,42 @@ export const useCofiepleStore = create<Store>()(
         set(state => { state.sde[type] = data; state.fichierCharge[`sde_${type}`] = true; });
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       setSDE1: (data, type) => {
         set(state => { state.sde1[type] = data; state.fichierCharge[`sde1_${type}`] = true; });
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       setSDR: (data, type) => {
         set(state => { state.sdr[type] = data; state.fichierCharge[`sdr_${type}`] = true; });
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       setSDR1: (data, type) => {
         set(state => { state.sdr1[type] = data; state.fichierCharge[`sdr1_${type}`] = true; });
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       setBalance: (data, type) => {
         set(state => { state.balance[type] = data; state.fichierCharge[`bal_${type}`] = true; });
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       setBalance1: (data, type) => {
         set(state => { state.balance1[type] = data; state.fichierCharge[`bal1_${type}`] = true; });
         const estId = get().currentEstablishmentId;
         if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        debouncedBackendSync(get());
       },
 
       setFichierCharge: (key, val) =>
