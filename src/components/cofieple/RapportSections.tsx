@@ -289,6 +289,17 @@ export function RapportOrdoSection() {
           {aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bot className="h-4 w-4 mr-2" />}
           {aiLoading ? 'Génération IA…' : 'Générer commentaires IA'}
         </Button>
+        <Button variant="default" className="bg-[hsl(215,70%,45%)] hover:bg-[hsl(215,70%,40%)]" onClick={() => {
+          try {
+            generateRapportExecution({
+              etab, sdeRows: sdeRows || [], sdrRows: sdrRows || [],
+              nomOrdonnateur, nomSecretaireGeneral,
+            });
+            toast.success('Rapport d\'exécution budgétaire généré');
+          } catch (e) { console.error(e); toast.error('Erreur lors de la génération'); }
+        }}>
+          <Download className="h-4 w-4 mr-2" /> Rapport exécution budgétaire (PDF)
+        </Button>
         <Button variant="outline" onClick={() => window.print()}>
           <Printer className="h-4 w-4 mr-2" /> Imprimer / PDF
         </Button>
