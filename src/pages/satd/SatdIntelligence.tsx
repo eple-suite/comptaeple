@@ -8,7 +8,7 @@ import { formatCurrency } from "@/lib/mockData";
 import { Satd, TiersDetenteur, STATUT_SATD_CONFIG, TYPE_DEBITEUR_LABELS } from "./types";
 import { analyserProportionnalite } from "./SatdReferenceData";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
-import useCofiepleStore from "@/store/useCofiepleStore";
+import { useCofiepleStore } from "@/store/useCofiepleStore";
 import {
   Brain, TrendingUp, TrendingDown, AlertTriangle, Shield, Target, Zap,
   BarChart3, Calendar, ArrowRight, Sparkles, Clock, CheckCircle2, XCircle,
