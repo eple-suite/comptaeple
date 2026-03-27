@@ -1166,8 +1166,9 @@ export function RapportACSection() {
 
   function handleExportPdf() {
     try {
+      const etabWithName = { ...etab, agentComptable: nomAgentComptable || etab.agentComptable };
       generateRapportACPdf({
-        etab, R: { ...R, ...safe } as any,
+        etab: etabWithName, R: { ...R, ...safe } as any,
         saisieComplementaire: {
           prelevements,
           explicationsResultat,
