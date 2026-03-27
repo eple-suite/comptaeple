@@ -63,18 +63,18 @@ const ControlesACTab = () => {
         gravite: imputationsVides.length > 0 ? 'significative' : undefined,
       });
 
-      // 3. Engagements sans demande de paiement (service fait à vérifier)
-      const engSansDP = sdeRows.filter(r => (r.engage || 0) > 0 && (r.realise || 0) === 0);
+      // 3. Engagements sans demande de paiement — Information seulement
+      // En cours d'exercice, des engagements sans DP sont parfaitement normaux
+      const engSansDP = sdeRows.filter(r => (r.engage || 0) > 100 && (r.realise || 0) === 0);
       items.push({
         id: 'dep-03',
         categorie: 'depenses',
-        controle: "Engagements sans demande de paiement — vérifier le service fait",
+        controle: "Engagements sans demande de paiement — suivi du service fait",
         referenceM96: "Tome 2 — §2.3.2 (liquidation / service fait)",
-        statut: engSansDP.length === 0 ? 'conforme' : 'anomalie',
+        statut: 'conforme',
         detail: engSansDP.length === 0
-          ? "Tous les engagements ont une demande de paiement associée."
-          : `${engSansDP.length} engagement(s) sans aucune demande de paiement émise. Vérifier la certification du service fait.`,
-        gravite: engSansDP.length > 0 ? 'mineure' : undefined,
+          ? "Tous les engagements significatifs ont une demande de paiement associée."
+          : `${engSansDP.length} engagement(s) significatif(s) (> 100 €) sans demande de paiement — situation normale en cours d'exercice. À suivre pour la clôture.`,
       });
     } else {
       items.push({
@@ -89,34 +89,37 @@ const ControlesACTab = () => {
 
     // ── CONTRÔLES SUR LES RECETTES (M9-6 §2.2.4) ──
     if (hasSDR) {
-      // 4. Prévisions sans titre émis
-      const prevSansTitre = sdrRows.filter(r => (r.budget || 0) > 0 && (r.aor || 0) === 0 && (r.realise || 0) === 0);
+      // 4. Prévisions sans titre émis — seuil de significativité 100 €
+      // Les lignes avec de très petits montants ou des prévisions résiduelles ne sont pas des anomalies
+      const prevSansTitre = sdrRows.filter(r => (r.budget || 0) > 100 && (r.aor || 0) === 0 && (r.realise || 0) === 0);
+      const totalPrevSansTitre = prevSansTitre.reduce((s, r) => s + (r.budget || 0), 0);
       items.push({
         id: 'rec-01',
         categorie: 'recettes',
-        controle: "Émission des titres de recettes — droits constatés sans titre",
+        controle: "Émission des titres de recettes — prévisions significatives sans titre",
         referenceM96: "Tome 2 — §2.2.2 (émission titres de recettes)",
-        statut: prevSansTitre.length === 0 ? 'conforme' : 'anomalie',
+        statut: prevSansTitre.length === 0 ? 'conforme' : (totalPrevSansTitre > 1000 ? 'anomalie' : 'conforme'),
         detail: prevSansTitre.length === 0
-          ? "Toutes les prévisions de recettes ont fait l'objet d'un titre."
-          : `${prevSansTitre.length} ligne(s) avec prévisions budgétées mais sans titre de recettes émis.`,
-        gravite: prevSansTitre.length > 0 ? 'significative' : undefined,
+          ? "Toutes les prévisions significatives de recettes ont fait l'objet d'un titre."
+          : `${prevSansTitre.length} ligne(s) avec prévisions > 100 € sans titre émis (total : ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(totalPrevSansTitre).replace(/[\u202F\u00A0]/g, ' ')}). ${totalPrevSansTitre > 1000 ? 'À régulariser.' : 'Montant non significatif — à suivre.'}`,
+        gravite: totalPrevSansTitre > 1000 ? 'mineure' : undefined,
       });
 
-      // 5. Recouvrement
+      // 5. Recouvrement — un RAR est normal en cours d'exercice, anomalie seulement si taux < 80%
       const totalTitre = sdrRows.reduce((s, r) => s + (r.aor || 0), 0);
       const totalEncaisse = sdrRows.reduce((s, r) => s + (r.realise || 0), 0);
       const resteARecouvrer = totalTitre - totalEncaisse;
+      const tauxRecouvrement = totalTitre > 0 ? (totalEncaisse / totalTitre) * 100 : 100;
       items.push({
         id: 'rec-02',
         categorie: 'recettes',
         controle: "Recouvrement — restes à recouvrer sur titres émis",
         referenceM96: "Tome 2 — §2.2.5 (recouvrement amiable et contentieux)",
-        statut: resteARecouvrer <= 0 ? 'conforme' : 'anomalie',
+        statut: tauxRecouvrement >= 80 ? 'conforme' : 'anomalie',
         detail: resteARecouvrer <= 0
           ? "Tous les titres émis ont été recouvrés."
-          : `Reste à recouvrer : ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(resteARecouvrer)} sur ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(totalTitre)} de titres émis. Vérifier les diligences de recouvrement.`,
-        gravite: resteARecouvrer > 0 ? 'mineure' : undefined,
+          : `Reste à recouvrer : ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(resteARecouvrer)} sur ${new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(totalTitre)} de titres émis (taux de recouvrement : ${tauxRecouvrement.toFixed(1)} %). ${tauxRecouvrement >= 80 ? 'Taux satisfaisant.' : 'Diligences de recouvrement à renforcer.'}`,
+        gravite: tauxRecouvrement < 80 ? 'significative' : undefined,
       });
 
       // 6. Imputations recettes
