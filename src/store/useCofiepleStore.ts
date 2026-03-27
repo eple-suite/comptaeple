@@ -407,7 +407,9 @@ export const useCofiepleStore = create<Store>()(
         const activeBudget = S.activeBudget;
         const resultatsActifs = newResultats[activeBudget];
         const balanceActive = S.balance[activeBudget] || [];
-        const checkItems = resultatsActifs ? construireCheckList(resultatsActifs, activeBudget, balanceActive) : [];
+        const sdeActive = S.sde[activeBudget] || [];
+        const sdrActive = S.sdr[activeBudget] || [];
+        const checkItems = resultatsActifs ? construireCheckList(resultatsActifs, activeBudget, balanceActive, sdeActive, sdrActive) : [];
         const anomaliesBalance = analyserBalance(balanceActive, { hasAnnexe: S.budgets.length > 1 });
 
         set(state => {
