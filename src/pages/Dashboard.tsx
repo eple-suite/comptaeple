@@ -48,6 +48,27 @@ const Dashboard = () => {
   const balance = useCofiepleStore(s => s.balance);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
   const balanceData = balance[activeBudget] || [];
+  const resultats = useCofiepleStore(s => s.resultats);
+  const r = resultats[activeBudget];
+
+  // Indicateurs réels si analyse lancée, sinon mock
+  const liveIndicators = useMemo(() => {
+    if (!r) return mockIndicators;
+    const chargesFonct = r.totalChargesSde - (r.chargesNature ? Object.entries(r.chargesNature).filter(([k]) => /^(20|21|23)/.test(k)).reduce((s, [, v]) => s + v, 0) : 0);
+    const poidsCharges = r.totalProduitsReel > 0 ? (r.totalChargesReel / r.totalProduitsReel) * 100 : 0;
+    const srhCharges = r.chargesNature ? Object.entries(r.chargesNature).filter(([k]) => k.startsWith('60') || k.startsWith('61')).reduce((s, [, v]) => s + v, 0) : 0;
+    const poidsSRH = r.totalChargesReel > 0 ? (srhCharges / r.totalChargesReel) * 100 : 0;
+    return {
+      fdr: r.fdrComptable,
+      bfr: r.bfr,
+      tresorerie: r.tresorerie,
+      joursFonctionnement: Math.round(r.joursFdr),
+      tauxRecouvrement: r.tmnr != null ? Math.max(0, 100 - r.tmnr) : 0,
+      resultatExercice: r.resultatBudgetaire,
+      poidsCharges,
+      poidsSRH,
+    };
+  }, [r]);
 
   // Construire les comptes pour la validation à partir des données réelles
   const comptesForValidation = useMemo(() => {
@@ -173,16 +194,16 @@ const Dashboard = () => {
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
       >
         <motion.div variants={staggerItem}>
-          <KpiCard title="Fonds de roulement" value={formatCurrency(mockIndicators.fdr)} trend={3.3} icon={Wallet} variant="primary" />
+          <KpiCard title="Fonds de roulement" value={formatCurrency(liveIndicators.fdr)} icon={Wallet} variant="primary" />
         </motion.div>
         <motion.div variants={staggerItem}>
-          <KpiCard title="Trésorerie nette" value={formatCurrency(mockIndicators.tresorerie)} trend={2.7} icon={Landmark} variant="success" />
+          <KpiCard title="Trésorerie nette" value={formatCurrency(liveIndicators.tresorerie)} icon={Landmark} variant="success" />
         </motion.div>
         <motion.div variants={staggerItem}>
-          <KpiCard title="Jours de fonctionnement" value={`${mockIndicators.joursFonctionnement} j`} subtitle="Seuil recommandé : 30j" icon={CalendarDays} variant={mockIndicators.joursFonctionnement >= 30 ? "success" : "warning"} />
+          <KpiCard title="Jours de fonctionnement" value={`${liveIndicators.joursFonctionnement} j`} subtitle="Seuil recommandé : 30j" icon={CalendarDays} variant={liveIndicators.joursFonctionnement >= 30 ? "success" : "warning"} />
         </motion.div>
         <motion.div variants={staggerItem}>
-          <KpiCard title="Taux de recouvrement" value={formatPercent(mockIndicators.tauxRecouvrement)} trend={1.2} icon={TrendingUp} variant="success" />
+          <KpiCard title="Taux de recouvrement" value={formatPercent(liveIndicators.tauxRecouvrement)} icon={TrendingUp} variant="success" />
         </motion.div>
       </motion.div>
 
@@ -194,13 +215,13 @@ const Dashboard = () => {
         className="grid grid-cols-1 lg:grid-cols-3 gap-4"
       >
         <motion.div variants={staggerItem}>
-          <KpiCard title="Résultat de l'exercice" value={formatCurrency(mockIndicators.resultatExercice)} icon={Receipt} variant="primary" />
+          <KpiCard title="Résultat de l'exercice" value={formatCurrency(liveIndicators.resultatExercice)} icon={Receipt} variant={liveIndicators.resultatExercice >= 0 ? "primary" : "warning"} />
         </motion.div>
         <motion.div variants={staggerItem}>
-          <KpiCard title="Poids des charges" value={formatPercent(mockIndicators.poidsCharges)} icon={BarChart3} variant="default" />
+          <KpiCard title="Poids des charges" value={formatPercent(liveIndicators.poidsCharges)} icon={BarChart3} variant="default" />
         </motion.div>
         <motion.div variants={staggerItem}>
-          <KpiCard title="Part du SRH" value={formatPercent(mockIndicators.poidsSRH)} subtitle="Service Restauration & Hébergement" icon={Users} variant="warning" />
+          <KpiCard title="Part du SRH" value={formatPercent(liveIndicators.poidsSRH)} subtitle="Service Restauration & Hébergement" icon={Users} variant="warning" />
         </motion.div>
       </motion.div>
 
@@ -226,7 +247,7 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="pt-4">
             <ResponsiveContainer width="100%" height={280}>
-              <LineChart data={mockEvolutionData}>
+              <LineChart data={r ? [{ year: (r as any).exercice || 'N', fdr: r.fdrComptable, tresorerie: r.tresorerie, bfr: r.bfr }] : mockEvolutionData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,90%)" vertical={false} />
                 <XAxis dataKey="year" fontSize={11} tickLine={false} axisLine={false} />
                 <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
@@ -264,21 +285,18 @@ const Dashboard = () => {
           <CardContent className="flex items-center justify-center pt-4">
             <ResponsiveContainer width="100%" height={280}>
               <RPieChart>
-                <Pie
-                  data={mockRepartitionCharges}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={65}
-                  outerRadius={105}
-                  paddingAngle={3}
-                  dataKey="value"
-                  label={({ name, value }) => `${name} ${value}%`}
-                  style={{ fontSize: '11px' }}
-                >
-                  {mockRepartitionCharges.map((entry, index) => (
-                    <Cell key={index} fill={entry.fill} />
-                  ))}
-                </Pie>
+                {(() => {
+                  const pieData = r && r.services ? Object.entries(r.services).filter(([, s]) => s.chargesReel > 0).map(([k, s], i) => ({
+                    name: s.libelle || k, value: Math.round(((s.chargesReel / r.totalChargesReel) * 100) * 10) / 10,
+                    fill: `hsl(${(i * 47 + 200) % 360}, 55%, 50%)`
+                  })) : mockRepartitionCharges;
+                  return (
+                    <Pie data={pieData} cx="50%" cy="50%" innerRadius={65} outerRadius={105} paddingAngle={3} dataKey="value"
+                      label={({ name, value }) => `${name} ${value}%`} style={{ fontSize: '11px' }}>
+                      {pieData.map((entry, index) => <Cell key={index} fill={entry.fill} />)}
+                    </Pie>
+                  );
+                })()}
                 <Tooltip formatter={(v: number) => `${v} %`} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(220,13%,90%)', fontSize: '12px' }} />
               </RPieChart>
             </ResponsiveContainer>
@@ -306,7 +324,11 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent className="pt-4">
             <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={mockTresorerieDetail} layout="vertical">
+              <BarChart data={r ? [
+                { label: "Dépôt au Trésor (515)", montant: r.tresorerie },
+                { label: "Créances (Cl.4)", montant: r.totalCreances || 0 },
+                { label: "Dettes fournisseurs (401)", montant: r.dettesFournisseurs || 0 },
+              ] : mockTresorerieDetail} layout="vertical">
                 <CartesianGrid strokeDasharray="3 3" stroke="hsl(220,13%,90%)" horizontal={false} />
                 <XAxis type="number" fontSize={11} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k€`} tickLine={false} axisLine={false} />
                 <YAxis type="category" dataKey="label" width={150} fontSize={11} tickLine={false} axisLine={false} />
