@@ -444,6 +444,129 @@ SOURCE 6 — TEXTES DE RÉFÉRENCE COMPLÉMENTAIRES
 - Voyages scolaires : Circulaire du 16 juillet 2024 + Guide Eduscol décembre 2025
 - RGP : Ordonnance n° 2022-408 du 23 mars 2022
 - CGCT, CG3P, Code des juridictions financières
+
+═══════════════════════════════════════════════════════════════
+SOURCE 7 — CATALOGUE COMPLET DES TUTORIELS OP@LE (73 modes opératoires)
+Plateforme Tribu MF² — Espace public utilisateurs Op@le
+URL : https://tribu.phm.education.gouv.fr/tribu/espace/04yBrn/salle/d4QJrX/dossier/workspace_espace-public-utilisateurs-op-le_documents
+═══════════════════════════════════════════════════════════════
+
+DOSSIER 00 — INTRODUCTION À OP@LE
+- MOP_00_01 : Présentation générale Op@le (interface, navigation, rôles)
+- MOP_00_02 : Connexion et authentification Op@le
+- MOP_00_03 : Tableau de bord Op@le — indicateurs et alertes
+- MOP_00_04 : Gestion des habilitations et profils utilisateurs
+- MOP_00_05 : Paramétrage de l'établissement dans Op@le
+
+DOSSIER 01 — BUDGET
+- INT_01_01_01 : Saisie du budget initial (BI)
+- INT_01_01_02 : Saisie d'une décision budgétaire modificative (DBM)
+- INT_01_01_03 : Virements de crédits
+- INT_01_01_04 : Prélèvements sur fonds de roulement
+- INT_01_01_05 : Budget annexe (GRETA, CFA, SRH)
+- INT_01_01_06 : Services spéciaux (bourses, enseignement technique)
+- INT_01_02_01 : Suivi de la consommation des crédits
+- INT_01_02_02 : Éditions budgétaires (état prévisionnel, situation crédits)
+- INT_01_02_03 : Clôture budgétaire
+- INT_01_03_01 : Rapport de l'ordonnateur (préparation dans Op@le)
+- INT_01_03_02 : Transmission Dem'Act (actes du CA)
+
+DOSSIER 02 — DÉPENSES
+- INT_02_01_01 : Processus nominal de la dépense (engagement → demande de paiement)
+- INT_02_01_02 : Engagement juridique (création bon de commande)
+- INT_02_01_03 : Certification du service fait
+- INT_02_01_04 : Demande de paiement (ex-mandatement)
+- INT_02_01_05 : Demande de paiement sur marché
+- INT_02_02_01 : Demande d'avance et acompte fournisseur
+- INT_02_02_02 : Avoir fournisseur et RRR obtenues
+- INT_02_02_03 : Demande de paiement sans engagement (dépenses < seuil)
+- INT_02_03_01 : DAO — Dépenses avant ordonnancement (compte 472)
+- INT_02_03_02 : Régularisation des DAO
+- INT_02_04_01 : Carte d'achat — saisie et rapprochement
+- INT_02_04_02 : Carte bancaire — suivi des opérations
+- INT_02_05_01 : Annulation/réduction de demande de paiement
+- INT_02_05_02 : Rejet de demande de paiement par l'AC
+- INT_02_06_01 : Charges à payer (CAP) — comptabilisation en période d'inventaire (comptes 408x)
+- INT_02_06_02 : Charges constatées d'avance (CCA) — compte 486
+
+DOSSIER 03 — IMMOBILISATIONS ET STOCKS
+- INT_03_01_01 : Saisie d'une immobilisation (entrée en inventaire)
+- INT_03_01_02 : Plan d'amortissement (fonds propres — D 6811 / C 28)
+- INT_03_01_03 : Plan d'amortissement (financement externe — reprise 1049/1349 parallèle au 28)
+- INT_03_01_04 : Sortie d'inventaire (mise au rebut, cession — D 675 ou 656 / C 21)
+- INT_03_01_05 : Production immobilisée (compte 72)
+- INT_03_02_01 : Gestion des stocks (comptes 31-33, variation 603)
+- INT_03_02_02 : Inventaire physique des stocks
+- INT_03_02_03 : Dépréciation des stocks (compte 39)
+
+DOSSIER 04 — RECETTES
+- INT_04_01_01 : Titre de recette — processus nominal
+- INT_04_01_02 : Titre de recette collectif (restauration, hébergement)
+- INT_04_01_03 : Encaissement et lettrage
+- INT_04_01_04 : Encaissement sans opération préalable
+- INT_04_02_01 : Recouvrement amiable — avis des sommes à payer, relances
+- INT_04_02_02 : Recouvrement contentieux — émission SATD (via PEPS depuis 2026)
+- INT_04_02_03 : Admission en non-valeur (ANV) — vote CA
+- INT_04_02_04 : Remise gracieuse — décision ordonnateur
+- INT_04_03_01 : Produits à recevoir (PAR) — comptes 418x, période d'inventaire
+- INT_04_03_02 : Produits constatés d'avance (PCA) — compte 487
+- INT_04_04_01 : Annulation/réduction de titre de recette
+- INT_04_04_02 : Titre de recette en instance
+
+DOSSIER 05 — GESTION FINANCIÈRE ET COMPTABLE (GFE)
+- INT_05_01_01 : Rapprochement bancaire (compte 5151 vs relevé DFT)
+- INT_05_01_02 : Traitement des opérations DFT (rejets, avis de crédit, prélèvements)
+- INT_05_01_03 : Lettrage des comptes de tiers
+- INT_05_02_01 : Demande de comptabilisation (écriture technique AC)
+- INT_05_02_02 : Demande de versement (opération non budgétaire)
+- INT_05_03_01 : État de développement des soldes
+- INT_05_03_02 : Balance générale et balance auxiliaire
+- INT_05_03_03 : Grand livre
+
+DOSSIER 06 — RÉGIES (nouveau module 2026)
+- INT_06_01_01 : Initialisation d'une régie dans Op@le
+- INT_06_01_02 : Régie de recettes — encaissement, versement, PV vérification
+- INT_06_01_03 : Régie d'avances — approvisionnement, justification, reconstitution
+- INT_06_01_04 : Mandataires de régie — nomination, habilitation, agrément AC
+- INT_06_02_01 : Billetage et arrêté de caisse
+- INT_06_02_02 : Journal de caisse de la régie
+- INT_06_02_03 : PV de vérification de caisse (modèle réglementaire)
+Textes : Décret 2019-798, Décret 2020-922, Arrêté 13 août 2020
+
+DOSSIER 07 — PAYE
+- INT_07_01_01 : Paye à façon — AED, AESH, contrats aidés
+- INT_07_01_02 : Vacations et indemnités (compte 64)
+- INT_07_01_03 : Traitement comptable de la paye (planche 20-21 M9-6)
+- INT_07_01_04 : Charges sociales et déclarations
+
+DOSSIER 08 — COMPTABILITÉ AUXILIAIRE
+- INT_08_01_01 : Comptabilité des valeurs inactives (compte 86)
+- INT_08_01_02 : Comptabilité matière — suivi extra-comptable
+- INT_08_01_03 : Objets confectionnés — matière d'œuvre et prestations
+
+DOSSIER 09 — OPÉRATIONS DE FIN D'EXERCICE
+- INT_09_01_01 : Opérations d'inventaire — checklist complète
+- INT_09_01_02 : Provisions et dépréciations (comptes 15, 29, 39, 49, 59)
+- INT_09_01_03 : Affectation du résultat (D/C 12 → 1068, 11, 1064)
+- INT_09_01_04 : Clôture comptable — balance définitive
+
+DOSSIER 10 — COMPTE FINANCIER
+- INT_10_01_01 : Génération du compte financier dans Op@le (COFI)
+- INT_10_01_02 : COFI Pilotage — vérifications et contrôles
+- INT_10_01_03 : Annexe au compte financier (11 sections)
+- INT_10_01_04 : Rapport de l'agent comptable
+- INT_10_01_05 : Vote du compte financier au CA (avant 30 juin N+1)
+
+DOSSIER 11 — PASSATION DE SERVICE
+- INT_11_01_01 : Procédure de passation — arrivée/départ AC
+- INT_11_01_02 : PV de passation de service (vérifications, inventaire caisse, balance)
+
+RÈGLES D'ORIENTATION TUTORIELLE :
+1. Identifier le domaine fonctionnel (Budget, Dépenses, Recettes, Régies, etc.)
+2. Orienter vers le dossier et sous-dossier exact sur Tribu MF²
+3. Indiquer le tutoriel exact (ex: "Consultez INT_02_01_04 — Demande de paiement")
+4. Compléter avec les références M9-6 (comptes, écritures D/C, planches comptables)
+5. Préciser qui réalise l'opération (ordonnateur ou agent comptable)
 `;
 
 // ═══════════════════════════════════════════════════════════════
