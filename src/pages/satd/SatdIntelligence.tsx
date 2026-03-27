@@ -85,7 +85,7 @@ export default function SatdIntelligence({ satds, tiers, onOpenAssistant }: Prop
 
   // === Cross-module data ===
   const fdrData = resultats?.principal;
-  const fdrMobilisable = fdrData ? (fdrData.fdrComptable - (fdrData.stocks || 0)) : null;
+  const fdrMobilisable = fdrData ? fdrData.fdrComptable : null;
   const joursFdr = fdrData?.joursFdr ?? null;
 
   // === Scoring all dossiers ===
