@@ -38,6 +38,16 @@ export function AnalyseIASection() {
   });
   const [loading, setLoading] = useState(false);
 
+  const safeText = (value: unknown) => {
+    try {
+      if (typeof value === 'string') return value;
+      if (value instanceof Error) return `${value.name}: ${value.message}`;
+      return JSON.stringify(value ?? '');
+    } catch {
+      return String(value ?? '');
+    }
+  };
+
   if (!R) return <EmptyState msg="Lancez l'analyse pour accéder au module d'analyse IA globale." />;
 
   const nbBloq = checkItems.filter(c => c.bloquant).length;
@@ -80,7 +90,11 @@ export function AnalyseIASection() {
         },
       });
       if (error) {
-        const errStr = `${error?.message || ''} ${JSON.stringify((error as any)?.context || {})}`.toLowerCase();
+        const errStr = [
+          safeText(error?.message),
+          safeText((error as any)?.context),
+          safeText(error),
+        ].join(' ').toLowerCase();
         if (errStr.includes('402') || errStr.includes('payment_required') || errStr.includes('crédits') || errStr.includes('credits') || errStr.includes('non-2xx')) {
           toast.error('Crédits IA épuisés — rechargez dans Settings → Cloud & AI balance puis réessayez.');
         } else if (errStr.includes('429') || errStr.includes('rate_limited') || errStr.includes('too many')) {
@@ -96,8 +110,9 @@ export function AnalyseIASection() {
     } catch (e: any) {
       console.error(e);
       toast.error('Erreur lors de la génération IA');
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const copyToClipboard = () => {
