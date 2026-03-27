@@ -105,18 +105,20 @@ export function RapportOrdoSection() {
   const recettesOrigineDataRaw = useMemo(() => {
     if (!R) return [];
     const po = R.produitsOrigine ?? {};
-    let etat = 0, collectivite = 0, propres = 0, autres = 0;
+    let etat = 0, collectivite = 0, propres = 0, taxeApprentissage = 0, autres = 0;
     Object.entries(po).forEach(([k, v]) => {
       if (['741', '744', '745', '746'].some(p => k.startsWith(p))) etat += v;
       else if (['742', '743', '747'].some(p => k.startsWith(p))) collectivite += v;
+      else if (k.startsWith('748')) taxeApprentissage += v;
       else if (['70', '71', '72', '75', '76'].some(p => k.startsWith(p))) propres += v;
       else autres += v;
     });
     return [
       { name: 'État', value: etat, fill: 'hsl(215,70%,50%)' },
       { name: 'Collectivité', value: collectivite, fill: 'hsl(160,45%,45%)' },
+      { name: 'Taxe apprentissage', value: taxeApprentissage, fill: 'hsl(280,50%,50%)' },
       { name: 'Ress. propres', value: propres, fill: 'hsl(38,92%,50%)' },
-      { name: 'Autres', value: autres, fill: 'hsl(280,50%,50%)' },
+      { name: 'Autres', value: autres, fill: 'hsl(340,65%,50%)' },
     ].filter(d => d.value > 0);
   }, [R]);
 
@@ -147,6 +149,35 @@ export function RapportOrdoSection() {
     else c.push(`⚠️ IAF de ${formatEur(Math.abs(R.cafBudgetaire))}.`);
     return c;
   }, [R, etab.exercice]);
+
+  // ── Préconisations IA contextuelles ─────────────────────────
+  const preconisationsRaw = useMemo(() => {
+    if (!R) return [];
+    const p: string[] = [];
+    const sR = {
+      joursFdr: R.joursFdr ?? 0, joursTresorerie: R.joursTresorerie ?? 0,
+      ratioAutonomieFinanciere: R.ratioAutonomieFinanciere ?? 0,
+      tmcap: R.tmcap ?? 0, tmnr: R.tmnr ?? 0,
+      ratioLiquiditeGenerale: R.ratioLiquiditeGenerale ?? 0,
+    };
+    if (sR.joursFdr > 0 && sR.joursFdr < 30) {
+      p.push(`🛡️ Autonomie financière insuffisante (${Math.round(sR.joursFdr)} j < 30 j). Ne pas procéder à des prélèvements sur FDR et rechercher des économies structurelles.`);
+    } else if (sR.joursFdr >= 30 && sR.joursFdr < 60) {
+      p.push(`📋 Autonomie correcte (${Math.round(sR.joursFdr)} j). Prélèvements modérés et ciblés sur des investissements ponctuels.`);
+    } else if (sR.joursFdr >= 90) {
+      p.push(`💰 Autonomie élevée (${Math.round(sR.joursFdr)} j). Prélèvement envisageable pour financer des investissements structurants.`);
+    }
+    if (sR.joursTresorerie > 0 && sR.joursTresorerie < 15) p.push(`⚡ Trésorerie tendue (${Math.round(sR.joursTresorerie)} j). Accélérer le recouvrement et différer les dépenses non urgentes.`);
+    if (sR.tmnr > 5) p.push(`📬 Taux de non-recouvrement élevé (${sR.tmnr.toFixed(1)} %). Intensifier les relances amiables et engager les SATD.`);
+    if (sR.tmcap > 10) p.push(`⏱️ TMcap élevé (${sR.tmcap.toFixed(1)} %). Accélérer la liquidation des factures (DGP ≤ 30 j).`);
+    if (sR.ratioLiquiditeGenerale > 0 && sR.ratioLiquiditeGenerale < 1) p.push(`⚠️ Ratio de liquidité < 1. Risque à court terme. Préparer un plan de trésorerie prévisionnel.`);
+    if (R.resultatBudgetaire < 0 && R.reserves > 0 && Math.abs(R.resultatBudgetaire) > R.reserves * 0.5) p.push(`🔴 Déficit > 50 % des réserves. Alerter la collectivité et préparer un plan de redressement.`);
+    if (R.cafBudgetaire < 0) p.push(`📉 IAF de ${formatEur(Math.abs(R.cafBudgetaire))} : l'établissement consomme ses réserves. Réduire les charges ou augmenter les recettes propres.`);
+    if (sR.ratioAutonomieFinanciere > 0 && sR.ratioAutonomieFinanciere < 0.3) p.push(`📊 Autonomie financière faible (${(sR.ratioAutonomieFinanciere * 100).toFixed(1)} %). Développer les recettes propres (taxe d'apprentissage, conventions, locations).`);
+    const taxeApp = Object.entries(R.produitsOrigine ?? {}).filter(([k]) => k.startsWith('748')).reduce((s, [, v]) => s + v, 0);
+    if (taxeApp > 0) p.push(`🎓 Taxe d'apprentissage : ${formatEur(taxeApp)}. Vérifier l'affectation aux sections éligibles.`);
+    return p;
+  }, [R]);
 
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'ordonnateur (M9-6 § V.1)." />;
 
@@ -269,6 +300,26 @@ export function RapportOrdoSection() {
           <CardContent className="pt-0">
             <div className="space-y-2 text-xs leading-relaxed">
               {autoComments.map((text, i) => (
+                <p key={i}>{text}</p>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ═══════════ PRÉCONISATIONS IA ═══════════ */}
+      {preconisationsRaw.length > 0 && (
+        <Card className="border-warning/20 bg-warning/5">
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Target className="h-4 w-4 text-warning" />
+              Préconisations
+              <Badge variant="outline" className="ml-auto text-[10px] border-warning/30">Analyse des indicateurs</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2 text-xs leading-relaxed">
+              {preconisationsRaw.map((text, i) => (
                 <p key={i}>{text}</p>
               ))}
             </div>

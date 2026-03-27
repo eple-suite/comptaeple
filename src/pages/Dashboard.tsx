@@ -31,19 +31,7 @@ import {
   Pie,
   Cell,
 } from "recharts";
-
-// Données de validation comptable (depuis la balance détaillée)
-const detailedForValidation = [
-  { numero: "102", libelle: "Dotation", debit: 0, credit: 850000, solde: -850000 },
-  { numero: "106", libelle: "Réserves", debit: 0, credit: 185000, solde: -185000 },
-  { numero: "515", libelle: "Compte au Trésor", debit: 575000, credit: 416580, solde: 158420 },
-  { numero: "531", libelle: "Caisse", debit: 5000, credit: 2650, solde: 2350 },
-  { numero: "4411", libelle: "Subventions État", debit: 165230, credit: 165230, solde: 0 },
-  { numero: "4412", libelle: "Collectivité — Subventions", debit: 0, credit: 0, solde: 0 },
-  { numero: "44311", libelle: "Bourses — Crédit à répartir", debit: 305000, credit: 313700, solde: -8700 },
-  { numero: "4112", libelle: "Familles — DP", debit: 245000, credit: 237500, solde: 7500 },
-  { numero: "416", libelle: "Créances douteuses", debit: 3200, credit: 0, solde: 3200 },
-];
+import { useCofiepleStore } from "@/store/useCofiepleStore";
 
 const staggerContainer = {
   hidden: {},
@@ -56,7 +44,36 @@ const staggerItem = {
 };
 
 const Dashboard = () => {
-  const alertes = useMemo(() => validerBalance(detailedForValidation), []);
+  // Utiliser les données réelles de la balance importée (cofieple store)
+  const balance = useCofiepleStore(s => s.balance);
+  const activeBudget = useCofiepleStore(s => s.activeBudget);
+  const balanceData = balance[activeBudget] || [];
+
+  // Construire les comptes pour la validation à partir des données réelles
+  const comptesForValidation = useMemo(() => {
+    if (!balanceData || balanceData.length === 0) return [];
+    // Agréger par compte pour la validation
+    const map: Record<string, { debit: number; credit: number; solde: number }> = {};
+    balanceData.forEach((b: any) => {
+      const key = b.compte || '';
+      if (!map[key]) map[key] = { debit: 0, credit: 0, solde: 0 };
+      map[key].debit += (b.dbt || 0);
+      map[key].credit += (b.crd || 0);
+      map[key].solde += ((b.solDbt || 0) - (b.solCrd || 0));
+    });
+    return Object.entries(map).map(([numero, v]) => ({
+      numero,
+      libelle: numero,
+      debit: v.debit,
+      credit: v.credit,
+      solde: v.solde,
+    }));
+  }, [balanceData]);
+
+  const alertes = useMemo(() => {
+    if (comptesForValidation.length === 0) return []; // Pas de fausses alertes sans données
+    return validerBalance(comptesForValidation);
+  }, [comptesForValidation]);
   const alertesBloquantes = alertes.filter(a => a.gravite === "bloquant");
   const alertesMajeures = alertes.filter(a => a.gravite === "majeur");
 
