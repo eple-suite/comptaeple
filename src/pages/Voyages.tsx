@@ -32,6 +32,10 @@ import { VoyageSubventionsTab } from "./voyages/VoyageSubventionsTab";
 import { VoyageParticipantsTab } from "./voyages/VoyageParticipantsTab";
 import { VoyageRecettesTab } from "./voyages/VoyageRecettesTab";
 import { VoyageTemplatesTab } from "./voyages/VoyageTemplatesTab";
+import { VoyageEncaissementsTab } from "./voyages/VoyageEncaissementsTab";
+import { VoyageCreancesTab } from "./voyages/VoyageCreancesTab";
+import { VoyageImportSiecleTab } from "./voyages/VoyageImportSiecleTab";
+import { VoyageCourriersPdfTab } from "./voyages/VoyageCourriersPdfTab";
 
 const Voyages = () => {
   const [voyages, setVoyages] = useState<Voyage[]>(initialVoyages);
