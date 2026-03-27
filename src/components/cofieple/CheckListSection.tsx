@@ -16,7 +16,10 @@ export function CheckListSection() {
   const checkItems = useCofiepleStore(s => s.checkItems);
   const resultats = useCofiepleStore(s => s.resultats);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
+  const sdeRows = useCofiepleStore(s => s.sde[activeBudget]);
+  const sdrRows = useCofiepleStore(s => s.sdr[activeBudget]);
   const R = resultats[activeBudget];
+  const hasBudgetaryData = (sdeRows && sdeRows.length > 0) || (sdrRows && sdrRows.length > 0);
 
   const nbBloq = checkItems.filter(c => c.bloquant).length;
   const nbAnom = checkItems.filter(c => c.statut !== 'ok').length;
@@ -87,6 +90,12 @@ export function CheckListSection() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0 divide-y divide-border">
+          {!hasBudgetaryData && (
+            <div className="px-5 py-3 bg-blue-50 dark:bg-blue-900/20 text-sm text-blue-700 dark:text-blue-300 flex items-center gap-2">
+              <AlertTriangle className="h-4 w-4 shrink-0" />
+              <span>Les vérifications budgétaires (résultat budgétaire, CAF budgétaire, rapprochement SDE/SDR ↔ Balance) sont masquées car les situations de dépenses et de recettes n'ont pas été importées. Importez les fichiers SDE et SDR puis relancez l'analyse.</span>
+            </div>
+          )}
           {checkItems.map(check => <CheckRow key={check.id} check={check} />)}
         </CardContent>
       </Card>
