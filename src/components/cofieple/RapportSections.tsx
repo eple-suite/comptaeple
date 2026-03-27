@@ -273,11 +273,20 @@ export function RapportOrdoSection() {
           indicateurs: ind,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const msg = error?.message || '';
+        if (msg.includes('402') || msg.includes('crédits') || msg.includes('credits')) {
+          toast.error('Crédits IA temporairement épuisés. Le rapport peut être généré sans les commentaires IA.');
+        } else {
+          toast.error('Erreur lors de la génération des commentaires IA.');
+        }
+        throw error;
+      }
       const text = data?.text || '';
       const parts = text.split('---');
       setAiText1((parts[0] || '').trim());
       setAiText3((parts[1] || '').trim());
+      toast.success('Commentaires IA générés');
     } catch (e) { console.error(e); }
     setAiLoading(false);
   };
@@ -1158,8 +1167,17 @@ export function RapportACSection() {
           anomalies: nbAnom, bloquants: nbBloq, indicateurs: ind, historique: history,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const msg = error?.message || '';
+        if (msg.includes('402') || msg.includes('crédits') || msg.includes('credits')) {
+          toast.error('Crédits IA temporairement épuisés. Le rapport PDF peut être généré sans les observations IA.');
+        } else {
+          toast.error('Erreur lors de la génération des observations IA.');
+        }
+        throw error;
+      }
       setAiObs(data?.text || '');
+      toast.success('Observations IA générées');
     } catch (e) { console.error(e); }
     setAiLoading(false);
   }

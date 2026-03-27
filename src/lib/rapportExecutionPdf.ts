@@ -88,10 +88,9 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
     '1. Situation des dépenses engagées (SDE)',
     '2. Situation des recettes (SDR)',
     '3. Cohérence budgétaire — Croisement SDE / SDR',
-    '4. Contrôles réglementaires de l\'agent comptable',
-    '5. Anomalies détectées',
-    '6. Recommandations',
-    '7. Signatures',
+    '4. Taux d\'exécution par service',
+    '5. Synthèse et faits caractéristiques',
+    '6. Signatures',
   ];
   sommaire.forEach((item, i) => {
     doc.text(item, 20, y + 10 + i * 7);
@@ -277,127 +276,155 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   }
 
   // ════════════════════════════════════════════════════════════
-  // 4. CONTRÔLES RÉGLEMENTAIRES
+  // 4. TAUX D'EXÉCUTION PAR SERVICE
   // ════════════════════════════════════════════════════════════
   doc.addPage();
-  drawSectionHeader(doc, '4. CONTRÔLES RÉGLEMENTAIRES DE L\'AGENT COMPTABLE', 'Ref. : M9-6 Tome 2 — §2.3.4 (dépenses) / §2.2.4 (recettes)');
+  drawSectionHeader(doc, '4. TAUX D\'EXÉCUTION PAR SERVICE', 'Pilotage budgétaire — Budget initial vs Budget exécuté');
 
-  const controles = buildControles(sdeRows, sdrRows, hasSDE, hasSDR);
-  autoTable(doc, {
-    startY: 30,
-    head: [['ID', 'Contrôle', 'Référence M9-6', 'Statut', 'Détail']],
-    body: controles.map(c => [
-      c.id, c.controle, c.ref,
-      c.statut === 'conforme' ? '✓ Conforme' : c.statut === 'anomalie' ? `⚠ Anomalie (${c.gravite || ''})` : '— Non vérifiable',
-      c.detail,
-    ]),
-    headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: 'bold', fontSize: 7 },
-    styles: { fontSize: 7, cellPadding: 3 },
-    columnStyles: { 0: { cellWidth: 14 }, 1: { cellWidth: 45 }, 2: { cellWidth: 32 }, 3: { cellWidth: 28 }, 4: { cellWidth: 60 } },
-    margin: { left: 14, right: 14 },
-    didParseCell: (data: any) => {
-      if (data.section === 'body' && data.column.index === 3) {
-        const val = String(data.cell.raw);
-        if (val.startsWith('⚠')) data.cell.styles.textColor = [200, 0, 0];
-        else if (val.startsWith('✓')) data.cell.styles.textColor = [0, 128, 0];
-        else data.cell.styles.textColor = [150, 150, 150];
-      }
-    },
-  });
+  if (hasSDE) {
+    const depServices = aggregateDepByService(sdeRows);
+    const totalCO = depServices.reduce((s, d) => s + d.co, 0);
+    const totalDP = depServices.reduce((s, d) => s + d.dp, 0);
 
-  // ════════════════════════════════════════════════════════════
-  // 5. ANOMALIES DÉTECTÉES
-  // ════════════════════════════════════════════════════════════
-  doc.addPage();
-  drawSectionHeader(doc, '5. ANOMALIES RÉGLEMENTAIRES DÉTECTÉES', 'Liste des écarts constatés au regard de la M9-6');
-
-  const anomalies = controles.filter(c => c.statut === 'anomalie');
-  if (anomalies.length === 0) {
-    doc.setFontSize(10);
-    doc.setTextColor(0, 128, 0);
-    doc.text('✓ Aucune anomalie réglementaire détectée.', 14, 35);
-  } else {
-    let yAno = 32;
-    anomalies.forEach((a, i) => {
-      if (yAno > ph - 40) { doc.addPage(); yAno = 20; }
-      doc.setFontSize(9);
-      doc.setTextColor(200, 0, 0);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`${i + 1}. ${a.controle}`, 14, yAno);
-      doc.setFont('helvetica', 'normal');
-      doc.setTextColor(0);
-      doc.setFontSize(8);
-      doc.text(`   Référence : ${a.ref}`, 14, yAno + 6);
-      doc.text(`   Gravité : ${a.gravite || 'non qualifiée'}`, 14, yAno + 12);
-      const detailLines = doc.splitTextToSize(`   Constatation : ${a.detail}`, pw - 28);
-      doc.text(detailLines, 14, yAno + 18);
-      yAno += 18 + detailLines.length * 4 + 8;
+    autoTable(doc, {
+      startY: 30,
+      head: [['Service', 'Crédits ouverts', 'Réalisé', 'Taux exéc.', 'Disponible']],
+      body: depServices.map(s => [
+        s.service,
+        fmt(s.co),
+        fmt(s.dp),
+        s.co > 0 ? `${((s.dp / s.co) * 100).toFixed(1)} %` : '—',
+        fmt(s.dispo),
+      ]),
+      foot: [['TOTAL', fmt(totalCO), fmt(totalDP), totalCO > 0 ? `${((totalDP / totalCO) * 100).toFixed(1)} %` : '—', fmt(totalCO - totalDP)]],
+      headStyles: { fillColor: [37, 68, 120], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+      footStyles: { fillColor: [230, 236, 245], textColor: [37, 68, 120], fontStyle: 'bold', fontSize: 8 },
+      styles: { fontSize: 8 },
+      columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' } },
+      margin: { left: 14, right: 14 },
     });
+
+    // Graphique barres taux d'exécution par service
+    let yGraph = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(37, 68, 120);
+    doc.text('Taux d\'exécution des dépenses par service :', 14, yGraph);
+    yGraph += 6;
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(0);
+    for (const s of depServices) {
+      if (yGraph > ph - 30) { doc.addPage(); yGraph = 20; }
+      const taux = s.co > 0 ? (s.dp / s.co) : 0;
+      const barWidth = 100;
+      const barHeight = 5;
+      // Background
+      doc.setFillColor(230, 236, 245);
+      doc.roundedRect(40, yGraph, barWidth, barHeight, 1, 1, 'F');
+      // Fill
+      const fillW = barWidth * Math.min(taux, 1);
+      if (fillW > 1) {
+        const barColor = taux >= 0.85 ? [34, 139, 34] : taux >= 0.5 ? [230, 126, 34] : [200, 0, 0];
+        doc.setFillColor(barColor[0], barColor[1], barColor[2]);
+        doc.roundedRect(40, yGraph, fillW, barHeight, 1, 1, 'F');
+      }
+      doc.setFontSize(7);
+      doc.text(s.service, 14, yGraph + 4);
+      doc.text(`${(taux * 100).toFixed(1)} %`, 145, yGraph + 4);
+      yGraph += 9;
+    }
+  } else {
+    doc.setFontSize(9);
+    doc.setTextColor(120);
+    doc.text('Données SDE non importées — section non disponible.', 14, 35);
   }
 
   // ════════════════════════════════════════════════════════════
-  // 6. RECOMMANDATIONS
+  // 5. SYNTHÈSE ET FAITS CARACTÉRISTIQUES
   // ════════════════════════════════════════════════════════════
   doc.addPage();
-  drawSectionHeader(doc, '6. RECOMMANDATIONS CONFORMES M9-6', '');
+  drawSectionHeader(doc, '5. SYNTHÈSE ET FAITS CARACTÉRISTIQUES', 'Points d\'attention pour l\'ordonnateur');
 
-  let yReco = 32;
-  doc.setFontSize(10);
-  doc.setTextColor(37, 68, 120);
-  doc.setFont('helvetica', 'bold');
-  doc.text('Actions demandées à l\'ordonnateur :', 14, yReco);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(0);
+  let ySynth = 30;
   doc.setFontSize(9);
+  doc.setTextColor(0);
 
-  const recosOrdo: string[] = [];
-  const creditsDepasses = hasSDE ? sdeRows.filter(r => (r.disponible ?? 0) < 0) : [];
-  if (creditsDepasses.length > 0) {
-    recosOrdo.push(`Régulariser les ${creditsDepasses.length} dépassement(s) de crédits par délibération modificative du conseil d'administration.`);
-  }
-  const droitsSansTitre = hasSDR ? sdrRows.filter(r => (r.budget || 0) > 0 && (r.aor || 0) === 0 && (r.realise || 0) === 0) : [];
-  if (droitsSansTitre.length > 0) {
-    recosOrdo.push(`Émettre les titres de recettes pour les ${droitsSansTitre.length} ligne(s) avec prévisions sans titre (§2.2.2).`);
-  }
+  // Key budget metrics
   if (hasSDE && hasSDR) {
-    const coherence = buildCoherence(sdeRows, sdrRows);
-    const titres = coherence.filter(l => l.ecart > 0);
-    if (titres.length > 0) {
-      const total = titres.reduce((s, l) => s + l.ecart, 0);
-      recosOrdo.push(`Émettre ${titres.length} titre(s) de recettes pour un total de ${fmt(total)} afin de rétablir l'équilibre par activité.`);
+    const totalDepBudget = sdeRows.reduce((s, r) => s + (r.budget || 0), 0);
+    const totalDepRealise = sdeRows.reduce((s, r) => s + (r.realise || 0), 0);
+    const totalRecBudget = sdrRows.reduce((s, r) => s + (r.budget || 0), 0);
+    const totalRecRealise = sdrRows.reduce((s, r) => s + (r.realise || 0), 0);
+    const ecartEq = Math.abs(totalDepBudget - totalRecBudget);
+
+    doc.setFont('helvetica', 'bold');
+    doc.text('Indicateurs budgétaires clés :', 14, ySynth);
+    doc.setFont('helvetica', 'normal');
+    ySynth += 8;
+    const metrics = [
+      [`Crédits ouverts (dépenses)`, fmt(totalDepBudget)],
+      [`Dépenses réalisées`, fmt(totalDepRealise)],
+      [`Taux d'exécution dépenses`, totalDepBudget > 0 ? `${((totalDepRealise / totalDepBudget) * 100).toFixed(1)} %` : '—'],
+      [`Prévisions de recettes`, fmt(totalRecBudget)],
+      [`Recettes réalisées`, fmt(totalRecRealise)],
+      [`Taux d'exécution recettes`, totalRecBudget > 0 ? `${((totalRecRealise / totalRecBudget) * 100).toFixed(1)} %` : '—'],
+      [`Équilibre budgétaire`, ecartEq < 1 ? '✓ Respecté' : `Écart : ${fmt(ecartEq)}`],
+    ];
+    metrics.forEach(([label, value]) => {
+      doc.text(`• ${label} : ${value}`, 18, ySynth);
+      ySynth += 6;
+    });
+
+    // Alerts
+    ySynth += 5;
+    const creditsDepasses = sdeRows.filter(r => (r.disponible ?? 0) < 0);
+    const droitsSansTitre = sdrRows.filter(r => (r.budget || 0) > 100 && (r.aor || 0) === 0 && (r.realise || 0) === 0);
+
+    if (creditsDepasses.length > 0 || droitsSansTitre.length > 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(200, 0, 0);
+      doc.text('Points d\'attention :', 14, ySynth);
+      doc.setFont('helvetica', 'normal');
+      ySynth += 7;
+      if (creditsDepasses.length > 0) {
+        doc.text(`⚠ ${creditsDepasses.length} ligne(s) en dépassement de crédits — régularisation par DBM nécessaire`, 18, ySynth);
+        ySynth += 6;
+      }
+      if (droitsSansTitre.length > 0) {
+        doc.text(`⚠ ${droitsSansTitre.length} ligne(s) avec prévisions sans titre de recettes émis`, 18, ySynth);
+        ySynth += 6;
+      }
+    } else {
+      doc.setTextColor(0, 128, 0);
+      doc.setFont('helvetica', 'bold');
+      doc.text('✓ Aucune anomalie budgétaire significative constatée.', 14, ySynth);
+      ySynth += 8;
     }
   }
-  if (recosOrdo.length === 0) recosOrdo.push('Aucune action corrective requise à ce stade.');
 
-  recosOrdo.forEach((r, i) => {
-    yReco += 8;
-    doc.text(`${i + 1}. ${r}`, 18, yReco);
-  });
-
-  yReco += 18;
+  // Faits caractéristiques (espace pour commentaires)
+  ySynth += 10;
   doc.setTextColor(37, 68, 120);
   doc.setFont('helvetica', 'bold');
-  doc.text('Contrôles à réaliser par l\'agent comptable :', 14, yReco);
-  doc.setFont('helvetica', 'normal');
-  doc.setTextColor(0);
-  const recosAC = [
-    'Vérifier la qualité de l\'ordonnateur pour chaque demande de paiement (§2.3.4).',
-    'Contrôler la disponibilité des crédits avant prise en charge (§2.3.4).',
-    'Vérifier l\'exacte imputation budgétaire et comptable (§2.3.4).',
-    'S\'assurer de la validité de la créance : pièces justificatives et certification du service fait (§2.3.4).',
-    'Poursuivre les diligences de recouvrement sur les restes à recouvrer (§2.2.5).',
-  ];
-  recosAC.forEach((r, i) => {
-    yReco += 8;
-    doc.text(`${i + 1}. ${r}`, 18, yReco);
-  });
+  doc.setFontSize(10);
+  doc.text('FAITS CARACTÉRISTIQUES DE L\'EXERCICE', 14, ySynth);
+  doc.setFont('helvetica', 'italic');
+  doc.setFontSize(8);
+  doc.setTextColor(120);
+  ySynth += 7;
+  doc.text('(À compléter par l\'ordonnateur — commentaires libres sur l\'exécution budgétaire)', 14, ySynth);
+
+  // Box for comments
+  ySynth += 5;
+  doc.setDrawColor(180);
+  doc.setLineWidth(0.3);
+  doc.rect(14, ySynth, pw - 28, 60);
 
   // ════════════════════════════════════════════════════════════
-  // 7. SIGNATURES — Ordonnateur + Secrétaire Général uniquement
-  // (Rapport budgétaire : PAS de signature de l'agent comptable)
+  // 6. SIGNATURES — Ordonnateur + Secrétaire Général uniquement
   // ════════════════════════════════════════════════════════════
   doc.addPage();
-  drawSectionHeader(doc, '7. SIGNATURES', '');
+  drawSectionHeader(doc, '6. SIGNATURES', '');
 
   let ySig = 40;
   doc.setFontSize(9);
@@ -405,7 +432,6 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   doc.text(`Fait à ${etab.commune || '_______________'}, le ${date}`, 14, ySig);
 
   ySig += 20;
-  // 2 colonnes de signatures (ordonnateur + secrétaire général)
   const colW = (pw - 28) / 2;
 
   doc.setFont('helvetica', 'bold');
@@ -419,27 +445,23 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   doc.text(ordoName, 14, ySig + 8);
   doc.text(sgName, 14 + colW, ySig + 8);
 
-  // Signature lines
   ySig += 30;
   doc.setDrawColor(0);
   doc.line(14, ySig, 14 + colW - 10, ySig);
   doc.line(14 + colW, ySig, pw - 14, ySig);
 
-  // Espaces pour le cachet
   doc.setFontSize(7);
   doc.setTextColor(150, 150, 150);
   doc.text('Signature et cachet', 14, ySig + 5);
   doc.text('Signature et cachet', 14 + colW, ySig + 5);
 
-  // Mention légale finale
   ySig += 25;
   doc.setFillColor(240, 243, 248);
-  doc.rect(14, ySig, pw - 28, 24, 'F');
+  doc.rect(14, ySig, pw - 28, 18, 'F');
   doc.setFontSize(7);
   doc.setTextColor(100);
-  doc.text('MENTIONS LÉGALES OBLIGATOIRES', 18, ySig + 7);
-  doc.text('Analyse strictement limitée aux dispositions explicites de la M9-6 — OP@LE (19 janvier 2026).', 18, ySig + 13);
-  doc.text('Aucun calcul prospectif, prévisionnel ou statistique n\'est effectué car non prévu par l\'instruction.', 18, ySig + 19);
+  doc.text('Rapport d\'exécution budgétaire — à destination du conseil d\'administration', 18, ySig + 7);
+  doc.text('Strictement limité au périmètre budgétaire de l\'ordonnateur (M9-6 Tome 2)', 18, ySig + 13);
 
   // Add footers and save
   addPDFFooters(doc, `Rapport d'exécution budgétaire — ${nomEtab} — Exercice ${exercice}`);
@@ -514,36 +536,3 @@ function buildCoherence(sde: LigneSDE[], sdr: LigneSDR[]) {
   return result.sort((a, b) => a.service.localeCompare(b.service) || b.ecart - a.ecart);
 }
 
-function buildControles(sde: LigneSDE[], sdr: LigneSDR[], hasSDE: boolean, hasSDR: boolean) {
-  const items: { id: string; controle: string; ref: string; statut: string; detail: string; gravite?: string }[] = [];
-
-  if (hasSDE) {
-    const cd = sde.filter(r => (r.disponible ?? 0) < 0);
-    items.push({ id: 'dep-01', controle: 'Disponibilité des crédits', ref: '§2.3.4 / §2.1.1', statut: cd.length === 0 ? 'conforme' : 'anomalie', detail: cd.length === 0 ? 'Aucun dépassement.' : `${cd.length} ligne(s) en dépassement.`, gravite: cd.length > 0 ? 'majeure' : undefined });
-
-    const iv = sde.filter(r => !r.compte || !r.service);
-    items.push({ id: 'dep-02', controle: 'Exacte imputation budgétaire', ref: '§2.3.4', statut: iv.length === 0 ? 'conforme' : 'anomalie', detail: iv.length === 0 ? 'Imputations complètes.' : `${iv.length} ligne(s) incomplètes.`, gravite: iv.length > 0 ? 'significative' : undefined });
-
-    const es = sde.filter(r => (r.engage || 0) > 0 && (r.realise || 0) === 0);
-    items.push({ id: 'dep-03', controle: 'Engagements sans demande de paiement', ref: '§2.3.2', statut: es.length === 0 ? 'conforme' : 'anomalie', detail: es.length === 0 ? 'Tous les engagements ont une DP.' : `${es.length} engagement(s) sans DP.`, gravite: es.length > 0 ? 'mineure' : undefined });
-  }
-
-  if (hasSDR) {
-    const ps = sdr.filter(r => (r.budget || 0) > 0 && (r.aor || 0) === 0 && (r.realise || 0) === 0);
-    items.push({ id: 'rec-01', controle: 'Titres de recettes émis', ref: '§2.2.2', statut: ps.length === 0 ? 'conforme' : 'anomalie', detail: ps.length === 0 ? 'Tous les droits ont un titre.' : `${ps.length} ligne(s) sans titre.`, gravite: ps.length > 0 ? 'significative' : undefined });
-
-    const tt = sdr.reduce((s, r) => s + (r.aor || 0), 0);
-    const te = sdr.reduce((s, r) => s + (r.realise || 0), 0);
-    const rar = tt - te;
-    items.push({ id: 'rec-02', controle: 'Recouvrement', ref: '§2.2.5', statut: rar <= 0 ? 'conforme' : 'anomalie', detail: rar <= 0 ? 'Titres recouvrés.' : `Reste à recouvrer : ${fmt(rar)}.`, gravite: rar > 0 ? 'mineure' : undefined });
-  }
-
-  if (hasSDE && hasSDR) {
-    const td = sde.reduce((s, r) => s + (r.budget || 0), 0);
-    const tr = sdr.reduce((s, r) => s + (r.budget || 0), 0);
-    const eq = Math.abs(td - tr);
-    items.push({ id: 'prin-01', controle: 'Principe d\'équilibre', ref: '§2.1.1', statut: eq < 1 ? 'conforme' : 'anomalie', detail: eq < 1 ? 'Budget équilibré.' : `Écart de ${fmt(eq)}.`, gravite: eq >= 1 ? 'significative' : undefined });
-  }
-
-  return items;
-}
