@@ -150,6 +150,35 @@ export function RapportOrdoSection() {
     return c;
   }, [R, etab.exercice]);
 
+  // ── Préconisations IA contextuelles ─────────────────────────
+  const preconisationsRaw = useMemo(() => {
+    if (!R) return [];
+    const p: string[] = [];
+    const sR = {
+      joursFdr: R.joursFdr ?? 0, joursTresorerie: R.joursTresorerie ?? 0,
+      ratioAutonomieFinanciere: R.ratioAutonomieFinanciere ?? 0,
+      tmcap: R.tmcap ?? 0, tmnr: R.tmnr ?? 0,
+      ratioLiquiditeGenerale: R.ratioLiquiditeGenerale ?? 0,
+    };
+    if (sR.joursFdr > 0 && sR.joursFdr < 30) {
+      p.push(`🛡️ Autonomie financière insuffisante (${Math.round(sR.joursFdr)} j < 30 j). Ne pas procéder à des prélèvements sur FDR et rechercher des économies structurelles.`);
+    } else if (sR.joursFdr >= 30 && sR.joursFdr < 60) {
+      p.push(`📋 Autonomie correcte (${Math.round(sR.joursFdr)} j). Prélèvements modérés et ciblés sur des investissements ponctuels.`);
+    } else if (sR.joursFdr >= 90) {
+      p.push(`💰 Autonomie élevée (${Math.round(sR.joursFdr)} j). Prélèvement envisageable pour financer des investissements structurants.`);
+    }
+    if (sR.joursTresorerie > 0 && sR.joursTresorerie < 15) p.push(`⚡ Trésorerie tendue (${Math.round(sR.joursTresorerie)} j). Accélérer le recouvrement et différer les dépenses non urgentes.`);
+    if (sR.tmnr > 5) p.push(`📬 Taux de non-recouvrement élevé (${sR.tmnr.toFixed(1)} %). Intensifier les relances amiables et engager les SATD.`);
+    if (sR.tmcap > 10) p.push(`⏱️ TMcap élevé (${sR.tmcap.toFixed(1)} %). Accélérer la liquidation des factures (DGP ≤ 30 j).`);
+    if (sR.ratioLiquiditeGenerale > 0 && sR.ratioLiquiditeGenerale < 1) p.push(`⚠️ Ratio de liquidité < 1. Risque à court terme. Préparer un plan de trésorerie prévisionnel.`);
+    if (R.resultatBudgetaire < 0 && R.reserves > 0 && Math.abs(R.resultatBudgetaire) > R.reserves * 0.5) p.push(`🔴 Déficit > 50 % des réserves. Alerter la collectivité et préparer un plan de redressement.`);
+    if (R.cafBudgetaire < 0) p.push(`📉 IAF de ${formatEur(Math.abs(R.cafBudgetaire))} : l'établissement consomme ses réserves. Réduire les charges ou augmenter les recettes propres.`);
+    if (sR.ratioAutonomieFinanciere > 0 && sR.ratioAutonomieFinanciere < 0.3) p.push(`📊 Autonomie financière faible (${(sR.ratioAutonomieFinanciere * 100).toFixed(1)} %). Développer les recettes propres (taxe d'apprentissage, conventions, locations).`);
+    const taxeApp = Object.entries(R.produitsOrigine ?? {}).filter(([k]) => k.startsWith('748')).reduce((s, [, v]) => s + v, 0);
+    if (taxeApp > 0) p.push(`🎓 Taxe d'apprentissage : ${formatEur(taxeApp)}. Vérifier l'affectation aux sections éligibles.`);
+    return p;
+  }, [R]);
+
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'ordonnateur (M9-6 § V.1)." />;
 
   const dateArrete = etab.dateArrete ? new Date(etab.dateArrete).toLocaleDateString('fr-FR') : '—';
