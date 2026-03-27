@@ -81,7 +81,7 @@ export function AppSidebar() {
                   to={item.url}
                   end={item.url === "/"}
                   className="transition-all duration-200 rounded-lg group/nav"
-                  activeClassName="bg-sidebar-accent text-sidebar-primary font-medium"
+                  activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-bold ring-2 ring-sidebar-primary/35 shadow-sm"
                 >
                   <item.icon className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover/nav:scale-110" />
                   {!collapsed && <span className="ml-2">{item.title}</span>}
@@ -123,7 +123,7 @@ export function AppSidebar() {
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton asChild>
-              <NavLink to="/parametres" className="transition-all duration-200 rounded-lg" activeClassName="bg-sidebar-accent">
+                <NavLink to="/parametres" className="transition-all duration-200 rounded-lg" activeClassName="bg-sidebar-primary text-sidebar-primary-foreground font-bold ring-2 ring-sidebar-primary/35 shadow-sm">
                 <Settings className="h-4 w-4 shrink-0" />
                 {!collapsed && <span className="ml-2">Paramètres</span>}
               </NavLink>
