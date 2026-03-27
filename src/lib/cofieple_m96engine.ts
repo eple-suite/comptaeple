@@ -607,45 +607,57 @@ function getSensNormal(compte: string): SensNormal {
   }
 
   // ─── CLASSE 4 : Comptes de tiers ───
-  // Règles M9-6 détaillées par compte
+  // Règles M9-6 détaillées par compte (EPLE / Op@le)
   if (cl === '4') {
     // Fournisseurs → CRÉDITEUR (dettes)
-    if (r2 === '40') return 'crediteur';
-    // Sauf 409 avances fournisseurs → DÉBITEUR
-    if (r3 === '409') return 'debiteur';
+    if (r2 === '40') {
+      // Sauf 409 avances fournisseurs → DÉBITEUR
+      if (r3 === '409') return 'debiteur';
+      return 'crediteur';
+    }
 
-    // Familles : créances à recouvrer → DÉBITEUR
+    // Familles/redevables : créances à recouvrer → DÉBITEUR
     if (r3 === '411' || r3 === '412' || r3 === '413' || r3 === '414' || r3 === '415') return 'debiteur';
     // Créances douteuses → DÉBITEUR
     if (r3 === '416') return 'debiteur';
-    // Comptes transitoires d'encaissement : souvent DÉBITEUR quand avances versées
+    // Comptes transitoires d'encaissement → DÉBITEUR
     if (r3 === '418') return 'debiteur';
     // Dépréciation des comptes de tiers → CRÉDITEUR (passif correcteur)
     if (r2 === '49') return 'crediteur';
 
     // Personnel → CRÉDITEUR (dettes envers personnel)
     if (r2 === '42') return 'crediteur';
+
     // Organismes sociaux → CRÉDITEUR (charges sociales dues)
+    // ATTENTION : en EPLE, le compte 43 est souvent "Organismes sociaux" → CRÉDITEUR
     if (r2 === '43') return 'crediteur';
 
-    // État et collectivités : variable selon le sous-compte
-    // 4411 : Subventions État à recevoir → variable (avance=créditeur, créance=débiteur)
-    // 44311 : Bourses — crédit à répartir → CRÉDITEUR
-    // 44312 : Bourses — part familles → DÉBITEUR
-    if (r3 === '441') {
-      if (c.startsWith('44311') || c.startsWith('44313')) return 'crediteur';
-      if (c.startsWith('44312')) return 'debiteur';
-      if (c.startsWith('4411')) return 'mixte'; // variable
-      if (c.startsWith('4412')) return 'mixte'; // variable
-      return 'mixte';
-    }
-    if (r3 === '443') return 'crediteur'; // TVA, impôts → dettes
-    if (r3 === '444') return 'crediteur'; // État — impôts sur bénéfices
+    // État et collectivités — M9-6 comptes 441xxx
+    // 4411xx : Subventions État à recevoir → MIXTE (avance=créditeur, créance=débiteur)
+    // 4412xx : Subventions Collectivité à recevoir → MIXTE
+    if (c.startsWith('4411')) return 'mixte';
+    if (c.startsWith('4412')) return 'mixte';
+
+    // Opérations particulières État — M9-6 comptes 443xxx / 44311-44312
+    // 44311 / 443110 : Bourses — Crédit à répartir → CRÉDITEUR (avances État reçues)
+    // 44313 / 443130 : Aides sociales État → CRÉDITEUR
+    // 44312 / 443120 : Bourses — Part familles (excédent à rembourser) → DÉBITEUR
+    // 4432 / 443200 : Primes et indemnités État → CRÉDITEUR
+    // 4438 / 443800 : Fonds sociaux État → CRÉDITEUR
+    if (c.startsWith('44311') || c.startsWith('443110')) return 'crediteur';
+    if (c.startsWith('44313') || c.startsWith('443130')) return 'crediteur';
+    if (c.startsWith('44312') || c.startsWith('443120')) return 'debiteur';
+    if (c.startsWith('4432') || c.startsWith('443200')) return 'crediteur';
+    if (c.startsWith('4438') || c.startsWith('443800')) return 'crediteur';
+    // Generic 443 (État opérations particulières) → CRÉDITEUR par défaut
+    if (r3 === '443') return 'crediteur';
+    // 444 : État — Impôts sur bénéfices → CRÉDITEUR
+    if (r3 === '444') return 'crediteur';
 
     // Comptes de liaison interne → MIXTE
     if (r3 === '451' || r3 === '452' || r3 === '455' || r3 === '456' || r3 === '457' || r3 === '458') return 'mixte';
 
-    // Débiteurs/créditeurs divers → MIXTE
+    // Débiteurs/créditeurs divers
     if (r3 === '462') return 'debiteur'; // créances sur cessions
     if (r3 === '463') return 'debiteur'; // ordres de reversement
     if (r3 === '464') return 'crediteur'; // dettes sur acquisitions
