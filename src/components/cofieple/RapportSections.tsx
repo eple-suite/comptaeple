@@ -105,18 +105,20 @@ export function RapportOrdoSection() {
   const recettesOrigineDataRaw = useMemo(() => {
     if (!R) return [];
     const po = R.produitsOrigine ?? {};
-    let etat = 0, collectivite = 0, propres = 0, autres = 0;
+    let etat = 0, collectivite = 0, propres = 0, taxeApprentissage = 0, autres = 0;
     Object.entries(po).forEach(([k, v]) => {
       if (['741', '744', '745', '746'].some(p => k.startsWith(p))) etat += v;
       else if (['742', '743', '747'].some(p => k.startsWith(p))) collectivite += v;
+      else if (k.startsWith('748')) taxeApprentissage += v;
       else if (['70', '71', '72', '75', '76'].some(p => k.startsWith(p))) propres += v;
       else autres += v;
     });
     return [
       { name: 'État', value: etat, fill: 'hsl(215,70%,50%)' },
       { name: 'Collectivité', value: collectivite, fill: 'hsl(160,45%,45%)' },
+      { name: 'Taxe apprentissage', value: taxeApprentissage, fill: 'hsl(280,50%,50%)' },
       { name: 'Ress. propres', value: propres, fill: 'hsl(38,92%,50%)' },
-      { name: 'Autres', value: autres, fill: 'hsl(280,50%,50%)' },
+      { name: 'Autres', value: autres, fill: 'hsl(340,65%,50%)' },
     ].filter(d => d.value > 0);
   }, [R]);
 
