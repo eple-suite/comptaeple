@@ -135,7 +135,7 @@ function extractSnapshot(state: any): EstablishmentSnapshot {
 
 type Store = CofiepleState & {
   currentEstablishmentId: string | null;
-  switchEstablishment: (id: string) => void;
+  switchEstablishment: (id: string) => Promise<void>;
   setEtablissement: (etab: Partial<EtablissementUI>) => void;
   addBudgetAnnexe: (config: BudgetConfig) => void;
   removeBudgetAnnexe: (type: TypeBudget) => void;
@@ -188,10 +188,10 @@ export const useCofiepleStore = create<Store>()(
       analysisRunning: false,
       budgetProfiles: loadProfiles(),
 
-      switchEstablishment: (id) => {
+      switchEstablishment: async (id) => {
         const current = get().currentEstablishmentId;
         if (current === id) {
-          const manual = loadManualEtablissement(id);
+          const manual = await loadManualEtablissement(id);
           if (manual) {
             set(state => {
               state.etablissement = { ...state.etablissement, ...manual };
@@ -206,8 +206,10 @@ export const useCofiepleStore = create<Store>()(
         }
 
         // Try to restore saved data for the target establishment
-        const saved = loadEstablishmentSnapshot(id);
-        const manual = loadManualEtablissement(id);
+        const [saved, manual] = await Promise.all([
+          loadEstablishmentSnapshot(id),
+          loadManualEtablissement(id),
+        ]);
         if (saved) {
           set(state => {
             state.currentEstablishmentId = id;
