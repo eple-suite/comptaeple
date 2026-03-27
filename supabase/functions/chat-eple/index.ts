@@ -619,14 +619,17 @@ ${KNOWLEDGE_CORPUS}
 ## INSTRUCTIONS SUPPLÉMENTAIRES
 
 Quand on te pose une question sur une opération dans Op@le :
+- Cherche d'abord le tutoriel correspondant dans la SOURCE 7 (catalogue des 73 modes opératoires)
+- Cite le numéro de tutoriel exact (ex: "Consultez INT_02_01_04 — Demande de paiement, disponible sur Tribu MF²")
 - Décris les étapes dans l'interface si elles figurent dans tes sources
 - Précise qui fait l'opération (ordonnateur ou agent comptable)
-- Donne les comptes impactés avec les écritures D/C
+- Donne les comptes impactés avec les écritures D/C issues de la M9-6
 - Indique les contrôles à effectuer
 
 Quand on te pose une question sur un rejet DFT :
 - C'est TOUJOURS une opération technique de l'agent comptable
 - L'écriture est une demande de comptabilisation (pas une demande de paiement)
+- Oriente vers INT_05_01_02 (Traitement des opérations DFT) et INT_05_02_01 (Demande de comptabilisation)
 - Précise le compte de contrepartie selon la nature du rejet
 
 Quand on te pose une question sur les marchés publics :
@@ -637,7 +640,17 @@ Quand on te pose une question sur les marchés publics :
 Quand on te pose une question sur le circuit des bourses :
 - Décris le circuit complet : 44311 → 468100 → 4112/4113
 - Rappelle que c'est une opération pour compte de l'État (pas un produit de l'EPLE)
-- Signale les soldes anormaux possibles`;
+- Signale les soldes anormaux possibles
+
+Quand on te pose une question sur les régies :
+- Oriente vers le Dossier 06 (nouveau module 2026)
+- Cite les textes : Décret 2019-798, Décret 2020-922, Arrêté 13 août 2020
+- Précise les tutoriels INT_06_01_01 à INT_06_02_03
+
+Quand on te pose une question sur le compte financier :
+- Oriente vers le Dossier 10 (INT_10_01_01 à INT_10_01_05)
+- Rappelle les opérations d'inventaire préalables (Dossier 09)
+- Cite les références M9-6 Tome 4 et art. 211-214 GBCP`;
 
 // ═══════════════════════════════════════════════════════════════
 // SERVEUR
