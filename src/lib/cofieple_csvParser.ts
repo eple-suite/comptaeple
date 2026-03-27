@@ -297,7 +297,7 @@ export function fmtPct(n: number | null | undefined): string {
     minimumFractionDigits: 1,
     maximumFractionDigits: 1,
     style: 'percent',
-  }).format(n);
+  }).format(n).replace(/[\u202F\u00A0]/g, ' ');
 }
 
 export function fmtNum(n: number | null | undefined, dec = 2): string {
@@ -305,5 +305,5 @@ export function fmtNum(n: number | null | undefined, dec = 2): string {
   return new Intl.NumberFormat('fr-FR', {
     minimumFractionDigits: dec,
     maximumFractionDigits: dec,
-  }).format(n);
+  }).format(n).replace(/[\u202F\u00A0]/g, ' ');
 }
