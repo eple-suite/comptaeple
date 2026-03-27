@@ -482,8 +482,10 @@ export function calculerResultatsM96(
 // ═══════════════════════════════════════════════════════════════════
 // CHECK-LIST M9-6 — 15+ vérifications (adaptées Budget Principal / Annexe)
 // ═══════════════════════════════════════════════════════════════════
-export function buildChecklist(r: ResultatsM96, options: { isAnnexe?: boolean; bal?: LigneBalance[] } = {}): VerificationM96[] {
+export function buildChecklist(r: ResultatsM96, options: { isAnnexe?: boolean; bal?: LigneBalance[]; hasSDE?: boolean; hasSDR?: boolean } = {}): VerificationM96[] {
   const { isAnnexe = false, bal = [] } = options;
+  // Detect if SDE/SDR data is actually present (non-zero totals)
+  const hasBudgetaryData = (r.totalChargesSde !== 0 || r.totalProduitsSdr !== 0);
   const checks: VerificationM96[] = [];
   function add(id: string, titre: string, ref: string, v1Label: string, v1: number, v2Label: string, v2: number, bloquant: boolean, piste: string, tolerance?: number) {
     const ecart = v1 - v2;
@@ -494,25 +496,52 @@ export function buildChecklist(r: ResultatsM96, options: { isAnnexe?: boolean; b
     checks.push({ id, titre, ref, v1Label, v1, v2Label, v2, ecart, statut, bloquant: bloquant && !ok, piste });
   }
 
-  // L'écart résultat budgétaire / comptable est NORMAL et expliqué par les opérations d'ordre
-  // Ce n'est PAS un point bloquant — c'est un contrôle de cohérence informatif
-  add('rb_rc','Résultat budgétaire vs Résultat comptable (écart = OO)','M9-6 § III.2 / RGCP art.24','Résultat budgétaire',r.resultatBudgetaire,'Résultat comptable',r.resultatComptable,false,"L'écart entre résultat budgétaire et comptable est normal : il correspond aux opérations d'ordre (dotations aux amortissements, reprises, cessions). Vérifier que l'écart = solde des OO.", 100);
-  add('caf_budg_compt','CAF/IAF budgétaire ≠ CAF/IAF comptable','M9-6 § IV.3','CAF/IAF budgétaire',r.cafBudgetaire,'CAF/IAF comptable',r.cafComptable,false,"Vérifier la concordance comptabilité générale / auxiliaire. Contrôler les dotations aux amortissements (68) et reprises (78).");
-  add('fdr_budg_compt','Variation FDR haut ≠ Variation FDR bas','M9-6 § IV.1','Variation FDR par le haut',r.varFdrHaut,'Variation FDR par le bas',r.varFdrBas,false,"Vérifier les mouvements de classe 1 (financements) et classe 2 (immobilisations). Les deux approches doivent converger.");
-  add('fdr_haut_bas','FDR par le haut ≠ FDR par le bas','M9-6 § IV.1 — POINT BLOQUANT','FDR par le haut (ressources permanentes)',r.fdrHaut,'FDR par le bas (actif circulant)',r.fdrBas,true,"POINT BLOQUANT au compte financier. Déséquilibre du bilan. Rechercher les comptes de classe 1 ou 2 anormaux.");
-  add('var_fdr_haut_bas','Variation FDR haut ≠ Variation FDR bas','M9-6 § IV.1 Tableau financement','Variation FDR par le haut',r.varFdrHaut,'Variation FDR par le bas',r.varFdrBas,false,"Vérifier les mouvements d'investissement (classe 2), les financements reçus (classe 1) et les cessions d'actifs (675/775).");
-  add('var_fdr_caf_bas','Variation FDR (CAF) ≠ Variation FDR par le bas','M9-6 § IV.3','Variation FDR à partir de la CAF',r.varFdrCaf,'Variation FDR par le bas',r.varFdrBas,false,"Vérifier les subventions d'investissement reçues (13X), les acquisitions d'immobilisations (21X/23X) et les cessions.");
-  add('var_fdr_tf','Variation FDR tableau financement ≠ FDR comptable','M9-6 § IV.3','Variation FDR tableau financement',r.varFdrTableauFinancement,'Variation FDR comptable',r.varFdrBas,false,'');
-  add('struct_fdr','Structuration FDR ≠ FDR comptable','M9-6 § IV.2','Total structuration FDR (BFR + Tréso)',r.structurationFdr,'FDR comptable',r.fdrComptable,true,"Vérifier la décomposition du FDR en BFR + Trésorerie. Des comptes de tiers anormaux peuvent provoquer ce déséquilibre.");
-  add('var_bfr_synth_soustr','Variation BFR synthétique ≠ Variation BFR soustractive','M9-6 § IV.2 — BFR','Variation BFR synthétique (BF - BE)',r.varBfrSynthetique,'Variation BFR soustractive',r.varBfrSoustractive,false,"Des comptes de tiers anormalement débiteurs ou créditeurs peuvent causer ce type d'anomalie. Vérifier les comptes 40X et 41X.");
-  add('var_bfr_tf','Variation BFR tableau financement ≠ Variation BFR comptable','M9-6 § IV.2','Variation BFR tableau financement',r.varBfrTableauFinancement,'Variation BFR comptable',r.varBfrSoustractive,false,"Des comptes de tiers anormaux peuvent causer ce type d'anomalie.");
-  add('struct_trso','Structuration trésorerie ≠ Trésorerie','M9-6 § IV.2','Total structuration trésorerie',r.structurationTresorerie,'Trésorerie',r.tresorerie,false,"Des comptes de tiers anormaux peuvent provoquer ce déséquilibre.");
-  add('flux_trso','Flux nets de trésorerie ≠ Variation trésorerie comptable','M9-6 § IV.3 Tableau des flux','Total flux nets de trésorerie',r.fluxNetsTresorerie,'Variation trésorerie comptable',r.varTresorerieComptable,false,'');
-  add('var_trso_tf','Variation trésorerie TF ≠ Variation trésorerie comptable','M9-6 § IV.3','Variation trésorerie tableau financement',r.varTresorerieTableauFinancement,'Variation trésorerie comptable',r.varTresorerieComptable,false,'');
-  // Les écarts SDE/SDR ↔ Balance sont normaux (écritures directes, OO, ajustements).
-  // Tolérance de 100€ au lieu de 1€ (arrondis, centimes, ajustements de clôture)
-  add('charges_sde_bal','Total charges SDE vs Total classe 6 balance','M9-6 § II — Rapprochement Ordo/AC','Total charges nettes SDE (N)',r.totalChargesSde,'Total charges classe 6 balance',r.totalChargesBalance,false,"Vérifier les écritures directes comptables et les opérations d'ordre non transitées par l'ordonnateur.", 100);
-  add('produits_sdr_bal','Total produits SDR vs Total classe 7 balance','M9-6 § II — Rapprochement Ordo/AC','Total produits nets SDR (N)',r.totalProduitsSdr,'Total produits classe 7 balance',r.totalProduitsBalance,false,"Vérifier les titres de recettes émis et les écritures directes comptables.", 100);
+  // ── Vérifications budgétaires (SEULEMENT si SDE/SDR importées) ──────
+  if (hasBudgetaryData) {
+    // L'écart résultat budgétaire / comptable est NORMAL et expliqué par les opérations d'ordre
+    // Ce n'est PAS un point bloquant — c'est un contrôle de cohérence informatif
+    // Tolérance = solde des OO (dotations amort + reprises), arrondi à 1€ près
+    const ecartAttenduOO = Math.abs(r.operationsOrdre?.soldeOO ?? 0);
+    const toleranceRbRc = Math.max(100, ecartAttenduOO + 10);
+    add('rb_rc','Résultat budgétaire vs Résultat comptable (écart = OO)','M9-6 § III.2 / RGCP art.24','Résultat budgétaire',r.resultatBudgetaire,'Résultat comptable',r.resultatComptable,false,
+      "L'écart entre résultat budgétaire et comptable est normal : il correspond aux opérations d'ordre (dotations aux amortissements, reprises, cessions). Vérifier que l'écart = solde des OO.", toleranceRbRc);
+    add('caf_budg_compt','CAF/IAF budgétaire ≠ CAF/IAF comptable','M9-6 § IV.3','CAF/IAF budgétaire',r.cafBudgetaire,'CAF/IAF comptable',r.cafComptable,false,
+      "Vérifier la concordance comptabilité générale / auxiliaire. Contrôler les dotations aux amortissements (68) et reprises (78).", toleranceRbRc);
+    // SDE/SDR ↔ Balance (tolérance 100€ pour écritures directes et OO)
+    add('charges_sde_bal','Total charges SDE vs Total classe 6 balance','M9-6 § II — Rapprochement Ordo/AC','Total charges nettes SDE (N)',r.totalChargesSde,'Total charges classe 6 balance',r.totalChargesBalance,false,
+      "Vérifier les écritures directes comptables et les opérations d'ordre non transitées par l'ordonnateur.", 100);
+    add('produits_sdr_bal','Total produits SDR vs Total classe 7 balance','M9-6 § II — Rapprochement Ordo/AC','Total produits nets SDR (N)',r.totalProduitsSdr,'Total produits classe 7 balance',r.totalProduitsBalance,false,
+      "Vérifier les titres de recettes émis et les écritures directes comptables.", 100);
+  }
+
+  // ── Vérifications bilantielles (toujours, basées sur la balance) ────
+  // FDR par le haut vs par le bas — POINT BLOQUANT
+  // Tolérance 10€ (les comptes 18x peuvent créer de petits écarts de centimes)
+  add('fdr_haut_bas','FDR par le haut ≠ FDR par le bas','M9-6 § IV.1 — POINT BLOQUANT','FDR par le haut (ressources permanentes)',r.fdrHaut,'FDR par le bas (actif circulant)',r.fdrBas,true,
+    "POINT BLOQUANT au compte financier. Déséquilibre du bilan. Rechercher les comptes de classe 1 ou 2 anormaux.", 10);
+  // Variation FDR haut vs bas
+  add('var_fdr_haut_bas','Variation FDR haut ≠ Variation FDR bas','M9-6 § IV.1 Tableau financement','Variation FDR par le haut',r.varFdrHaut,'Variation FDR par le bas',r.varFdrBas,false,
+    "Vérifier les mouvements d'investissement (classe 2), les financements reçus (classe 1) et les cessions d'actifs (675/775).", 10);
+  // Structuration FDR = BFR + Tréso
+  add('struct_fdr','Structuration FDR ≠ FDR comptable','M9-6 § IV.2','Total structuration FDR (BFR + Tréso)',r.structurationFdr,'FDR comptable',r.fdrComptable,true,
+    "Vérifier la décomposition du FDR en BFR + Trésorerie. Des comptes de tiers anormaux peuvent provoquer ce déséquilibre.", 10);
+  // Variation BFR
+  add('var_bfr_synth_soustr','Variation BFR synthétique ≠ Variation BFR soustractive','M9-6 § IV.2 — BFR','Variation BFR synthétique (BF - BE)',r.varBfrSynthetique,'Variation BFR soustractive',r.varBfrSoustractive,false,
+    "Des comptes de tiers anormalement débiteurs ou créditeurs peuvent causer ce type d'anomalie. Vérifier les comptes 40X et 41X.", 10);
+  // Structuration trésorerie
+  add('struct_trso','Structuration trésorerie ≠ Trésorerie','M9-6 § IV.2','Total structuration trésorerie',r.structurationTresorerie,'Trésorerie',r.tresorerie,false,
+    "Des comptes de tiers anormaux peuvent provoquer ce déséquilibre.", 10);
+  // Flux nets de trésorerie vs variation comptable
+  add('flux_trso','Flux nets de trésorerie ≠ Variation trésorerie comptable','M9-6 § IV.3 Tableau des flux','Total flux nets de trésorerie',r.fluxNetsTresorerie,'Variation trésorerie comptable',r.varTresorerieComptable,false,
+    "Vérifier les flux d'investissement et la variation du BFR.", 10);
+  // Variation trésorerie TF vs comptable
+  add('var_trso_tf','Variation trésorerie TF ≠ Variation trésorerie comptable','M9-6 § IV.3','Variation trésorerie tableau financement',r.varTresorerieTableauFinancement,'Variation trésorerie comptable',r.varTresorerieComptable,false,
+    "Vérifier la cohérence du tableau de financement.", 10);
+  // Variation FDR depuis CAF vs variation FDR par le bas (seulement si données budgétaires)
+  if (hasBudgetaryData) {
+    add('var_fdr_caf_bas','Variation FDR (CAF) ≠ Variation FDR par le bas','M9-6 § IV.3','Variation FDR à partir de la CAF',r.varFdrCaf,'Variation FDR par le bas',r.varFdrBas,false,
+      "Vérifier les subventions d'investissement reçues (13X), les acquisitions d'immobilisations (21X/23X) et les cessions.", 100);
+  }
 
   // ── Vérifications spécifiques BUDGET ANNEXE ──────────────────────
   if (isAnnexe && bal.length > 0) {

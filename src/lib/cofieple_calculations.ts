@@ -319,9 +319,11 @@ export function consolider(bp: ResultatsUI, annexes: ResultatsUI[]): ResultatsUI
 // ── Checklist M9-6 ──────────────────────────────────────────────────
 // 15 vérifications réglementaires — M9-6 §§ II, III, IV
 // Points bloquants identifiés conformément au Décret 2012-1246 art. 195-199
-export function construireCheckList(r: ResultatsUI, _activeBudget: TypeBudget, bal?: LigneBalance[]): CheckItem[] {
+export function construireCheckList(r: ResultatsUI, _activeBudget: TypeBudget, bal?: LigneBalance[], sde?: any[], sdr?: any[]): CheckItem[] {
   const isAnnexe = _activeBudget !== 'principal';
-  const checks = buildChecklist(r, { isAnnexe, bal });
+  const hasSDE = (sde && sde.length > 0) || r.totalChargesSde !== 0;
+  const hasSDR = (sdr && sdr.length > 0) || r.totalProduitsSdr !== 0;
+  const checks = buildChecklist(r, { isAnnexe, bal, hasSDE, hasSDR });
   return checks.map(c => ({
     id: c.id,
     titre: c.titre,
