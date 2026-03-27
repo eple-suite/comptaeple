@@ -55,6 +55,7 @@ export interface EtablissementUI {
   telephone?: string;
   ordonnateur: string;
   agentComptable: string;
+  secretaireGeneral?: string;
   nomAgenceComptable?: string;
   exercice: number;
   dateArrete: string;

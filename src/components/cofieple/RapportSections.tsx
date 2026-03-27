@@ -24,7 +24,9 @@ import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
 import { supabase } from '@/integrations/supabase/client';
 import { generateRapportACPdf } from '@/lib/pdfRapportAC';
+import { generateRapportExecution } from '@/lib/rapportExecutionPdf';
 import { toast } from 'sonner';
+import type { LigneSDE, LigneSDR } from '@/lib/cofieple_types';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell, Legend,
@@ -74,11 +76,16 @@ export function RapportOrdoSection() {
   const etab = useCofiepleStore(s => s.etablissement);
   const resultats = useCofiepleStore(s => s.resultats);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
+  const sdeRows = useCofiepleStore(s => s.sde[activeBudget]) as LigneSDE[];
+  const sdrRows = useCofiepleStore(s => s.sdr[activeBudget]) as LigneSDR[];
   const R = resultats[activeBudget];
   const ind = useExtraIndicators();
   const [aiText1, setAiText1] = useState('');
   const [aiText3, setAiText3] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  // Noms des signataires
+  const [nomOrdonnateur, setNomOrdonnateur] = useState(etab.ordonnateur || '');
+  const [nomSecretaireGeneral, setNomSecretaireGeneral] = useState(etab.secretaireGeneral || '');
   // Commentaires ordonnateur sur chaque rubrique (REPROFI-style "Faits caractéristiques")
   const [commentairePresentation, setCommentairePresentation] = useState('');
   const [commentaireResultat, setCommentaireResultat] = useState('');
@@ -281,6 +288,17 @@ export function RapportOrdoSection() {
         <Button onClick={genererIA} disabled={aiLoading}>
           {aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bot className="h-4 w-4 mr-2" />}
           {aiLoading ? 'Génération IA…' : 'Générer commentaires IA'}
+        </Button>
+        <Button variant="default" className="bg-[hsl(215,70%,45%)] hover:bg-[hsl(215,70%,40%)]" onClick={() => {
+          try {
+            generateRapportExecution({
+              etab, sdeRows: sdeRows || [], sdrRows: sdrRows || [],
+              nomOrdonnateur, nomSecretaireGeneral,
+            });
+            toast.success('Rapport d\'exécution budgétaire généré');
+          } catch (e) { console.error(e); toast.error('Erreur lors de la génération'); }
+        }}>
+          <Download className="h-4 w-4 mr-2" /> Rapport exécution budgétaire (PDF)
         </Button>
         <Button variant="outline" onClick={() => window.print()}>
           <Printer className="h-4 w-4 mr-2" /> Imprimer / PDF
@@ -880,16 +898,29 @@ export function RapportOrdoSection() {
             </div>
           )}
 
+          {/* Signataires — Saisie des noms */}
+          <SectionTitre numero="14" title="Signataires" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <Label className="text-xs font-bold">Nom de l'ordonnateur</Label>
+              <Input value={nomOrdonnateur} onChange={e => setNomOrdonnateur(e.target.value)} placeholder="Prénom NOM" className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs font-bold">Nom du secrétaire général</Label>
+              <Input value={nomSecretaireGeneral} onChange={e => setNomSecretaireGeneral(e.target.value)} placeholder="Prénom NOM" className="mt-1" />
+            </div>
+          </div>
+
           {/* Signatures */}
           <div className="flex justify-between mt-8 pt-5 border-t text-xs text-muted-foreground">
             <div>
               <strong className="block text-foreground">L'ordonnateur</strong>
-              <div className="mt-8">{etab.ordonnateur || '……………………'}</div>
+              <div className="mt-8">{nomOrdonnateur || etab.ordonnateur || '……………………'}</div>
               <span>Signature et cachet</span>
             </div>
             <div className="text-right">
               <strong className="block text-foreground">Le secrétaire général</strong>
-              <div className="mt-8">……………………</div>
+              <div className="mt-8">{nomSecretaireGeneral || etab.secretaireGeneral || '……………………'}</div>
               <span>Signature et cachet</span>
             </div>
           </div>
@@ -919,6 +950,7 @@ export function RapportACSection() {
   const [history, setHistory] = useState<any[]>([]);
 
   // ── Saisie complémentaire ──────────────────────────────────
+  const [nomAgentComptable, setNomAgentComptable] = useState(etab.agentComptable || '');
   const [prelevements, setPrelevements] = useState<Prelevement[]>([]);
   const [explicationsResultat, setExplicationsResultat] = useState('');
   const [commentaireFDR, setCommentaireFDR] = useState('');
@@ -1134,8 +1166,9 @@ export function RapportACSection() {
 
   function handleExportPdf() {
     try {
+      const etabWithName = { ...etab, agentComptable: nomAgentComptable || etab.agentComptable };
       generateRapportACPdf({
-        etab, R: { ...R, ...safe } as any,
+        etab: etabWithName, R: { ...R, ...safe } as any,
         saisieComplementaire: {
           prelevements,
           explicationsResultat,
@@ -1678,12 +1711,19 @@ export function RapportACSection() {
             placeholder="Cliquez sur 'Générer les observations IA' ou rédigez vos observations…" rows={12}
             className="bg-muted/30 text-sm mb-4" />
 
+          {/* Signataire — Saisie du nom */}
+          <SectionTitre numero="15" title="Signataire" />
+          <div className="mb-6 max-w-xs">
+            <Label className="text-xs font-bold">Nom de l'agent comptable</Label>
+            <Input value={nomAgentComptable} onChange={e => setNomAgentComptable(e.target.value)} placeholder="Prénom NOM" className="mt-1" />
+          </div>
+
           {/* Signature — Agent comptable seul */}
           <div className="mt-8 pt-5 border-t text-xs text-muted-foreground">
             <div className="flex justify-between">
               <div>
                 <strong className="block text-foreground text-sm">L'agent comptable</strong>
-                <div className="mt-12">{etab.agentComptable || '……………………'}</div>
+                <div className="mt-12">{nomAgentComptable || etab.agentComptable || '……………………'}</div>
                 <span>Signature et cachet</span>
               </div>
               <div className="text-right">

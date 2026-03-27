@@ -27,7 +27,7 @@ const ETAB_INITIAL: EtablissementUI = {
   uai: '', nom: '', type: 'lycee',
   adresse: '', codePostal: '', commune: '',
   academie: '', regionAcademique: '', departement: '',
-  ordonnateur: '', agentComptable: '',
+  ordonnateur: '', agentComptable: '', secretaireGeneral: '',
   exercice: new Date().getFullYear() - 1,
   dateArrete: '',
 };
