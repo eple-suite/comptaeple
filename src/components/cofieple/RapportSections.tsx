@@ -253,6 +253,15 @@ export function RapportOrdoSection() {
 
   const genererIA = async () => {
     setAiLoading(true);
+    const safeText = (value: unknown) => {
+      try {
+        if (typeof value === 'string') return value;
+        if (value instanceof Error) return `${value.name}: ${value.message}`;
+        return JSON.stringify(value ?? '');
+      } catch {
+        return String(value ?? '');
+      }
+    };
     try {
       const { data, error } = await supabase.functions.invoke('generate-report', {
         body: {
@@ -274,7 +283,11 @@ export function RapportOrdoSection() {
         },
       });
       if (error) {
-        const errStr = `${error?.message || ''} ${JSON.stringify((error as any)?.context || {})}`.toLowerCase();
+        const errStr = [
+          safeText(error?.message),
+          safeText((error as any)?.context),
+          safeText(error),
+        ].join(' ').toLowerCase();
         if (errStr.includes('402') || errStr.includes('payment_required') || errStr.includes('crédits') || errStr.includes('credits') || errStr.includes('non-2xx')) {
           toast.error('Crédits IA temporairement épuisés. Le rapport peut être généré sans les commentaires IA.');
         } else if (errStr.includes('429') || errStr.includes('rate_limited') || errStr.includes('too many')) {
@@ -290,7 +303,7 @@ export function RapportOrdoSection() {
       setAiText3((parts[1] || '').trim());
       toast.success('Commentaires IA générés');
     } catch (e) { console.error(e); }
-    setAiLoading(false);
+    finally { setAiLoading(false); }
   };
 
   return (
@@ -1143,6 +1156,15 @@ export function RapportACSection() {
 
   async function genererIA() {
     setAiLoading(true);
+    const safeText = (value: unknown) => {
+      try {
+        if (typeof value === 'string') return value;
+        if (value instanceof Error) return `${value.name}: ${value.message}`;
+        return JSON.stringify(value ?? '');
+      } catch {
+        return String(value ?? '');
+      }
+    };
     try {
       const { data, error } = await supabase.functions.invoke('generate-report', {
         body: {
@@ -1170,7 +1192,11 @@ export function RapportACSection() {
         },
       });
       if (error) {
-        const errStr = `${error?.message || ''} ${JSON.stringify((error as any)?.context || {})}`.toLowerCase();
+        const errStr = [
+          safeText(error?.message),
+          safeText((error as any)?.context),
+          safeText(error),
+        ].join(' ').toLowerCase();
         if (errStr.includes('402') || errStr.includes('payment_required') || errStr.includes('crédits') || errStr.includes('credits') || errStr.includes('non-2xx')) {
           toast.error('Crédits IA épuisés — rechargez dans Settings → Cloud & AI balance. Le rapport PDF peut être généré sans les observations IA.', { duration: 8000 });
         } else if (errStr.includes('429') || errStr.includes('rate_limited') || errStr.includes('too many')) {
@@ -1183,7 +1209,7 @@ export function RapportACSection() {
       setAiObs(data?.text || '');
       toast.success('Observations IA générées');
     } catch (e) { console.error(e); }
-    setAiLoading(false);
+    finally { setAiLoading(false); }
   }
 
   function handleExportPdf() {
