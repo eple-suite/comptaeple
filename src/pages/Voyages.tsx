@@ -220,10 +220,24 @@ const Voyages = () => {
           {selectedVoyage && <TabsTrigger value="actes-ca">🏛️ Actes CA</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="participants">👥 Participants</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="eleves">🎒 Élèves</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="import-siecle">📥 Import SIECLE</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="encaissements">💳 Encaissements</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="creances" className="relative">
+            ⚠️ Créances
+            {(() => {
+              if (!selectedVoyage) return null;
+              const impayes = selectedVoyage.eleves.filter(e => {
+                const p = e.paiements.reduce((s, pp) => s + pp.montant, 0);
+                return p < e.participationDue;
+              }).length;
+              return impayes > 0 ? <Badge variant="destructive" className="ml-1.5 h-4 w-4 p-0 text-[9px] flex items-center justify-center rounded-full">{impayes}</Badge> : null;
+            })()}
+          </TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="subventions">💰 Subventions</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="recettes">🏦 Recettes</TabsTrigger>}
-          {selectedVoyage && <TabsTrigger value="documents">📄 Documents</TabsTrigger>}
-          {selectedVoyage && <TabsTrigger value="bilan">📋 Bilan</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="courriers-pdf">📄 Courriers PDF</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="documents">📋 Documents</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="bilan">📊 Bilan</TabsTrigger>}
         </TabsList>
 
         {/* TAB: Tableau de bord */}
