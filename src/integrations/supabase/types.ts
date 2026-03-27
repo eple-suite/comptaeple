@@ -343,36 +343,120 @@ export type Database = {
         }
         Relationships: []
       }
+      cofieple_snapshots: {
+        Row: {
+          budget_type: string
+          created_at: string
+          exercice: number
+          id: string
+          snapshot_data: Json
+          uai: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          budget_type?: string
+          created_at?: string
+          exercice: number
+          id?: string
+          snapshot_data?: Json
+          uai: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          budget_type?: string
+          created_at?: string
+          exercice?: number
+          id?: string
+          snapshot_data?: Json
+          uai?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      establishment_annexes: {
+        Row: {
+          annexe_establishment_id: string
+          budget_type: string
+          compte_185_solde: number
+          created_at: string
+          id: string
+          support_establishment_id: string
+        }
+        Insert: {
+          annexe_establishment_id: string
+          budget_type?: string
+          compte_185_solde?: number
+          created_at?: string
+          id?: string
+          support_establishment_id: string
+        }
+        Update: {
+          annexe_establishment_id?: string
+          budget_type?: string
+          compte_185_solde?: number
+          created_at?: string
+          id?: string
+          support_establishment_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_annexes_annexe_establishment_id_fkey"
+            columns: ["annexe_establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishment_annexes_support_establishment_id_fkey"
+            columns: ["support_establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishments: {
         Row: {
           academy: string
+          agent_comptable: string
           city: string
           created_at: string
           id: string
           name: string
           opale_number: string
+          ordonnateur: string
+          secretaire_general: string
           type: string
           uai: string
           updated_at: string
         }
         Insert: {
           academy?: string
+          agent_comptable?: string
           city?: string
           created_at?: string
           id?: string
           name: string
           opale_number?: string
+          ordonnateur?: string
+          secretaire_general?: string
           type?: string
           uai: string
           updated_at?: string
         }
         Update: {
           academy?: string
+          agent_comptable?: string
           city?: string
           created_at?: string
           id?: string
           name?: string
           opale_number?: string
+          ordonnateur?: string
+          secretaire_general?: string
           type?: string
           uai?: string
           updated_at?: string
