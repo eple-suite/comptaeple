@@ -11,6 +11,9 @@ export interface Establishment {
   academy: string;
   city: string;
   opale_number: string;
+  ordonnateur: string;
+  agent_comptable: string;
+  secretaire_general: string;
 }
 
 interface EstablishmentContextType {
