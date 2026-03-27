@@ -44,19 +44,36 @@ const POINTS: PointBloquant[] = [
   },
   {
     code: 'PB-03', titre: 'Résultat comptable ≠ résultat budgétaire inexplicable', niveau: 'PB',
-    refM96: 'M9-6 § III.2 / RGCP art.24', prescription: 'L\'écart doit s\'expliquer exclusivement par les opérations d\'ordre.',
+    refM96: 'M9-6 § III.2 / RGCP art.24', prescription: 'L\'écart doit s\'expliquer exclusivement par les opérations d\'ordre (dotations aux amortissements, reprises, cessions).',
     calculer: (R) => {
-      const ecart = Math.abs(R.resultatBudgetaire - R.resultatComptable);
-      return { detecte: ecart > 1, detail: `Résultat budg. = ${formatEur(R.resultatBudgetaire)}, Résultat compt. = ${formatEur(R.resultatComptable)}, Écart = ${formatEur(ecart)}` };
+      const ecart = R.resultatComptable - R.resultatBudgetaire;
+      const soldeOO = R.operationsOrdre?.soldeOO ?? 0;
+      const ecartInexplique = Math.abs(ecart - soldeOO);
+      // L'écart entre résultat budgétaire et comptable est NORMAL s'il est expliqué par les OO
+      return {
+        detecte: ecartInexplique > 100,
+        detail: ecartInexplique <= 100
+          ? `Écart de ${formatEur(Math.abs(ecart))} expliqué par les opérations d'ordre (solde OO = ${formatEur(soldeOO)}). Conforme M9-6.`
+          : `Écart inexpliqué = ${formatEur(ecartInexplique)}. Résultat budg. = ${formatEur(R.resultatBudgetaire)}, Résultat compt. = ${formatEur(R.resultatComptable)}, Solde OO = ${formatEur(soldeOO)}`
+      };
     },
   },
   {
     code: 'PB-04', titre: 'Concordance SDE/SDR ↔ Balance (rapprochement ordo/AC)', niveau: 'PB',
-    refM96: 'M9-6 § II — Rapprochement', prescription: 'Les totaux des mandats et titres doivent correspondre aux classes 6 et 7 de la balance.',
+    refM96: 'M9-6 § II — Rapprochement', prescription: 'Les totaux des mandats/titres doivent correspondre aux classes 6/7 de la balance, aux opérations d\'ordre près.',
     calculer: (R) => {
       const ecartC = Math.abs(R.totalChargesSde - R.totalChargesBalance);
       const ecartP = Math.abs(R.totalProduitsSdr - R.totalProduitsBalance);
-      return { detecte: ecartC > 1 || ecartP > 1, detail: `Écart charges: ${formatEur(ecartC)}, Écart produits: ${formatEur(ecartP)}` };
+      // Les écarts SDE/SDR ↔ Balance sont normaux : les SDE/SDR ne contiennent que les mandats/titres
+      // tandis que la balance inclut les écritures directes (OO, centralisation, ajustements).
+      // Seuil de tolérance : 100 € (arrondis, centimes, ajustements de clôture)
+      const seuilTolerance = 100;
+      return {
+        detecte: ecartC > seuilTolerance || ecartP > seuilTolerance,
+        detail: ecartC <= seuilTolerance && ecartP <= seuilTolerance
+          ? `Concordance vérifiée. Écart charges : ${formatEur(ecartC)}, Écart produits : ${formatEur(ecartP)} (dans la tolérance).`
+          : `Écart charges : ${formatEur(ecartC)}, Écart produits : ${formatEur(ecartP)}. Vérifier les écritures directes et OO.`
+      };
     },
   },
   {
