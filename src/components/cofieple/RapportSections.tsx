@@ -898,16 +898,29 @@ export function RapportOrdoSection() {
             </div>
           )}
 
+          {/* Signataires — Saisie des noms */}
+          <SectionTitre numero="14" title="Signataires" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div>
+              <Label className="text-xs font-bold">Nom de l'ordonnateur</Label>
+              <Input value={nomOrdonnateur} onChange={e => setNomOrdonnateur(e.target.value)} placeholder="Prénom NOM" className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs font-bold">Nom du secrétaire général</Label>
+              <Input value={nomSecretaireGeneral} onChange={e => setNomSecretaireGeneral(e.target.value)} placeholder="Prénom NOM" className="mt-1" />
+            </div>
+          </div>
+
           {/* Signatures */}
           <div className="flex justify-between mt-8 pt-5 border-t text-xs text-muted-foreground">
             <div>
               <strong className="block text-foreground">L'ordonnateur</strong>
-              <div className="mt-8">{etab.ordonnateur || '……………………'}</div>
+              <div className="mt-8">{nomOrdonnateur || etab.ordonnateur || '……………………'}</div>
               <span>Signature et cachet</span>
             </div>
             <div className="text-right">
               <strong className="block text-foreground">Le secrétaire général</strong>
-              <div className="mt-8">……………………</div>
+              <div className="mt-8">{nomSecretaireGeneral || etab.secretaireGeneral || '……………………'}</div>
               <span>Signature et cachet</span>
             </div>
           </div>
