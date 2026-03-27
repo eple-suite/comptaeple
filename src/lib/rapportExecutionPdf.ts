@@ -21,7 +21,7 @@ interface RapportParams {
 }
 
 function fmt(n: number): string {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(n);
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(n).replace(/[\u202F\u00A0]/g, ' ');
 }
 
 export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation, nomOrdonnateur, nomSecretaireGeneral }: RapportParams) {

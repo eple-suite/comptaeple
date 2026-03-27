@@ -5,8 +5,9 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, createJSONStorage } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
+import { idbStorage, migrateLocalStorageToIDB } from '@/lib/idbStorage';
 import type { LigneSDE, LigneSDR, LigneBalance } from '@/lib/cofieple_types';
 import type {
   CofiepleState, EtablissementUI, TypeBudget, BudgetConfig,
@@ -79,30 +80,34 @@ interface EstablishmentSnapshot {
 
 function saveEstablishmentSnapshot(estId: string, state: EstablishmentSnapshot) {
   try {
-    localStorage.setItem(`${EST_DATA_PREFIX}${estId}`, JSON.stringify(state));
+    // Use IndexedDB for large payloads (async, fire-and-forget)
+    idbStorage.setItem(`${EST_DATA_PREFIX}${estId}`, JSON.stringify(state));
   } catch (e) {
     console.warn('Failed to save establishment data:', e);
   }
 }
 
-function loadEstablishmentSnapshot(estId: string): EstablishmentSnapshot | null {
+async function loadEstablishmentSnapshot(estId: string): Promise<EstablishmentSnapshot | null> {
   try {
-    const raw = localStorage.getItem(`${EST_DATA_PREFIX}${estId}`);
+    // Try IndexedDB first, then fallback to localStorage for migration
+    const raw = await idbStorage.getItem(`${EST_DATA_PREFIX}${estId}`)
+      ?? localStorage.getItem(`${EST_DATA_PREFIX}${estId}`);
     return raw ? JSON.parse(raw) : null;
   } catch { return null; }
 }
 
 function saveManualEtablissement(estId: string, etablissement: EtablissementUI) {
   try {
-    localStorage.setItem(`${ETAB_MANUAL_PREFIX}${estId}`, JSON.stringify(etablissement));
+    idbStorage.setItem(`${ETAB_MANUAL_PREFIX}${estId}`, JSON.stringify(etablissement));
   } catch (e) {
     console.warn('Failed to save manual establishment data:', e);
   }
 }
 
-function loadManualEtablissement(estId: string): Partial<EtablissementUI> | null {
+async function loadManualEtablissement(estId: string): Promise<Partial<EtablissementUI> | null> {
   try {
-    const raw = localStorage.getItem(`${ETAB_MANUAL_PREFIX}${estId}`);
+    const raw = await idbStorage.getItem(`${ETAB_MANUAL_PREFIX}${estId}`)
+      ?? localStorage.getItem(`${ETAB_MANUAL_PREFIX}${estId}`);
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
@@ -130,7 +135,7 @@ function extractSnapshot(state: any): EstablishmentSnapshot {
 
 type Store = CofiepleState & {
   currentEstablishmentId: string | null;
-  switchEstablishment: (id: string) => void;
+  switchEstablishment: (id: string) => Promise<void>;
   setEtablissement: (etab: Partial<EtablissementUI>) => void;
   addBudgetAnnexe: (config: BudgetConfig) => void;
   removeBudgetAnnexe: (type: TypeBudget) => void;
@@ -183,10 +188,10 @@ export const useCofiepleStore = create<Store>()(
       analysisRunning: false,
       budgetProfiles: loadProfiles(),
 
-      switchEstablishment: (id) => {
+      switchEstablishment: async (id) => {
         const current = get().currentEstablishmentId;
         if (current === id) {
-          const manual = loadManualEtablissement(id);
+          const manual = await loadManualEtablissement(id);
           if (manual) {
             set(state => {
               state.etablissement = { ...state.etablissement, ...manual };
@@ -201,8 +206,10 @@ export const useCofiepleStore = create<Store>()(
         }
 
         // Try to restore saved data for the target establishment
-        const saved = loadEstablishmentSnapshot(id);
-        const manual = loadManualEtablissement(id);
+        const [saved, manual] = await Promise.all([
+          loadEstablishmentSnapshot(id),
+          loadManualEtablissement(id),
+        ]);
         if (saved) {
           set(state => {
             state.currentEstablishmentId = id;
@@ -435,6 +442,7 @@ export const useCofiepleStore = create<Store>()(
     })),
     {
       name: 'cofieple-store',
+      storage: createJSONStorage(() => idbStorage),
       partialize: (state) => ({
         currentEstablishmentId: state.currentEstablishmentId,
         etablissement: state.etablissement,
