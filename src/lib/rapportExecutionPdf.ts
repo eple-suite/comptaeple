@@ -16,6 +16,8 @@ interface RapportParams {
   sdeRows: LigneSDE[];
   sdrRows: LigneSDR[];
   dateSituation?: string;
+  nomOrdonnateur?: string;
+  nomSecretaireGeneral?: string;
 }
 
 function fmt(n: number): string {
