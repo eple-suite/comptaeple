@@ -32,6 +32,10 @@ import { VoyageSubventionsTab } from "./voyages/VoyageSubventionsTab";
 import { VoyageParticipantsTab } from "./voyages/VoyageParticipantsTab";
 import { VoyageRecettesTab } from "./voyages/VoyageRecettesTab";
 import { VoyageTemplatesTab } from "./voyages/VoyageTemplatesTab";
+import { VoyageEncaissementsTab } from "./voyages/VoyageEncaissementsTab";
+import { VoyageCreancesTab } from "./voyages/VoyageCreancesTab";
+import { VoyageImportSiecleTab } from "./voyages/VoyageImportSiecleTab";
+import { VoyageCourriersPdfTab } from "./voyages/VoyageCourriersPdfTab";
 
 const Voyages = () => {
   const [voyages, setVoyages] = useState<Voyage[]>(initialVoyages);
@@ -216,10 +220,24 @@ const Voyages = () => {
           {selectedVoyage && <TabsTrigger value="actes-ca">🏛️ Actes CA</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="participants">👥 Participants</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="eleves">🎒 Élèves</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="import-siecle">📥 Import SIECLE</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="encaissements">💳 Encaissements</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="creances" className="relative">
+            ⚠️ Créances
+            {(() => {
+              if (!selectedVoyage) return null;
+              const impayes = selectedVoyage.eleves.filter(e => {
+                const p = e.paiements.reduce((s, pp) => s + pp.montant, 0);
+                return p < e.participationDue;
+              }).length;
+              return impayes > 0 ? <Badge variant="destructive" className="ml-1.5 h-4 w-4 p-0 text-[9px] flex items-center justify-center rounded-full">{impayes}</Badge> : null;
+            })()}
+          </TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="subventions">💰 Subventions</TabsTrigger>}
           {selectedVoyage && <TabsTrigger value="recettes">🏦 Recettes</TabsTrigger>}
-          {selectedVoyage && <TabsTrigger value="documents">📄 Documents</TabsTrigger>}
-          {selectedVoyage && <TabsTrigger value="bilan">📋 Bilan</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="courriers-pdf">📄 Courriers PDF</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="documents">📋 Documents</TabsTrigger>}
+          {selectedVoyage && <TabsTrigger value="bilan">📊 Bilan</TabsTrigger>}
         </TabsList>
 
         {/* TAB: Tableau de bord */}
@@ -529,7 +547,34 @@ const Voyages = () => {
           {selectedVoyage ? (
             <VoyageElevesTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
           ) : (
-            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour voir les élèves.</p>
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
+          )}
+        </TabsContent>
+
+        {/* TAB: Import SIECLE */}
+        <TabsContent value="import-siecle">
+          {selectedVoyage ? (
+            <VoyageImportSiecleTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
+          )}
+        </TabsContent>
+
+        {/* TAB: Encaissements */}
+        <TabsContent value="encaissements">
+          {selectedVoyage ? (
+            <VoyageEncaissementsTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
+          )}
+        </TabsContent>
+
+        {/* TAB: Créances */}
+        <TabsContent value="creances">
+          {selectedVoyage ? (
+            <VoyageCreancesTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
           )}
         </TabsContent>
 
@@ -547,7 +592,16 @@ const Voyages = () => {
           {selectedVoyage ? (
             <VoyageRecettesTab voyage={selectedVoyage} onUpdateVoyage={handleUpdateVoyage} />
           ) : (
-            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour gérer les recettes.</p>
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
+          )}
+        </TabsContent>
+
+        {/* TAB: Courriers PDF */}
+        <TabsContent value="courriers-pdf">
+          {selectedVoyage ? (
+            <VoyageCourriersPdfTab voyage={selectedVoyage} />
+          ) : (
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
           )}
         </TabsContent>
 
@@ -556,7 +610,7 @@ const Voyages = () => {
           {selectedVoyage ? (
             <VoyageDocumentsJuridiqueTab voyage={selectedVoyage} />
           ) : (
-            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour accéder au pack juridique.</p>
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
           )}
         </TabsContent>
 
@@ -565,7 +619,7 @@ const Voyages = () => {
           {selectedVoyage ? (
             <VoyageBilanTab voyage={selectedVoyage} />
           ) : (
-            <p className="text-muted-foreground text-sm">Sélectionnez un voyage pour voir le bilan financier.</p>
+            <p className="text-muted-foreground text-sm">Sélectionnez un voyage.</p>
           )}
         </TabsContent>
       </Tabs>
