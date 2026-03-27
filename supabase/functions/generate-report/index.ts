@@ -23,12 +23,59 @@ serve(async (req) => {
     const toNum = (n: unknown) => (typeof n === "number" && Number.isFinite(n) ? n : 0);
     const fmtEur = (n: unknown) =>
       new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(toNum(n));
+    const fmtPct = (n: unknown) => `${toNum(n).toFixed(2)}%`;
 
     const indBlock = indicateurs ? `\nDonnées de contexte : ${indicateurs.effectif_eleves || 0} élèves, ${indicateurs.effectif_boursiers || 0} boursiers, ${indicateurs.effectif_dp || 0} DP, ${indicateurs.effectif_internes || 0} internes, ${indicateurs.nb_repas_servis || 0} repas/an, ${indicateurs.effectif_personnel || 0} personnel, ${indicateurs.etp_ressources_propres || 0} ETP ressources propres, surface ${indicateurs.surface_batiments || 0} m².` : '';
 
     const histBlock = historique && historique.length > 0
       ? `\nHistorique pluriannuel :\n${historique.map((h: any) => `- ${h.exercice} : FDR ${fmtEur(h.fdr)}, Tréso ${fmtEur(h.tresorerie)}, CAF ${fmtEur(h.caf)}, Réserves ${fmtEur(h.reserves)}, ${Math.round(h.jours_autonomie)} jours`).join('\n')}`
       : '';
+
+    const buildFallbackReport = (reason: 'payment_required' | 'rate_limited') => {
+      const reasonText = reason === 'payment_required'
+        ? "Le service IA est momentanément indisponible (crédits épuisés)."
+        : "Le service IA est momentanément indisponible (limite de requêtes atteinte).";
+
+      if (type === 'ordonnateur') {
+        return `${etab.nom || 'Établissement'} (${etab.uai || 'UAI non renseigné'}) — Exercice ${etab.exercice || 'N/A'}. ${reasonText} La présente synthèse automatique reprend les indicateurs financiers consolidés afin de sécuriser la continuité de production du rapport destiné au conseil d'administration. Le résultat budgétaire s'établit à ${fmtEur(R.resultatBudgetaire)}, avec un fonds de roulement de ${fmtEur(R.fdrComptable)} et une trésorerie nette de ${fmtEur(R.tresorerieNette ?? R.tresorerie)}.${indBlock}
+---
+Points d'attention : la CAF/IAF budgétaire est de ${fmtEur(R.cafBudgetaire)}, les charges réelles s'élèvent à ${fmtEur(R.totalChargesReel)} et les produits réels à ${fmtEur(R.totalProduitsReel)}. Le suivi des équilibres de court terme et de l'exécution budgétaire doit être poursuivi, en particulier sur les postes pouvant affecter le besoin en fonds de roulement et la soutenabilité des prélèvements sur réserves.`;
+      }
+
+      if (type === 'agent_comptable') {
+        return `Rapport généré en mode automatique de continuité. ${reasonText} Les observations ci-dessous sont produites à partir des données financières disponibles pour l'exercice ${etab.exercice || 'N/A'}.
+
+Le résultat comptable s'établit à ${fmtEur(R.resultatComptable)}, pour un résultat budgétaire de ${fmtEur(R.resultatBudgetaire)}. La CAF/IAF comptable est de ${fmtEur(R.cafComptable)}, tandis que la CAF/IAF budgétaire atteint ${fmtEur(R.cafBudgetaire)}. Ces éléments traduisent la capacité d'autofinancement actuelle de l'établissement et orientent l'analyse de soutenabilité.
+
+Le fonds de roulement est arrêté à ${fmtEur(R.fdrComptable)} (${Math.round(toNum(R.joursFdr))} jours), dont ${toNum(R.fdrPctEncaissee).toFixed(1)}% en part encaissée. Le FDR mobilisable est évalué à ${fmtEur(R.fdrMobilisable)}. Le besoin en fonds de roulement est de ${fmtEur(R.bfr)} et la trésorerie nette de ${fmtEur(R.tresorerieNette ?? R.tresorerie)} (${Math.round(toNum(R.joursTresorerie))} jours), avec cohérence de lecture entre les masses bilantielles.
+
+Les indicateurs de gestion à court terme s'établissent à TMcap ${fmtPct(R.tmcap)} et TMnr ${fmtPct(R.tmnr)}. Les créances atteignent ${fmtEur(R.totalCreances)} et les dettes ${fmtEur(R.totalDettes)} ; les reliquats de subventions sont de ${fmtEur(R.reliquatsSubventions)}. Une vigilance est recommandée sur les délais de recouvrement et la dynamique des charges à payer.
+
+Le patrimoine net comptable est de ${fmtEur(R.valeurNette)}, avec une variation annuelle de ${fmtEur(R.variationPatrimoine)}. Les réserves (c/1068) s'établissent à ${fmtEur(R.reserves)}. Les mouvements de réserves et leur affectation doivent être explicités dans la délibération du conseil d'administration conformément au cadre M9-6 et au décret 2012-1246.
+
+Conclusion : l'établissement dispose d'un socle financier objectivé par les indicateurs ci-dessus. Il est proposé de maintenir un pilotage prudent de la trésorerie, de sécuriser le recouvrement des créances et de justifier précisément toute mobilisation du fonds de roulement dans les actes budgétaires à venir.`;
+      }
+
+      return `## Synthèse financière globale (mode automatique)
+
+${reasonText} Cette analyse est produite automatiquement à partir des données disponibles.
+
+### Situation d'ensemble
+Le résultat budgétaire est de ${fmtEur(R.resultatBudgetaire)} et le résultat comptable de ${fmtEur(R.resultatComptable)}. Le fonds de roulement s'établit à ${fmtEur(R.fdrComptable)} (FDR mobilisable : ${fmtEur(R.fdrMobilisable)}). La trésorerie nette atteint ${fmtEur(R.tresorerieNette ?? R.tresorerie)} et le BFR est de ${fmtEur(R.bfr)}.
+
+### Équilibres et risques
+Les ratios de suivi court terme ressortent à TMcap ${fmtPct(R.tmcap)} et TMnr ${fmtPct(R.tmnr)}. Les créances (${fmtEur(R.totalCreances)}) et dettes (${fmtEur(R.totalDettes)}) appellent une attention particulière sur la qualité du recouvrement et la maîtrise des engagements.
+
+### Trajectoire
+La CAF/IAF comptable (${fmtEur(R.cafComptable)}) et budgétaire (${fmtEur(R.cafBudgetaire)}) doivent être suivies conjointement avec l'évolution des jours de couverture (FDR : ${Math.round(toNum(R.joursFdr))} ; trésorerie : ${Math.round(toNum(R.joursTresorerie))}).
+
+### Actions prioritaires
+- Vérifier les postes contribuant le plus aux tensions de trésorerie.
+- Sécuriser le plan de recouvrement des créances anciennes.
+- Prioriser les dépenses obligatoires et différer les charges non urgentes.
+- Encadrer les prélèvements sur réserves par une trajectoire pluriannuelle.
+- Présenter en CA un suivi mensuel des indicateurs de liquidité.`;
+    };
 
     let resolvedSystemPrompt: string, userPrompt: string;
 
@@ -147,10 +194,22 @@ Contrainte : termine avec un bloc "Actions prioritaires" en 5 points maximum.`;
       const t = await response.text();
       console.error("AI error:", response.status, t);
       if (response.status === 429) {
-        return jsonError(429, "Trop de requêtes, réessayez dans quelques instants.", "rate_limited");
+        return new Response(JSON.stringify({
+          text: buildFallbackReport('rate_limited'),
+          fallback: true,
+          code: 'rate_limited',
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
       if (response.status === 402) {
-        return jsonError(402, "Crédits IA épuisés.", "payment_required");
+        return new Response(JSON.stringify({
+          text: buildFallbackReport('payment_required'),
+          fallback: true,
+          code: 'payment_required',
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
       }
       return jsonError(500, "Erreur du service IA", "ai_gateway_error");
     }
