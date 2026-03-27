@@ -297,7 +297,6 @@ const Dashboard = () => {
                     </Pie>
                   );
                 })()}
-                </Pie>
                 <Tooltip formatter={(v: number) => `${v} %`} contentStyle={{ borderRadius: '12px', border: '1px solid hsl(220,13%,90%)', fontSize: '12px' }} />
               </RPieChart>
             </ResponsiveContainer>
