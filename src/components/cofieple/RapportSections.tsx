@@ -1168,11 +1168,11 @@ export function RapportACSection() {
         },
       });
       if (error) {
-        const msg = error?.message || '';
-        if (msg.includes('402') || msg.includes('crédits') || msg.includes('credits')) {
-          toast.error('Crédits IA temporairement épuisés. Le rapport PDF peut être généré sans les observations IA.');
+        const errStr = JSON.stringify(error) + (error?.message || '') + (error?.context?.body || '');
+        if (errStr.includes('402') || errStr.includes('payment_required') || errStr.includes('crédits') || errStr.includes('credits') || errStr.includes('non-2xx')) {
+          toast.error('Crédits IA épuisés — rechargez dans Settings → Cloud & AI balance. Le rapport PDF peut être généré sans les observations IA.', { duration: 8000 });
         } else {
-          toast.error('Erreur lors de la génération des observations IA.');
+          toast.error('Erreur lors de la génération des observations IA : ' + (error?.message || 'erreur inconnue'));
         }
         throw error;
       }
