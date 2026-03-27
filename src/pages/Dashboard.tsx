@@ -48,6 +48,27 @@ const Dashboard = () => {
   const balance = useCofiepleStore(s => s.balance);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
   const balanceData = balance[activeBudget] || [];
+  const resultats = useCofiepleStore(s => s.resultats);
+  const r = resultats[activeBudget];
+
+  // Indicateurs réels si analyse lancée, sinon mock
+  const liveIndicators = useMemo(() => {
+    if (!r) return mockIndicators;
+    const chargesFonct = r.totalChargesSde - (r.chargesNature ? Object.entries(r.chargesNature).filter(([k]) => /^(20|21|23)/.test(k)).reduce((s, [, v]) => s + v, 0) : 0);
+    const poidsCharges = r.totalProduitsReel > 0 ? (r.totalChargesReel / r.totalProduitsReel) * 100 : 0;
+    const srhCharges = r.chargesNature ? Object.entries(r.chargesNature).filter(([k]) => k.startsWith('60') || k.startsWith('61')).reduce((s, [, v]) => s + v, 0) : 0;
+    const poidsSRH = r.totalChargesReel > 0 ? (srhCharges / r.totalChargesReel) * 100 : 0;
+    return {
+      fdr: r.fdrComptable,
+      bfr: r.bfr,
+      tresorerie: r.tresorerie,
+      joursFonctionnement: Math.round(r.joursFdr),
+      tauxRecouvrement: r.tmnr != null ? Math.max(0, 100 - r.tmnr) : 0,
+      resultatExercice: r.resultatBudgetaire,
+      poidsCharges,
+      poidsSRH,
+    };
+  }, [r]);
 
   // Construire les comptes pour la validation à partir des données réelles
   const comptesForValidation = useMemo(() => {
@@ -173,16 +194,16 @@ const Dashboard = () => {
         className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
       >
         <motion.div variants={staggerItem}>
-          <KpiCard title="Fonds de roulement" value={formatCurrency(mockIndicators.fdr)} trend={3.3} icon={Wallet} variant="primary" />
+          <KpiCard title="Fonds de roulement" value={formatCurrency(liveIndicators.fdr)} icon={Wallet} variant="primary" />
         </motion.div>
         <motion.div variants={staggerItem}>
-          <KpiCard title="Trésorerie nette" value={formatCurrency(mockIndicators.tresorerie)} trend={2.7} icon={Landmark} variant="success" />
+          <KpiCard title="Trésorerie nette" value={formatCurrency(liveIndicators.tresorerie)} icon={Landmark} variant="success" />
         </motion.div>
         <motion.div variants={staggerItem}>
-          <KpiCard title="Jours de fonctionnement" value={`${mockIndicators.joursFonctionnement} j`} subtitle="Seuil recommandé : 30j" icon={CalendarDays} variant={mockIndicators.joursFonctionnement >= 30 ? "success" : "warning"} />
+          <KpiCard title="Jours de fonctionnement" value={`${liveIndicators.joursFonctionnement} j`} subtitle="Seuil recommandé : 30j" icon={CalendarDays} variant={liveIndicators.joursFonctionnement >= 30 ? "success" : "warning"} />
         </motion.div>
         <motion.div variants={staggerItem}>
-          <KpiCard title="Taux de recouvrement" value={formatPercent(mockIndicators.tauxRecouvrement)} trend={1.2} icon={TrendingUp} variant="success" />
+          <KpiCard title="Taux de recouvrement" value={formatPercent(liveIndicators.tauxRecouvrement)} icon={TrendingUp} variant="success" />
         </motion.div>
       </motion.div>
 
@@ -194,13 +215,13 @@ const Dashboard = () => {
         className="grid grid-cols-1 lg:grid-cols-3 gap-4"
       >
         <motion.div variants={staggerItem}>
-          <KpiCard title="Résultat de l'exercice" value={formatCurrency(mockIndicators.resultatExercice)} icon={Receipt} variant="primary" />
+          <KpiCard title="Résultat de l'exercice" value={formatCurrency(liveIndicators.resultatExercice)} icon={Receipt} variant={liveIndicators.resultatExercice >= 0 ? "primary" : "warning"} />
         </motion.div>
         <motion.div variants={staggerItem}>
-          <KpiCard title="Poids des charges" value={formatPercent(mockIndicators.poidsCharges)} icon={BarChart3} variant="default" />
+          <KpiCard title="Poids des charges" value={formatPercent(liveIndicators.poidsCharges)} icon={BarChart3} variant="default" />
         </motion.div>
         <motion.div variants={staggerItem}>
-          <KpiCard title="Part du SRH" value={formatPercent(mockIndicators.poidsSRH)} subtitle="Service Restauration & Hébergement" icon={Users} variant="warning" />
+          <KpiCard title="Part du SRH" value={formatPercent(liveIndicators.poidsSRH)} subtitle="Service Restauration & Hébergement" icon={Users} variant="warning" />
         </motion.div>
       </motion.div>
 
