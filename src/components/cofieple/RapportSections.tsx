@@ -950,6 +950,7 @@ export function RapportACSection() {
   const [history, setHistory] = useState<any[]>([]);
 
   // ── Saisie complémentaire ──────────────────────────────────
+  const [nomAgentComptable, setNomAgentComptable] = useState(etab.agentComptable || '');
   const [prelevements, setPrelevements] = useState<Prelevement[]>([]);
   const [explicationsResultat, setExplicationsResultat] = useState('');
   const [commentaireFDR, setCommentaireFDR] = useState('');
