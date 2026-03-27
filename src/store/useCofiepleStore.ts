@@ -436,6 +436,7 @@ export const useCofiepleStore = create<Store>()(
     })),
     {
       name: 'cofieple-store',
+      storage: createJSONStorage(() => idbStorage),
       partialize: (state) => ({
         currentEstablishmentId: state.currentEstablishmentId,
         etablissement: state.etablissement,
