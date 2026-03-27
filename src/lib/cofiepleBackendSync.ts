@@ -89,7 +89,7 @@ export async function loadSnapshot(
       .eq('budget_type', budgetType)
       .maybeSingle();
     if (error) { console.warn('[Backend] Snapshot load failed:', error.message); return null; }
-    return data?.snapshot_data as SnapshotPayload | null;
+    return data?.snapshot_data as unknown as SnapshotPayload | null;
   } catch { return null; }
 }
 
@@ -116,7 +116,7 @@ export async function loadAllSnapshots(
     for (const row of data || []) {
       const bt = row.budget_type as TypeBudget;
       if (bt in result) {
-        result[bt] = row.snapshot_data as SnapshotPayload;
+        result[bt] = row.snapshot_data as unknown as SnapshotPayload;
       }
     }
   } catch { /* silent */ }
