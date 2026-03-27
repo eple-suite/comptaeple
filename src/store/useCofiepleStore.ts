@@ -290,7 +290,16 @@ export const useCofiepleStore = create<Store>()(
           const currentState = get();
           saveEstablishmentSnapshot(estId, extractSnapshot(currentState));
           saveManualEtablissement(estId, currentState.etablissement);
+          // Sync identity fields to backend
+          const identityFields: Record<string, string> = {};
+          if (etab.ordonnateur !== undefined) identityFields.ordonnateur = etab.ordonnateur;
+          if (etab.agentComptable !== undefined) identityFields.agent_comptable = etab.agentComptable;
+          if (etab.secretaireGeneral !== undefined) identityFields.secretaire_general = etab.secretaireGeneral;
+          if (Object.keys(identityFields).length > 0) {
+            saveEstablishmentIdentity(estId, identityFields);
+          }
         }
+        debouncedBackendSync(get());
       },
 
       addBudgetAnnexe: (config) =>
