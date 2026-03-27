@@ -134,6 +134,33 @@ function extractSnapshot(state: any): EstablishmentSnapshot {
   };
 }
 
+// ── Debounced backend sync ─────────────────────────────────────
+let _syncTimer: ReturnType<typeof setTimeout> | null = null;
+
+function debouncedBackendSync(state: any) {
+  if (_syncTimer) clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(async () => {
+    try {
+      const { data: { user } } = await (await import('@/integrations/supabase/client')).supabase.auth.getUser();
+      if (!user || !state.etablissement?.uai) return;
+      await saveFullState(user.id, state.etablissement.uai, state.etablissement.exercice, {
+        budgets: state.budgets,
+        sde: state.sde, sde1: state.sde1,
+        sdr: state.sdr, sdr1: state.sdr1,
+        balance: state.balance, balance1: state.balance1,
+        fichierCharge: state.fichierCharge,
+        resultats: state.resultats,
+        checkItems: state.checkItems,
+        anomaliesBalance: state.anomaliesBalance,
+        etablissement: state.etablissement,
+      });
+      console.info('[Backend] Snapshot synced for', state.etablissement.uai);
+    } catch (e) {
+      console.warn('[Backend] Sync failed:', e);
+    }
+  }, 2000); // 2s debounce
+}
+
 type Store = CofiepleState & {
   currentEstablishmentId: string | null;
   switchEstablishment: (id: string) => Promise<void>;
@@ -154,6 +181,7 @@ type Store = CofiepleState & {
   lancerAnalyse: () => void;
   setAnalysisRunning: (v: boolean) => void;
   resetAll: () => void;
+  syncFromBackend: () => Promise<void>;
   // ── Budget Profiles ─────────────────────────────────────────────
   budgetProfiles: BudgetProfile[];
   createBudgetProfile: (nom: string, type: TypeBudget, uai?: string, exercice?: string) => BudgetProfile;
