@@ -448,6 +448,72 @@ export const useCofiepleStore = create<Store>()(
 
       getBudgetProfilesByType: (type) => get().budgetProfiles.filter(p => p.type === type),
 
+      syncFromBackend: async () => {
+        try {
+          const { supabase } = await import('@/integrations/supabase/client');
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+          const state = get();
+          const uai = state.etablissement?.uai;
+          const exercice = state.etablissement?.exercice;
+          if (!uai) return;
+
+          // Load identity from establishments table
+          const estId = state.currentEstablishmentId;
+          if (estId) {
+            const identity = await loadEstablishmentIdentity(estId);
+            if (identity) {
+              set(s => {
+                if (identity.ordonnateur) s.etablissement.ordonnateur = identity.ordonnateur;
+                if (identity.agent_comptable) s.etablissement.agentComptable = identity.agent_comptable;
+                if (identity.secretaire_general) s.etablissement.secretaireGeneral = identity.secretaire_general;
+              });
+            }
+          }
+
+          // Load snapshots from backend
+          const snapshots = await loadAllSnapshots(user.id, uai, exercice);
+          const principal = snapshots.principal;
+          if (principal) {
+            set(s => {
+              s.sde.principal = principal.sde || [];
+              s.sde1.principal = principal.sde1 || [];
+              s.sdr.principal = principal.sdr || [];
+              s.sdr1.principal = principal.sdr1 || [];
+              s.balance.principal = principal.balance || [];
+              s.balance1.principal = principal.balance1 || [];
+              Object.assign(s.fichierCharge, principal.fichierCharge || {});
+              if (principal.resultats) s.resultats.principal = principal.resultats;
+              if (principal.checkItems?.length) s.checkItems = principal.checkItems;
+              if (principal.anomaliesBalance?.length) s.anomaliesBalance = principal.anomaliesBalance;
+              if (principal.budgets?.length) s.budgets = principal.budgets;
+            });
+            console.info('[Backend] Restored principal snapshot for', uai);
+          }
+          // Restore annexes
+          for (const bt of ['annexe_greta', 'annexe_cfa', 'annexe_autre'] as TypeBudget[]) {
+            const snap = snapshots[bt];
+            if (snap) {
+              set(s => {
+                s.sde[bt] = snap.sde || [];
+                s.sde1[bt] = snap.sde1 || [];
+                s.sdr[bt] = snap.sdr || [];
+                s.sdr1[bt] = snap.sdr1 || [];
+                s.balance[bt] = snap.balance || [];
+                s.balance1[bt] = snap.balance1 || [];
+                Object.assign(s.fichierCharge, snap.fichierCharge || {});
+                if (snap.resultats) s.resultats[bt] = snap.resultats;
+              });
+              console.info('[Backend] Restored', bt, 'snapshot for', uai);
+            }
+          }
+          // Also save locally
+          if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+        } catch (e) {
+          console.warn('[Backend] syncFromBackend failed:', e);
+        }
+      },
+
       resetAll: () =>
         set(state => {
           Object.assign(state.etablissement, ETAB_INITIAL);
