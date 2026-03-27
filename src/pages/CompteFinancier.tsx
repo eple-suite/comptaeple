@@ -51,6 +51,7 @@ const CompteFinancier = () => {
   const { selectedEstablishment } = useEstablishment();
   const switchEstablishment = useCofiepleStore(s => s.switchEstablishment);
   const syncFromBackend = useCofiepleStore(s => s.syncFromBackend);
+  const setEtablissement = useCofiepleStore(s => s.setEtablissement);
   const activeTab = useCofiepleStore(s => s.activeTab);
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
   const fichiers = useCofiepleStore(s => s.fichierCharge);
@@ -67,11 +68,20 @@ const CompteFinancier = () => {
   useEffect(() => {
     if (selectedEstablishment?.id) {
       switchEstablishment(selectedEstablishment.id).then(() => {
+        // Toujours rattacher l'identité établissement au store COFIEPLE
+        // pour garantir la restauration backend après reconnexion.
+        setEtablissement({
+          uai: selectedEstablishment.uai,
+          nom: selectedEstablishment.name,
+          type: selectedEstablishment.type,
+          academie: selectedEstablishment.academy,
+          commune: selectedEstablishment.city,
+        });
         // After local restore, also sync from backend (ensures identity + data on new devices)
         syncFromBackend();
       });
     }
-  }, [selectedEstablishment?.id, switchEstablishment, syncFromBackend]);
+  }, [selectedEstablishment?.id, switchEstablishment, syncFromBackend, setEtablissement]);
 
   const nbFichiers = Object.values(fichiers).filter(Boolean).length;
   const nbBloq = checkItems.filter(c => c.bloquant).length;
@@ -240,14 +250,19 @@ const CompteFinancier = () => {
               const active = activeTab === item.id;
               const disabled = item.requiresData && !hasData;
               return (
-                <button key={item.id} onClick={() => !disabled && setActiveTab(item.id)} disabled={disabled}
+                <button
+                  key={item.id}
+                  onClick={() => !disabled && setActiveTab(item.id)}
+                  disabled={disabled}
+                  aria-current={active ? 'page' : undefined}
                   className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all duration-200 shrink-0 rounded-t-lg ${
-                    active ? 'border-warning text-warning bg-white/5' :
+                    active ? 'border-warning bg-warning text-warning-foreground ring-2 ring-warning/40 shadow-sm font-extrabold' :
                     disabled ? 'border-transparent text-[hsl(222,15%,35%)] cursor-not-allowed' :
                     'border-transparent text-[hsl(220,15%,55%)] hover:text-[hsl(220,15%,80%)] hover:bg-white/5'
                   }`}
                   title={disabled ? 'Importez d\'abord les données CSV' : item.label}
                 >
+                  {active && <span className="h-1.5 w-1.5 rounded-full bg-warning-foreground shrink-0" aria-hidden="true" />}
                   {item.icon}
                   <span className="tracking-wide">{item.label}</span>
                   {item.badge && (
