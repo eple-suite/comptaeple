@@ -81,6 +81,9 @@ export function RapportOrdoSection() {
   const [aiText1, setAiText1] = useState('');
   const [aiText3, setAiText3] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  // Noms des signataires
+  const [nomOrdonnateur, setNomOrdonnateur] = useState(etab.ordonnateur || '');
+  const [nomSecretaireGeneral, setNomSecretaireGeneral] = useState(etab.secretaireGeneral || '');
   // Commentaires ordonnateur sur chaque rubrique (REPROFI-style "Faits caractéristiques")
   const [commentairePresentation, setCommentairePresentation] = useState('');
   const [commentaireResultat, setCommentaireResultat] = useState('');
