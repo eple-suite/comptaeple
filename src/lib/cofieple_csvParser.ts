@@ -280,12 +280,15 @@ export async function lookupUAI(_uai: string): Promise<null> {
 // ── Formateur monétaire ──────────────────────────────────────────────
 export function fmtEur(n: number | null | undefined, dec = 2): string {
   if (n == null || isNaN(n)) return '—';
-  return new Intl.NumberFormat('fr-FR', {
+  const raw = new Intl.NumberFormat('fr-FR', {
     minimumFractionDigits: dec,
     maximumFractionDigits: dec,
     style: 'currency',
     currency: 'EUR',
   }).format(n);
+  // Replace narrow non-breaking space (U+202F) and non-breaking space (U+00A0)
+  // with regular space — fixes "/" rendering in jsPDF Helvetica
+  return raw.replace(/[\u202F\u00A0]/g, ' ');
 }
 
 export function fmtPct(n: number | null | undefined): string {
