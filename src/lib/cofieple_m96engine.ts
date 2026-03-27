@@ -485,9 +485,10 @@ export function calculerResultatsM96(
 export function buildChecklist(r: ResultatsM96, options: { isAnnexe?: boolean; bal?: LigneBalance[] } = {}): VerificationM96[] {
   const { isAnnexe = false, bal = [] } = options;
   const checks: VerificationM96[] = [];
-  function add(id: string, titre: string, ref: string, v1Label: string, v1: number, v2Label: string, v2: number, bloquant: boolean, piste: string) {
+  function add(id: string, titre: string, ref: string, v1Label: string, v1: number, v2Label: string, v2: number, bloquant: boolean, piste: string, tolerance?: number) {
     const ecart = v1 - v2;
-    const ok = Math.abs(ecart) < EPS;
+    const seuil = tolerance ?? EPS;
+    const ok = Math.abs(ecart) < seuil;
     let statut: StatutVerification = 'ok';
     if (!ok) statut = bloquant ? 'bloq' : Math.abs(ecart) > 500 ? 'err' : 'warn';
     checks.push({ id, titre, ref, v1Label, v1, v2Label, v2, ecart, statut, bloquant: bloquant && !ok, piste });
