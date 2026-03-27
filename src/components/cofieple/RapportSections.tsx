@@ -307,6 +307,26 @@ export function RapportOrdoSection() {
         </Card>
       )}
 
+      {/* ═══════════ PRÉCONISATIONS IA ═══════════ */}
+      {preconisationsRaw.length > 0 && (
+        <Card className="border-warning/20 bg-warning/5">
+          <CardHeader className="py-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Target className="h-4 w-4 text-warning" />
+              Préconisations
+              <Badge variant="outline" className="ml-auto text-[10px] border-warning/30">Analyse des indicateurs</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-2 text-xs leading-relaxed">
+              {preconisationsRaw.map((text, i) => (
+                <p key={i}>{text}</p>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="max-w-5xl mx-auto print:shadow-none">
         <CardContent className="p-8">
           {/* Header officiel */}
