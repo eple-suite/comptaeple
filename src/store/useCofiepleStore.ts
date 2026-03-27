@@ -281,7 +281,7 @@ export const useCofiepleStore = create<Store>()(
         const resultatsActifs = newResultats[activeBudget];
         const balanceActive = S.balance[activeBudget] || [];
         const checkItems = resultatsActifs ? construireCheckList(resultatsActifs, activeBudget, balanceActive) : [];
-        const anomaliesBalance = analyserBalance(balanceActive);
+        const anomaliesBalance = analyserBalance(balanceActive, { hasAnnexe: S.budgets.length > 1 });
 
         set(state => {
           state.resultats = newResultats;
