@@ -1135,7 +1135,8 @@ export function RapportACSection() {
     } else if (safe.joursTresorerie > 90) {
       parts.push(`💚 La trésorerie couvre ${Math.round(safe.joursTresorerie)} jours — marge confortable, possibilité de prélèvement.`);
     }
-    const joursMobilisable = R.totalChargesSde > 0 ? Math.round(safe.fdrMobilisable / (R.totalChargesSde / 365)) : 0;
+    const chargesRef = R.totalChargesRef > 0 ? R.totalChargesRef : (R.totalChargesSde > 0 ? R.totalChargesSde : 0);
+    const joursMobilisable = chargesRef > 0 ? Math.round(safe.fdrMobilisable / (chargesRef / 365)) : 0;
     if (joursMobilisable < 30) {
       parts.push(`⚠️ Le FDR mobilisable (${formatEur(safe.fdrMobilisable)}, ${joursMobilisable} jours) est inférieur au seuil recommandé de 30 jours.`);
     }
@@ -1144,7 +1145,7 @@ export function RapportACSection() {
       parts.push(`⚠️ Le ratio de liquidité générale (${safe.ratioLiquiditeGenerale.toFixed(2)}) est inférieur à 1. L'établissement pourrait avoir des difficultés à faire face à ses engagements à court terme.`);
     }
     if (safe.tmcap > 10) {
-      parts.push(`⚠️ Le TMcap (${safe.tmcap.toFixed(1)}%) est élevé, indiquant un retard dans le règlement des fournisseurs.`);
+      parts.push(`ℹ️ Le TMcap (${safe.tmcap.toFixed(1)}%) traduit le montant des charges à payer enregistrées en fin d'exercice (factures de décembre à régler début N+1). Ce niveau est normal dans le cadre de la clôture comptable.`);
     }
     if (safe.tmnr > 5) {
       parts.push(`⚠️ Le TMnr (${safe.tmnr.toFixed(1)}%) indique un taux de non-recouvrement significatif. Des relances actives sont recommandées.`);
