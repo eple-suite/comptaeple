@@ -98,7 +98,7 @@ export function DocumentCASection() {
 
   const handleExportPdf = () => {
     try {
-      generateDocumentCA({ etab, R: R as any, indicateurs: ind, commentaireOrdonnateur });
+      generateDocumentCA({ etab, R: R as any, indicateurs: ind, commentaireOrdonnateur, historique });
       toast.success('Document CA exporté en PDF', { description: `Document_CA_${etab.uai}_${etab.exercice}.pdf` });
     } catch (e) {
       toast.error('Erreur lors de la génération du PDF');
