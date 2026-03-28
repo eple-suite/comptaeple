@@ -32,6 +32,7 @@ const ETAB_INITIAL: EtablissementUI = {
   ordonnateur: '', agentComptable: '', secretaireGeneral: '',
   exercice: new Date().getFullYear() - 1,
   dateArrete: '',
+  tmcapSeuilAlerte: 15,
 };
 
 // ── Helpers BudgetProfile ────────────────────────────────────────────

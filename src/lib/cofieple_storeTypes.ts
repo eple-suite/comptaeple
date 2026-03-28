@@ -59,6 +59,7 @@ export interface EtablissementUI {
   nomAgenceComptable?: string;
   exercice: number;
   dateArrete: string;
+  tmcapSeuilAlerte?: number; // Seuil configurable (%) pour distinguer clôture normale vs retard fournisseurs
 }
 
 // ── Résultats enrichis pour l'UI ────────────────────────────────────
