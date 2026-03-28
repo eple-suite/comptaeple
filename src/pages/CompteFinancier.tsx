@@ -87,7 +87,7 @@ const CompteFinancier = () => {
   const nbBloq = checkItems.filter(c => c.bloquant).length;
   const nbAnom = checkItems.filter(c => c.statut !== 'ok').length;
   const hasBA = budgets.some(b => b.type !== 'principal');
-  const hasData = !!resultats.principal;
+  const hasData = !!resultats[activeBudget] || !!resultats.principal;
   const hasConsolidation = hasData && Object.values(resultats).filter(Boolean).length >= 2;
 
   const items: NavItem[] = [
