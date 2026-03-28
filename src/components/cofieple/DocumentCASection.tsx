@@ -273,6 +273,79 @@ export function DocumentCASection() {
         </CardContent>
       </Card>
 
+      {/* PARTIE III — ÉVOLUTION PLURIANNUELLE */}
+      {historique.length >= 2 && (
+        <Card className="shadow-card border-t-4 border-t-amber-500">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-bold text-amber-700 dark:text-amber-400 flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Partie III — Évolution pluriannuelle ({historique[0]?.exercice} → {historique[historique.length - 1]?.exercice})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Tableau synthétique */}
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs border-collapse">
+                <thead>
+                  <tr className="bg-muted/50">
+                    <th className="text-left p-2 font-bold text-foreground">Indicateur</th>
+                    {historique.map(h => (
+                      <th key={h.exercice} className="text-right p-2 font-bold text-foreground">{h.exercice}</th>
+                    ))}
+                    <th className="text-right p-2 font-bold text-foreground">Tendance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {([
+                    { label: 'Résultat budgétaire', key: 'resultat' as const, fmt: formatEur },
+                    { label: 'Fonds de roulement', key: 'fdr' as const, fmt: formatEur },
+                    { label: 'BFR', key: 'bfr' as const, fmt: formatEur },
+                    { label: 'Trésorerie nette', key: 'tresorerie' as const, fmt: formatEur },
+                    { label: 'CAF', key: 'caf' as const, fmt: formatEur },
+                    { label: 'Jours autonomie', key: 'jours_autonomie' as const, fmt: (v: number) => `${Math.round(v)} j` },
+                    { label: 'Réserves', key: 'reserves' as const, fmt: formatEur },
+                  ] as const).map(row => {
+                    const first = historique[0]?.[row.key] || 0;
+                    const last = historique[historique.length - 1]?.[row.key] || 0;
+                    const trend = last - first;
+                    return (
+                      <tr key={row.key} className="border-b border-muted/30">
+                        <td className="p-2 font-semibold text-foreground">{row.label}</td>
+                        {historique.map(h => (
+                          <td key={h.exercice} className="p-2 text-right text-foreground">{row.fmt(h[row.key])}</td>
+                        ))}
+                        <td className="p-2 text-right">
+                          {trend > 0 ? <TrendingUp className="h-3.5 w-3.5 text-emerald-500 inline" /> :
+                           trend < 0 ? <TrendingDown className="h-3.5 w-3.5 text-destructive inline" /> :
+                           <span className="text-muted-foreground">—</span>}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Graphique d'évolution */}
+            <div className="h-56">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={historique.map(h => ({ name: String(h.exercice), FDR: h.fdr, BFR: h.bfr, Trésorerie: h.tresorerie, Résultat: h.resultat }))}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="name" className="text-xs" />
+                  <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} className="text-xs" />
+                  <Tooltip formatter={(v: number) => formatEur(v)} />
+                  <Legend />
+                  <Line type="monotone" dataKey="FDR" stroke="hsl(215, 70%, 45%)" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="BFR" stroke="hsl(38, 92%, 50%)" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="Trésorerie" stroke="hsl(160, 45%, 45%)" strokeWidth={2} dot={{ r: 3 }} />
+                  <Line type="monotone" dataKey="Résultat" stroke="hsl(280, 50%, 50%)" strokeWidth={2} dot={{ r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Commentaires de l'ordonnateur */}
       <Card className="shadow-card">
         <CardHeader className="pb-2">
@@ -301,7 +374,8 @@ export function DocumentCASection() {
         <strong className="text-foreground">📋 À propos de ce document :</strong> Ce document est joint à la convocation du Conseil d'Administration
         pour la session de vote du compte financier (Art. R421-64 Code de l'Éducation). Il présente une synthèse
         en deux parties : l'exécution budgétaire de l'exercice et la situation financière patrimoniale de l'établissement.
-        Le PDF généré est prêt à être imprimé et joint à la convocation.
+        {historique.length >= 2 && ' Une troisième partie illustre l\'évolution pluriannuelle des indicateurs clés.'}
+        {' '}Le PDF généré est prêt à être imprimé et joint à la convocation.
       </div>
     </div>
   );

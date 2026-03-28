@@ -16,6 +16,19 @@ const ROUGE: [number, number, number] = [220, 38, 38];
 const ORANGE: [number, number, number] = [230, 126, 34];
 const GRIS: [number, number, number] = [100, 100, 100];
 
+export interface HistoriqueRow {
+  exercice: number;
+  resultat: number;
+  fdr: number;
+  bfr: number;
+  tresorerie: number;
+  caf: number;
+  jours_autonomie: number;
+  reserves: number;
+  taux_exec_charges: number;
+  taux_exec_produits: number;
+}
+
 export interface DocumentCAData {
   etab: {
     nom: string; uai: string; exercice: number;
@@ -46,6 +59,7 @@ export interface DocumentCAData {
     nb_repas_servis?: number; cout_denrees_repas?: number;
   };
   commentaireOrdonnateur?: string;
+  historique?: HistoriqueRow[];
 }
 
 function fmt(n: number): string {
