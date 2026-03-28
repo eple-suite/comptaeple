@@ -45,6 +45,7 @@ export interface DocumentCAData {
     effectif_eleves?: number; effectif_dp?: number; effectif_internes?: number;
     nb_repas_servis?: number; cout_denrees_repas?: number;
   };
+  commentaireOrdonnateur?: string;
 }
 
 function fmt(n: number): string {
@@ -511,6 +512,27 @@ export function generateDocumentCA(data: DocumentCAData): void {
   });
 
   y = (doc as any).lastAutoTable.finalY + 14;
+
+  // ════════════════════════════════════════════════════════════
+  // COMMENTAIRES DE L'ORDONNATEUR
+  // ════════════════════════════════════════════════════════════
+  if (data.commentaireOrdonnateur && data.commentaireOrdonnateur.trim()) {
+    if (y > ph - 80) { doc.addPage(); y = 20; }
+    doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Commentaires de l\'ordonnateur — Faits caractéristiques', 14, y);
+    y += 6;
+    doc.setFillColor(245, 247, 252);
+    const lines = doc.splitTextToSize(data.commentaireOrdonnateur.trim(), pw - 32);
+    const blockH = Math.max(lines.length * 4.5 + 8, 16);
+    doc.rect(14, y, pw - 28, blockH, 'F');
+    doc.setTextColor(40);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.text(lines, 18, y + 5);
+    y += blockH + 8;
+  }
 
   // ════════════════════════════════════════════════════════════
   // SIGNATURES
