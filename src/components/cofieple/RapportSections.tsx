@@ -1139,6 +1139,18 @@ export function RapportACSection() {
     return parts;
   }, [R, safe, totalPrelev, prelevements, resultatHorsPrelev]);
 
+  // ── Balance scale data (résultat) ─────────────────────────
+  const balanceData = [
+    { name: 'Dépenses', value: R?.totalChargesSde ?? 0, fill: 'hsl(0, 70%, 55%)' },
+    { name: 'Recettes', value: R?.totalProduitsSdr ?? 0, fill: 'hsl(160, 45%, 45%)' },
+  ];
+
+  // ── FDR composition bar data ──────────────────────────────
+  const fdrComposData = [
+    { name: 'Encaissé', value: safe.fdrPartEncaissee, fill: 'hsl(160, 45%, 45%)' },
+    { name: 'Non encaissé', value: safe.fdrPartNonEncaissee, fill: 'hsl(38, 92%, 50%)' },
+  ];
+
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'agent comptable (M9-6 § V.2)." />;
 
   const pct = (v: number, t: number) => t > 0 ? `${((v / t) * 100).toFixed(1)} %` : '—';
