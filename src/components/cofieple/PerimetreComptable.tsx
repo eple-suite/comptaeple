@@ -146,6 +146,9 @@ export function PerimetreComptable() {
                 return;
               }
               lancerAnalyse();
+              toast.success('Analyse M9-6 terminée ✅', {
+                description: `Budget analysé à ${new Date().toLocaleTimeString('fr-FR')}`,
+              });
               setActiveTab('vue_ensemble');
             }}
             disabled={analysisRunning || !hasAnyAnalyzableBudget}
