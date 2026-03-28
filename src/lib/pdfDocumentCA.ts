@@ -10,11 +10,11 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { addPDFFooters } from '@/lib/pdfUtils';
 
-const BLEU = [37, 68, 120] as const;
-const VERT = [34, 139, 34] as const;
-const ROUGE = [220, 38, 38] as const;
-const ORANGE = [230, 126, 34] as const;
-const GRIS = [100, 100, 100] as const;
+const BLEU: [number, number, number] = [37, 68, 120];
+const VERT: [number, number, number] = [34, 139, 34];
+const ROUGE: [number, number, number] = [220, 38, 38];
+const ORANGE: [number, number, number] = [230, 126, 34];
+const GRIS: [number, number, number] = [100, 100, 100];
 
 export interface DocumentCAData {
   etab: {

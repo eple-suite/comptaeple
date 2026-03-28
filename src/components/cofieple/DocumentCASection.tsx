@@ -41,15 +41,9 @@ export function DocumentCASection() {
     })();
   }, [etab.uai, etab.exercice]);
 
-  if (!R) return <EmptyState msg="Lancez l'analyse M9-6 pour générer le document à destination du Conseil d'Administration." />;
-
-  const fdr = R.fdrComptable;
-  const treso = R.tresorerieNette;
-  const resBudg = R.resultatBudgetaire;
-  const caf = R.cafBudgetaire;
-
-  // Recette breakdown
+  // Recette breakdown — must be before any early return
   const recettes = useMemo(() => {
+    if (!R) return { etat: 0, collectivite: 0, propres: 0, ta: 0 };
     const po = R.produitsOrigine ?? {};
     let etat = 0, collectivite = 0, propres = 0, ta = 0;
     Object.entries(po).forEach(([k, v]) => {
@@ -60,6 +54,8 @@ export function DocumentCASection() {
     });
     return { etat, collectivite, propres, ta };
   }, [R]);
+
+  if (!R) return <EmptyState msg="Lancez l'analyse M9-6 pour générer le document à destination du Conseil d'Administration." />;
 
   const handleExportPdf = () => {
     try {
