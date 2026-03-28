@@ -264,16 +264,31 @@ function normalizeRowsForImport(rows: Record<string, string>[]): Record<string, 
     const d = normalizeColumnName(descriptor);
     let metric = '';
 
-    if (d.includes('budget')) metric = 'budget';
+    if (d.includes('budget') || d.includes('prevision') || d.includes('credits ouverts') || d.includes('credit ouverts') || d.includes('dotation') || d.includes('credits votes') || d.includes('credit votes') || d.includes('credits initiaux') || d.includes('credit initiaux') || d === 'bi') metric = 'budget';
     else if (d.includes('engag')) metric = 'engagé';
-    else if (d.includes('realise')) metric = 'réalisé';
+    else if (d.includes('realise') || d.includes('mandate') || d.includes('liquide')) metric = 'réalisé';
     else if (d.includes('en cours')) metric = 'en cours';
     else if (d.includes('disponible')) metric = 'disponible';
-    else if (d.includes('aor')) metric = 'aor';
+    else if (d.includes('aor') || d.includes('emis') || d.includes('titre')) metric = 'aor';
     else if (d.includes('extourne')) metric = 'extourne';
     else if (d.includes('value') || d.includes('plus') || d.includes('+/-')) metric = '+values/-values';
 
     if (metric) metricByAmountHeader.set(amountHeader, metric);
+  }
+
+  // ── Fallback positionnel : la première colonne numérique non mappée
+  // est présumée être le budget (prévisions) dans les exports Op@le ──
+  if (!Array.from(metricByAmountHeader.values()).includes('budget')) {
+    const sortedAmountHeaders = headers
+      .filter((h) => /^montant colonne\s+\d+$/i.test(normalizeColumnName(h)))
+      .sort((a, b) => {
+        const na = parseInt(normalizeColumnName(a).match(/(\d+)$/)?.[1] || '0', 10);
+        const nb = parseInt(normalizeColumnName(b).match(/(\d+)$/)?.[1] || '0', 10);
+        return na - nb;
+      });
+    if (sortedAmountHeaders.length > 0 && !metricByAmountHeader.has(sortedAmountHeaders[0])) {
+      metricByAmountHeader.set(sortedAmountHeaders[0], 'budget');
+    }
   }
 
   const keyService = findHeaderByAliases(headers, ['service', 'cgr de niveau 3', 'cgr et intitule reduit 3', 'cgr de niveau 2']);

@@ -235,16 +235,10 @@ export function calculerResultats(
     if (r.totalProduitsSdr === 0 && produitsBalance > 0) {
       r.totalProduitsSdr = produitsBalance;
     }
-    // Fallback pour le budget initial (prévisions) : si les prévisions sont
-    // à zéro mais que les réalisés existent, utiliser les réalisés comme proxy.
-    // Cela permet d'afficher des valeurs cohérentes dans le §12 et partout
-    // où totalChargesPrev / totalProduitsPrev sont utilisés.
-    if (r.totalChargesPrev === 0 && r.totalChargesSde > 0) {
-      r.totalChargesPrev = r.totalChargesSde;
-    }
-    if (r.totalProduitsPrev === 0 && r.totalProduitsSdr > 0) {
-      r.totalProduitsPrev = r.totalProduitsSdr;
-    }
+    // Note : on ne substitue PAS le réalisé comme budget initial.
+    // Le budget initial (prévisions) se trouve dans la même colonne que
+    // le réalisé dans les fichiers SDE/SDR Op@le — c'est la première
+    // colonne de chiffres. Le parsing doit le capturer directement.
     // Recalcul des taux d'exécution
     if (r.totalChargesPrev > 0) {
       r.tauxExecCharges = r.totalChargesSde / r.totalChargesPrev;
