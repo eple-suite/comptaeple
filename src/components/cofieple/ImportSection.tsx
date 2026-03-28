@@ -276,6 +276,21 @@ function normalizeRowsForImport(rows: Record<string, string>[]): Record<string, 
     if (metric) metricByAmountHeader.set(amountHeader, metric);
   }
 
+  // ── Fallback positionnel : la première colonne numérique non mappée
+  // est présumée être le budget (prévisions) dans les exports Op@le ──
+  if (!Array.from(metricByAmountHeader.values()).includes('budget')) {
+    const sortedAmountHeaders = headers
+      .filter((h) => /^montant colonne\s+\d+$/i.test(normalizeColumnName(h)))
+      .sort((a, b) => {
+        const na = parseInt(normalizeColumnName(a).match(/(\d+)$/)?.[1] || '0', 10);
+        const nb = parseInt(normalizeColumnName(b).match(/(\d+)$/)?.[1] || '0', 10);
+        return na - nb;
+      });
+    if (sortedAmountHeaders.length > 0 && !metricByAmountHeader.has(sortedAmountHeaders[0])) {
+      metricByAmountHeader.set(sortedAmountHeaders[0], 'budget');
+    }
+  }
+
   const keyService = findHeaderByAliases(headers, ['service', 'cgr de niveau 3', 'cgr et intitule reduit 3', 'cgr de niveau 2']);
   const keyDomaine = findHeaderByAliases(headers, ['domaine', 'cgr de niveau 4', 'cgr et intitule reduit 4']);
   const keyActivite = findHeaderByAliases(headers, ['activite', 'activités', 'cgr de niveau 6', 'cgr et intitule reduit 6', 'cgr de niveau 5']);
