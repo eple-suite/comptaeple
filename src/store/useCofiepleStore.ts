@@ -181,6 +181,7 @@ type Store = CofiepleState & {
   setUAIError: (e: string | null) => void;
   lancerAnalyse: () => void;
   setAnalysisRunning: (v: boolean) => void;
+  lastAnalysisAt: string | null;
   resetAll: () => void;
   syncFromBackend: () => Promise<void>;
   // ── Budget Profiles ─────────────────────────────────────────────
@@ -418,7 +419,8 @@ export const useCofiepleStore = create<Store>()(
             state.resultats = newResultats;
             state.resultatsConsolides = consolide;
             state.checkItems = checkItems;
-            state.anomaliesBalance = anomaliesBalance;
+          state.anomaliesBalance = anomaliesBalance;
+            state.lastAnalysisAt = new Date().toISOString();
           });
 
           // Auto-save after analysis
