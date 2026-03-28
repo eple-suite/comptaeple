@@ -998,68 +998,59 @@ export function RapportACSection() {
     })();
   }, [etab.uai, etab.exercice, R]);
 
-  if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'agent comptable (M9-6 § V.2)." />;
-
   const safe = {
-    fdrPartEncaissee: R.fdrPartEncaissee ?? 0,
-    fdrPartNonEncaissee: R.fdrPartNonEncaissee ?? 0,
-    fdrPctEncaissee: R.fdrPctEncaissee ?? 0,
-    fdrPctNonEncaissee: R.fdrPctNonEncaissee ?? 0,
-    fdrMobilisable: R.fdrMobilisable ?? 0,
-    chargesNonDecaissables: R.chargesNonDecaissables ?? 0,
-    produitsNonEncaissables: R.produitsNonEncaissables ?? 0,
-    cafComptable: R.cafComptable ?? 0,
-    varFdrBas: R.varFdrBas ?? 0,
-    joursFdr: R.joursFdr ?? 0,
-    joursTresorerie: R.joursTresorerie ?? 0,
-    tmcap: R.tmcap ?? 0,
-    tmnr: R.tmnr ?? 0,
-    totalCreances: R.totalCreances ?? 0,
-    totalDettes: R.totalDettes ?? 0,
-    creancesEtat: R.creancesEtat ?? 0,
-    creancesCollectivite: R.creancesCollectivite ?? 0,
-    creancesFamilles: R.creancesFamilles ?? 0,
-    creancesAutres: R.creancesAutres ?? 0,
-    dettesFournisseurs: R.dettesFournisseurs ?? 0,
-    dettesEtat: R.dettesEtat ?? 0,
-    dettesCollectivite: R.dettesCollectivite ?? 0,
-    dettesAutres: R.dettesAutres ?? 0,
-    reliquatsSubventions: R.reliquatsSubventions ?? 0,
-    valeurNette: R.valeurNette ?? 0,
-    variationPatrimoine: R.variationPatrimoine ?? 0,
-    patrimoineOriginesFondsPropres: R.patrimoineOriginesFondsPropres ?? 0,
-    patrimoineOriginesPctFP: R.patrimoineOriginesPctFP ?? 0,
-    patrimoineOriginesSubventions: R.patrimoineOriginesSubventions ?? 0,
-    patrimoineOriginesPctSub: R.patrimoineOriginesPctSub ?? 0,
-    tresoComposition: R.tresoComposition ?? { autonomieFinanciere: 0, depotsCautions: 0, reglementsEnAttente: 0, reliquatsSubventions: 0 },
-    prelevementsReserves: R.prelevementsReserves ?? { totalPrelevements: 0, prelevementsInvestissement: 0, prelevementsFonctionnement: 0, variationReserves: 0 },
-    dgpJours: R.dgpJours ?? 0,
-    dgrJours: R.dgrJours ?? 0,
-    fdrComptableN1: R.fdrComptableN1 ?? 0,
-    bfrN1: R.bfrN1 ?? 0,
-    tresorerieN1: R.tresorerieN1 ?? 0,
-    ratioLiquiditeGenerale: R.ratioLiquiditeGenerale ?? 0,
-    ratioLiquiditeReduite: R.ratioLiquiditeReduite ?? 0,
-    ratioLiquiditeImmediate: R.ratioLiquiditeImmediate ?? 0,
-    ratioAutonomieFinanciere: R.ratioAutonomieFinanciere ?? 0,
-    ratioSolvabilite: R.ratioSolvabilite ?? 0,
-    ratioEndettement: R.ratioEndettement ?? 0,
-    ratioChargesPersonnel: R.ratioChargesPersonnel ?? 0,
-    ratioCouvertureCharges: R.ratioCouvertureCharges ?? 0,
+    fdrPartEncaissee: R?.fdrPartEncaissee ?? 0,
+    fdrPartNonEncaissee: R?.fdrPartNonEncaissee ?? 0,
+    fdrPctEncaissee: R?.fdrPctEncaissee ?? 0,
+    fdrPctNonEncaissee: R?.fdrPctNonEncaissee ?? 0,
+    fdrMobilisable: R?.fdrMobilisable ?? 0,
+    chargesNonDecaissables: R?.chargesNonDecaissables ?? 0,
+    produitsNonEncaissables: R?.produitsNonEncaissables ?? 0,
+    cafComptable: R?.cafComptable ?? 0,
+    varFdrBas: R?.varFdrBas ?? 0,
+    joursFdr: R?.joursFdr ?? 0,
+    joursTresorerie: R?.joursTresorerie ?? 0,
+    tmcap: R?.tmcap ?? 0,
+    tmnr: R?.tmnr ?? 0,
+    totalCreances: R?.totalCreances ?? 0,
+    totalDettes: R?.totalDettes ?? 0,
+    creancesEtat: R?.creancesEtat ?? 0,
+    creancesCollectivite: R?.creancesCollectivite ?? 0,
+    creancesFamilles: R?.creancesFamilles ?? 0,
+    creancesAutres: R?.creancesAutres ?? 0,
+    dettesFournisseurs: R?.dettesFournisseurs ?? 0,
+    dettesEtat: R?.dettesEtat ?? 0,
+    dettesCollectivite: R?.dettesCollectivite ?? 0,
+    dettesAutres: R?.dettesAutres ?? 0,
+    reliquatsSubventions: R?.reliquatsSubventions ?? 0,
+    valeurNette: R?.valeurNette ?? 0,
+    variationPatrimoine: R?.variationPatrimoine ?? 0,
+    patrimoineOriginesFondsPropres: R?.patrimoineOriginesFondsPropres ?? 0,
+    patrimoineOriginesPctFP: R?.patrimoineOriginesPctFP ?? 0,
+    patrimoineOriginesSubventions: R?.patrimoineOriginesSubventions ?? 0,
+    patrimoineOriginesPctSub: R?.patrimoineOriginesPctSub ?? 0,
+    tresoComposition: R?.tresoComposition ?? { autonomieFinanciere: 0, depotsCautions: 0, reglementsEnAttente: 0, reliquatsSubventions: 0 },
+    prelevementsReserves: R?.prelevementsReserves ?? { totalPrelevements: 0, prelevementsInvestissement: 0, prelevementsFonctionnement: 0, variationReserves: 0 },
+    dgpJours: R?.dgpJours ?? 0,
+    dgrJours: R?.dgrJours ?? 0,
+    fdrComptableN1: R?.fdrComptableN1 ?? 0,
+    bfrN1: R?.bfrN1 ?? 0,
+    tresorerieN1: R?.tresorerieN1 ?? 0,
+    ratioLiquiditeGenerale: R?.ratioLiquiditeGenerale ?? 0,
+    ratioLiquiditeReduite: R?.ratioLiquiditeReduite ?? 0,
+    ratioLiquiditeImmediate: R?.ratioLiquiditeImmediate ?? 0,
+    ratioAutonomieFinanciere: R?.ratioAutonomieFinanciere ?? 0,
+    ratioSolvabilite: R?.ratioSolvabilite ?? 0,
+    ratioEndettement: R?.ratioEndettement ?? 0,
+    ratioChargesPersonnel: R?.ratioChargesPersonnel ?? 0,
+    ratioCouvertureCharges: R?.ratioCouvertureCharges ?? 0,
   };
 
   const nbBloq = checkItems.filter(c => c.bloquant).length;
   const nbAnom = checkItems.filter(c => c.statut !== 'ok').length;
 
-  // ── Derived data ──────────────────────────────────────────
   const totalPrelev = prelevements.reduce((s, p) => s + p.montant, 0);
-  const resultatHorsPrelev = R.resultatComptable + totalPrelev;
-
-  // ── Balance scale data (résultat) ─────────────────────────
-  const balanceData = [
-    { name: 'Dépenses', value: R.totalChargesSde, fill: 'hsl(0, 70%, 55%)' },
-    { name: 'Recettes', value: R.totalProduitsSdr, fill: 'hsl(160, 45%, 45%)' },
-  ];
+  const resultatHorsPrelev = (R?.resultatComptable ?? 0) + totalPrelev;
 
   // ── Pie data for trésorerie composition ───────────────────
   const tresoData = useMemo(() => {
@@ -1072,26 +1063,20 @@ export function RapportACSection() {
     ].filter(d => d.value > 0);
   }, [safe.tresoComposition]);
 
-  // ── FDR composition bar data ──────────────────────────────
-  const fdrComposData = [
-    { name: 'Encaissé', value: safe.fdrPartEncaissee, fill: 'hsl(160, 45%, 45%)' },
-    { name: 'Non encaissé', value: safe.fdrPartNonEncaissee, fill: 'hsl(38, 92%, 50%)' },
-  ];
-
   // ── Créances/Dettes pie data ──────────────────────────────
   const creancesPieData = useMemo(() => [
     { name: 'État', value: safe.creancesEtat, fill: 'hsl(215,70%,50%)' },
     { name: 'Collectivité', value: safe.creancesCollectivite, fill: 'hsl(160,45%,45%)' },
     { name: 'Familles', value: safe.creancesFamilles, fill: 'hsl(38,92%,50%)' },
     { name: 'Autres', value: safe.creancesAutres, fill: 'hsl(280,50%,50%)' },
-  ].filter(d => d.value > 0), [safe]);
+  ].filter(d => d.value > 0), [safe.creancesEtat, safe.creancesCollectivite, safe.creancesFamilles, safe.creancesAutres]);
 
   const dettesPieData = useMemo(() => [
     { name: 'Fournisseurs', value: safe.dettesFournisseurs, fill: 'hsl(0,70%,55%)' },
     { name: 'État', value: safe.dettesEtat, fill: 'hsl(215,70%,50%)' },
     { name: 'Collectivité', value: safe.dettesCollectivite, fill: 'hsl(160,45%,45%)' },
     { name: 'Autres', value: safe.dettesAutres, fill: 'hsl(38,92%,50%)' },
-  ].filter(d => d.value > 0), [safe]);
+  ].filter(d => d.value > 0), [safe.dettesFournisseurs, safe.dettesEtat, safe.dettesCollectivite, safe.dettesAutres]);
 
   // ── Radar ratios ──────────────────────────────────────────
   const radarRatiosData = useMemo(() => [
@@ -1101,12 +1086,12 @@ export function RapportACSection() {
     { subject: 'Autonomie fin.', value: Math.min(safe.ratioAutonomieFinanciere * 100, 100) },
     { subject: 'Solvabilité', value: Math.min(safe.ratioSolvabilite * 100, 100) },
     { subject: 'Couverture ch.', value: Math.min(safe.ratioCouvertureCharges * 500, 100) },
-  ], [safe]);
+  ], [safe.ratioLiquiditeGenerale, safe.ratioLiquiditeReduite, safe.ratioLiquiditeImmediate, safe.ratioAutonomieFinanciere, safe.ratioSolvabilite, safe.ratioCouvertureCharges]);
 
   // ── Patrimoine bar data ───────────────────────────────────
   const patrimoineData = [
-    { name: 'Brut', value: R.totalImmo, fill: 'hsl(215,70%,50%)' },
-    { name: 'Amort.', value: -R.totalAmortissements, fill: 'hsl(0,70%,55%)' },
+    { name: 'Brut', value: R?.totalImmo ?? 0, fill: 'hsl(215,70%,50%)' },
+    { name: 'Amort.', value: -(R?.totalAmortissements ?? 0), fill: 'hsl(0,70%,55%)' },
     { name: 'Net', value: safe.valeurNette, fill: 'hsl(160,45%,45%)' },
   ];
 
@@ -1114,11 +1099,12 @@ export function RapportACSection() {
   const hasN1Financial = safe.fdrComptableN1 !== 0 || safe.bfrN1 !== 0 || safe.tresorerieN1 !== 0;
   const evolutionData = hasN1Financial ? [
     { exercice: 'N-1', FDR: safe.fdrComptableN1, BFR: safe.bfrN1, Trésorerie: safe.tresorerieN1 },
-    { exercice: 'N', FDR: R.fdrComptable, BFR: R.bfr, Trésorerie: R.tresorerie },
+    { exercice: 'N', FDR: R?.fdrComptable ?? 0, BFR: R?.bfr ?? 0, Trésorerie: R?.tresorerie ?? 0 },
   ] : [];
 
   // ── Smart analysis text ───────────────────────────────────
   const smartAnalysis = useMemo(() => {
+    if (!R) return [];
     const parts: string[] = [];
     if (R.resultatComptable < 0 && totalPrelev > 0) {
       parts.push(`📊 Le déficit de ${formatEur(R.resultatComptable)} s'explique principalement par ${prelevements.length} prélèvement(s) sur fonds de roulement (${formatEur(totalPrelev)}), autorisés par le CA. Sans ces prélèvements, le résultat aurait été ${resultatHorsPrelev >= 0 ? 'excédentaire' : 'déficitaire'} de ${formatEur(Math.abs(resultatHorsPrelev))}.`);
@@ -1152,6 +1138,20 @@ export function RapportACSection() {
     }
     return parts;
   }, [R, safe, totalPrelev, prelevements, resultatHorsPrelev]);
+
+  // ── Balance scale data (résultat) ─────────────────────────
+  const balanceData = [
+    { name: 'Dépenses', value: R?.totalChargesSde ?? 0, fill: 'hsl(0, 70%, 55%)' },
+    { name: 'Recettes', value: R?.totalProduitsSdr ?? 0, fill: 'hsl(160, 45%, 45%)' },
+  ];
+
+  // ── FDR composition bar data ──────────────────────────────
+  const fdrComposData = [
+    { name: 'Encaissé', value: safe.fdrPartEncaissee, fill: 'hsl(160, 45%, 45%)' },
+    { name: 'Non encaissé', value: safe.fdrPartNonEncaissee, fill: 'hsl(38, 92%, 50%)' },
+  ];
+
+  if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'agent comptable (M9-6 § V.2)." />;
 
   const pct = (v: number, t: number) => t > 0 ? `${((v / t) * 100).toFixed(1)} %` : '—';
 
