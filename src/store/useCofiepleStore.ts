@@ -32,6 +32,7 @@ const ETAB_INITIAL: EtablissementUI = {
   ordonnateur: '', agentComptable: '', secretaireGeneral: '',
   exercice: new Date().getFullYear() - 1,
   dateArrete: '',
+  tmcapSeuilAlerte: 15,
 };
 
 // ── Helpers BudgetProfile ────────────────────────────────────────────
@@ -386,43 +387,49 @@ export const useCofiepleStore = create<Store>()(
 
       lancerAnalyse: () => {
         set(state => { state.analysisRunning = true; });
-        const S = get();
-        const newResultats: Record<TypeBudget, ResultatsUI | null> = {
-          principal: null, annexe_greta: null, annexe_cfa: null, annexe_autre: null,
-        };
+        try {
+          const S = get();
+          const newResultats: Record<TypeBudget, ResultatsUI | null> = {
+            principal: null, annexe_greta: null, annexe_cfa: null, annexe_autre: null,
+          };
 
-        for (const budget of S.budgets) {
-          const bt = budget.type;
-          const sde = S.sde[bt] || [];
-          const sdr = S.sdr[bt] || [];
-          const bal = S.balance[bt] || [];
-          if (sde.length > 0 || sdr.length > 0 || bal.length > 0) {
-            newResultats[bt] = calculerResultats(sde, sdr, bal, S.sde1[bt] || [], S.sdr1[bt] || [], S.balance1[bt] || [], bt);
+          for (const budget of S.budgets) {
+            const bt = budget.type;
+            const sde = S.sde[bt] || [];
+            const sdr = S.sdr[bt] || [];
+            const bal = S.balance[bt] || [];
+            if (sde.length > 0 || sdr.length > 0 || bal.length > 0) {
+              newResultats[bt] = calculerResultats(sde, sdr, bal, S.sde1[bt] || [], S.sdr1[bt] || [], S.balance1[bt] || [], bt);
+            }
           }
+
+          const bp = newResultats.principal;
+          const annexes = [newResultats.annexe_greta, newResultats.annexe_cfa, newResultats.annexe_autre].filter(Boolean) as ResultatsUI[];
+          const consolide = bp && annexes.length > 0 ? consolider(bp, annexes) : null;
+          const activeBudget = S.activeBudget;
+          const resultatsActifs = newResultats[activeBudget];
+          const balanceActive = S.balance[activeBudget] || [];
+          const sdeActive = S.sde[activeBudget] || [];
+          const sdrActive = S.sdr[activeBudget] || [];
+          const checkItems = resultatsActifs ? construireCheckList(resultatsActifs, activeBudget, balanceActive, sdeActive, sdrActive) : [];
+          const anomaliesBalance = analyserBalance(balanceActive, { hasAnnexe: S.budgets.length > 1 });
+
+          set(state => {
+            state.resultats = newResultats;
+            state.resultatsConsolides = consolide;
+            state.checkItems = checkItems;
+            state.anomaliesBalance = anomaliesBalance;
+          });
+
+          // Auto-save after analysis
+          const estId = get().currentEstablishmentId;
+          if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
+          debouncedBackendSync(get());
+        } catch (error) {
+          console.error('Erreur lors de l’analyse budgétaire :', error);
+        } finally {
+          set(state => { state.analysisRunning = false; });
         }
-
-        const bp = newResultats.principal;
-        const annexes = [newResultats.annexe_greta, newResultats.annexe_cfa, newResultats.annexe_autre].filter(Boolean) as ResultatsUI[];
-        const consolide = bp && annexes.length > 0 ? consolider(bp, annexes) : null;
-        const activeBudget = S.activeBudget;
-        const resultatsActifs = newResultats[activeBudget];
-        const balanceActive = S.balance[activeBudget] || [];
-        const sdeActive = S.sde[activeBudget] || [];
-        const sdrActive = S.sdr[activeBudget] || [];
-        const checkItems = resultatsActifs ? construireCheckList(resultatsActifs, activeBudget, balanceActive, sdeActive, sdrActive) : [];
-        const anomaliesBalance = analyserBalance(balanceActive, { hasAnnexe: S.budgets.length > 1 });
-
-        set(state => {
-          state.resultats = newResultats;
-          state.resultatsConsolides = consolide;
-          state.checkItems = checkItems;
-          state.anomaliesBalance = anomaliesBalance;
-          state.analysisRunning = false;
-        });
-        // Auto-save after analysis
-        const estId = get().currentEstablishmentId;
-        if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
-        debouncedBackendSync(get());
       },
 
       // ── Budget Profiles (persistés sous 'cockpit_budget_profiles') ──

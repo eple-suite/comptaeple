@@ -10,12 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
-import { formatEur } from '@/lib/cofieple_calculations';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import {
-  FolderOpen, Plus, CheckCircle2, Circle, BarChart3,
+  FolderOpen, Plus, CheckCircle2, BarChart3,
   Layers, Building2, GraduationCap, BookOpen, UtensilsCrossed,
 } from 'lucide-react';
+import { toast } from 'sonner';
 
 const BUDGET_META: Record<TypeBudget, { label: string; icon: React.ReactNode; fullLabel: string }> = {
   principal: { label: 'Budget Principal', fullLabel: 'Budget Principal', icon: <Building2 className="h-4 w-4" /> },
@@ -35,7 +35,6 @@ export function PerimetreComptable() {
   const budgets = useCofiepleStore(s => s.budgets);
   const fichierCharge = useCofiepleStore(s => s.fichierCharge);
   const resultats = useCofiepleStore(s => s.resultats);
-  const resultatsConsolides = useCofiepleStore(s => s.resultatsConsolides);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
   const setActiveBudget = useCofiepleStore(s => s.setActiveBudget);
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
@@ -64,6 +63,9 @@ export function PerimetreComptable() {
 
   const nbBudgetsAvecDonnees = budgetStatuses.filter(b => b.hasResult).length;
   const canConsolidate = nbBudgetsAvecDonnees >= 2 && budgetStatuses.some(b => b.type === 'principal' && b.hasResult);
+  const activeBudgetStatus = budgetStatuses.find(b => b.type === activeBudget);
+  const canAnalyseSelected = !!activeBudgetStatus && activeBudgetStatus.loaded.length > 0;
+  const hasAnyAnalyzableBudget = budgetStatuses.some(b => b.loaded.length > 0);
 
   const availableAnnexes: { type: TypeBudget; label: string }[] = ([
     { type: 'annexe_greta' as TypeBudget, label: 'GRETA' },
@@ -107,17 +109,14 @@ export function PerimetreComptable() {
                 isActive ? 'bg-primary/5 border-l-4 border-l-primary' : 'border-l-4 border-l-transparent'
               }`}
             >
-              {/* Checkbox-like indicator */}
               <div className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 ${
                 b.hasResult ? 'bg-primary border-primary' : 'border-muted-foreground/30'
               }`}>
                 {b.hasResult && <CheckCircle2 className="h-3 w-3 text-primary-foreground" />}
               </div>
 
-              {/* Icon */}
               <span className="shrink-0 text-muted-foreground">{b.meta.icon}</span>
 
-              {/* Labels */}
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-semibold truncate">{b.meta.label}</div>
                 <div className="text-xs text-muted-foreground truncate">
@@ -129,7 +128,6 @@ export function PerimetreComptable() {
                 </div>
               </div>
 
-              {/* Status badge */}
               <Badge className={`shrink-0 text-[10px] ${statusConfig[b.status].className}`}>
                 {statusConfig[b.status].badge}
               </Badge>
@@ -137,11 +135,22 @@ export function PerimetreComptable() {
           );
         })}
 
-        {/* Action buttons */}
         <div className="flex items-center gap-2 px-4 py-3">
-          <Button size="sm" onClick={() => { lancerAnalyse(); }}
-            disabled={analysisRunning}
-            className="gap-2">
+          <Button
+            size="sm"
+            onClick={() => {
+              if (!canAnalyseSelected) {
+                toast.warning('Aucune donnée importée pour le budget sélectionné.', {
+                  description: 'Chargez au moins un fichier SDE, SDR ou Balance pour ce budget.',
+                });
+                return;
+              }
+              lancerAnalyse();
+              setActiveTab('vue_ensemble');
+            }}
+            disabled={analysisRunning || !hasAnyAnalyzableBudget}
+            className="gap-2"
+          >
             <BarChart3 className="h-4 w-4" />
             {analysisRunning ? 'Analyse en cours…' : 'Analyser le budget sélectionné'}
           </Button>

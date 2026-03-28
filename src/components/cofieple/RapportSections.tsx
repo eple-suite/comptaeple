@@ -80,6 +80,7 @@ export function RapportOrdoSection() {
   const sdrRows = useCofiepleStore(s => s.sdr[activeBudget]) as LigneSDR[];
   const R = resultats[activeBudget];
   const ind = useExtraIndicators();
+  const tmcapAlertThreshold = Math.max(0, etab.tmcapSeuilAlerte ?? 15);
   const [aiText1, setAiText1] = useState('');
   const [aiText3, setAiText3] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
@@ -176,7 +177,7 @@ export function RapportOrdoSection() {
     }
     if (sR.joursTresorerie > 0 && sR.joursTresorerie < 15) p.push(`⚡ Trésorerie tendue (${Math.round(sR.joursTresorerie)} j). Accélérer le recouvrement et différer les dépenses non urgentes.`);
     if (sR.tmnr > 5) p.push(`📬 Taux de non-recouvrement élevé (${sR.tmnr.toFixed(1)} %). Intensifier les relances amiables et engager les SATD.`);
-    if (sR.tmcap > 10) p.push(`⏱️ TMcap élevé (${sR.tmcap.toFixed(1)} %). Accélérer la liquidation des factures (DGP ≤ 30 j).`);
+    if (sR.tmcap > tmcapAlertThreshold) p.push(`⏱️ TMcap élevé (${sR.tmcap.toFixed(1)} %), au-dessus du seuil d’alerte configuré (${tmcapAlertThreshold.toFixed(1)} %). Accélérer la liquidation des factures (DGP ≤ 30 j).`);
     if (sR.ratioLiquiditeGenerale > 0 && sR.ratioLiquiditeGenerale < 1) p.push(`⚠️ Ratio de liquidité < 1. Risque à court terme. Préparer un plan de trésorerie prévisionnel.`);
     if (R.resultatBudgetaire < 0 && R.reserves > 0 && Math.abs(R.resultatBudgetaire) > R.reserves * 0.5) p.push(`🔴 Déficit > 50 % des réserves. Alerter la collectivité et préparer un plan de redressement.`);
     if (R.cafBudgetaire < 0) p.push(`📉 IAF de ${formatEur(Math.abs(R.cafBudgetaire))} : l'établissement consomme ses réserves. Réduire les charges ou augmenter les recettes propres.`);
@@ -184,7 +185,7 @@ export function RapportOrdoSection() {
     const taxeApp = Object.entries(R.produitsOrigine ?? {}).filter(([k]) => k.startsWith('748')).reduce((s, [, v]) => s + v, 0);
     if (taxeApp > 0) p.push(`🎓 Taxe d'apprentissage : ${formatEur(taxeApp)}. Vérifier l'affectation aux sections éligibles.`);
     return p;
-  }, [R]);
+  }, [R, tmcapAlertThreshold]);
 
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer le rapport de l'ordonnateur (M9-6 § V.1)." />;
 
@@ -972,6 +973,7 @@ export function RapportACSection() {
   const [aiObs, setAiObs] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
+  const tmcapAlertThreshold = Math.max(0, etab.tmcapSeuilAlerte ?? 15);
 
   // ── Saisie complémentaire ──────────────────────────────────
   const [nomAgentComptable, setNomAgentComptable] = useState(etab.agentComptable || '');
@@ -1130,14 +1132,16 @@ export function RapportACSection() {
     if (safe.ratioLiquiditeGenerale < 1) {
       parts.push(`⚠️ Le ratio de liquidité générale (${safe.ratioLiquiditeGenerale.toFixed(2)}) est inférieur à 1. L'établissement pourrait avoir des difficultés à faire face à ses engagements à court terme.`);
     }
-    if (safe.tmcap > 10) {
-      parts.push(`ℹ️ Le TMcap (${safe.tmcap.toFixed(1)}%) traduit le montant des charges à payer enregistrées en fin d'exercice (factures de décembre à régler début N+1). Ce niveau est normal dans le cadre de la clôture comptable.`);
+    if (safe.tmcap > tmcapAlertThreshold) {
+      parts.push(`⚠️ Le TMcap (${safe.tmcap.toFixed(1)}%) dépasse le seuil d’alerte configuré (${tmcapAlertThreshold.toFixed(1)}%). Ce niveau peut révéler un retard de règlement fournisseurs au-delà de la clôture normale.`);
+    } else if (safe.tmcap > 10) {
+      parts.push(`ℹ️ Le TMcap (${safe.tmcap.toFixed(1)}%) traduit le montant des charges à payer enregistrées en fin d'exercice (factures de décembre à régler début N+1). Ce niveau reste cohérent avec une clôture comptable.`);
     }
     if (safe.tmnr > 5) {
       parts.push(`⚠️ Le TMnr (${safe.tmnr.toFixed(1)}%) indique un taux de non-recouvrement significatif. Des relances actives sont recommandées.`);
     }
     return parts;
-  }, [R, safe, totalPrelev, prelevements, resultatHorsPrelev]);
+  }, [R, safe, totalPrelev, prelevements, resultatHorsPrelev, tmcapAlertThreshold]);
 
   // ── Balance scale data (résultat) ─────────────────────────
   const balanceData = [
@@ -1540,7 +1544,7 @@ export function RapportACSection() {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
             <div className="bg-muted/30 rounded-lg p-4 text-xs">
               <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMcap</div>
-              <div className={`text-2xl font-bold font-mono ${safe.tmcap > 10 ? 'text-destructive' : ''}`}>{safe.tmcap.toFixed(2)} %</div>
+              <div className={`text-2xl font-bold font-mono ${safe.tmcap > tmcapAlertThreshold ? 'text-destructive' : ''}`}>{safe.tmcap.toFixed(2)} %</div>
             </div>
             <div className="bg-muted/30 rounded-lg p-4 text-xs">
               <div className="text-muted-foreground font-semibold uppercase tracking-wider mb-1">TMnr</div>
