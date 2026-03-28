@@ -164,6 +164,11 @@ export function generateDocumentCA(data: DocumentCAData): void {
     '   2.2  Capacité d\'autofinancement (CAF/IAF)',
     '   2.3  Réserves et immobilisations',
     '   2.4  Indicateurs de gestion',
+    ...(data.historique && data.historique.length >= 2 ? [
+      'Partie III — Évolution pluriannuelle',
+      '   3.1  Tableau comparatif',
+      '   3.2  Graphique de tendance',
+    ] : []),
   ];
   for (const line of sommaire) {
     doc.text(line, 20, y);
