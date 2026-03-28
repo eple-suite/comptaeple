@@ -269,7 +269,18 @@ export function calculerResultatsM96(
   // ── Charges de fonctionnement (hors investissement) ────────────────
   // Le dénominateur REPROFI utilise uniquement les charges de fonctionnement,
   // c'est-à-dire le total SDE moins les charges d'investissement (classe 2)
-  const chargesFonctionnement = totalChargesSde - chInvSde;
+  // FALLBACK : si pas de SDE importée, utiliser la balance classe 6
+  // (charges comptabilisées) hors charges d'investissement comptabilisées
+  const chargesFonctSDE = totalChargesSde - chInvSde;
+  const chargesBalanceCl6 = totalChargesBalance; // dbt6 - crd6 (mouvements exercice)
+  const chInvBalance = sumBal(bal, c => c.charAt(0) === '2' && !c.startsWith('28') && !c.startsWith('29'), 'dbt')
+    - sumBal(bal, c => c.charAt(0) === '2' && !c.startsWith('28') && !c.startsWith('29'), 'crd');
+  const chargesFonctBalance = chargesBalanceCl6 > 0 ? chargesBalanceCl6 : 0;
+  // Priorité SDE, sinon balance classe 6
+  const chargesFonctionnement = chargesFonctSDE > 0 ? chargesFonctSDE : chargesFonctBalance;
+  // Dénominateur total charges pour TMcap/TMnr : SDE si dispo, sinon balance
+  const totalChargesRef = totalChargesSde > 0 ? totalChargesSde : (chargesBalanceCl6 > 0 ? chargesBalanceCl6 : 0);
+  const totalProduitsRef = totalProduitsSdr > 0 ? totalProduitsSdr : (totalProduitsBalance > 0 ? totalProduitsBalance : 0);
 
   // ── Jours d'autonomie financière (REPROFI) ─────────────────────────
   // = FDR / charges quotidiennes de fonctionnement
@@ -278,8 +289,14 @@ export function calculerResultatsM96(
   const chargesFonctQuotidiennes = chargesFonctionnement / 365;
   const joursAutonomie   = chargesFonctQuotidiennes > 0 ? (fdrComptable / chargesFonctQuotidiennes) : 0;
   const ratioFdrBfr      = bfr !== 0 ? fdrBas / bfr : 0;
-  const ressourcesPropres = sdr.filter(r => /^7[0-6]/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const recettesAutogenerees = sdr.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+
+  // Ressources propres : SDE/SDR si dispo, sinon balance classe 7
+  const ressourcesPropres = sdr.length > 0
+    ? sdr.filter(r => /^7[0-6]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
+    : sumBal(bal, c => /^7[0-6]/.test(c), 'crd') - sumBal(bal, c => /^7[0-6]/.test(c), 'dbt');
+  const recettesAutogenerees = sdr.length > 0
+    ? sdr.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
+    : sumBal(bal, c => /^7[0-3]/.test(c), 'crd') - sumBal(bal, c => /^7[0-3]/.test(c), 'dbt');
 
   // ── REPROFI — Jours FDR et Trésorerie ─────────────────────────────
   // Dénominateur = charges de fonctionnement quotidiennes (hors investissement)
@@ -294,13 +311,15 @@ export function calculerResultatsM96(
 
   // ── REPROFI — TMcap (Taux moyen charges à payer) ──────────────────
   // Part impayée des charges = dettes fournisseurs / charges réalisées
+  // Dénominateur : SDE si dispo, sinon balance classe 6
   const dettesFournisseurs = sumBal(bal, c => c.startsWith('401') || c.startsWith('408'), 'solCrd');
-  const tmcap = totalChargesSde > 0 ? (dettesFournisseurs / totalChargesSde) * 100 : 0;
+  const tmcap = totalChargesRef > 0 ? (dettesFournisseurs / totalChargesRef) * 100 : 0;
 
   // ── REPROFI — TMnr (Taux moyen de non-recouvrement) ───────────────
   // Part non recouvrée = créances cl4 débit / recettes réalisées
+  // Dénominateur : SDR si dispo, sinon balance classe 7
   const totalCreancesCl4 = sumBal(bal, c => c.charAt(0) === '4', 'solDbt');
-  const tmnr = totalProduitsSdr > 0 ? (totalCreancesCl4 / totalProduitsSdr) * 100 : 0;
+  const tmnr = totalProduitsRef > 0 ? (totalCreancesCl4 / totalProduitsRef) * 100 : 0;
 
   // ── REPROFI — Créances par origine ────────────────────────────────
   const creancesEtat = sumBal(bal, c => c.startsWith('4411') || c.startsWith('4431') || c.startsWith('4432') || c.startsWith('4438'), 'solDbt');
