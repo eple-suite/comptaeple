@@ -117,6 +117,9 @@ export interface ResultatsM96 {
   totalChargesSde: number; totalChargesPrev: number;
   totalProduitsSdr: number; totalProduitsPrev: number;
   totalChargesBalance: number; totalProduitsBalance: number;
+  chargesFonctionnement: number;  // Charges fonct. hors investissement (SDE ou balance Cl.6)
+  totalChargesRef: number;        // Dénominateur de référence charges (SDE ou balance)
+  totalProduitsRef: number;       // Dénominateur de référence produits (SDR ou balance)
   reserves: number; reservesSsSpeciaux: number; reservesSRH: number;
   totalImmo: number; totalAmortissements: number; valeurNette: number;
   services: Record<string, ServiceData>;

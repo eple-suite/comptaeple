@@ -54,7 +54,7 @@ export function VueEnsembleSection() {
   const radarData = [
     { subject: 'Liquidité', value: normalize(treso > 0 ? 1 : 0, 1, 0), fullMark: 100 },
     { subject: 'Solvabilité', value: normalize(fdr, 50000, -10000), fullMark: 100 },
-    { subject: 'Autonomie', value: normalize(R.ressourcesPropres / Math.max(R.totalProduitsSdr, 1), 0.5, 0), fullMark: 100 },
+    { subject: 'Autonomie', value: normalize(R.ressourcesPropres / Math.max(R.totalProduitsRef || R.totalProduitsSdr, 1), 0.5, 0), fullMark: 100 },
     { subject: 'Exéc. dépenses', value: Math.min(R.tauxExecCharges * 100, 100), fullMark: 100 },
     { subject: 'Exéc. recettes', value: Math.min(R.tauxExecProduits * 100, 100), fullMark: 100 },
     { subject: 'Délai paiem.', value: normalize(30 - tmcap, 30, 0), fullMark: 100 },
