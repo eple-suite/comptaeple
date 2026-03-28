@@ -16,6 +16,19 @@ const ROUGE: [number, number, number] = [220, 38, 38];
 const ORANGE: [number, number, number] = [230, 126, 34];
 const GRIS: [number, number, number] = [100, 100, 100];
 
+export interface HistoriqueRow {
+  exercice: number;
+  resultat: number;
+  fdr: number;
+  bfr: number;
+  tresorerie: number;
+  caf: number;
+  jours_autonomie: number;
+  reserves: number;
+  taux_exec_charges: number;
+  taux_exec_produits: number;
+}
+
 export interface DocumentCAData {
   etab: {
     nom: string; uai: string; exercice: number;
@@ -46,6 +59,7 @@ export interface DocumentCAData {
     nb_repas_servis?: number; cout_denrees_repas?: number;
   };
   commentaireOrdonnateur?: string;
+  historique?: HistoriqueRow[];
 }
 
 function fmt(n: number): string {
@@ -150,6 +164,11 @@ export function generateDocumentCA(data: DocumentCAData): void {
     '   2.2  Capacité d\'autofinancement (CAF/IAF)',
     '   2.3  Réserves et immobilisations',
     '   2.4  Indicateurs de gestion',
+    ...(data.historique && data.historique.length >= 2 ? [
+      'Partie III — Évolution pluriannuelle',
+      '   3.1  Tableau comparatif',
+      '   3.2  Graphique de tendance',
+    ] : []),
   ];
   for (const line of sommaire) {
     doc.text(line, 20, y);
@@ -512,6 +531,142 @@ export function generateDocumentCA(data: DocumentCAData): void {
   });
 
   y = (doc as any).lastAutoTable.finalY + 14;
+
+  // ════════════════════════════════════════════════════════════
+  // PARTIE III — ÉVOLUTION PLURIANNUELLE
+  // ════════════════════════════════════════════════════════════
+  const hist = data.historique;
+  if (hist && hist.length >= 2) {
+    doc.addPage();
+    y = 14;
+
+    doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
+    doc.rect(0, 0, pw, 12, 'F');
+    doc.setTextColor(255);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('PARTIE III — ÉVOLUTION PLURIANNUELLE', pw / 2, 8, { align: 'center' });
+
+    y = 22;
+
+    // 3.1 Tableau comparatif
+    doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('3.1  Tableau comparatif', 14, y);
+    y += 6;
+
+    const indicators = [
+      { label: 'Résultat budgétaire', key: 'resultat' as const, isCurrency: true },
+      { label: 'Fonds de roulement', key: 'fdr' as const, isCurrency: true },
+      { label: 'Besoin en FDR', key: 'bfr' as const, isCurrency: true },
+      { label: 'Trésorerie nette', key: 'tresorerie' as const, isCurrency: true },
+      { label: 'CAF budgétaire', key: 'caf' as const, isCurrency: true },
+      { label: 'Jours d\'autonomie', key: 'jours_autonomie' as const, isCurrency: false },
+      { label: 'Réserves', key: 'reserves' as const, isCurrency: true },
+      { label: 'Taux exéc. dépenses', key: 'taux_exec_charges' as const, isCurrency: false },
+      { label: 'Taux exéc. recettes', key: 'taux_exec_produits' as const, isCurrency: false },
+    ];
+
+    const histHead = ['Indicateur', ...hist.map(h => String(h.exercice)), 'Variation'];
+    const histBody = indicators.map(ind => {
+      const vals = hist.map(h => {
+        const v = h[ind.key];
+        if (ind.key === 'taux_exec_charges' || ind.key === 'taux_exec_produits') return pct(v);
+        if (ind.key === 'jours_autonomie') return `${Math.round(v)} j`;
+        return fmt(v);
+      });
+      const first = hist[0][ind.key];
+      const last = hist[hist.length - 1][ind.key];
+      const variation = last - first;
+      let varStr = '';
+      if (ind.isCurrency) varStr = `${variation >= 0 ? '+' : ''}${fmt(variation)}`;
+      else if (ind.key === 'jours_autonomie') varStr = `${variation >= 0 ? '+' : ''}${Math.round(variation)} j`;
+      else varStr = `${variation >= 0 ? '+' : ''}${(variation * 100).toFixed(1)} pts`;
+      return [ind.label, ...vals, varStr];
+    });
+
+    autoTable(doc, {
+      startY: y,
+      head: [histHead],
+      body: histBody,
+      headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontStyle: 'bold', fontSize: 7 },
+      bodyStyles: { fontSize: 7 },
+      alternateRowStyles: { fillColor: [245, 247, 252] },
+      margin: { left: 14, right: 14 },
+      columnStyles: Object.fromEntries(
+        Array.from({ length: hist.length + 1 }, (_, i) => [i + 1, { halign: 'right' as const }])
+      ),
+    });
+
+    y = (doc as any).lastAutoTable.finalY + 10;
+
+    // 3.2 Graphique de tendance (bar chart FDR/BFR/Trésorerie)
+    if (y > ph - 80) { doc.addPage(); y = 20; }
+    doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('3.2  Tendance — FDR, BFR, Trésorerie', 14, y);
+    y += 8;
+
+    const chartW = pw - 28;
+    const barGroupW = chartW / hist.length;
+    const maxChart = Math.max(...hist.flatMap(h => [Math.abs(h.fdr), Math.abs(h.bfr), Math.abs(h.tresorerie)]), 1);
+    const chartH = 50;
+
+    // Legend
+    const legendItems = [
+      { label: 'FDR', color: BLEU },
+      { label: 'BFR', color: ORANGE },
+      { label: 'Trésorerie', color: VERT },
+    ];
+    let lx = 14;
+    for (const item of legendItems) {
+      doc.setFillColor(item.color[0], item.color[1], item.color[2]);
+      doc.rect(lx, y, 6, 3, 'F');
+      doc.setFontSize(7);
+      doc.setTextColor(60);
+      doc.setFont('helvetica', 'normal');
+      doc.text(item.label, lx + 8, y + 2.5);
+      lx += 30;
+    }
+    y += 8;
+
+    for (let i = 0; i < hist.length; i++) {
+      const h = hist[i];
+      const bx = 14 + i * barGroupW;
+      const barW = (barGroupW - 6) / 3;
+      const vals = [
+        { v: h.fdr, c: BLEU },
+        { v: h.bfr, c: ORANGE },
+        { v: h.tresorerie, c: VERT },
+      ];
+      for (let j = 0; j < vals.length; j++) {
+        const barH = (Math.abs(vals[j].v) / maxChart) * chartH;
+        doc.setFillColor(vals[j].c[0], vals[j].c[1], vals[j].c[2]);
+        doc.rect(bx + j * (barW + 1), y + chartH - barH, barW, barH, 'F');
+      }
+      // Year label
+      doc.setFontSize(7);
+      doc.setTextColor(60);
+      doc.setFont('helvetica', 'bold');
+      doc.text(String(h.exercice), bx + (barGroupW - 6) / 2, y + chartH + 5, { align: 'center' });
+    }
+    y += chartH + 12;
+
+    // Trend commentary
+    doc.setFontSize(8);
+    doc.setTextColor(60);
+    doc.setFont('helvetica', 'italic');
+    const fdrFirst = hist[0].fdr;
+    const fdrLast = hist[hist.length - 1].fdr;
+    const fdrTrend = fdrLast - fdrFirst;
+    doc.text(
+      `Sur la période ${hist[0].exercice}–${hist[hist.length - 1].exercice}, le FDR a ${fdrTrend >= 0 ? 'progressé' : 'diminué'} de ${fmt(Math.abs(fdrTrend))} (${fdrTrend >= 0 ? '+' : ''}${fdrFirst !== 0 ? ((fdrTrend / Math.abs(fdrFirst)) * 100).toFixed(1) : '—'} %).`,
+      14, y
+    );
+    y += 10;
+  }
 
   // ════════════════════════════════════════════════════════════
   // COMMENTAIRES DE L'ORDONNATEUR
