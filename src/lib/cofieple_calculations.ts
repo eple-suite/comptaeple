@@ -115,7 +115,7 @@ export function parserSDE(rows: Record<string, string>[], _typeBudget: TypeBudge
       domaine: findCol(r, 'domaine', 'Domaine'),
       activite: findCol(r, 'activités', 'activite', 'Activité', 'activites'),
       compte: findCol(r, 'compte', 'Compte').replace(/\s.*/, '').substring(0, 6),
-      budget: toNumDirect(findCol(r, 'budget', 'Budget', 'BUDGET', 'Prévisions', 'previsions', 'prévisions', 'Crédits ouverts', 'credits ouverts', 'Credits ouverts')),
+      budget: toNumDirect(findCol(r, 'budget', 'Budget', 'BUDGET', 'Prévisions', 'previsions', 'prévisions', 'Crédits ouverts', 'credits ouverts', 'Credits ouverts', 'Dotation', 'dotation', 'Crédits votés', 'credits votes', 'Crédits initiaux', 'credits initiaux', 'BI', 'bi')),
       engage: toNumDirect(findCol(r, 'engagé', 'engage', 'Engagé', 'Engage', 'ENGAGE')),
       realise: toNumDirect(findCol(r, 'réalisé', 'realise', 'Réalisé', 'Realise', 'REALISE', 'mandaté', 'Mandaté', 'mandate', 'Mandate', 'MANDATE', 'liquidé', 'Liquidé')),
       encours: toNumDirect(findCol(r, 'en cours', 'encours', 'En cours')),
@@ -141,7 +141,7 @@ export function parserSDR(rows: Record<string, string>[], _typeBudget: TypeBudge
       domaine: findCol(r, 'domaine', 'Domaine'),
       activite: findCol(r, 'activités', 'activite', 'Activité', 'activites'),
       compte: findCol(r, 'compte', 'Compte').replace(/\s.*/, '').substring(0, 6),
-      budget: toNumDirect(findCol(r, 'budget', 'Budget', 'BUDGET', 'Prévisions', 'previsions', 'prévisions', 'Crédits ouverts', 'credits ouverts')),
+      budget: toNumDirect(findCol(r, 'budget', 'Budget', 'BUDGET', 'Prévisions', 'previsions', 'prévisions', 'Crédits ouverts', 'credits ouverts', 'Dotation', 'dotation', 'Crédits votés', 'credits votes', 'Crédits initiaux', 'credits initiaux', 'BI', 'bi')),
       engage: toNumDirect(findCol(r, 'engagé', 'engage', 'Engagé', 'Engage', 'ENGAGE')),
       aor: toNumDirect(findCol(r, 'aor', 'AOR', 'émis', 'Émis', 'emis', 'Emis')),
       realise: toNumDirect(findCol(r, 'réalisé', 'realise', 'Réalisé', 'Realise', 'REALISE', 'aor', 'AOR', 'émis', 'Émis', 'emis', 'Emis', 'titré', 'Titré')),
@@ -231,22 +231,29 @@ export function calculerResultats(
 
     if (r.totalChargesSde === 0 && chargesBalance > 0) {
       r.totalChargesSde = chargesBalance;
-      // Recalcul du taux d'exécution charges
-      if (r.totalChargesPrev > 0) {
-        r.tauxExecCharges = r.totalChargesSde / r.totalChargesPrev;
-      }
     }
     if (r.totalProduitsSdr === 0 && produitsBalance > 0) {
       r.totalProduitsSdr = produitsBalance;
-      // Recalcul du taux d'exécution produits
-      if (r.totalProduitsPrev > 0) {
-        r.tauxExecProduits = r.totalProduitsSdr / r.totalProduitsPrev;
-      }
     }
-    // Recalcul du résultat budgétaire si un fallback a été appliqué
-    if (sde.length === 0 || sdr.length === 0) {
-      r.resultatBudgetaire = r.totalProduitsSdr - r.totalChargesSde;
+    // Fallback pour le budget initial (prévisions) : si les prévisions sont
+    // à zéro mais que les réalisés existent, utiliser les réalisés comme proxy.
+    // Cela permet d'afficher des valeurs cohérentes dans le §12 et partout
+    // où totalChargesPrev / totalProduitsPrev sont utilisés.
+    if (r.totalChargesPrev === 0 && r.totalChargesSde > 0) {
+      r.totalChargesPrev = r.totalChargesSde;
     }
+    if (r.totalProduitsPrev === 0 && r.totalProduitsSdr > 0) {
+      r.totalProduitsPrev = r.totalProduitsSdr;
+    }
+    // Recalcul des taux d'exécution
+    if (r.totalChargesPrev > 0) {
+      r.tauxExecCharges = r.totalChargesSde / r.totalChargesPrev;
+    }
+    if (r.totalProduitsPrev > 0) {
+      r.tauxExecProduits = r.totalProduitsSdr / r.totalProduitsPrev;
+    }
+    // Recalcul du résultat budgétaire
+    r.resultatBudgetaire = r.totalProduitsSdr - r.totalChargesSde;
   }
 
   // ── Populate N-1 from imported SDE-1/SDR-1 ──────────────────────
