@@ -9,7 +9,9 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, FileText, BarChart3, Wallet, TrendingUp, TrendingDown, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Download, FileText, BarChart3, Wallet, TrendingUp, TrendingDown, CheckCircle2, AlertTriangle, MessageSquare } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
@@ -55,6 +57,8 @@ export function DocumentCASection() {
     return { etat, collectivite, propres, ta };
   }, [R]);
 
+  const [commentaireOrdonnateur, setCommentaireOrdonnateur] = useState('');
+
   if (!R) return <EmptyState msg="Lancez l'analyse M9-6 pour générer le document à destination du Conseil d'Administration." />;
 
   const fdr = R.fdrComptable;
@@ -64,7 +68,7 @@ export function DocumentCASection() {
 
   const handleExportPdf = () => {
     try {
-      generateDocumentCA({ etab, R: R as any, indicateurs: ind });
+      generateDocumentCA({ etab, R: R as any, indicateurs: ind, commentaireOrdonnateur });
       toast.success('Document CA exporté en PDF', { description: `Document_CA_${etab.uai}_${etab.exercice}.pdf` });
     } catch (e) {
       toast.error('Erreur lors de la génération du PDF');
@@ -236,6 +240,29 @@ export function DocumentCASection() {
               </div>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Commentaires de l'ordonnateur */}
+      <Card className="shadow-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-bold text-foreground flex items-center gap-2">
+            <MessageSquare className="h-4 w-4 text-primary" />
+            Commentaires de l'ordonnateur — Faits caractéristiques
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Label htmlFor="commentaire-ordo" className="text-xs text-muted-foreground mb-2 block">
+            Ce texte libre sera intégré au PDF avant les signatures. Décrivez les faits marquants de l'exercice,
+            les décisions du CA, les événements exceptionnels, etc.
+          </Label>
+          <Textarea
+            id="commentaire-ordo"
+            value={commentaireOrdonnateur}
+            onChange={e => setCommentaireOrdonnateur(e.target.value)}
+            placeholder="Ex : L'exercice 2025 a été marqué par la rénovation du bâtiment B, financée par un prélèvement sur le fonds de roulement voté en CA du 15/03/2025…"
+            className="min-h-[100px] text-sm"
+          />
         </CardContent>
       </Card>
 
