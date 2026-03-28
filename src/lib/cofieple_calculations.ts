@@ -213,6 +213,42 @@ export function calculerResultats(
   const isAnnexe = _typeBudget !== 'principal' || (bal.length > 0 && detectBudgetType(bal).isAnnexe);
   const r = calculerResultatsM96(sde, sdr, bal, { isAnnexe });
 
+  // ── Fallback Balance classes 6/7 quand SDE/SDR à zéro ───────────
+  // Si les totaux SDE ou SDR sont nuls mais que la balance contient
+  // des mouvements sur les classes 6 (charges) et 7 (produits),
+  // on utilise ces derniers comme valeurs de secours pour éviter
+  // un rapport entièrement à zéro.
+  if (bal.length > 0) {
+    const sumBalField = (test: (c: string) => boolean, field: 'dbt' | 'crd' | 'solDbt' | 'solCrd') =>
+      bal.filter(b => test(b.compte)).reduce((s, b) => s + ((b[field] as number) || 0), 0);
+
+    const dbtCl6 = sumBalField(c => c.charAt(0) === '6', 'dbt');
+    const crdCl6 = sumBalField(c => c.charAt(0) === '6', 'crd');
+    const crdCl7 = sumBalField(c => c.charAt(0) === '7', 'crd');
+    const dbtCl7 = sumBalField(c => c.charAt(0) === '7', 'dbt');
+    const chargesBalance = dbtCl6 - crdCl6;
+    const produitsBalance = crdCl7 - dbtCl7;
+
+    if (r.totalChargesSde === 0 && chargesBalance > 0) {
+      r.totalChargesSde = chargesBalance;
+      // Recalcul du taux d'exécution charges
+      if (r.totalChargesPrev > 0) {
+        r.tauxExecCharges = r.totalChargesSde / r.totalChargesPrev;
+      }
+    }
+    if (r.totalProduitsSdr === 0 && produitsBalance > 0) {
+      r.totalProduitsSdr = produitsBalance;
+      // Recalcul du taux d'exécution produits
+      if (r.totalProduitsPrev > 0) {
+        r.tauxExecProduits = r.totalProduitsSdr / r.totalProduitsPrev;
+      }
+    }
+    // Recalcul du résultat budgétaire si un fallback a été appliqué
+    if (sde.length === 0 || sdr.length === 0) {
+      r.resultatBudgetaire = r.totalProduitsSdr - r.totalChargesSde;
+    }
+  }
+
   // ── Populate N-1 from imported SDE-1/SDR-1 ──────────────────────
   const totalChargesSdeN1 = sde1.reduce((s, row) => s + row.realise, 0);
   const totalProduitsSdrN1 = sdr1.reduce((s, row) => s + row.realise, 0);
