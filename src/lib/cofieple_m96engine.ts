@@ -416,8 +416,9 @@ export function calculerResultatsM96(
   };
 
   // ── DGP / DGR (Délai global de paiement / recouvrement) ──────────
-  const dgpJours = totalChargesSde > 0 ? (dettesFournisseurs / totalChargesSde) * 365 : 0;
-  const dgrJours = totalProduitsSdr > 0 ? (totalCreancesCl4 / totalProduitsSdr) * 365 : 0;
+  // Utilise totalChargesRef/totalProduitsRef pour fallback balance
+  const dgpJours = totalChargesRef > 0 ? (dettesFournisseurs / totalChargesRef) * 365 : 0;
+  const dgrJours = totalProduitsRef > 0 ? (totalCreancesCl4 / totalProduitsRef) * 365 : 0;
 
   // ── 12 Ratios M9-6 ────────────────────────────────────────────────
   const actifCirculant = solDbtCl3 + solDbtCl4only + solDbtCl5;
@@ -425,19 +426,24 @@ export function calculerResultatsM96(
   const ratioLiquiditeGenerale = passifCirculant > 0 ? actifCirculant / passifCirculant : 0;
   const ratioLiquiditeReduite = passifCirculant > 0 ? (solDbtCl4only + solDbtCl5) / passifCirculant : 0;
   const ratioLiquiditeImmediate = passifCirculant > 0 ? solDbtCl5 / passifCirculant : 0;
-  const ratioAutonomieFinanciere = totalProduitsSdr > 0 ? ressourcesPropres / totalProduitsSdr : 0;
+  const ratioAutonomieFinanciere = totalProduitsRef > 0 ? ressourcesPropres / totalProduitsRef : 0;
   const capitauxPropres = sumBal(bal, c => ['10','11','12'].some(p => c.startsWith(p)), 'solCrd')
     - sumBal(bal, c => ['10','11','12'].some(p => c.startsWith(p)), 'solDbt');
   const totalPassif = capitauxPropres + totalDettes + sumBal(bal, c => c.startsWith('15'), 'solCrd');
   const ratioSolvabilite = totalPassif > 0 ? capitauxPropres / totalPassif : 0;
   const totalEndettement = totalDettes + sumBal(bal, c => c.startsWith('16'), 'solCrd');
   const ratioEndettement = capitauxPropres > 0 ? totalEndettement / capitauxPropres : 0;
-  const chargesPersonnel = sde.filter(r => r.compte.startsWith('64')).reduce((s, r) => s + r.realise, 0);
-  const ratioChargesPersonnel = totalChargesSde > 0 ? chargesPersonnel / totalChargesSde : 0;
-  const investissementsRealises = sde.filter(r => /^(20|21|23)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const ratioInvestissement = totalChargesSde > 0 ? investissementsRealises / totalChargesSde : 0;
-  const ratioRecettesPropres = totalProduitsSdr > 0 ? recettesAutogenerees / totalProduitsSdr : 0;
-  const ratioCouvertureCharges = totalChargesSde > 0 ? fdrComptable / totalChargesSde : 0;
+  // Charges de personnel : SDE si dispo, sinon balance compte 64
+  const chargesPersonnel = sde.length > 0
+    ? sde.filter(r => r.compte.startsWith('64')).reduce((s, r) => s + r.realise, 0)
+    : sumBal(bal, c => c.startsWith('64'), 'dbt') - sumBal(bal, c => c.startsWith('64'), 'crd');
+  const ratioChargesPersonnel = totalChargesRef > 0 ? chargesPersonnel / totalChargesRef : 0;
+  const investissementsRealises = sde.length > 0
+    ? sde.filter(r => /^(20|21|23)/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
+    : chInvBalance > 0 ? chInvBalance : 0;
+  const ratioInvestissement = totalChargesRef > 0 ? investissementsRealises / totalChargesRef : 0;
+  const ratioRecettesPropres = totalProduitsRef > 0 ? recettesAutogenerees / totalProduitsRef : 0;
+  const ratioCouvertureCharges = totalChargesRef > 0 ? fdrComptable / totalChargesRef : 0;
 
   // ── N-1 placeholders (populated from sde1/sdr1/bal1 in calculerResultats) ──
   const totalChargesSdeN1 = 0;
