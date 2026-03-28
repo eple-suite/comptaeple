@@ -57,6 +57,11 @@ export function DocumentCASection() {
 
   if (!R) return <EmptyState msg="Lancez l'analyse M9-6 pour générer le document à destination du Conseil d'Administration." />;
 
+  const fdr = R.fdrComptable;
+  const treso = R.tresorerieNette;
+  const resBudg = R.resultatBudgetaire;
+  const caf = R.cafBudgetaire;
+
   const handleExportPdf = () => {
     try {
       generateDocumentCA({ etab, R: R as any, indicateurs: ind });
