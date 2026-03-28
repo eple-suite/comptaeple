@@ -465,6 +465,7 @@ export function calculerResultatsM96(
     tresorerie, varTresorerieComptable, varTresorerieTableauFinancement, structurationTresorerie, fluxNetsTresorerie,
     totalChargesSde, totalChargesPrev, totalProduitsSdr, totalProduitsPrev,
     totalChargesBalance, totalProduitsBalance,
+    chargesFonctionnement, totalChargesRef, totalProduitsRef,
     reserves, reservesSsSpeciaux, reservesSRH,
     totalImmo, totalAmortissements, valeurNette,
     services, chargesNature, produitsOrigine,
