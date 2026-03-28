@@ -217,6 +217,7 @@ export const useCofiepleStore = create<Store>()(
       uaiLoading: false,
       uaiError: null,
       analysisRunning: false,
+      lastAnalysisAt: null,
       budgetProfiles: loadProfiles(),
 
       switchEstablishment: async (id) => {
