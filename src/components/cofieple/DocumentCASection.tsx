@@ -11,13 +11,27 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Download, FileText, BarChart3, Wallet, TrendingUp, TrendingDown, CheckCircle2, AlertTriangle, MessageSquare } from 'lucide-react';
+import { Download, FileText, BarChart3, Wallet, TrendingUp, TrendingDown, CheckCircle2, AlertTriangle, MessageSquare, History } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
 import { generateDocumentCA } from '@/lib/pdfDocumentCA';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
+
+interface HistoriqueRow {
+  exercice: number;
+  resultat: number;
+  fdr: number;
+  bfr: number;
+  tresorerie: number;
+  caf: number;
+  jours_autonomie: number;
+  reserves: number;
+  taux_exec_charges: number;
+  taux_exec_produits: number;
+}
 
 export function DocumentCASection() {
   const etab = useCofiepleStore(s => s.etablissement);
@@ -25,20 +39,36 @@ export function DocumentCASection() {
   const activeBudget = useCofiepleStore(s => s.activeBudget);
   const R = resultats[activeBudget];
 
-  // Load extra indicators
+  // Load extra indicators + historical data
   const [ind, setInd] = useState<any>(null);
+  const [historique, setHistorique] = useState<HistoriqueRow[]>([]);
   useEffect(() => {
     if (!etab.uai) return;
     (async () => {
       try {
         const { data: session } = await supabase.auth.getSession();
         if (!session.session) return;
-        const { data } = await supabase
-          .from('cofieple_extra_indicators')
-          .select('effectif_eleves,effectif_dp,effectif_internes,nb_repas_servis,cout_denrees_repas')
-          .eq('uai', etab.uai).eq('exercice', etab.exercice).eq('user_id', session.session.user.id)
-          .maybeSingle();
-        if (data) setInd(data);
+        const userId = session.session.user.id;
+        const [indRes, histRes] = await Promise.all([
+          supabase.from('cofieple_extra_indicators')
+            .select('effectif_eleves,effectif_dp,effectif_internes,nb_repas_servis,cout_denrees_repas')
+            .eq('uai', etab.uai).eq('exercice', etab.exercice).eq('user_id', userId)
+            .maybeSingle(),
+          supabase.from('cofieple_exercises')
+            .select('exercice,resultat_budgetaire,fdr,bfr,tresorerie,caf,jours_autonomie,reserves,taux_exec_charges,taux_exec_produits')
+            .eq('uai', etab.uai).eq('user_id', userId).eq('type_budget', 'principal')
+            .order('exercice', { ascending: true }).limit(5),
+        ]);
+        if (indRes.data) setInd(indRes.data);
+        if (histRes.data) {
+          setHistorique(histRes.data.map(r => ({
+            exercice: r.exercice, resultat: Number(r.resultat_budgetaire),
+            fdr: Number(r.fdr), bfr: Number(r.bfr), tresorerie: Number(r.tresorerie),
+            caf: Number(r.caf), jours_autonomie: Number(r.jours_autonomie),
+            reserves: Number(r.reserves), taux_exec_charges: Number(r.taux_exec_charges),
+            taux_exec_produits: Number(r.taux_exec_produits),
+          })));
+        }
       } catch {}
     })();
   }, [etab.uai, etab.exercice]);
