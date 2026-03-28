@@ -756,7 +756,7 @@ export function ImportSection() {
             </div>
             <Progress value={(nbObligCharge / obligatoires.length) * 100} className="mt-2 w-48 h-2" />
           </div>
-          <Button onClick={() => { lancerAnalyse(); setActiveTab('checklist'); }} disabled={!canAnalyse || analysisRunning} size="lg">
+          <Button onClick={() => { lancerAnalyse(); setActiveTab('vue_ensemble'); }} disabled={!canAnalyse || analysisRunning} size="lg">
             {analysisRunning ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Analyse en cours…</> : <><Play className="h-4 w-4 mr-2" />Lancer l\u2019analyse M9-6</>}
           </Button>
         </CardContent>
