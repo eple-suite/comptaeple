@@ -26,6 +26,7 @@ import { IndicateursHorsComptables } from '@/components/cofieple/IndicateursHors
 import { PluriannuelSection } from '@/components/cofieple/PluriannuelSection';
 import { AnnexeComptableSection } from '@/components/cofieple/AnnexeComptableSection';
 import { ImportHistorySection } from '@/components/cofieple/ImportHistorySection';
+import { DocumentCASection } from '@/components/cofieple/DocumentCASection';
 import { LiaisonsInterBudgets } from '@/components/cofieple/LiaisonsInterBudgets';
 import { IndicateursGreta } from '@/components/cofieple/IndicateursGreta';
 import { IndicateursCfa } from '@/components/cofieple/IndicateursCfa';
@@ -38,7 +39,8 @@ import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
   History, PenTool, BookOpen, ScrollText, AlertTriangle, Bot,
-  Eye, Gauge, FolderOpen, Radio, Link2, GraduationCap, UtensilsCrossed, Layers
+  Eye, Gauge, FolderOpen, Radio, Link2, GraduationCap, UtensilsCrossed, Layers,
+  Landmark
 } from 'lucide-react';
 
 interface NavItem {
