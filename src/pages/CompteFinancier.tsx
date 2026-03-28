@@ -26,6 +26,7 @@ import { IndicateursHorsComptables } from '@/components/cofieple/IndicateursHors
 import { PluriannuelSection } from '@/components/cofieple/PluriannuelSection';
 import { AnnexeComptableSection } from '@/components/cofieple/AnnexeComptableSection';
 import { ImportHistorySection } from '@/components/cofieple/ImportHistorySection';
+import { DocumentCASection } from '@/components/cofieple/DocumentCASection';
 import { LiaisonsInterBudgets } from '@/components/cofieple/LiaisonsInterBudgets';
 import { IndicateursGreta } from '@/components/cofieple/IndicateursGreta';
 import { IndicateursCfa } from '@/components/cofieple/IndicateursCfa';
@@ -38,7 +39,8 @@ import {
   Home, Upload, CheckCircle2, Search, ClipboardList,
   BarChart3, Building2, FileText, Monitor, Shield, ShieldCheck,
   History, PenTool, BookOpen, ScrollText, AlertTriangle, Bot,
-  Eye, Gauge, FolderOpen, Radio, Link2, GraduationCap, UtensilsCrossed, Layers
+  Eye, Gauge, FolderOpen, Radio, Link2, GraduationCap, UtensilsCrossed, Layers,
+  Landmark
 } from 'lucide-react';
 
 interface NavItem {
@@ -115,6 +117,7 @@ const CompteFinancier = () => {
     ...(budgets.some(b => b.type === 'annexe_cfa') ? [{ id: 'cfa', label: 'CFA', icon: <BookOpen className="h-4 w-4" />, requiresData: false }] : []),
     ...(budgets.some(b => b.type === 'annexe_autre') ? [{ id: 'srh', label: 'SRH', icon: <UtensilsCrossed className="h-4 w-4" />, requiresData: false }] : []),
     ...(hasConsolidation ? [{ id: 'vue_consolidee', label: 'Consolidé', icon: <Layers className="h-4 w-4" />, requiresData: true }] : []),
+    { id: 'document_ca', label: 'Doc. CA', icon: <Landmark className="h-4 w-4" />, requiresData: true },
     { id: 'annexe', label: 'Annexe', icon: <BookOpen className="h-4 w-4" />, requiresData: true },
     { id: 'diaporama', label: 'Diaporama', icon: <Monitor className="h-4 w-4" />, requiresData: true },
   ];
@@ -148,6 +151,7 @@ const CompteFinancier = () => {
       case 'cfa': return <IndicateursCfa />;
       case 'srh': return <IndicateursSrh />;
       case 'vue_consolidee': return <VueConsolidee />;
+      case 'document_ca': return <DocumentCASection />;
       case 'rapport_ordo': return <RapportOrdoSection />;
       case 'rapport_ac': return <RapportACSection />;
       case 'annexe': return <AnnexeComptableSection />;
