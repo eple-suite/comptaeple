@@ -242,6 +242,13 @@ export function calculerResultats(
   r.totalProduitsSdrN1 = totalProduitsSdrN1;
   r.resultatBudgetaireN1 = resultatBudgetaireN1;
 
+  // CAF budgétaire N-1 = Résultat N-1 + Charges OO SDE N-1 - Produits OO SDR N-1
+  if (sde1.length > 0 || sdr1.length > 0) {
+    const chargesOrdre_SDE_N1 = sde1.filter(row => /^(68|675)/.test(row.compte)).reduce((s, row) => s + row.realise, 0);
+    const produitsOrdre_SDR_N1 = sdr1.filter(row => /^(78|775|776|777)/.test(row.compte)).reduce((s, row) => s + row.realise, 0);
+    r.cafBudgetaireN1 = resultatBudgetaireN1 + chargesOrdre_SDE_N1 - produitsOrdre_SDR_N1;
+  }
+
   // Enrichir les services avec les champs UI
   const parService: Record<string, ServiceDataUI> = {};
   Object.entries(r.services).forEach(([k, s]) => {
