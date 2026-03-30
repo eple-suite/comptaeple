@@ -294,8 +294,23 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
       header: 1, defval: '', raw: false,
     });
 
+    // ── DIAGNOSTIC: dump raw matrix first rows ──
+    console.log(`[MATRIX-DIAG] Sheet "${sheetName}": ${matrix.length} rows, first 8 rows:`);
+    for (let i = 0; i < Math.min(8, matrix.length); i++) {
+      const row = matrix[i] as (string | number | boolean | null | undefined)[];
+      console.log(`[MATRIX-DIAG]   row[${i}] (${row?.length || 0} cols):`, JSON.stringify(row?.slice(0, 15)));
+    }
+
     const initialRows = buildRowsFromSheetMatrix(matrix);
     if (!initialRows.length) continue;
+
+    // ── DIAGNOSTIC: dump post-buildRows ──
+    console.log(`[MATRIX-DIAG] Sheet "${sheetName}" after buildRows: ${initialRows.length} records`);
+    if (initialRows.length > 0) {
+      console.log(`[MATRIX-DIAG]   headers:`, Object.keys(initialRows[0]));
+      console.log(`[MATRIX-DIAG]   row[0]:`, JSON.stringify(initialRows[0]));
+      if (initialRows.length > 3) console.log(`[MATRIX-DIAG]   row[3]:`, JSON.stringify(initialRows[3]));
+    }
 
     const rows = normalizeRowsForOpaleImport(initialRows);
     const headers = Object.keys(rows[0] || {});
