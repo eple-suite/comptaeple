@@ -10,12 +10,13 @@ import { Button } from '@/components/ui/button';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
+import { toast } from 'sonner';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Cell, ReferenceLine,
 } from 'recharts';
-import { Activity, Shield, AlertTriangle, TrendingUp, TrendingDown, Minus, ArrowRight, RefreshCw } from 'lucide-react';
+import { Activity, Shield, AlertTriangle, TrendingUp, TrendingDown, Minus, ArrowRight, RefreshCw, Loader2 } from 'lucide-react';
 
 export function VueEnsembleSection() {
   const resultats = useCofiepleStore(s => s.resultats);
