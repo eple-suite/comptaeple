@@ -382,21 +382,23 @@ export function calculerResultatsM96(
   // ── REPROFI — Reliquats de subventions ────────────────────────────
   const reliquatsSubventions = sumBal(bal, c => c.startsWith('441') || c.startsWith('443') || c.startsWith('468'), 'solCrd');
 
-  // ── REPROFI — Composition trésorerie ──────────────────────────────
-  const depotsCautions = sumBal(bal, c => c.startsWith('165') || c.startsWith('275'), 'solDbt');
-  const reglementsEnAttente = sumBal(bal, c => c.startsWith('511') || c.startsWith('5117'), 'solDbt');
-  const avancesRecues = totalDettes - dettesFournisseurs - dettesEtat - dettesCollectivite;
-  const tresorerieSpecifique = 0; // placeholder
-  const autonomieFinanciereBrute = tresorerie
-    - reliquatsSubventions
-    - depotsCautions
-    - reglementsEnAttente
-    - avancesRecues
-    - tresorerieSpecifique;
+  // ── Part encaissée du FDR (M9-6) ───────────────────────────────────
+  // Trésorerie nette = disponibilités (comptes 51/53/54) nettes
+  // Part encaissée = min(FDR, TN) si les deux > 0
+  // C'est la part du FDR effectivement disponible en trésorerie
+  const tresorerieNettePourFdr = (() => {
+    let tn = 0;
+    for (const b of bal) {
+      const c = b.compte;
+      if (c.startsWith('51') || c.startsWith('53') || c.startsWith('54')) {
+        tn += (b.solDbt || 0) - (b.solCrd || 0);
+      }
+    }
+    return tn;
+  })();
 
-  // M9-6 / REPROFI : la part encaissée du FDR correspond à l'autonomie financière.
-  const fdrPartEncaissee = fdrComptable > 0
-    ? Math.max(0, Math.min(fdrComptable, autonomieFinanciereBrute))
+  const fdrPartEncaissee = fdrComptable > 0 && tresorerieNettePourFdr > 0
+    ? Math.min(fdrComptable, tresorerieNettePourFdr)
     : 0;
   const autonomieFinanciere = fdrPartEncaissee;
   const fdrPartNonEncaissee = fdrComptable > 0 ? Math.max(0, fdrComptable - fdrPartEncaissee) : 0;
