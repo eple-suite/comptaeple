@@ -311,11 +311,11 @@ export function calculerResultatsM96(
   const ratioFdrBfr      = bfr !== 0 ? fdrBas / bfr : 0;
 
   // Ressources propres : SDE/SDR si dispo, sinon balance classe 7
-  const ressourcesPropres = sdr.length > 0
-    ? sdr.filter(r => /^7[0-6]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
+  const ressourcesPropres = sdrForAccounting.length > 0
+    ? sdrForAccounting.filter(r => /^7[0-6]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
     : sumBal(bal, c => /^7[0-6]/.test(c), 'crd') - sumBal(bal, c => /^7[0-6]/.test(c), 'dbt');
-  const recettesAutogenerees = sdr.length > 0
-    ? sdr.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
+  const recettesAutogenerees = sdrForAccounting.length > 0
+    ? sdrForAccounting.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
     : sumBal(bal, c => /^7[0-3]/.test(c), 'crd') - sumBal(bal, c => /^7[0-3]/.test(c), 'dbt');
 
   // ── REPROFI — Jours FDR et Trésorerie ─────────────────────────────
