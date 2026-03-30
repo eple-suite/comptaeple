@@ -310,10 +310,41 @@ export function calculerResultatsM96(
   const joursAutonomie   = chargesFonctQuotidiennes > 0 ? (fdrComptable / chargesFonctQuotidiennes) : 0;
   const ratioFdrBfr      = bfr !== 0 ? fdrBas / bfr : 0;
 
-  // Ressources propres : SDE/SDR si dispo, sinon balance classe 7
-  const ressourcesPropres = sdrForAccounting.length > 0
-    ? sdrForAccounting.filter(r => /^7[0-6]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
-    : sumBal(bal, c => /^7[0-6]/.test(c), 'crd') - sumBal(bal, c => /^7[0-6]/.test(c), 'dbt');
+  // ── Ressources propres M9-6 ─────────────────────────────────────────
+  // Ressources propres = recettes autogénérées (comptes 70-76) HORS subventions État (7411)
+  // Depuis SDR : comptes 706/707/708/75/76 + subventions hors État (74 sauf 7411)
+  const ressourcesPropres = (() => {
+    if (sdrForAccounting.length > 0) {
+      let rp = 0;
+      for (const r of sdrForAccounting) {
+        const c = r.compte;
+        // Prestations de services, ventes, activités annexes
+        if (c.startsWith('706') || c.startsWith('707') || c.startsWith('708') ||
+            c.startsWith('75') || c.startsWith('76')) {
+          rp += r.realise;
+        }
+        // Subventions hors État (74 sauf 7411)
+        if (c.startsWith('74') && !c.startsWith('7411')) {
+          rp += r.realise;
+        }
+      }
+      return rp;
+    }
+    // Fallback balance
+    let rp = 0;
+    for (const b of bal) {
+      const c = b.compte;
+      const montant = (b.crd || 0) - (b.dbt || 0);
+      if (c.startsWith('706') || c.startsWith('707') || c.startsWith('708') ||
+          c.startsWith('75') || c.startsWith('76')) {
+        rp += montant;
+      }
+      if (c.startsWith('74') && !c.startsWith('7411')) {
+        rp += montant;
+      }
+    }
+    return rp;
+  })();
   const recettesAutogenerees = sdrForAccounting.length > 0
     ? sdrForAccounting.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
     : sumBal(bal, c => /^7[0-3]/.test(c), 'crd') - sumBal(bal, c => /^7[0-3]/.test(c), 'dbt');
