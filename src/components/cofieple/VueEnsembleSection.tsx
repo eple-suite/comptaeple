@@ -52,13 +52,23 @@ export function VueEnsembleSection() {
   const legacyBrokenImports =
     (sde.length > 0 && sde.every((row) => !row.compte && row.budget === 0 && row.realise === 0)) ||
     (sdr.length > 0 && sdr.every((row) => !row.compte && row.budget === 0 && row.realise === 0));
-  const tauxChargesDisplay = R.totalChargesPrev > 0
-    ? `${(R.tauxExecCharges * 100).toFixed(1)} %`
+  const hasChargeRate = R.totalChargesPrev > 0 && Number.isFinite(R.tauxExecCharges);
+  const hasProductRate = R.totalProduitsPrev > 0 && Number.isFinite(R.tauxExecProduits);
+  const fallbackChargeRate = R.totalChargesRef > 0 && R.totalChargesSde > 0
+    ? R.totalChargesSde / R.totalChargesRef
+    : null;
+  const fallbackProductRate = R.totalProduitsRef > 0 && R.totalProduitsSdr > 0
+    ? R.totalProduitsSdr / R.totalProduitsRef
+    : null;
+  const effectiveChargeRate = hasChargeRate ? R.tauxExecCharges : fallbackChargeRate;
+  const effectiveProductRate = hasProductRate ? R.tauxExecProduits : fallbackProductRate;
+  const tauxChargesDisplay = effectiveChargeRate !== null
+    ? `${(effectiveChargeRate * 100).toFixed(1)} %`
     : legacyBrokenImports
       ? 'À recalculer'
       : '0.0 %';
-  const tauxProduitsDisplay = R.totalProduitsPrev > 0
-    ? `${(R.tauxExecProduits * 100).toFixed(1)} %`
+  const tauxProduitsDisplay = effectiveProductRate !== null
+    ? `${(effectiveProductRate * 100).toFixed(1)} %`
     : legacyBrokenImports
       ? 'À recalculer'
       : '0.0 %';
@@ -124,9 +134,9 @@ export function VueEnsembleSection() {
           icon="💳" sub={`${Math.round(joursTreso)} jours`} isText />
         <KPICard label="CAF / IAF" value={formatEur(caf)} color={caf >= 0 ? 'green' : 'red'}
           icon="🔄" sub={caf >= 0 ? 'Capacité' : 'Insuffisance'} isText />
-        <KPICard label="Taux exéc. dépenses" value={tauxChargesDisplay} color={R.totalChargesPrev > 0 && R.tauxExecCharges >= 0.85 && R.tauxExecCharges <= 1 ? 'green' : 'amber'}
+        <KPICard label="Taux exéc. dépenses" value={tauxChargesDisplay} color={effectiveChargeRate !== null && effectiveChargeRate >= 0.85 && effectiveChargeRate <= 1 ? 'green' : 'amber'}
           icon="💸" sub={formatEur(R.totalChargesSde)} isText />
-        <KPICard label="Taux exéc. recettes" value={tauxProduitsDisplay} color={R.totalProduitsPrev > 0 && R.tauxExecProduits >= 0.9 ? 'green' : 'amber'}
+        <KPICard label="Taux exéc. recettes" value={tauxProduitsDisplay} color={effectiveProductRate !== null && effectiveProductRate >= 0.9 ? 'green' : 'amber'}
           icon="💰" sub={formatEur(R.totalProduitsSdr)} isText />
       </div>
 
