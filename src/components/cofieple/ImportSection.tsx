@@ -294,8 +294,23 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
       header: 1, defval: '', raw: false,
     });
 
+    // ── DIAGNOSTIC: dump raw matrix first rows ──
+    console.log(`[MATRIX-DIAG] Sheet "${sheetName}": ${matrix.length} rows, first 8 rows:`);
+    for (let i = 0; i < Math.min(8, matrix.length); i++) {
+      const row = matrix[i] as (string | number | boolean | null | undefined)[];
+      console.log(`[MATRIX-DIAG]   row[${i}] (${row?.length || 0} cols):`, JSON.stringify(row?.slice(0, 15)));
+    }
+
     const initialRows = buildRowsFromSheetMatrix(matrix);
     if (!initialRows.length) continue;
+
+    // ── DIAGNOSTIC: dump post-buildRows ──
+    console.log(`[MATRIX-DIAG] Sheet "${sheetName}" after buildRows: ${initialRows.length} records`);
+    if (initialRows.length > 0) {
+      console.log(`[MATRIX-DIAG]   headers:`, Object.keys(initialRows[0]));
+      console.log(`[MATRIX-DIAG]   row[0]:`, JSON.stringify(initialRows[0]));
+      if (initialRows.length > 3) console.log(`[MATRIX-DIAG]   row[3]:`, JSON.stringify(initialRows[3]));
+    }
 
     const rows = normalizeRowsForOpaleImport(initialRows);
     const headers = Object.keys(rows[0] || {});
@@ -459,7 +474,31 @@ export function ImportSection() {
   }
 
   function processImportedRows(rawRows: Record<string, string>[], fileName: string, slot: FileSlot, sheetTitle?: string | null, sheetMeta?: string | null) {
+    // ── DIAGNOSTIC: dump raw Excel rows before normalization ──
+    if (rawRows.length > 0) {
+      const rawKeys = Object.keys(rawRows[0]);
+      console.log(`[IMPORT-DIAG] ${slot.type} RAW headers (${rawKeys.length}):`, rawKeys);
+      // Find first row with numeric data
+      const sampleWithData = rawRows.find(r => rawKeys.some(k => {
+        const v = String(r[k] ?? '').trim();
+        return v !== '' && v !== '0' && /\d/.test(v) && !/^(20\d{2}|N)$/.test(v);
+      }));
+      console.log(`[IMPORT-DIAG] ${slot.type} RAW sample (first with data):`, sampleWithData ? JSON.stringify(sampleWithData) : 'NONE FOUND');
+      console.log(`[IMPORT-DIAG] ${slot.type} RAW row[0]:`, JSON.stringify(rawRows[0]));
+      if (rawRows.length > 5) console.log(`[IMPORT-DIAG] ${slot.type} RAW row[5]:`, JSON.stringify(rawRows[5]));
+    }
+
     const rows = normalizeRowsForOpaleImport(rawRows);
+
+    if (rows.length > 0) {
+      const normKeys = Object.keys(rows[0]);
+      console.log(`[IMPORT-DIAG] ${slot.type} NORMALIZED headers (${normKeys.length}):`, normKeys);
+      const normSample = rows.find(r => normKeys.some(k => {
+        const v = String(r[k] ?? '').trim();
+        return v !== '' && v !== '0' && /\d/.test(v) && !/^(20\d{2}|N)$/.test(v);
+      }));
+      console.log(`[IMPORT-DIAG] ${slot.type} NORMALIZED sample:`, normSample ? JSON.stringify(normSample) : 'NONE');
+    }
 
     if (!rows || rows.length === 0) {
       setErrors(prev => ({ ...prev, [slot.key]: 'Fichier vide ou format non reconnu' }));
