@@ -20,7 +20,7 @@ import { useEstablishment } from '@/contexts/EstablishmentContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { parserSDE, parserSDR, parserBalance } from '@/lib/cofieple_calculations';
-import { buildRowsFromSheetMatrix, findColumnIndex, normalizeColumnName } from '@/lib/opaleImportUtils';
+import { buildRowsFromSheetMatrix, findColumnIndex, normalizeColumnName, normalizeRowsForOpaleImport } from '@/lib/opaleImportUtils';
 import { detectBudgetType, type BudgetTypeDetection } from '@/lib/cofieple_csvParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import { toast } from 'sonner';
@@ -228,98 +228,6 @@ function detectDocumentType(headers: string[], sheetTitle?: string | null): 'sde
   return bestType as 'sde' | 'sdr' | 'bal';
 }
 
-function findHeaderByAliases(headers: string[], aliases: string[]): string | null {
-  const idx = findColumnIndex(headers, aliases);
-  return idx === -1 ? null : headers[idx];
-}
-
-function extractCgrCode(value: string): string {
-  const v = String(value || '').trim();
-  if (!v || v === '-') return '';
-  return (v.split('-')[0] || v).replace(/\s+/g, ' ').trim();
-}
-
-function normalizeRowsForImport(rows: Record<string, string>[]): Record<string, string>[] {
-  if (!rows.length) return rows;
-
-  const headers = Object.keys(rows[0]);
-  const hasPivotMontants = headers.some((h) => /^montant colonne\s+\d+$/i.test(normalizeColumnName(h)));
-  if (!hasPivotMontants) return rows;
-
-  const metricByAmountHeader = new Map<string, string>();
-
-  for (const amountHeader of headers) {
-    const match = normalizeColumnName(amountHeader).match(/^montant colonne\s+(\d+)$/);
-    if (!match) continue;
-
-    const idx = match[1];
-    const descriptorHeader = findHeaderByAliases(headers, [`colonne ${idx}`, `colonne ${idx} ligne 2`]);
-    if (!descriptorHeader) continue;
-
-    const descriptor = rows
-      .slice(0, 25)
-      .map((r) => String(r[descriptorHeader] ?? '').trim())
-      .find(Boolean) || '';
-
-    const d = normalizeColumnName(descriptor);
-    let metric = '';
-
-    if (d.includes('budget') || d.includes('prevision') || d.includes('credits ouverts') || d.includes('credit ouverts') || d.includes('dotation') || d.includes('credits votes') || d.includes('credit votes') || d.includes('credits initiaux') || d.includes('credit initiaux') || d.includes('budgetise') || d.includes('budgetise net') || d.includes('montant budgetise') || d === 'bi') metric = 'budget';
-    else if (d.includes('engag')) metric = 'engagé';
-    else if (d.includes('realise') || d.includes('mandate') || d.includes('liquide') || d.includes('montant net') || d.includes('net des depenses') || d.includes('net des recettes') || d.includes('depenses nettes') || d.includes('recettes nettes')) metric = 'réalisé';
-    else if (d.includes('en cours')) metric = 'en cours';
-    else if (d.includes('disponible')) metric = 'disponible';
-    else if (d.includes('aor') || d.includes('emis') || d.includes('titre')) metric = 'aor';
-    else if (d.includes('extourne')) metric = 'extourne';
-    else if (d.includes('value') || d.includes('plus') || d.includes('+/-')) metric = '+values/-values';
-
-    if (metric) metricByAmountHeader.set(amountHeader, metric);
-  }
-
-  // ── Fallback positionnel : la première colonne numérique non mappée
-  // est présumée être le budget (prévisions) dans les exports Op@le ──
-  if (!Array.from(metricByAmountHeader.values()).includes('budget')) {
-    const sortedAmountHeaders = headers
-      .filter((h) => /^montant colonne\s+\d+$/i.test(normalizeColumnName(h)))
-      .sort((a, b) => {
-        const na = parseInt(normalizeColumnName(a).match(/(\d+)$/)?.[1] || '0', 10);
-        const nb = parseInt(normalizeColumnName(b).match(/(\d+)$/)?.[1] || '0', 10);
-        return na - nb;
-      });
-    if (sortedAmountHeaders.length > 0 && !metricByAmountHeader.has(sortedAmountHeaders[0])) {
-      metricByAmountHeader.set(sortedAmountHeaders[0], 'budget');
-    }
-  }
-
-  const keyService = findHeaderByAliases(headers, ['service', 'cgr de niveau 3', 'cgr et intitule reduit 3', 'cgr de niveau 2']);
-  const keyDomaine = findHeaderByAliases(headers, ['domaine', 'cgr de niveau 4', 'cgr et intitule reduit 4']);
-  const keyActivite = findHeaderByAliases(headers, ['activite', 'activités', 'cgr de niveau 6', 'cgr et intitule reduit 6', 'cgr de niveau 5']);
-  const keyCompte = findHeaderByAliases(headers, ['compte', 'compte et intitule', 'compte et intitulé']);
-
-  return rows.map((row) => {
-    const next: Record<string, string> = { ...row };
-
-    metricByAmountHeader.forEach((metric, amountHeader) => {
-      const current = String(next[metric] ?? '').trim();
-      if (!current) next[metric] = String(row[amountHeader] ?? '').trim();
-    });
-
-    const serviceCurrent = String(next.service ?? next.Service ?? '').trim();
-    if (!serviceCurrent && keyService) next.service = extractCgrCode(String(row[keyService] ?? ''));
-
-    const domaineCurrent = String(next.domaine ?? next.Domaine ?? '').trim();
-    if (!domaineCurrent && keyDomaine) next.domaine = extractCgrCode(String(row[keyDomaine] ?? ''));
-
-    const activiteCurrent = String(next.activite ?? next['activités'] ?? next.Activité ?? '').trim();
-    if (!activiteCurrent && keyActivite) next.activite = extractCgrCode(String(row[keyActivite] ?? ''));
-
-    const compteCurrent = String(next.compte ?? next.Compte ?? '').trim();
-    if (!compteCurrent && keyCompte) next.compte = String(row[keyCompte] ?? '').trim();
-
-    return next;
-  });
-}
-
 /** Extract document title from ECBU or first sheet (e.g. "SITUATION DES RECETTES") */
 function extractWorkbookTitle(wb: XLSX.WorkBook): string | null {
   for (const sn of wb.SheetNames) {
@@ -389,7 +297,7 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
     const initialRows = buildRowsFromSheetMatrix(matrix);
     if (!initialRows.length) continue;
 
-    const rows = normalizeRowsForImport(initialRows);
+    const rows = normalizeRowsForOpaleImport(initialRows);
     const headers = Object.keys(rows[0] || {});
     const detected = detectDocumentType(headers, title);
 
@@ -551,7 +459,7 @@ export function ImportSection() {
   }
 
   function processImportedRows(rawRows: Record<string, string>[], fileName: string, slot: FileSlot, sheetTitle?: string | null, sheetMeta?: string | null) {
-    const rows = normalizeRowsForImport(rawRows);
+    const rows = normalizeRowsForOpaleImport(rawRows);
 
     if (!rows || rows.length === 0) {
       setErrors(prev => ({ ...prev, [slot.key]: 'Fichier vide ou format non reconnu' }));
