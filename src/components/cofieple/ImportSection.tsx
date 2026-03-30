@@ -264,9 +264,9 @@ function normalizeRowsForImport(rows: Record<string, string>[]): Record<string, 
     const d = normalizeColumnName(descriptor);
     let metric = '';
 
-    if (d.includes('budget') || d.includes('prevision') || d.includes('credits ouverts') || d.includes('credit ouverts') || d.includes('dotation') || d.includes('credits votes') || d.includes('credit votes') || d.includes('credits initiaux') || d.includes('credit initiaux') || d === 'bi') metric = 'budget';
+    if (d.includes('budget') || d.includes('prevision') || d.includes('credits ouverts') || d.includes('credit ouverts') || d.includes('dotation') || d.includes('credits votes') || d.includes('credit votes') || d.includes('credits initiaux') || d.includes('credit initiaux') || d.includes('budgetise') || d.includes('budgetise net') || d.includes('montant budgetise') || d === 'bi') metric = 'budget';
     else if (d.includes('engag')) metric = 'engagé';
-    else if (d.includes('realise') || d.includes('mandate') || d.includes('liquide')) metric = 'réalisé';
+    else if (d.includes('realise') || d.includes('mandate') || d.includes('liquide') || d.includes('montant net') || d.includes('net des depenses') || d.includes('net des recettes') || d.includes('depenses nettes') || d.includes('recettes nettes')) metric = 'réalisé';
     else if (d.includes('en cours')) metric = 'en cours';
     else if (d.includes('disponible')) metric = 'disponible';
     else if (d.includes('aor') || d.includes('emis') || d.includes('titre')) metric = 'aor';
