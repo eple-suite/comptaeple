@@ -204,13 +204,23 @@ function scoreHeaderRow(cells: string[]): number {
 
   let score = nonEmpty >= 5 ? 2 : 0;
 
+   const amountColumnCount = normalized.filter((c) => c.startsWith('montant colonne')).length;
+   const descriptorColumnCount = normalized.filter((c) => c.startsWith('colonne')).length;
+   if (amountColumnCount > 0) score += amountColumnCount * 6;
+   if (descriptorColumnCount > 0) score += descriptorColumnCount * 3;
+
   const scoreTerms: Array<[string, number]> = [
     ['compte', 4],
     ['compte et intitule', 5],
+    ['cgr', 4],
+    ['cgr de niveau', 5],
+    ['cgr et intitule reduit', 5],
     ['service', 3],
     ['domaine', 2],
     ['activite', 2],
     ['budget', 2],
+    ['montant colonne', 8],
+    ['affichage', 3],
     ['aor', 4],
     ['extourne', 4],
     ['realise', 2],
@@ -246,6 +256,32 @@ function dedupeHeaders(headers: string[]): string[] {
   });
 }
 
+function buildCompositeHeaders(rows: string[][], headerRowIndex: number): string[] {
+  const start = Math.max(0, headerRowIndex - 2);
+  const headerRows = rows.slice(start, headerRowIndex + 1);
+  const maxCols = Math.max(...headerRows.map((row) => row.length), 0);
+
+  const headers = Array.from({ length: maxCols }, (_, idx) => {
+    const parts = headerRows
+      .map((row) => cleanHeaderLabel(row[idx] || ''))
+      .filter(Boolean)
+      .filter((part, partIndex, arr) => arr.indexOf(part) === partIndex);
+
+    return parts.join(' | ');
+  });
+
+  return dedupeHeaders(headers);
+}
+
+function looksLikeAccountCell(value: string): boolean {
+  const v = String(value ?? '').trim();
+  return /^\d{3,}/.test(v);
+}
+
+function isLikelyDataRow(row: string[]): boolean {
+  return row.some((cell) => isLikelyNumericCell(cell) || looksLikeAccountCell(cell));
+}
+
 export function buildRowsFromSheetMatrix(matrix: SheetMatrix): Record<string, string>[] {
   if (!matrix.length) return [];
 
@@ -268,8 +304,16 @@ export function buildRowsFromSheetMatrix(matrix: SheetMatrix): Record<string, st
     headerRowIndex = fallback >= 0 ? fallback : 0;
   }
 
-  const headers = dedupeHeaders(rows[headerRowIndex] || []);
-  const dataStart = headerRowIndex + 1;
+  const rawHeader = rows[headerRowIndex] || [];
+  const directHeaders = dedupeHeaders(rawHeader);
+  const compositeHeaders = buildCompositeHeaders(rows, headerRowIndex);
+  const headers = compositeHeaders.some((header) => normalizeColumnName(header).includes('montant colonne'))
+    ? compositeHeaders
+    : directHeaders;
+  let dataStart = headerRowIndex + 1;
+  while (dataStart < rows.length && !isLikelyDataRow(rows[dataStart])) {
+    dataStart += 1;
+  }
 
   return rows
     .slice(dataStart)
