@@ -164,11 +164,13 @@ export function parserBalance(rows: Record<string, string>[], _typeBudget: TypeB
   if (hasDirectCols) {
     return rows
       .filter(r => {
-        const compteSource = findCol(r, 'Compte', 'compte', 'Compte et intitulé', 'Compte et intitule');
+        const raw = findCol(r, 'Compte', 'compte', 'Compte et intitulé', 'Compte et intitule');
+        const compteSource = normalizeCompte(raw);
         return compteSource && /^\d/.test(compteSource) && compteSource.length >= 3;
       })
       .map(r => {
-        const compteSource = findCol(r, 'Compte', 'compte', 'Compte et intitulé', 'Compte et intitule');
+        const rawCompteSource = findCol(r, 'Compte', 'compte', 'Compte et intitulé', 'Compte et intitule');
+        const compteSource = normalizeCompte(rawCompteSource);
         const compte = compteSource.replace(/[^0-9]/g, '').substring(0, 9);
         const intituleDepuisCompte = compteSource.replace(/^\s*\d+\s*-\s*/, '').trim();
         const intituleExplicite = findCol(
