@@ -9,6 +9,11 @@ import { NOMENCLATURE_M96 } from './m96nomenclature';
 // ── Cache des préfixes M9-6 autorisés ────────────────────────────────
 const _m96Prefixes = new Set(NOMENCLATURE_M96.map(c => c.numero));
 
+/** Normalise un numéro de compte Op@le : supprime le préfixe "C/" et les espaces */
+export function normalizeCompte(raw: string): string {
+  return raw.replace(/^C\//i, '').replace(/\s.*/g, '').trim();
+}
+
 /** Vérifie qu'un numéro de compte correspond à un préfixe M9-6 autorisé */
 export function isCompteM96Valide(compte: string): boolean {
   if (!compte || compte.length < 2) return false;
