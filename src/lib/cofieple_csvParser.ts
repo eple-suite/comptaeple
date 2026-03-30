@@ -234,7 +234,7 @@ export function detectBudgetType(bal: LigneBalance[]): BudgetTypeDetection {
 // On cherche des mots-clés dans les colonnes rupture
 export function separerBalanceBPBA(raw: Record<string, string>[]): LigneBalance[] {
   return raw.map(r => {
-    const compte = toStr(r['Compte'] || r['compte'] || '').replace(/[^0-9]/g, '').substring(0, 9);
+    const compte = normalizeCompte(toStr(r['Compte'] || r['compte'] || '')).replace(/[^0-9]/g, '').substring(0, 9);
     if (!compte || !/^\d/.test(compte)) return null;
 
     // Détection BA via colonnes rupture Op@le
