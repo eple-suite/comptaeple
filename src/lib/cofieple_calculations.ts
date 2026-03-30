@@ -209,6 +209,8 @@ export function calculerResultats(
   sde1: LigneSDE[], sdr1: LigneSDR[], _bal1: LigneBalance[],
   _typeBudget: TypeBudget
 ): ResultatsUI {
+  const hasLegacyBrokenSde = sde.length > 0 && sde.every(row => !row.compte && row.budget === 0 && row.realise === 0);
+  const hasLegacyBrokenSdr = sdr.length > 0 && sdr.every(row => !row.compte && row.budget === 0 && row.realise === 0);
   // Detect if this is an annexe budget based on balance data
   const isAnnexe = _typeBudget !== 'principal' || (bal.length > 0 && detectBudgetType(bal).isAnnexe);
   const r = calculerResultatsM96(sde, sdr, bal, { isAnnexe });
@@ -248,6 +250,10 @@ export function calculerResultats(
     }
     // Recalcul du résultat budgétaire
     r.resultatBudgetaire = r.totalProduitsSdr - r.totalChargesSde;
+
+    if ((hasLegacyBrokenSde || hasLegacyBrokenSdr) && r.cafBudgetaire === 0) {
+      r.cafBudgetaire = r.cafComptable;
+    }
   }
 
   // ── Populate N-1 from imported SDE-1/SDR-1 ──────────────────────
@@ -303,7 +309,7 @@ export function calculerResultats(
   if (r.tresorerie < 0) scoreRisque += 25;
   else if (r.joursAutonomie < 15) scoreRisque += 12;
   if (r.cafBudgetaire < 0) scoreRisque += 20;
-  if (r.tauxExecCharges > 1.05 || r.tauxExecCharges < 0.5) scoreRisque += 15;
+  if (!hasLegacyBrokenSde && (r.tauxExecCharges > 1.05 || r.tauxExecCharges < 0.5)) scoreRisque += 15;
   if (r.resultatBudgetaire < 0) scoreRisque += 10;
   scoreRisque = Math.min(scoreRisque, 100);
 
