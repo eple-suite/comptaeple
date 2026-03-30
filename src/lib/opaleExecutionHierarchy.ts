@@ -119,21 +119,25 @@ function getSequentialNumericValues(row: Record<string, string>): number[] {
 
 function getFallbackMetricValue(kind: ExecutionKind, row: Record<string, string>, metric: string): number {
   const indexedAmounts = getIndexedAmountMap(row);
+
+  // Standard Op@le column ordering:
+  // SDE: col1=budget, col2=liquidé/engagé, col3=réalisé/payé, col4=en instance, col5=disponible
+  // SDR: col1=budget, col2=engagé, col3=AOR/émis, col4=réalisé/encaissé, col5=en instance, col6=disponible
   const absoluteIndexByMetric = kind === 'sde'
     ? {
-        budget: [3, 2, 1],
-        engage: [4, 3, 2],
-        realise: [5, 4, 3],
-        encours: [6, 5, 4],
-        disponible: [7, 6, 5],
+        budget: [1, 2, 3],
+        engage: [2, 1, 3],
+        realise: [3, 2, 5],
+        encours: [4, 3, 5],
+        disponible: [5, 4, 7],
       }
     : {
-        budget: [3, 2, 1],
-        engage: [4, 3, 2],
-        aor: [5, 4, 3],
-        realise: [6, 5, 4],
-        encours: [7, 6, 5],
-        plusValues: [8, 7, 6],
+        budget: [1, 2, 3],
+        engage: [2, 1, 3],
+        aor: [2, 3, 5],
+        realise: [3, 4, 5],
+        encours: [4, 5, 6],
+        plusValues: [5, 6, 7],
       };
 
   const preferredIndexes = absoluteIndexByMetric[metric as keyof typeof absoluteIndexByMetric] ?? [];
