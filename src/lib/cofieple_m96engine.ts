@@ -110,13 +110,13 @@ export function calculerResultatsM96(
   //   Charges décaissables = Total SDE − Charges d'ordre SDE (cpt 68* + 675*)
   //   Produits encaissables = Total SDR − Produits d'ordre SDR (cpt 78* + 775* + 776* + 777*)
   // Équivalent : CAF = Résultat budgétaire + Charges OO(SDE) − Produits OO(SDR)
-  const chargesOrdre_SDE = sde.filter(r => /^(68|675)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const produitsOrdre_SDR = sdr.filter(r => /^(78|775|776|777)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const chargesOrdre_SDE = sdeForAccounting.filter(r => /^(68|675)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const produitsOrdre_SDR = sdrForAccounting.filter(r => /^(78|775|776|777)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const cafBudgetaire = resultatBudgetaire + chargesOrdre_SDE - produitsOrdre_SDR;
 
   // Charges d'investissement (SDE classe 2) — conservé pour d'autres calculs
-  const chInvSde = sde.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const finProdSdr = sdr.filter(r => /^(10|13)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const chInvSde = sdeForAccounting.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const finProdSdr = sdrForAccounting.filter(r => /^(10|13)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
 
   // ── FDR par le haut (ressources permanentes - emplois permanents) ──
   const solCrdCl1     = sumBal(bal, c => c.charAt(0) === '1', 'solCrd');
