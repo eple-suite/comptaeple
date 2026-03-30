@@ -15,11 +15,13 @@ import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Cell, ReferenceLine,
 } from 'recharts';
-import { Activity, Shield, AlertTriangle, TrendingUp, TrendingDown, Minus, ArrowRight } from 'lucide-react';
+import { Activity, Shield, AlertTriangle, TrendingUp, TrendingDown, Minus, ArrowRight, RefreshCw } from 'lucide-react';
 
 export function VueEnsembleSection() {
   const resultats = useCofiepleStore(s => s.resultats);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
+  const sde = useCofiepleStore(s => s.sde[s.activeBudget] || []);
+  const sdr = useCofiepleStore(s => s.sdr[s.activeBudget] || []);
   const checkItems = useCofiepleStore(s => s.checkItems);
   const anomaliesBalance = useCofiepleStore(s => s.anomaliesBalance);
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
@@ -44,6 +46,19 @@ export function VueEnsembleSection() {
   const joursTreso = R.joursTresorerie ?? 0;
   const tmcap = R.tmcap ?? 0;
   const tmnr = R.tmnr ?? 0;
+  const legacyBrokenImports =
+    (sde.length > 0 && sde.every((row) => !row.compte && row.budget === 0 && row.realise === 0)) ||
+    (sdr.length > 0 && sdr.every((row) => !row.compte && row.budget === 0 && row.realise === 0));
+  const tauxChargesDisplay = R.totalChargesPrev > 0
+    ? `${(R.tauxExecCharges * 100).toFixed(1)} %`
+    : legacyBrokenImports
+      ? 'À recalculer'
+      : '0.0 %';
+  const tauxProduitsDisplay = R.totalProduitsPrev > 0
+    ? `${(R.tauxExecProduits * 100).toFixed(1)} %`
+    : legacyBrokenImports
+      ? 'À recalculer'
+      : '0.0 %';
 
   // Radar 8 axes
   const normalize = (val: number, good: number, bad: number) => {
@@ -96,9 +111,9 @@ export function VueEnsembleSection() {
           icon="💳" sub={`${Math.round(joursTreso)} jours`} isText />
         <KPICard label="CAF / IAF" value={formatEur(caf)} color={caf >= 0 ? 'green' : 'red'}
           icon="🔄" sub={caf >= 0 ? 'Capacité' : 'Insuffisance'} isText />
-        <KPICard label="Taux exéc. dépenses" value={`${(R.tauxExecCharges * 100).toFixed(1)} %`} color={R.tauxExecCharges >= 0.85 && R.tauxExecCharges <= 1 ? 'green' : 'amber'}
+        <KPICard label="Taux exéc. dépenses" value={tauxChargesDisplay} color={R.totalChargesPrev > 0 && R.tauxExecCharges >= 0.85 && R.tauxExecCharges <= 1 ? 'green' : 'amber'}
           icon="💸" sub={formatEur(R.totalChargesSde)} isText />
-        <KPICard label="Taux exéc. recettes" value={`${(R.tauxExecProduits * 100).toFixed(1)} %`} color={R.tauxExecProduits >= 0.9 ? 'green' : 'amber'}
+        <KPICard label="Taux exéc. recettes" value={tauxProduitsDisplay} color={R.totalProduitsPrev > 0 && R.tauxExecProduits >= 0.9 ? 'green' : 'amber'}
           icon="💰" sub={formatEur(R.totalProduitsSdr)} isText />
       </div>
 
@@ -119,6 +134,19 @@ export function VueEnsembleSection() {
               {jours < 30 && jours >= 0 && <Badge className="bg-warning text-warning-foreground">⚠️ Autonomie &lt; 30 jours ({Math.round(jours)} j.)</Badge>}
               {R.tauxExecCharges < 0.75 && <Badge className="bg-warning text-warning-foreground">⚠️ Sous-consommation dépenses ({(R.tauxExecCharges * 100).toFixed(0)}%)</Badge>}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {legacyBrokenImports && (
+        <Card className="border-warning/30 bg-warning/10">
+          <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
+            <div className="text-sm text-foreground">
+              Vos anciens imports SDE/SDR ont bien été retrouvés, mais ils ont été enregistrés sans montants exploitables : la CAF est recalculée automatiquement, et les taux restent marqués <strong>À recalculer</strong> jusqu'au remplacement des fichiers.
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setActiveTab('import')}>
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" /> Remplacer les imports
+            </Button>
           </CardContent>
         </Card>
       )}
