@@ -310,10 +310,41 @@ export function calculerResultatsM96(
   const joursAutonomie   = chargesFonctQuotidiennes > 0 ? (fdrComptable / chargesFonctQuotidiennes) : 0;
   const ratioFdrBfr      = bfr !== 0 ? fdrBas / bfr : 0;
 
-  // Ressources propres : SDE/SDR si dispo, sinon balance classe 7
-  const ressourcesPropres = sdrForAccounting.length > 0
-    ? sdrForAccounting.filter(r => /^7[0-6]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
-    : sumBal(bal, c => /^7[0-6]/.test(c), 'crd') - sumBal(bal, c => /^7[0-6]/.test(c), 'dbt');
+  // ── Ressources propres M9-6 ─────────────────────────────────────────
+  // Ressources propres = recettes autogénérées (comptes 70-76) HORS subventions État (7411)
+  // Depuis SDR : comptes 706/707/708/75/76 + subventions hors État (74 sauf 7411)
+  const ressourcesPropres = (() => {
+    if (sdrForAccounting.length > 0) {
+      let rp = 0;
+      for (const r of sdrForAccounting) {
+        const c = r.compte;
+        // Prestations de services, ventes, activités annexes
+        if (c.startsWith('706') || c.startsWith('707') || c.startsWith('708') ||
+            c.startsWith('75') || c.startsWith('76')) {
+          rp += r.realise;
+        }
+        // Subventions hors État (74 sauf 7411)
+        if (c.startsWith('74') && !c.startsWith('7411')) {
+          rp += r.realise;
+        }
+      }
+      return rp;
+    }
+    // Fallback balance
+    let rp = 0;
+    for (const b of bal) {
+      const c = b.compte;
+      const montant = (b.crd || 0) - (b.dbt || 0);
+      if (c.startsWith('706') || c.startsWith('707') || c.startsWith('708') ||
+          c.startsWith('75') || c.startsWith('76')) {
+        rp += montant;
+      }
+      if (c.startsWith('74') && !c.startsWith('7411')) {
+        rp += montant;
+      }
+    }
+    return rp;
+  })();
   const recettesAutogenerees = sdrForAccounting.length > 0
     ? sdrForAccounting.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
     : sumBal(bal, c => /^7[0-3]/.test(c), 'crd') - sumBal(bal, c => /^7[0-3]/.test(c), 'dbt');
@@ -351,21 +382,23 @@ export function calculerResultatsM96(
   // ── REPROFI — Reliquats de subventions ────────────────────────────
   const reliquatsSubventions = sumBal(bal, c => c.startsWith('441') || c.startsWith('443') || c.startsWith('468'), 'solCrd');
 
-  // ── REPROFI — Composition trésorerie ──────────────────────────────
-  const depotsCautions = sumBal(bal, c => c.startsWith('165') || c.startsWith('275'), 'solDbt');
-  const reglementsEnAttente = sumBal(bal, c => c.startsWith('511') || c.startsWith('5117'), 'solDbt');
-  const avancesRecues = totalDettes - dettesFournisseurs - dettesEtat - dettesCollectivite;
-  const tresorerieSpecifique = 0; // placeholder
-  const autonomieFinanciereBrute = tresorerie
-    - reliquatsSubventions
-    - depotsCautions
-    - reglementsEnAttente
-    - avancesRecues
-    - tresorerieSpecifique;
+  // ── Part encaissée du FDR (M9-6) ───────────────────────────────────
+  // Trésorerie nette = disponibilités (comptes 51/53/54) nettes
+  // Part encaissée = min(FDR, TN) si les deux > 0
+  // C'est la part du FDR effectivement disponible en trésorerie
+  const tresorerieNettePourFdr = (() => {
+    let tn = 0;
+    for (const b of bal) {
+      const c = b.compte;
+      if (c.startsWith('51') || c.startsWith('53') || c.startsWith('54')) {
+        tn += (b.solDbt || 0) - (b.solCrd || 0);
+      }
+    }
+    return tn;
+  })();
 
-  // M9-6 / REPROFI : la part encaissée du FDR correspond à l'autonomie financière.
-  const fdrPartEncaissee = fdrComptable > 0
-    ? Math.max(0, Math.min(fdrComptable, autonomieFinanciereBrute))
+  const fdrPartEncaissee = fdrComptable > 0 && tresorerieNettePourFdr > 0
+    ? Math.min(fdrComptable, tresorerieNettePourFdr)
     : 0;
   const autonomieFinanciere = fdrPartEncaissee;
   const fdrPartNonEncaissee = fdrComptable > 0 ? Math.max(0, fdrComptable - fdrPartEncaissee) : 0;
@@ -518,8 +551,12 @@ export function calculerResultatsM96(
     patrimoineOriginesPctFP, patrimoineOriginesPctSub,
     variationPatrimoine,
     tresoComposition: {
-      autonomieFinanciere, depotsCautions, reglementsEnAttente,
-      avancesRecues, reliquatsSubventions, tresorerieSpecifique,
+      autonomieFinanciere,
+      depotsCautions: sumBal(bal, c => c.startsWith('165') || c.startsWith('275'), 'solDbt'),
+      reglementsEnAttente: sumBal(bal, c => c.startsWith('511') || c.startsWith('5117'), 'solDbt'),
+      avancesRecues: totalDettes - dettesFournisseurs - dettesEtat - dettesCollectivite,
+      reliquatsSubventions,
+      tresorerieSpecifique: 0,
     },
     fdrMobilisable, resultatN1,
     // New fields

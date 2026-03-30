@@ -24,6 +24,7 @@ import { buildRowsFromSheetMatrix, findColumnIndex, normalizeColumnName, normali
 import { detectBudgetType, type BudgetTypeDetection } from '@/lib/cofieple_csvParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import { toast } from 'sonner';
+import { ImportDebug } from './ImportDebug';
 
 interface FileSlot {
   key: string; label: string; sublabel: string;
@@ -723,6 +724,9 @@ export function ImportSection() {
           </Button>
         </CardContent>
       </Card>
+
+      {/* Debug panel — dev only */}
+      <ImportDebug />
     </div>
   );
 }

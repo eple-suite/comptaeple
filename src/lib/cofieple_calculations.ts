@@ -6,7 +6,7 @@
 
 import type { LigneSDE, LigneSDR, LigneBalance } from './cofieple_types';
 import { calculerResultatsM96, buildChecklist, analyserBalance as analyserBalanceEngine, calculerBudgetAnnexe } from './cofieple_m96engine';
-import { fmtEur, fmtPct, parseSDE, parseSDR, parseBalance, detectBudgetType } from './cofieple_csvParser';
+import { fmtEur, fmtPct, parseSDE, parseSDR, parseBalance, detectBudgetType, normalizeCompte } from './cofieple_csvParser';
 import { enrichParsedSdeRow, enrichParsedSdrRow } from './opaleExecutionHierarchy';
 import type {
   TypeBudget, ResultatsUI, CheckItem, AnomalieBalance,
@@ -115,7 +115,7 @@ export function parserSDE(rows: Record<string, string>[], _typeBudget: TypeBudge
       service: findCol(r, 'service', 'Service'),
       domaine: findCol(r, 'domaine', 'Domaine'),
       activite: findCol(r, 'activités', 'activite', 'Activité', 'activites'),
-      compte: findCol(r, 'compte', 'Compte').replace(/\s.*/, '').substring(0, 6),
+      compte: normalizeCompte(findCol(r, 'compte', 'Compte')).substring(0, 6),
       budget: toNumDirect(findCol(r, 'budget', 'Budget', 'BUDGET', 'Prévisions', 'previsions', 'prévisions', 'Crédits ouverts', 'credits ouverts', 'Credits ouverts', 'Dotation', 'dotation', 'Crédits votés', 'credits votes', 'Crédits initiaux', 'credits initiaux', 'BI', 'bi', 'Montant budgétisé', 'Montant budgetisé', 'Montant budgetise', 'montant budgétisé', 'montant budgetisé', 'montant budgetise')),
       engage: toNumDirect(findCol(r, 'engagé', 'engage', 'Engagé', 'Engage', 'ENGAGE')),
       realise: toNumDirect(findCol(r, 'réalisé', 'realise', 'Réalisé', 'Realise', 'REALISE', 'mandaté', 'Mandaté', 'mandate', 'Mandate', 'MANDATE', 'liquidé', 'Liquidé', 'Montant net des dépenses', 'Montant net des depenses', 'montant net des dépenses', 'montant net des depenses', 'Dépenses nettes', 'depenses nettes')),
@@ -141,7 +141,7 @@ export function parserSDR(rows: Record<string, string>[], _typeBudget: TypeBudge
       service: findCol(r, 'service', 'Service'),
       domaine: findCol(r, 'domaine', 'Domaine'),
       activite: findCol(r, 'activités', 'activite', 'Activité', 'activites'),
-      compte: findCol(r, 'compte', 'Compte').replace(/\s.*/, '').substring(0, 6),
+      compte: normalizeCompte(findCol(r, 'compte', 'Compte')).substring(0, 6),
       budget: toNumDirect(findCol(r, 'budget', 'Budget', 'BUDGET', 'Prévisions', 'previsions', 'prévisions', 'Crédits ouverts', 'credits ouverts', 'Dotation', 'dotation', 'Crédits votés', 'credits votes', 'Crédits initiaux', 'credits initiaux', 'BI', 'bi', 'Montant budgétisé', 'Montant budgetisé', 'Montant budgetise', 'montant budgétisé', 'montant budgetisé', 'montant budgetise')),
       engage: toNumDirect(findCol(r, 'engagé', 'engage', 'Engagé', 'Engage', 'ENGAGE')),
       aor: toNumDirect(findCol(r, 'aor', 'AOR', 'émis', 'Émis', 'emis', 'Emis', 'Montant émis', 'Montant emis', 'montant émis', 'montant emis')),
@@ -164,11 +164,13 @@ export function parserBalance(rows: Record<string, string>[], _typeBudget: TypeB
   if (hasDirectCols) {
     return rows
       .filter(r => {
-        const compteSource = findCol(r, 'Compte', 'compte', 'Compte et intitulé', 'Compte et intitule');
+        const raw = findCol(r, 'Compte', 'compte', 'Compte et intitulé', 'Compte et intitule');
+        const compteSource = normalizeCompte(raw);
         return compteSource && /^\d/.test(compteSource) && compteSource.length >= 3;
       })
       .map(r => {
-        const compteSource = findCol(r, 'Compte', 'compte', 'Compte et intitulé', 'Compte et intitule');
+        const rawCompteSource = findCol(r, 'Compte', 'compte', 'Compte et intitulé', 'Compte et intitule');
+        const compteSource = normalizeCompte(rawCompteSource);
         const compte = compteSource.replace(/[^0-9]/g, '').substring(0, 9);
         const intituleDepuisCompte = compteSource.replace(/^\s*\d+\s*-\s*/, '').trim();
         const intituleExplicite = findCol(

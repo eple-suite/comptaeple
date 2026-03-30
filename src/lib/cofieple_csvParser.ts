@@ -9,6 +9,11 @@ import { NOMENCLATURE_M96 } from './m96nomenclature';
 // ── Cache des préfixes M9-6 autorisés ────────────────────────────────
 const _m96Prefixes = new Set(NOMENCLATURE_M96.map(c => c.numero));
 
+/** Normalise un numéro de compte Op@le : supprime le préfixe "C/" et les espaces */
+export function normalizeCompte(raw: string): string {
+  return raw.replace(/^C\//i, '').replace(/\s.*/g, '').trim();
+}
+
 /** Vérifie qu'un numéro de compte correspond à un préfixe M9-6 autorisé */
 export function isCompteM96Valide(compte: string): boolean {
   if (!compte || compte.length < 2) return false;
@@ -65,7 +70,7 @@ function parseCSV(text: string): Record<string, string>[] {
 export function parseSDE(text: string): LigneSDE[] {
   const rows = parseCSV(text);
   return rows.map(r => {
-    const compte = toStr(r['compte'] || r['Compte'] || '').replace(/\s.*/, '').substring(0, 6);
+    const compte = normalizeCompte(toStr(r['compte'] || r['Compte'] || '')).substring(0, 6);
     const base: LigneSDE = {
       rne: toStr(r['RNE'] || r['rne'] || ''),
       exercice: Math.round(toNum(r['exercice'] || r['Exercice'])) || new Date().getFullYear(),
@@ -90,7 +95,7 @@ export function parseSDE(text: string): LigneSDE[] {
 export function parseSDR(text: string): LigneSDR[] {
   const rows = parseCSV(text);
   return rows.map(r => {
-    const compte = toStr(r['compte'] || r['Compte'] || '').replace(/\s.*/, '').substring(0, 6);
+    const compte = normalizeCompte(toStr(r['compte'] || r['Compte'] || '')).substring(0, 6);
     const base: LigneSDR = {
       rne: toStr(r['RNE'] || r['rne'] || ''),
       exercice: Math.round(toNum(r['exercice'] || r['Exercice'])) || new Date().getFullYear(),
@@ -119,11 +124,12 @@ export function parseBalance(text: string): LigneBalance[] {
   const rows = parseCSV(text);
   return rows
     .filter(r => {
-      const compte = toStr(r['Compte'] || r['compte'] || '');
+      const raw = toStr(r['Compte'] || r['compte'] || '');
+      const compte = normalizeCompte(raw);
       return compte && /^\d/.test(compte) && compte.length >= 3;
     })
     .map(r => {
-      const compte = toStr(r['Compte'] || r['compte'] || '').replace(/[^0-9]/g, '').substring(0, 9);
+      const compte = normalizeCompte(toStr(r['Compte'] || r['compte'] || '')).replace(/[^0-9]/g, '').substring(0, 9);
       const classe = compte.charAt(0);
       return {
         compte,
@@ -228,7 +234,7 @@ export function detectBudgetType(bal: LigneBalance[]): BudgetTypeDetection {
 // On cherche des mots-clés dans les colonnes rupture
 export function separerBalanceBPBA(raw: Record<string, string>[]): LigneBalance[] {
   return raw.map(r => {
-    const compte = toStr(r['Compte'] || r['compte'] || '').replace(/[^0-9]/g, '').substring(0, 9);
+    const compte = normalizeCompte(toStr(r['Compte'] || r['compte'] || '')).replace(/[^0-9]/g, '').substring(0, 9);
     if (!compte || !/^\d/.test(compte)) return null;
 
     // Détection BA via colonnes rupture Op@le
