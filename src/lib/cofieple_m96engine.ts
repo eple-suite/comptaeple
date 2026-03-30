@@ -385,7 +385,7 @@ export function calculerResultatsM96(
   const domaines: Record<string, DomaineData> = {};
   const buildDomKey = (d: string) => (d || '').charAt(0) || '0';
 
-  sde.forEach(r => {
+  sdeForAccounting.forEach(r => {
     const dk = buildDomKey(r.domaine);
     if (!domaines[dk]) domaines[dk] = {
       code: dk, libelle: DOMAINE_LABELS[dk] || `D${dk}`,
@@ -397,7 +397,7 @@ export function calculerResultatsM96(
     domaines[dk].chargesPrev += r.budget;
     domaines[dk].chargesReel += r.realise;
   });
-  sdr.forEach(r => {
+  sdrForAccounting.forEach(r => {
     const dk = buildDomKey(r.domaine);
     if (!domaines[dk]) domaines[dk] = {
       code: dk, libelle: DOMAINE_LABELS[dk] || `D${dk}`,
