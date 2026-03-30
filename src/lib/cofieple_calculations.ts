@@ -60,6 +60,15 @@ function findCol(row: Record<string, string>, ...names: string[]): string {
       if (nk.startsWith(nn) || nn.startsWith(nk)) return String(val ?? '');
     }
   }
+  // Last resort: "includes" match — handles Op@le headers with
+  // "Somme de" / "Affichage" prefixes, e.g.
+  // "Somme de Affichage Solde débit" should match "Solde débit"
+  for (const [key, val] of Object.entries(row)) {
+    const nk = normalizeHeader(key);
+    for (const nn of normalizedNames) {
+      if (nn.length >= 4 && nk.includes(nn)) return String(val ?? '');
+    }
+  }
   return '';
 }
 

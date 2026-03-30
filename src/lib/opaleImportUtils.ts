@@ -159,12 +159,21 @@ export function normalizeRowsForOpaleImport(rows: Record<string, string>[]): Rec
     if (metric) metricByAmountHeader.set(amountHeader, metric);
   }
 
-  if (!Array.from(metricByAmountHeader.values()).includes('budget')) {
-    const firstAmountHeader = amountHeaders
-      .slice()
-      .sort((a, b) => (extractIndexedColumnNumber(a, 'montant colonne') ?? 0) - (extractIndexedColumnNumber(b, 'montant colonne') ?? 0))[0];
-    if (firstAmountHeader && !metricByAmountHeader.has(firstAmountHeader)) {
-      metricByAmountHeader.set(firstAmountHeader, 'budget');
+  // ── Default Op@le column mapping ──────────────────────────────────
+  // When descriptor detection fails (no descriptor column, no header tail),
+  // apply the standard Op@le ordering:
+  //   col1=budget, col2=engagé, col3=réalisé, col4=en cours, col5=disponible
+  const sortedAmountHeaders = amountHeaders
+    .slice()
+    .sort((a, b) => (extractIndexedColumnNumber(a, 'montant colonne') ?? 0) - (extractIndexedColumnNumber(b, 'montant colonne') ?? 0));
+
+  const defaultMetricOrder: OpaleAmountMetric[] = ['budget', 'engagé', 'réalisé', 'en cours', 'disponible'];
+
+  // Apply defaults for any column not already detected
+  for (let i = 0; i < sortedAmountHeaders.length && i < defaultMetricOrder.length; i++) {
+    const header = sortedAmountHeaders[i];
+    if (!metricByAmountHeader.has(header)) {
+      metricByAmountHeader.set(header, defaultMetricOrder[i]);
     }
   }
 
