@@ -6,6 +6,8 @@
 
 import { describe, it, expect } from 'vitest';
 import { parseSDE, parseSDR, parseBalance } from '@/lib/cofieple_csvParser';
+import { parserSDE, parserSDR } from '@/lib/cofieple_calculations';
+import { normalizeRowsForOpaleImport } from '@/lib/opaleImportUtils';
 import { calculerResultatsM96, buildChecklist, analyserBalance } from '@/lib/cofieple_m96engine';
 import type { LigneSDE, LigneSDR, LigneBalance } from '@/lib/cofieple_types';
 
@@ -286,6 +288,37 @@ describe('3. Moteur M9-6 — Calculs réglementaires', () => {
       expect(typeof s.produitsReel).toBe('number');
       expect(typeof s.tauxExecCharges).toBe('number');
     });
+  });
+
+  it('utilise la ligne globale Op@le pour calculer les taux d’exécution importés depuis Excel', () => {
+    const sdeRows = normalizeRowsForOpaleImport([
+      { CGR: 'TOTAL ETABLISSEMENT', 'Montant colonne 3': '100 000,00', 'Montant colonne 4': '65 000,00', 'Montant colonne 5': '52 000,00' },
+      { CGR: 'FONC', 'Montant colonne 3': '80 000,00', 'Montant colonne 4': '50 000,00', 'Montant colonne 5': '40 000,00' },
+      { CGR: 'AP', 'Montant colonne 3': '20 000,00', 'Montant colonne 4': '15 000,00', 'Montant colonne 5': '12 000,00' },
+      { CGR: 'AP', Compte: '60611 Fournitures scolaires', 'Montant colonne 3': '10 000,00', 'Montant colonne 4': '8 000,00', 'Montant colonne 5': '7 000,00' },
+    ]);
+    const sdrRows = normalizeRowsForOpaleImport([
+      { CGR: 'TOTAL ETABLISSEMENT', 'Montant colonne 3': '120 000,00', 'Montant colonne 5': '90 000,00', 'Montant colonne 6': '85 000,00' },
+      { CGR: 'FONC', 'Montant colonne 3': '90 000,00', 'Montant colonne 5': '70 000,00', 'Montant colonne 6': '66 000,00' },
+      { CGR: 'AP', 'Montant colonne 3': '30 000,00', 'Montant colonne 5': '20 000,00', 'Montant colonne 6': '19 000,00' },
+      { CGR: 'AP', Compte: '7062 Produits', 'Montant colonne 3': '12 000,00', 'Montant colonne 5': '9 000,00', 'Montant colonne 6': '8 500,00' },
+    ]);
+
+    const sdeExcel = parserSDE(sdeRows, 'principal');
+    const sdrExcel = parserSDR(sdrRows, 'principal');
+    const r = calculerResultatsM96(sdeExcel, sdrExcel, []);
+
+    expect(sdeExcel[0].aggregationLevel).toBe('global');
+    expect(sdrExcel[0].aggregationLevel).toBe('global');
+    expect(r.totalChargesPrev).toBeCloseTo(100000, 2);
+    expect(r.totalProduitsPrev).toBeCloseTo(120000, 2);
+    expect(r.tauxExecCharges).toBeCloseTo(0.65, 4);
+    expect(r.tauxExecProduits).toBeCloseTo(0.75, 4);
+  });
+
+  it('aligne la part encaissée du FDR sur l’autonomie financière', () => {
+    const r = calculerResultatsM96(sde, sdr, bal);
+    expect(r.tresoComposition.autonomieFinanciere).toBeCloseTo(r.fdrPartEncaissee, 2);
   });
 });
 

@@ -3,6 +3,7 @@
 // ═══════════════════════════════════════════════════════════════════
 
 import type { LigneSDE, LigneSDR, LigneBalance, UAIRecord, Etablissement } from './cofieple_types';
+import { enrichParsedSdeRow, enrichParsedSdrRow } from './opaleExecutionHierarchy';
 import { NOMENCLATURE_M96 } from './m96nomenclature';
 
 // ── Cache des préfixes M9-6 autorisés ────────────────────────────────
@@ -65,7 +66,7 @@ export function parseSDE(text: string): LigneSDE[] {
   const rows = parseCSV(text);
   return rows.map(r => {
     const compte = toStr(r['compte'] || r['Compte'] || '').replace(/\s.*/, '').substring(0, 6);
-    return {
+    const base: LigneSDE = {
       rne: toStr(r['RNE'] || r['rne'] || ''),
       exercice: Math.round(toNum(r['exercice'] || r['Exercice'])) || new Date().getFullYear(),
       service: toStr(r['service'] || r['Service'] || ''),
@@ -79,6 +80,7 @@ export function parseSDE(text: string): LigneSDE[] {
       disponible: toNum(r['disponible'] || r['Disponible'] || '0'),
       ext: toStr(r['EXT'] || r['ext'] || ''),
     };
+    return enrichParsedSdeRow(base, r);
   }).filter(r => r.service !== '' || r.compte !== '');
 }
 
@@ -89,7 +91,7 @@ export function parseSDR(text: string): LigneSDR[] {
   const rows = parseCSV(text);
   return rows.map(r => {
     const compte = toStr(r['compte'] || r['Compte'] || '').replace(/\s.*/, '').substring(0, 6);
-    return {
+    const base: LigneSDR = {
       rne: toStr(r['RNE'] || r['rne'] || ''),
       exercice: Math.round(toNum(r['exercice'] || r['Exercice'])) || new Date().getFullYear(),
       service: toStr(r['service'] || r['Service'] || ''),
@@ -104,6 +106,7 @@ export function parseSDR(text: string): LigneSDR[] {
       plusValues: toNum(r['+values/-values'] || r['plusValues'] || '0'),
       extourne: toStr(r['EXTOURNE'] || r['extourne'] || 'N'),
     };
+    return enrichParsedSdrRow(base, r);
   }).filter(r => r.service !== '' || r.compte !== '');
 }
 
