@@ -400,8 +400,28 @@ export const useCofiepleStore = create<Store>()(
             const sde = S.sde[bt] || [];
             const sdr = S.sdr[bt] || [];
             const bal = S.balance[bt] || [];
+            // ── Diagnostic temporaire ──
+            if (sde.length > 0) {
+              const sample = sde.slice(0, 3);
+              const totalBudget = sde.reduce((s: number, r: any) => s + (r.budget || 0), 0);
+              const totalRealise = sde.reduce((s: number, r: any) => s + (r.realise || 0), 0);
+              console.log(`[DIAG] SDE ${bt}: ${sde.length} lignes, totalBudget=${totalBudget}, totalRealise=${totalRealise}`, sample);
+              // Show all keys of first row to understand data structure
+              if (sde[0]) console.log(`[DIAG] SDE ${bt} keys:`, Object.keys(sde[0]), 'values:', JSON.stringify(sde[0]));
+            }
+            if (sdr.length > 0) {
+              const totalBudget = sdr.reduce((s: number, r: any) => s + (r.budget || 0), 0);
+              const totalRealise = sdr.reduce((s: number, r: any) => s + (r.realise || 0), 0);
+              console.log(`[DIAG] SDR ${bt}: ${sdr.length} lignes, totalBudget=${totalBudget}, totalRealise=${totalRealise}`);
+              if (sdr[0]) console.log(`[DIAG] SDR ${bt} keys:`, Object.keys(sdr[0]), 'values:', JSON.stringify(sdr[0]));
+            }
+            if (bal.length > 0) {
+              console.log(`[DIAG] BAL ${bt}: ${bal.length} lignes`);
+            }
             if (sde.length > 0 || sdr.length > 0 || bal.length > 0) {
-              newResultats[bt] = calculerResultats(sde, sdr, bal, S.sde1[bt] || [], S.sdr1[bt] || [], S.balance1[bt] || [], bt);
+              const result = calculerResultats(sde, sdr, bal, S.sde1[bt] || [], S.sdr1[bt] || [], S.balance1[bt] || [], bt);
+              console.log(`[DIAG] Résultats ${bt}: cafBudgetaire=${result.cafBudgetaire}, tauxExecCharges=${result.tauxExecCharges}, tauxExecProduits=${result.tauxExecProduits}, totalChargesPrev=${result.totalChargesPrev}, totalProduitsPrev=${result.totalProduitsPrev}, totalChargesSde=${result.totalChargesSde}, totalProduitsSdr=${result.totalProduitsSdr}`);
+              newResultats[bt] = result;
             }
           }
 
