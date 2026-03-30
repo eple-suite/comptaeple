@@ -95,7 +95,7 @@ export function parseSDE(text: string): LigneSDE[] {
 export function parseSDR(text: string): LigneSDR[] {
   const rows = parseCSV(text);
   return rows.map(r => {
-    const compte = toStr(r['compte'] || r['Compte'] || '').replace(/\s.*/, '').substring(0, 6);
+    const compte = normalizeCompte(toStr(r['compte'] || r['Compte'] || '')).substring(0, 6);
     const base: LigneSDR = {
       rne: toStr(r['RNE'] || r['rne'] || ''),
       exercice: Math.round(toNum(r['exercice'] || r['Exercice'])) || new Date().getFullYear(),
