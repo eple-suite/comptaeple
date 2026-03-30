@@ -726,17 +726,9 @@ export function ImportSection() {
       </Card>
 
       {/* Debug panel — dev only */}
-      <ImportDebugPanel />
+      <ImportDebug />
     </div>
   );
-}
-
-// Lazy import to avoid bundling in prod
-function ImportDebugPanel() {
-  if (import.meta.env.PROD) return null;
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { ImportDebug } = require('./ImportDebug') as { ImportDebug: React.FC };
-  return <ImportDebug />;
 }
 
 function ImportBox({ slot, loaded, stat, error, securityBlock, onFile }: {
