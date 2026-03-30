@@ -36,6 +36,8 @@ export interface LigneSDE {
   activite: string; compte: string; budget: number; engage: number;
   realise: number; encours: number; disponible: number; ext: string;
   budgetScope?: BudgetScope; codeAnnexe?: string;
+  aggregationLevel?: import('./opaleExecutionHierarchy').AggregationLevel;
+  serviceCode?: string; rawLabel?: string; isSummary?: boolean;
 }
 
 export interface LigneSDR {
