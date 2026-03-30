@@ -401,7 +401,20 @@ export const useCofiepleStore = create<Store>()(
             const sdr = S.sdr[bt] || [];
             const bal = S.balance[bt] || [];
             if (sde.length > 0 || sdr.length > 0 || bal.length > 0) {
+              // Debug: log parsed totals to diagnose budget/realized mapping
+              if (sde.length > 0) {
+                const totalBudget = sde.reduce((s, r) => s + r.budget, 0);
+                const totalRealise = sde.reduce((s, r) => s + r.realise, 0);
+                console.log(`[COFIEPLE] SDE ${bt}: ${sde.length} lignes, budget=${totalBudget.toFixed(2)}, réalisé=${totalRealise.toFixed(2)}`);
+                if (sde.length <= 3) {
+                  console.log('[COFIEPLE] SDE sample:', JSON.stringify(sde.slice(0, 3)));
+                } else {
+                  console.log('[COFIEPLE] SDE colonnes premier enregistrement:', Object.keys(sde[0]));
+                  console.log('[COFIEPLE] SDE sample[0]:', JSON.stringify(sde[0]));
+                }
+              }
               const result = calculerResultats(sde, sdr, bal, S.sde1[bt] || [], S.sdr1[bt] || [], S.balance1[bt] || [], bt);
+              console.log(`[COFIEPLE] Résultat ${bt}: chargesPrev=${result.totalChargesPrev?.toFixed(2)}, chargesSde=${result.totalChargesSde?.toFixed(2)}, tauxExec=${(result.tauxExecCharges * 100).toFixed(1)}%`);
               newResultats[bt] = result;
             }
           }

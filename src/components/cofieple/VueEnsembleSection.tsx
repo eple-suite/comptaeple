@@ -52,26 +52,27 @@ export function VueEnsembleSection() {
   const legacyBrokenImports =
     (sde.length > 0 && sde.every((row) => !row.compte && row.budget === 0 && row.realise === 0)) ||
     (sdr.length > 0 && sdr.every((row) => !row.compte && row.budget === 0 && row.realise === 0));
-  const hasChargeRate = R.totalChargesPrev > 0 && Number.isFinite(R.tauxExecCharges);
-  const hasProductRate = R.totalProduitsPrev > 0 && Number.isFinite(R.tauxExecProduits);
-  const fallbackChargeRate = R.totalChargesRef > 0 && R.totalChargesSde > 0
-    ? R.totalChargesSde / R.totalChargesRef
-    : null;
-  const fallbackProductRate = R.totalProduitsRef > 0 && R.totalProduitsSdr > 0
-    ? R.totalProduitsSdr / R.totalProduitsRef
-    : null;
-  const effectiveChargeRate = hasChargeRate ? R.tauxExecCharges : fallbackChargeRate;
-  const effectiveProductRate = hasProductRate ? R.tauxExecProduits : fallbackProductRate;
+  // Taux d'exécution : utiliser uniquement le vrai ratio réalisé/prévu
+  // Ne PAS utiliser totalChargesRef en fallback car quand SDE existe,
+  // totalChargesRef = totalChargesSde → ratio = 100% (faux)
+  const hasChargeRate = R.totalChargesPrev > 0 && Number.isFinite(R.tauxExecCharges) && R.tauxExecCharges > 0;
+  const hasProductRate = R.totalProduitsPrev > 0 && Number.isFinite(R.tauxExecProduits) && R.tauxExecProduits > 0;
+  const effectiveChargeRate = hasChargeRate ? R.tauxExecCharges : null;
+  const effectiveProductRate = hasProductRate ? R.tauxExecProduits : null;
   const tauxChargesDisplay = effectiveChargeRate !== null
     ? `${(effectiveChargeRate * 100).toFixed(1)} %`
-    : legacyBrokenImports
-      ? 'À recalculer'
-      : '0.0 %';
+    : (R.totalChargesSde > 0 && R.totalChargesPrev === 0)
+      ? 'Budget non importé'
+      : legacyBrokenImports
+        ? 'À recalculer'
+        : '0.0 %';
   const tauxProduitsDisplay = effectiveProductRate !== null
     ? `${(effectiveProductRate * 100).toFixed(1)} %`
-    : legacyBrokenImports
-      ? 'À recalculer'
-      : '0.0 %';
+    : (R.totalProduitsSdr > 0 && R.totalProduitsPrev === 0)
+      ? 'Budget non importé'
+      : legacyBrokenImports
+        ? 'À recalculer'
+        : '0.0 %';
 
   // Radar 8 axes
   const normalize = (val: number, good: number, bad: number) => {
