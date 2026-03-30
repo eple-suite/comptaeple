@@ -430,7 +430,7 @@ export const useCofiepleStore = create<Store>()(
           if (estId) saveEstablishmentSnapshot(estId, extractSnapshot(get()));
           debouncedBackendSync(get());
         } catch (error) {
-          console.error('Erreur lors de l’analyse budgétaire :', error);
+          console.error('[COFIEPLE] Erreur analyse budgetaire:', error);
         } finally {
           set(state => { state.analysisRunning = false; });
         }

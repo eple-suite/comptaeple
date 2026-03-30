@@ -10,12 +10,13 @@ import { Button } from '@/components/ui/button';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
+import { toast } from 'sonner';
 import {
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, Cell, ReferenceLine,
 } from 'recharts';
-import { Activity, Shield, AlertTriangle, TrendingUp, TrendingDown, Minus, ArrowRight, RefreshCw } from 'lucide-react';
+import { Activity, Shield, AlertTriangle, TrendingUp, TrendingDown, Minus, ArrowRight, RefreshCw, Loader2 } from 'lucide-react';
 
 export function VueEnsembleSection() {
   const resultats = useCofiepleStore(s => s.resultats);
@@ -27,6 +28,7 @@ export function VueEnsembleSection() {
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
   const lastAnalysisAt = useCofiepleStore(s => s.lastAnalysisAt);
   const lancerAnalyse = useCofiepleStore(s => s.lancerAnalyse);
+  const analysisRunning = useCofiepleStore(s => s.analysisRunning);
   const R = resultats[activeBudget];
 
   if (!R) return <EmptyState msg="Importez les fichiers Op@le et lancez l'analyse pour afficher la vue d'ensemble du compte financier." />;
@@ -103,8 +105,12 @@ export function VueEnsembleSection() {
             Dernière analyse : {new Date(lastAnalysisAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'medium' })}
           </>
         )}
-        <Button size="sm" variant="outline" className="ml-auto gap-1.5" onClick={() => lancerAnalyse()}>
-          <RefreshCw className="h-3.5 w-3.5" />
+        <Button size="sm" variant="outline" className="ml-auto gap-1.5" disabled={analysisRunning}
+          onClick={() => {
+            lancerAnalyse();
+            toast.success('Analyse terminée — indicateurs mis à jour');
+          }}>
+          {analysisRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
           Réanalyser maintenant
         </Button>
       </div>
