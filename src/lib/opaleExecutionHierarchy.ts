@@ -10,6 +10,11 @@ const METADATA_KEYS = new Set([
   'aor', 'encours', 'en cours', 'disponible', 'plusvalues', '+values/-values', 'plus values',
 ]);
 
+const NUMERIC_FALLBACK_EXCLUDED_KEYS = new Set([
+  ...METADATA_KEYS,
+  'service', 'domaine', 'activite', 'activités', 'compte', 'rawlabel', 'issummary', 'aggregationlevel', 'servicecode',
+]);
+
 const SERVICE_PATTERNS: Array<{ code: string; label: string; test: RegExp }> = [
   { code: 'AP', label: 'Activités pédagogiques', test: /(^|\b)ap(\b|\s|-)|activites?\s+pedago/i },
   { code: 'VE', label: 'Vie de l’élève', test: /(^|\b)ve(\b|\s|-)|vie\s+de\s+l'?eleve/i },
@@ -87,23 +92,48 @@ function getIndexedAmountMap(row: Record<string, string>): Map<number, number> {
   );
 }
 
+function getSequentialNumericValues(row: Record<string, string>): number[] {
+  return Object.entries(row)
+    .map(([key, value]) => {
+      const normalizedKey = normalizeColumnName(key);
+      if (
+        NUMERIC_FALLBACK_EXCLUDED_KEYS.has(normalizedKey) ||
+        normalizedKey.startsWith('colonne') ||
+        normalizedKey.startsWith('montant colonne') ||
+        normalizedKey.startsWith('col_')
+      ) {
+        return null;
+      }
+
+      const raw = String(value ?? '').trim();
+      if (!raw || !/\d/.test(raw)) return null;
+
+      const parsed = toNumLoose(raw);
+      if (!Number.isFinite(parsed)) return null;
+      if (Math.abs(parsed) === 0 && !/^[-(]?0(?:[,.]0+)?\)?$/.test(raw.replace(/\s/g, ''))) return null;
+
+      return parsed;
+    })
+    .filter((value): value is number => value != null);
+}
+
 function getFallbackMetricValue(kind: ExecutionKind, row: Record<string, string>, metric: string): number {
   const indexedAmounts = getIndexedAmountMap(row);
   const absoluteIndexByMetric = kind === 'sde'
     ? {
-        budget: [3, 1],
-        engage: [4, 2],
-        realise: [5, 3],
-        encours: [6, 4],
-        disponible: [7, 5],
+        budget: [3, 2, 1],
+        engage: [4, 3, 2],
+        realise: [5, 4, 3],
+        encours: [6, 5, 4],
+        disponible: [7, 6, 5],
       }
     : {
-        budget: [3, 1],
-        engage: [4, 2],
-        aor: [5, 3],
-        realise: [6, 4],
-        encours: [7, 5],
-        plusValues: [8, 6],
+        budget: [3, 2, 1],
+        engage: [4, 3, 2],
+        aor: [5, 4, 3],
+        realise: [6, 5, 4],
+        encours: [7, 6, 5],
+        plusValues: [8, 7, 6],
       };
 
   const preferredIndexes = absoluteIndexByMetric[metric as keyof typeof absoluteIndexByMetric] ?? [];
@@ -113,7 +143,8 @@ function getFallbackMetricValue(kind: ExecutionKind, row: Record<string, string>
   }
 
   const ordered = getOrderedAmountValues(row);
-  if (!ordered.length) return 0;
+  const sequentialValues = ordered.length > 0 ? ordered : getSequentialNumericValues(row);
+  if (!sequentialValues.length) return 0;
 
   const mapping = kind === 'sde'
     ? ['budget', 'engage', 'realise', 'encours', 'disponible']
@@ -121,8 +152,18 @@ function getFallbackMetricValue(kind: ExecutionKind, row: Record<string, string>
 
   const idx = mapping.indexOf(metric);
   if (idx === -1) return 0;
-  if (metric === 'realise' && kind === 'sdr') return ordered[idx] || ordered[idx - 1] || 0;
-  return ordered[idx] || 0;
+  if (metric === 'realise' && kind === 'sdr') return sequentialValues[idx] || sequentialValues[idx - 1] || 0;
+  return sequentialValues[idx] || 0;
+}
+
+function sortRowsByBudgetPriority<T extends { budget: number; realise: number }>(rows: T[], rateSelector: (row: T) => number) {
+  return rows.slice().sort((a, b) => {
+    const budgetDelta = (b.budget || 0) - (a.budget || 0);
+    if (budgetDelta !== 0) return budgetDelta;
+    const rateDelta = rateSelector(b) - rateSelector(a);
+    if (rateDelta !== 0) return rateDelta;
+    return (b.realise || 0) - (a.realise || 0);
+  });
 }
 
 function collectHierarchyLabels(row: Record<string, string>): string[] {
@@ -265,11 +306,15 @@ export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
   const detailRows = meaningfulRows.filter((row) => row.aggregationLevel === 'detail');
   const serviceRows = meaningfulRows.filter((row) => row.aggregationLevel === 'service');
   const globalRows = meaningfulRows.filter((row) => row.aggregationLevel === 'global');
-  const preferredGlobal = globalRows.slice().sort((a, b) => Math.max(b.budget, b.engage, b.realise) - Math.max(a.budget, a.engage, a.realise))[0];
+  const sortedGlobalRows = sortRowsByBudgetPriority(globalRows, (row) => getChargeRateBase(row));
+  const preferredBudgetGlobal = sortedGlobalRows.find((row) => row.budget > 0);
+  const preferredRateGlobal = sortedGlobalRows.find((row) => getChargeRateBase(row) > 0);
+  const serviceRowsWithBudget = serviceRows.filter((row) => row.budget > 0);
+  const detailRowsWithBudget = detailRows.filter((row) => row.budget > 0);
 
-  const budgetSource = preferredGlobal ? [preferredGlobal] : serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows;
-  const realisedSource = detailRows.length ? detailRows : serviceRows.length ? serviceRows : preferredGlobal ? [preferredGlobal] : meaningfulRows;
-  const rateSource = preferredGlobal ? [preferredGlobal] : serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows;
+  const budgetSource = preferredBudgetGlobal ? [preferredBudgetGlobal] : serviceRowsWithBudget.length ? serviceRowsWithBudget : detailRowsWithBudget.length ? detailRowsWithBudget : meaningfulRows;
+  const realisedSource = detailRows.length ? detailRows : serviceRows.length ? serviceRows : preferredRateGlobal ? [preferredRateGlobal] : meaningfulRows;
+  const rateSource = preferredRateGlobal ? [preferredRateGlobal] : serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows;
   const serviceBaseRows = serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
 
   return {
@@ -285,11 +330,15 @@ export function deriveSdrExecutionTotals(rows: LigneSDR[]) {
   const detailRows = meaningfulRows.filter((row) => row.aggregationLevel === 'detail');
   const serviceRows = meaningfulRows.filter((row) => row.aggregationLevel === 'service');
   const globalRows = meaningfulRows.filter((row) => row.aggregationLevel === 'global');
-  const preferredGlobal = globalRows.slice().sort((a, b) => Math.max(b.budget, b.aor, b.realise) - Math.max(a.budget, a.aor, a.realise))[0];
+  const sortedGlobalRows = sortRowsByBudgetPriority(globalRows, (row) => getProductRateBase(row));
+  const preferredBudgetGlobal = sortedGlobalRows.find((row) => row.budget > 0);
+  const preferredRateGlobal = sortedGlobalRows.find((row) => getProductRateBase(row) > 0);
+  const serviceRowsWithBudget = serviceRows.filter((row) => row.budget > 0);
+  const detailRowsWithBudget = detailRows.filter((row) => row.budget > 0);
 
-  const budgetSource = preferredGlobal ? [preferredGlobal] : serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows;
-  const realisedSource = detailRows.length ? detailRows : serviceRows.length ? serviceRows : preferredGlobal ? [preferredGlobal] : meaningfulRows;
-  const rateSource = preferredGlobal ? [preferredGlobal] : serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows;
+  const budgetSource = preferredBudgetGlobal ? [preferredBudgetGlobal] : serviceRowsWithBudget.length ? serviceRowsWithBudget : detailRowsWithBudget.length ? detailRowsWithBudget : meaningfulRows;
+  const realisedSource = detailRows.length ? detailRows : serviceRows.length ? serviceRows : preferredRateGlobal ? [preferredRateGlobal] : meaningfulRows;
+  const rateSource = preferredRateGlobal ? [preferredRateGlobal] : serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows;
   const serviceBaseRows = serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
 
   return {
