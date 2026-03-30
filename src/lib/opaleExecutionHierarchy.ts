@@ -156,10 +156,7 @@ function getFallbackMetricValue(kind: ExecutionKind, row: Record<string, string>
   return sequentialValues[idx] || 0;
 }
 
-function sortRowsByBudgetPriority<T extends Pick<LigneSDE, 'budget' | 'realise' | 'engage'> | Pick<LigneSDR, 'budget' | 'realise' | 'aor'>>(
-  rows: T[],
-  rateSelector: (row: T) => number
-) {
+function sortRowsByBudgetPriority<T extends { budget: number; realise: number }>(rows: T[], rateSelector: (row: T) => number) {
   return rows.slice().sort((a, b) => {
     const budgetDelta = (b.budget || 0) - (a.budget || 0);
     if (budgetDelta !== 0) return budgetDelta;
@@ -309,7 +306,7 @@ export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
   const detailRows = meaningfulRows.filter((row) => row.aggregationLevel === 'detail');
   const serviceRows = meaningfulRows.filter((row) => row.aggregationLevel === 'service');
   const globalRows = meaningfulRows.filter((row) => row.aggregationLevel === 'global');
-  const sortedGlobalRows = sortRowsByBudgetPriority(globalRows, getChargeRateBase);
+  const sortedGlobalRows = sortRowsByBudgetPriority(globalRows, (row) => getChargeRateBase(row));
   const preferredBudgetGlobal = sortedGlobalRows.find((row) => row.budget > 0);
   const preferredRateGlobal = sortedGlobalRows.find((row) => getChargeRateBase(row) > 0);
   const serviceRowsWithBudget = serviceRows.filter((row) => row.budget > 0);
@@ -333,7 +330,7 @@ export function deriveSdrExecutionTotals(rows: LigneSDR[]) {
   const detailRows = meaningfulRows.filter((row) => row.aggregationLevel === 'detail');
   const serviceRows = meaningfulRows.filter((row) => row.aggregationLevel === 'service');
   const globalRows = meaningfulRows.filter((row) => row.aggregationLevel === 'global');
-  const sortedGlobalRows = sortRowsByBudgetPriority(globalRows, getProductRateBase);
+  const sortedGlobalRows = sortRowsByBudgetPriority(globalRows, (row) => getProductRateBase(row));
   const preferredBudgetGlobal = sortedGlobalRows.find((row) => row.budget > 0);
   const preferredRateGlobal = sortedGlobalRows.find((row) => getProductRateBase(row) > 0);
   const serviceRowsWithBudget = serviceRows.filter((row) => row.budget > 0);

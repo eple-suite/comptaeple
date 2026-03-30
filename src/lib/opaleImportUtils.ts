@@ -45,9 +45,16 @@ export function findColumnIndex(headers: string[], possibleNames: string[]): num
 
 export function extractIndexedColumnNumber(header: string, prefix: 'montant colonne' | 'colonne'): number | null {
   const normalized = normalizeColumnName(header);
-  if (!normalized.startsWith(prefix)) return null;
-  const suffix = normalized.slice(prefix.length).trim();
-  const match = suffix.match(/^(\d+)/);
+  const parts = normalized.split('|').map((part) => part.trim()).filter(Boolean);
+
+  for (const part of parts.length > 0 ? parts : [normalized]) {
+    if (!part.startsWith(prefix)) continue;
+    const suffix = part.slice(prefix.length).trim();
+    const match = suffix.match(/^(\d+)/);
+    if (match) return parseInt(match[1], 10);
+  }
+
+  const match = normalized.match(new RegExp(`(?:^|\\|)\\s*${prefix}\\s*(\\d+)`));
   return match ? parseInt(match[1], 10) : null;
 }
 
@@ -124,7 +131,12 @@ export function normalizeRowsForOpaleImport(rows: Record<string, string>[]): Rec
 
     const descriptorHeader = headers.find((h) => extractIndexedColumnNumber(h, 'colonne') === idx);
     const descriptorCandidates: string[] = [];
-    const headerTail = amountHeader.split('|').slice(1).join(' ').trim();
+    const headerTail = amountHeader
+      .split('|')
+      .map((part) => cleanHeaderLabel(part))
+      .filter((part) => extractIndexedColumnNumber(part, 'montant colonne') == null)
+      .join(' ')
+      .trim();
     if (headerTail) descriptorCandidates.push(headerTail);
     if (descriptorHeader) descriptorCandidates.push(descriptorHeader);
 

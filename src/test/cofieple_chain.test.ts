@@ -316,6 +316,24 @@ describe('3. Moteur M9-6 — Calculs réglementaires', () => {
     expect(r.tauxExecProduits).toBeCloseTo(0.75, 4);
   });
 
+  it('détecte les colonnes montant même quand l’en-tête composite place le libellé avant le numéro de colonne', () => {
+    const sdeRows = normalizeRowsForOpaleImport([
+      {
+        CGR: 'TOTAL ETABLISSEMENT',
+        'Budget | Montant colonne 3': '100 000,00',
+        'Engagé | Montant colonne 4': '80 000,00',
+        'Réalisé | Montant colonne 5': '70 000,00',
+      },
+    ]);
+
+    const sdeExcel = parserSDE(sdeRows, 'principal');
+
+    expect(sdeExcel[0].budget).toBeCloseTo(100000, 2);
+    expect(sdeExcel[0].engage).toBeCloseTo(80000, 2);
+    expect(sdeExcel[0].realise).toBeCloseTo(70000, 2);
+    expect(sdeExcel[0].aggregationLevel).toBe('global');
+  });
+
   it('aligne la part encaissée du FDR sur l’autonomie financière', () => {
     const r = calculerResultatsM96(sde, sdr, bal);
     expect(r.tresoComposition.autonomieFinanciere).toBeCloseTo(r.fdrPartEncaissee, 2);
