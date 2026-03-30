@@ -245,15 +245,17 @@ export function calculerResultatsM96(
   const patrimoineOriginesPctFP = valeurNette > 0 ? (patrimoineOriginesFondsPropres / valeurNette) * 100 : 0;
   const patrimoineOriginesPctSub = valeurNette > 0 ? (patrimoineOriginesSubventions / valeurNette) * 100 : 0;
 
-  // ── Services ───────────────────────────────────────────────────────
+  // ── Services (utiliser serviceBaseRows du moteur de hiérarchie) ────
   const services: Record<string, ServiceData> = {};
-  sde.forEach(r => {
+  const sdeServiceRows = sdeExec.serviceBaseRows.length > 0 ? sdeExec.serviceBaseRows : sdeForAccounting;
+  const sdrServiceRows = sdrExec.serviceBaseRows.length > 0 ? sdrExec.serviceBaseRows : sdrForAccounting;
+  sdeServiceRows.forEach(r => {
     const k = extractService(r.service);
     if (!services[k]) services[k] = { libelle: r.service.split(/[-–]/)[0].trim(), chargesPrev: 0, chargesReel: 0, reliquats: 0, tauxExecCharges: 0, produitsPrev: 0, produitsReel: 0, plusValues: 0, tauxExecProduits: 0, solde: 0 };
     services[k].chargesPrev += r.budget;
     services[k].chargesReel += r.realise;
   });
-  sdr.forEach(r => {
+  sdrServiceRows.forEach(r => {
     const k = extractService(r.service);
     if (!services[k]) services[k] = { libelle: r.service.split(/[-–]/)[0].trim(), chargesPrev: 0, chargesReel: 0, reliquats: 0, tauxExecCharges: 0, produitsPrev: 0, produitsReel: 0, plusValues: 0, tauxExecProduits: 0, solde: 0 };
     services[k].produitsPrev += r.budget;
@@ -267,20 +269,22 @@ export function calculerResultatsM96(
     s.solde = s.produitsReel - s.chargesReel;
   });
 
-  // ── Nature charges/produits ────────────────────────────────────────
+  // ── Nature charges/produits (détail uniquement) ────────────────────
   const chargesNature: Record<string, number> = {};
-  sde.forEach(r => {
+  sdeForAccounting.forEach(r => {
     const nat = r.compte.substring(0, 3);
     chargesNature[nat] = (chargesNature[nat] || 0) + r.realise;
   });
   const produitsOrigine: Record<string, number> = {};
-  sdr.forEach(r => {
+  sdrForAccounting.forEach(r => {
     const nat = r.compte.substring(0, 3);
     produitsOrigine[nat] = (produitsOrigine[nat] || 0) + r.realise;
   });
 
-  const tauxExecCharges  = totalChargesPrev > 0 ? totalChargesSde / totalChargesPrev : 0;
-  const tauxExecProduits = totalProduitsPrev > 0 ? totalProduitsSdr / totalProduitsPrev : 0;
+  // Taux d'exécution : utilise totalForRate du moteur de hiérarchie
+  // (engagé pour dépenses, AOR/réalisé pour recettes)
+  const tauxExecCharges  = totalChargesPrev > 0 ? sdeExec.totalForRate / totalChargesPrev : 0;
+  const tauxExecProduits = totalProduitsPrev > 0 ? sdrExec.totalForRate / totalProduitsPrev : 0;
 
   // ── Charges de fonctionnement (hors investissement) ────────────────
   // Le dénominateur REPROFI utilise uniquement les charges de fonctionnement,
