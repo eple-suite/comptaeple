@@ -95,13 +95,19 @@ export function VueEnsembleSection() {
 
   return (
     <div className="space-y-4">
-      {/* Horodatage dernière analyse */}
-      {lastAnalysisAt && (
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">
-          <Activity className="h-3.5 w-3.5" />
-          Dernière analyse : {new Date(lastAnalysisAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'medium' })}
-        </div>
-      )}
+      {/* Horodatage + bouton réanalyser */}
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        {lastAnalysisAt && (
+          <>
+            <Activity className="h-3.5 w-3.5" />
+            Dernière analyse : {new Date(lastAnalysisAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'medium' })}
+          </>
+        )}
+        <Button size="sm" variant="outline" className="ml-auto gap-1.5" onClick={() => lancerAnalyse()}>
+          <RefreshCw className="h-3.5 w-3.5" />
+          Réanalyser maintenant
+        </Button>
+      </div>
       {/* 6 KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
         <KPICard label="Fonds de roulement" value={formatEur(fdr)} color={fdr >= 0 ? 'green' : 'red'}
