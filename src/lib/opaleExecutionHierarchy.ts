@@ -134,7 +134,7 @@ function getFallbackMetricValue(kind: ExecutionKind, row: Record<string, string>
     : {
         budget: [1, 2, 3],
         engage: [2, 1, 3],
-        aor: [3, 2, 5],
+        aor: [2, 3, 5],
         realise: [3, 4, 5],
         encours: [4, 5, 6],
         plusValues: [5, 6, 7],
