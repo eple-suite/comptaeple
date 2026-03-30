@@ -551,8 +551,12 @@ export function calculerResultatsM96(
     patrimoineOriginesPctFP, patrimoineOriginesPctSub,
     variationPatrimoine,
     tresoComposition: {
-      autonomieFinanciere, depotsCautions, reglementsEnAttente,
-      avancesRecues, reliquatsSubventions, tresorerieSpecifique,
+      autonomieFinanciere,
+      depotsCautions: sumBal(bal, c => c.startsWith('165') || c.startsWith('275'), 'solDbt'),
+      reglementsEnAttente: sumBal(bal, c => c.startsWith('511') || c.startsWith('5117'), 'solDbt'),
+      avancesRecues: totalDettes - dettesFournisseurs - dettesEtat - dettesCollectivite,
+      reliquatsSubventions,
+      tresorerieSpecifique: 0,
     },
     fdrMobilisable, resultatN1,
     // New fields
