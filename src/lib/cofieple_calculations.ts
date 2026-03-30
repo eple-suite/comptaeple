@@ -7,6 +7,7 @@
 import type { LigneSDE, LigneSDR, LigneBalance } from './cofieple_types';
 import { calculerResultatsM96, buildChecklist, analyserBalance as analyserBalanceEngine, calculerBudgetAnnexe } from './cofieple_m96engine';
 import { fmtEur, fmtPct, parseSDE, parseSDR, parseBalance, detectBudgetType } from './cofieple_csvParser';
+import { enrichParsedSdeRow, enrichParsedSdrRow } from './opaleExecutionHierarchy';
 import type {
   TypeBudget, ResultatsUI, CheckItem, AnomalieBalance,
   ServiceDataUI, IndicateursBA,
@@ -108,7 +109,7 @@ export function parserSDE(rows: Record<string, string>[], _typeBudget: TypeBudge
     return nk.includes('service') || nk.includes('compte') || nk.includes('budget');
   });
   if (hasDirectCols) {
-    return rows.map(r => ({
+    return rows.map(r => enrichParsedSdeRow({
       rne: findCol(r, 'RNE', 'rne'),
       exercice: Math.round(toNumDirect(findCol(r, 'exercice', 'Exercice'))) || new Date().getFullYear(),
       service: findCol(r, 'service', 'Service'),
@@ -121,7 +122,7 @@ export function parserSDE(rows: Record<string, string>[], _typeBudget: TypeBudge
       encours: toNumDirect(findCol(r, 'en cours', 'encours', 'En cours')),
       disponible: toNumDirect(findCol(r, 'disponible', 'Disponible')),
       ext: findCol(r, 'EXT', 'ext'),
-    })).filter(r => r.service !== '' || r.compte !== '');
+    }, r)).filter(r => r.service !== '' || r.compte !== '');
   }
   return parseSDE(rowsToCSV(rows));
 }
@@ -134,7 +135,7 @@ export function parserSDR(rows: Record<string, string>[], _typeBudget: TypeBudge
     return nk.includes('service') || nk.includes('compte') || nk.includes('budget');
   });
   if (hasDirectCols) {
-    return rows.map(r => ({
+    return rows.map(r => enrichParsedSdrRow({
       rne: findCol(r, 'RNE', 'rne'),
       exercice: Math.round(toNumDirect(findCol(r, 'exercice', 'Exercice'))) || new Date().getFullYear(),
       service: findCol(r, 'service', 'Service'),
@@ -148,7 +149,7 @@ export function parserSDR(rows: Record<string, string>[], _typeBudget: TypeBudge
       encours: toNumDirect(findCol(r, 'en cours', 'encours', 'En cours')),
       plusValues: toNumDirect(findCol(r, '+values/-values', 'plusValues', '+values')),
       extourne: findCol(r, 'EXTOURNE', 'extourne') || 'N',
-    })).filter(r => r.service !== '' || r.compte !== '');
+    }, r)).filter(r => r.service !== '' || r.compte !== '');
   }
   return parseSDR(rowsToCSV(rows));
 }
@@ -241,13 +242,9 @@ export function calculerResultats(
     // Le budget initial (prévisions) se trouve dans la même colonne que
     // le réalisé dans les fichiers SDE/SDR Op@le — c'est la première
     // colonne de chiffres. Le parsing doit le capturer directement.
-    // Recalcul des taux d'exécution
-    if (r.totalChargesPrev > 0) {
-      r.tauxExecCharges = r.totalChargesSde / r.totalChargesPrev;
-    }
-    if (r.totalProduitsPrev > 0) {
-      r.tauxExecProduits = r.totalProduitsSdr / r.totalProduitsPrev;
-    }
+    // Ne jamais écraser ici les taux calculés par le moteur hiérarchique.
+    // Pour Op@le, le taux d'exécution doit rester fondé sur la base globale
+    // retenue (engagé en dépenses, AOR en recettes), pas sur le réalisé brut.
     // Recalcul du résultat budgétaire
     r.resultatBudgetaire = r.totalProduitsSdr - r.totalChargesSde;
 

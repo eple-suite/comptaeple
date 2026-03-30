@@ -323,12 +323,6 @@ export function calculerResultatsM96(
   const joursFdr = chargesFonctQuotidiennes > 0 ? fdrComptable / chargesFonctQuotidiennes : 0;
   const joursTresorerie = chargesFonctQuotidiennes > 0 ? tresorerie / chargesFonctQuotidiennes : 0;
 
-  // ── REPROFI — Composition FDR (encaissé / non encaissé) ───────────
-  const fdrPartEncaissee = Math.max(0, tresorerie > 0 ? Math.min(tresorerie, fdrComptable) : 0);
-  const fdrPartNonEncaissee = fdrComptable - fdrPartEncaissee;
-  const fdrPctEncaissee = fdrComptable > 0 ? (fdrPartEncaissee / fdrComptable) * 100 : 0;
-  const fdrPctNonEncaissee = fdrComptable > 0 ? (fdrPartNonEncaissee / fdrComptable) * 100 : 0;
-
   // ── REPROFI — TMcap (Taux moyen charges à payer) ──────────────────
   // Part impayée des charges = dettes fournisseurs / charges réalisées
   // Dénominateur : SDE si dispo, sinon balance classe 6
@@ -360,9 +354,23 @@ export function calculerResultatsM96(
   // ── REPROFI — Composition trésorerie ──────────────────────────────
   const depotsCautions = sumBal(bal, c => c.startsWith('165') || c.startsWith('275'), 'solDbt');
   const reglementsEnAttente = sumBal(bal, c => c.startsWith('511') || c.startsWith('5117'), 'solDbt');
-  const tresorerieSpecifique = 0; // placeholder
-  const autonomieFinanciere = tresorerie - reliquatsSubventions - depotsCautions - reglementsEnAttente;
   const avancesRecues = totalDettes - dettesFournisseurs - dettesEtat - dettesCollectivite;
+  const tresorerieSpecifique = 0; // placeholder
+  const autonomieFinanciereBrute = tresorerie
+    - reliquatsSubventions
+    - depotsCautions
+    - reglementsEnAttente
+    - avancesRecues
+    - tresorerieSpecifique;
+
+  // M9-6 / REPROFI : la part encaissée du FDR correspond à l'autonomie financière.
+  const fdrPartEncaissee = fdrComptable > 0
+    ? Math.max(0, Math.min(fdrComptable, autonomieFinanciereBrute))
+    : 0;
+  const autonomieFinanciere = fdrPartEncaissee;
+  const fdrPartNonEncaissee = fdrComptable > 0 ? Math.max(0, fdrComptable - fdrPartEncaissee) : 0;
+  const fdrPctEncaissee = fdrComptable > 0 ? (fdrPartEncaissee / fdrComptable) * 100 : 0;
+  const fdrPctNonEncaissee = fdrComptable > 0 ? (fdrPartNonEncaissee / fdrComptable) * 100 : 0;
 
   // ── REPROFI — FDR mobilisable ─────────────────────────────────────
   const stocks = sumBal(bal, c => c.charAt(0) === '3', 'solDbt');

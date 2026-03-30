@@ -75,7 +75,43 @@ function getOrderedAmountValues(row: Record<string, string>): number[] {
     .map((entry) => entry.value);
 }
 
+function getIndexedAmountMap(row: Record<string, string>): Map<number, number> {
+  return new Map(
+    Object.entries(row)
+      .map(([key, value]) => {
+        const amountIndex = extractIndexedColumnNumber(key, 'montant colonne');
+        if (amountIndex == null) return null;
+        return [amountIndex, toNumLoose(value)] as const;
+      })
+      .filter((entry): entry is readonly [number, number] => !!entry)
+  );
+}
+
 function getFallbackMetricValue(kind: ExecutionKind, row: Record<string, string>, metric: string): number {
+  const indexedAmounts = getIndexedAmountMap(row);
+  const absoluteIndexByMetric = kind === 'sde'
+    ? {
+        budget: [3, 1],
+        engage: [4, 2],
+        realise: [5, 3],
+        encours: [6, 4],
+        disponible: [7, 5],
+      }
+    : {
+        budget: [3, 1],
+        engage: [4, 2],
+        aor: [5, 3],
+        realise: [6, 4],
+        encours: [7, 5],
+        plusValues: [8, 6],
+      };
+
+  const preferredIndexes = absoluteIndexByMetric[metric as keyof typeof absoluteIndexByMetric] ?? [];
+  for (const idx of preferredIndexes) {
+    const value = indexedAmounts.get(idx);
+    if (typeof value === 'number' && value !== 0) return value;
+  }
+
   const ordered = getOrderedAmountValues(row);
   if (!ordered.length) return 0;
 
