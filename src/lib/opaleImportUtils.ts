@@ -273,6 +273,15 @@ function buildCompositeHeaders(rows: string[][], headerRowIndex: number): string
   return dedupeHeaders(headers);
 }
 
+function looksLikeAccountCell(value: string): boolean {
+  const v = String(value ?? '').trim();
+  return /^\d{3,}/.test(v);
+}
+
+function isLikelyDataRow(row: string[]): boolean {
+  return row.some((cell) => isLikelyNumericCell(cell) || looksLikeAccountCell(cell));
+}
+
 export function buildRowsFromSheetMatrix(matrix: SheetMatrix): Record<string, string>[] {
   if (!matrix.length) return [];
 
@@ -301,7 +310,10 @@ export function buildRowsFromSheetMatrix(matrix: SheetMatrix): Record<string, st
   const headers = compositeHeaders.some((header) => normalizeColumnName(header).includes('montant colonne'))
     ? compositeHeaders
     : directHeaders;
-  const dataStart = headerRowIndex + 1;
+  let dataStart = headerRowIndex + 1;
+  while (dataStart < rows.length && !isLikelyDataRow(rows[dataStart])) {
+    dataStart += 1;
+  }
 
   return rows
     .slice(dataStart)
