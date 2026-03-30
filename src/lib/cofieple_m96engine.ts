@@ -213,7 +213,7 @@ export function calculerResultatsM96(
   // Distinction investissement vs fonctionnement :
   // - Investissement = prélèvements finançant des acquisitions (classe 2 au SDE)
   // - Fonctionnement = le reste (dépenses exceptionnelles de fonctionnement)
-  const investSDE = sde.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const investSDE = sdeForAccounting.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const prelevementsInvestissement = Math.min(totalPrelevements106, investSDE);
   const prelevementsFonctionnement = totalPrelevements106 - prelevementsInvestissement;
 
