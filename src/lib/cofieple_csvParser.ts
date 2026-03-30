@@ -124,11 +124,12 @@ export function parseBalance(text: string): LigneBalance[] {
   const rows = parseCSV(text);
   return rows
     .filter(r => {
-      const compte = toStr(r['Compte'] || r['compte'] || '');
+      const raw = toStr(r['Compte'] || r['compte'] || '');
+      const compte = normalizeCompte(raw);
       return compte && /^\d/.test(compte) && compte.length >= 3;
     })
     .map(r => {
-      const compte = toStr(r['Compte'] || r['compte'] || '').replace(/[^0-9]/g, '').substring(0, 9);
+      const compte = normalizeCompte(toStr(r['Compte'] || r['compte'] || '')).replace(/[^0-9]/g, '').substring(0, 9);
       const classe = compte.charAt(0);
       return {
         compte,
