@@ -2,6 +2,8 @@ type SheetCell = string | number | boolean | null | undefined;
 
 type SheetMatrix = SheetCell[][];
 
+export type OpaleAmountMetric = 'budget' | 'engagé' | 'réalisé' | 'en cours' | 'disponible' | 'aor' | 'extourne' | '+values/-values';
+
 export function normalizeColumnName(name: string): string {
   return String(name ?? '')
     .toLowerCase()
@@ -39,6 +41,160 @@ export function findColumnIndex(headers: string[], possibleNames: string[]): num
   }
 
   return -1;
+}
+
+export function extractIndexedColumnNumber(header: string, prefix: 'montant colonne' | 'colonne'): number | null {
+  const normalized = normalizeColumnName(header);
+  if (!normalized.startsWith(prefix)) return null;
+  const suffix = normalized.slice(prefix.length).trim();
+  const match = suffix.match(/^(\d+)/);
+  return match ? parseInt(match[1], 10) : null;
+}
+
+function isLikelyNumericCell(value: string): boolean {
+  const v = String(value ?? '').trim();
+  if (!v) return false;
+  const cleaned = v
+    .replace(/[\s\u00A0]/g, '')
+    .replace(/[€%]/g, '')
+    .replace(/\((.*)\)/, '-$1')
+    .replace(',', '.');
+  return /^-?\d+(?:\.\d+)?$/.test(cleaned);
+}
+
+export function detectOpaleAmountMetric(label: string): OpaleAmountMetric | '' {
+  const d = normalizeColumnName(label);
+  if (!d) return '';
+
+  if (
+    d.includes('budget') ||
+    d.includes('prevision') ||
+    d.includes('credits ouverts') ||
+    d.includes('credit ouverts') ||
+    d.includes('dotation') ||
+    d.includes('credits votes') ||
+    d.includes('credit votes') ||
+    d.includes('credits initiaux') ||
+    d.includes('credit initiaux') ||
+    d.includes('budgetise') ||
+    d.includes('montant budgetise') ||
+    d === 'bi'
+  ) return 'budget';
+
+  if (d.includes('engag')) return 'engagé';
+
+  if (
+    d.includes('realise') ||
+    d.includes('mandate') ||
+    d.includes('liquide') ||
+    d.includes('montant net') ||
+    d.includes('net des depenses') ||
+    d.includes('net des recettes') ||
+    d.includes('depenses nettes') ||
+    d.includes('recettes nettes')
+  ) return 'réalisé';
+
+  if (d.includes('en cours')) return 'en cours';
+  if (d.includes('disponible')) return 'disponible';
+  if (d.includes('aor') || d.includes('emis') || d.includes('titre')) return 'aor';
+  if (d.includes('extourne')) return 'extourne';
+  if (d.includes('value') || d.includes('+/-') || d.includes('plus value')) return '+values/-values';
+
+  return '';
+}
+
+function extractCgrCode(value: string): string {
+  const v = String(value || '').trim();
+  if (!v || v === '-') return '';
+  return (v.split('-')[0] || v).replace(/\s+/g, ' ').trim();
+}
+
+export function normalizeRowsForOpaleImport(rows: Record<string, string>[]): Record<string, string>[] {
+  if (!rows.length) return rows;
+
+  const headers = Object.keys(rows[0]);
+  const amountHeaders = headers.filter((h) => extractIndexedColumnNumber(h, 'montant colonne') !== null);
+  if (amountHeaders.length === 0) return rows;
+
+  const metricByAmountHeader = new Map<string, OpaleAmountMetric>();
+
+  for (const amountHeader of amountHeaders) {
+    const idx = extractIndexedColumnNumber(amountHeader, 'montant colonne');
+    if (idx == null) continue;
+
+    const descriptorHeader = headers.find((h) => extractIndexedColumnNumber(h, 'colonne') === idx);
+    const descriptorCandidates: string[] = [];
+    const headerTail = amountHeader.split('|').slice(1).join(' ').trim();
+    if (headerTail) descriptorCandidates.push(headerTail);
+    if (descriptorHeader) descriptorCandidates.push(descriptorHeader);
+
+    for (const row of rows.slice(0, 25)) {
+      if (descriptorHeader) {
+        const descriptorValue = String(row[descriptorHeader] ?? '').trim();
+        if (descriptorValue) descriptorCandidates.push(descriptorValue);
+      }
+
+      const amountCellValue = String(row[amountHeader] ?? '').trim();
+      if (amountCellValue && !isLikelyNumericCell(amountCellValue)) {
+        descriptorCandidates.push(amountCellValue);
+      }
+    }
+
+    const metric = descriptorCandidates
+      .map((candidate) => detectOpaleAmountMetric(candidate))
+      .find(Boolean);
+
+    if (metric) metricByAmountHeader.set(amountHeader, metric);
+  }
+
+  if (!Array.from(metricByAmountHeader.values()).includes('budget')) {
+    const firstAmountHeader = amountHeaders
+      .slice()
+      .sort((a, b) => (extractIndexedColumnNumber(a, 'montant colonne') ?? 0) - (extractIndexedColumnNumber(b, 'montant colonne') ?? 0))[0];
+    if (firstAmountHeader && !metricByAmountHeader.has(firstAmountHeader)) {
+      metricByAmountHeader.set(firstAmountHeader, 'budget');
+    }
+  }
+
+  const keyService = headers.find((h) => {
+    const n = normalizeColumnName(h);
+    return ['service', 'cgr de niveau 3', 'cgr et intitule reduit 3', 'cgr de niveau 2'].some((alias) => n.startsWith(alias) || n.includes(alias));
+  });
+  const keyDomaine = headers.find((h) => {
+    const n = normalizeColumnName(h);
+    return ['domaine', 'cgr de niveau 4', 'cgr et intitule reduit 4'].some((alias) => n.startsWith(alias) || n.includes(alias));
+  });
+  const keyActivite = headers.find((h) => {
+    const n = normalizeColumnName(h);
+    return ['activite', 'activites', 'cgr de niveau 6', 'cgr et intitule reduit 6', 'cgr de niveau 5'].some((alias) => n.startsWith(alias) || n.includes(alias));
+  });
+  const keyCompte = headers.find((h) => {
+    const n = normalizeColumnName(h);
+    return ['compte', 'compte et intitule'].some((alias) => n.startsWith(alias) || n.includes(alias));
+  });
+
+  return rows.map((row) => {
+    const next: Record<string, string> = { ...row };
+
+    metricByAmountHeader.forEach((metric, amountHeader) => {
+      const current = String(next[metric] ?? '').trim();
+      if (!current) next[metric] = String(row[amountHeader] ?? '').trim();
+    });
+
+    const serviceCurrent = String(next.service ?? next.Service ?? '').trim();
+    if (!serviceCurrent && keyService) next.service = extractCgrCode(String(row[keyService] ?? ''));
+
+    const domaineCurrent = String(next.domaine ?? next.Domaine ?? '').trim();
+    if (!domaineCurrent && keyDomaine) next.domaine = extractCgrCode(String(row[keyDomaine] ?? ''));
+
+    const activiteCurrent = String(next.activite ?? next['activités'] ?? next.Activité ?? '').trim();
+    if (!activiteCurrent && keyActivite) next.activite = extractCgrCode(String(row[keyActivite] ?? ''));
+
+    const compteCurrent = String(next.compte ?? next.Compte ?? '').trim();
+    if (!compteCurrent && keyCompte) next.compte = String(row[keyCompte] ?? '').trim();
+
+    return next;
+  });
 }
 
 function scoreHeaderRow(cells: string[]): number {
