@@ -115,7 +115,7 @@ export function parserSDE(rows: Record<string, string>[], _typeBudget: TypeBudge
       service: findCol(r, 'service', 'Service'),
       domaine: findCol(r, 'domaine', 'Domaine'),
       activite: findCol(r, 'activités', 'activite', 'Activité', 'activites'),
-      compte: findCol(r, 'compte', 'Compte').replace(/\s.*/, '').substring(0, 6),
+      compte: normalizeCompte(findCol(r, 'compte', 'Compte')).substring(0, 6),
       budget: toNumDirect(findCol(r, 'budget', 'Budget', 'BUDGET', 'Prévisions', 'previsions', 'prévisions', 'Crédits ouverts', 'credits ouverts', 'Credits ouverts', 'Dotation', 'dotation', 'Crédits votés', 'credits votes', 'Crédits initiaux', 'credits initiaux', 'BI', 'bi', 'Montant budgétisé', 'Montant budgetisé', 'Montant budgetise', 'montant budgétisé', 'montant budgetisé', 'montant budgetise')),
       engage: toNumDirect(findCol(r, 'engagé', 'engage', 'Engagé', 'Engage', 'ENGAGE')),
       realise: toNumDirect(findCol(r, 'réalisé', 'realise', 'Réalisé', 'Realise', 'REALISE', 'mandaté', 'Mandaté', 'mandate', 'Mandate', 'MANDATE', 'liquidé', 'Liquidé', 'Montant net des dépenses', 'Montant net des depenses', 'montant net des dépenses', 'montant net des depenses', 'Dépenses nettes', 'depenses nettes')),
