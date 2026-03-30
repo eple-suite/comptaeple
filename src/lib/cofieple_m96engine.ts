@@ -42,11 +42,23 @@ export function calculerResultatsM96(
 ): ResultatsM96 {
   const { isAnnexe = false } = options;
 
-  // ── Totaux SDE/SDR ─────────────────────────────────────────────────
-  const totalChargesSde  = sde.reduce((s, r) => s + r.realise, 0);
-  const totalProduitsSdr = sdr.reduce((s, r) => s + r.realise, 0);
-  const totalChargesPrev = sde.reduce((s, r) => s + r.budget, 0);
-  const totalProduitsPrev= sdr.reduce((s, r) => s + r.budget, 0);
+  // ── Totaux SDE/SDR — Hiérarchie Op@le ───────────────────────────────
+  // Utilise le moteur de hiérarchie pour isoler la ligne globale
+  // et éviter les doubles comptes (global + services + détail)
+  const sdeExec = deriveSdeExecutionTotals(sde);
+  const sdrExec = deriveSdrExecutionTotals(sdr);
+
+  // Lignes de détail uniquement (avec un numéro de compte) pour les calculs comptables
+  const sdeDetail = sde.filter(r => r.compte && r.aggregationLevel !== 'global' && r.aggregationLevel !== 'section' && r.aggregationLevel !== 'service');
+  const sdrDetail = sdr.filter(r => r.compte && r.aggregationLevel !== 'global' && r.aggregationLevel !== 'section' && r.aggregationLevel !== 'service');
+  // Fallback : si pas de lignes de détail enrichies, utiliser toutes les lignes avec un compte
+  const sdeForAccounting = sdeDetail.length > 0 ? sdeDetail : sde.filter(r => !!r.compte);
+  const sdrForAccounting = sdrDetail.length > 0 ? sdrDetail : sdr.filter(r => !!r.compte);
+
+  const totalChargesSde  = sdeExec.totalRealise;
+  const totalProduitsSdr = sdrExec.totalRealise;
+  const totalChargesPrev = sdeExec.totalBudget;
+  const totalProduitsPrev= sdrExec.totalBudget;
   const resultatBudgetaire = totalProduitsSdr - totalChargesSde;
 
   // ── Résultat comptable ─────────────────────────────────────────────
