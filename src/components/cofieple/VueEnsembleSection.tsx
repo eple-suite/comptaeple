@@ -26,6 +26,7 @@ export function VueEnsembleSection() {
   const anomaliesBalance = useCofiepleStore(s => s.anomaliesBalance);
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
   const lastAnalysisAt = useCofiepleStore(s => s.lastAnalysisAt);
+  const lancerAnalyse = useCofiepleStore(s => s.lancerAnalyse);
   const R = resultats[activeBudget];
 
   if (!R) return <EmptyState msg="Importez les fichiers Op@le et lancez l'analyse pour afficher la vue d'ensemble du compte financier." />;
