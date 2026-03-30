@@ -70,7 +70,7 @@ function parseCSV(text: string): Record<string, string>[] {
 export function parseSDE(text: string): LigneSDE[] {
   const rows = parseCSV(text);
   return rows.map(r => {
-    const compte = toStr(r['compte'] || r['Compte'] || '').replace(/\s.*/, '').substring(0, 6);
+    const compte = normalizeCompte(toStr(r['compte'] || r['Compte'] || '')).substring(0, 6);
     const base: LigneSDE = {
       rne: toStr(r['RNE'] || r['rne'] || ''),
       exercice: Math.round(toNum(r['exercice'] || r['Exercice'])) || new Date().getFullYear(),
