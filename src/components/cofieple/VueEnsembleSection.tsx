@@ -61,14 +61,18 @@ export function VueEnsembleSection() {
   const effectiveProductRate = hasProductRate ? R.tauxExecProduits : null;
   const tauxChargesDisplay = effectiveChargeRate !== null
     ? `${(effectiveChargeRate * 100).toFixed(1)} %`
-    : legacyBrokenImports
-      ? 'À recalculer'
-      : '0.0 %';
+    : (R.totalChargesSde > 0 && R.totalChargesPrev === 0)
+      ? 'Budget non importé'
+      : legacyBrokenImports
+        ? 'À recalculer'
+        : '0.0 %';
   const tauxProduitsDisplay = effectiveProductRate !== null
     ? `${(effectiveProductRate * 100).toFixed(1)} %`
-    : legacyBrokenImports
-      ? 'À recalculer'
-      : '0.0 %';
+    : (R.totalProduitsSdr > 0 && R.totalProduitsPrev === 0)
+      ? 'Budget non importé'
+      : legacyBrokenImports
+        ? 'À recalculer'
+        : '0.0 %';
 
   // Radar 8 axes
   const normalize = (val: number, good: number, bad: number) => {
