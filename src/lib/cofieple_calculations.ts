@@ -141,7 +141,7 @@ export function parserSDR(rows: Record<string, string>[], _typeBudget: TypeBudge
       service: findCol(r, 'service', 'Service'),
       domaine: findCol(r, 'domaine', 'Domaine'),
       activite: findCol(r, 'activités', 'activite', 'Activité', 'activites'),
-      compte: findCol(r, 'compte', 'Compte').replace(/\s.*/, '').substring(0, 6),
+      compte: normalizeCompte(findCol(r, 'compte', 'Compte')).substring(0, 6),
       budget: toNumDirect(findCol(r, 'budget', 'Budget', 'BUDGET', 'Prévisions', 'previsions', 'prévisions', 'Crédits ouverts', 'credits ouverts', 'Dotation', 'dotation', 'Crédits votés', 'credits votes', 'Crédits initiaux', 'credits initiaux', 'BI', 'bi', 'Montant budgétisé', 'Montant budgetisé', 'Montant budgetise', 'montant budgétisé', 'montant budgetisé', 'montant budgetise')),
       engage: toNumDirect(findCol(r, 'engagé', 'engage', 'Engagé', 'Engage', 'ENGAGE')),
       aor: toNumDirect(findCol(r, 'aor', 'AOR', 'émis', 'Émis', 'emis', 'Emis', 'Montant émis', 'Montant emis', 'montant émis', 'montant emis')),
