@@ -459,7 +459,31 @@ export function ImportSection() {
   }
 
   function processImportedRows(rawRows: Record<string, string>[], fileName: string, slot: FileSlot, sheetTitle?: string | null, sheetMeta?: string | null) {
+    // ── DIAGNOSTIC: dump raw Excel rows before normalization ──
+    if (rawRows.length > 0) {
+      const rawKeys = Object.keys(rawRows[0]);
+      console.log(`[IMPORT-DIAG] ${slot.type} RAW headers (${rawKeys.length}):`, rawKeys);
+      // Find first row with numeric data
+      const sampleWithData = rawRows.find(r => rawKeys.some(k => {
+        const v = String(r[k] ?? '').trim();
+        return v !== '' && v !== '0' && /\d/.test(v) && !/^(20\d{2}|N)$/.test(v);
+      }));
+      console.log(`[IMPORT-DIAG] ${slot.type} RAW sample (first with data):`, sampleWithData ? JSON.stringify(sampleWithData) : 'NONE FOUND');
+      console.log(`[IMPORT-DIAG] ${slot.type} RAW row[0]:`, JSON.stringify(rawRows[0]));
+      if (rawRows.length > 5) console.log(`[IMPORT-DIAG] ${slot.type} RAW row[5]:`, JSON.stringify(rawRows[5]));
+    }
+
     const rows = normalizeRowsForOpaleImport(rawRows);
+
+    if (rows.length > 0) {
+      const normKeys = Object.keys(rows[0]);
+      console.log(`[IMPORT-DIAG] ${slot.type} NORMALIZED headers (${normKeys.length}):`, normKeys);
+      const normSample = rows.find(r => normKeys.some(k => {
+        const v = String(r[k] ?? '').trim();
+        return v !== '' && v !== '0' && /\d/.test(v) && !/^(20\d{2}|N)$/.test(v);
+      }));
+      console.log(`[IMPORT-DIAG] ${slot.type} NORMALIZED sample:`, normSample ? JSON.stringify(normSample) : 'NONE');
+    }
 
     if (!rows || rows.length === 0) {
       setErrors(prev => ({ ...prev, [slot.key]: 'Fichier vide ou format non reconnu' }));
