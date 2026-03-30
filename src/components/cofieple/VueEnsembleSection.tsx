@@ -113,6 +113,7 @@ export function VueEnsembleSection() {
           {analysisRunning ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
           Réanalyser maintenant
         </Button>
+      </div>
       {/* 6 KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
         <KPICard label="Fonds de roulement" value={formatEur(fdr)} color={fdr >= 0 ? 'green' : 'red'}
