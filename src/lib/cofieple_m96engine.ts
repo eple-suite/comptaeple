@@ -11,6 +11,10 @@ import type {
   SensNormal, StatutVerification, ResultatsBudgetAnnexe, AnomalieBA,
   DomaineData, OperationsOrdre,
 } from './cofieple_types';
+import {
+  deriveSdeExecutionTotals, deriveSdrExecutionTotals,
+  getChargeRateBase, getProductRateBase,
+} from './opaleExecutionHierarchy';
 
 // Tolérance d'arrondi comptable : 1 € (standard EPLE, cohérent avec Op@le)
 // Les écarts < 1 € entre budgétaire et comptable sont normaux (arrondis, centimes)
@@ -38,11 +42,23 @@ export function calculerResultatsM96(
 ): ResultatsM96 {
   const { isAnnexe = false } = options;
 
-  // ── Totaux SDE/SDR ─────────────────────────────────────────────────
-  const totalChargesSde  = sde.reduce((s, r) => s + r.realise, 0);
-  const totalProduitsSdr = sdr.reduce((s, r) => s + r.realise, 0);
-  const totalChargesPrev = sde.reduce((s, r) => s + r.budget, 0);
-  const totalProduitsPrev= sdr.reduce((s, r) => s + r.budget, 0);
+  // ── Totaux SDE/SDR — Hiérarchie Op@le ───────────────────────────────
+  // Utilise le moteur de hiérarchie pour isoler la ligne globale
+  // et éviter les doubles comptes (global + services + détail)
+  const sdeExec = deriveSdeExecutionTotals(sde);
+  const sdrExec = deriveSdrExecutionTotals(sdr);
+
+  // Lignes de détail uniquement (avec un numéro de compte) pour les calculs comptables
+  const sdeDetail = sde.filter(r => r.compte && r.aggregationLevel !== 'global' && r.aggregationLevel !== 'section' && r.aggregationLevel !== 'service');
+  const sdrDetail = sdr.filter(r => r.compte && r.aggregationLevel !== 'global' && r.aggregationLevel !== 'section' && r.aggregationLevel !== 'service');
+  // Fallback : si pas de lignes de détail enrichies, utiliser toutes les lignes avec un compte
+  const sdeForAccounting = sdeDetail.length > 0 ? sdeDetail : sde.filter(r => !!r.compte);
+  const sdrForAccounting = sdrDetail.length > 0 ? sdrDetail : sdr.filter(r => !!r.compte);
+
+  const totalChargesSde  = sdeExec.totalRealise;
+  const totalProduitsSdr = sdrExec.totalRealise;
+  const totalChargesPrev = sdeExec.totalBudget;
+  const totalProduitsPrev= sdrExec.totalBudget;
   const resultatBudgetaire = totalProduitsSdr - totalChargesSde;
 
   // ── Résultat comptable ─────────────────────────────────────────────
@@ -94,13 +110,13 @@ export function calculerResultatsM96(
   //   Charges décaissables = Total SDE − Charges d'ordre SDE (cpt 68* + 675*)
   //   Produits encaissables = Total SDR − Produits d'ordre SDR (cpt 78* + 775* + 776* + 777*)
   // Équivalent : CAF = Résultat budgétaire + Charges OO(SDE) − Produits OO(SDR)
-  const chargesOrdre_SDE = sde.filter(r => /^(68|675)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const produitsOrdre_SDR = sdr.filter(r => /^(78|775|776|777)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const chargesOrdre_SDE = sdeForAccounting.filter(r => /^(68|675)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const produitsOrdre_SDR = sdrForAccounting.filter(r => /^(78|775|776|777)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const cafBudgetaire = resultatBudgetaire + chargesOrdre_SDE - produitsOrdre_SDR;
 
   // Charges d'investissement (SDE classe 2) — conservé pour d'autres calculs
-  const chInvSde = sde.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const finProdSdr = sdr.filter(r => /^(10|13)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const chInvSde = sdeForAccounting.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const finProdSdr = sdrForAccounting.filter(r => /^(10|13)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
 
   // ── FDR par le haut (ressources permanentes - emplois permanents) ──
   const solCrdCl1     = sumBal(bal, c => c.charAt(0) === '1', 'solCrd');
@@ -197,7 +213,7 @@ export function calculerResultatsM96(
   // Distinction investissement vs fonctionnement :
   // - Investissement = prélèvements finançant des acquisitions (classe 2 au SDE)
   // - Fonctionnement = le reste (dépenses exceptionnelles de fonctionnement)
-  const investSDE = sde.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const investSDE = sdeForAccounting.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const prelevementsInvestissement = Math.min(totalPrelevements106, investSDE);
   const prelevementsFonctionnement = totalPrelevements106 - prelevementsInvestissement;
 
@@ -229,15 +245,17 @@ export function calculerResultatsM96(
   const patrimoineOriginesPctFP = valeurNette > 0 ? (patrimoineOriginesFondsPropres / valeurNette) * 100 : 0;
   const patrimoineOriginesPctSub = valeurNette > 0 ? (patrimoineOriginesSubventions / valeurNette) * 100 : 0;
 
-  // ── Services ───────────────────────────────────────────────────────
+  // ── Services (utiliser serviceBaseRows du moteur de hiérarchie) ────
   const services: Record<string, ServiceData> = {};
-  sde.forEach(r => {
+  const sdeServiceRows = sdeExec.serviceBaseRows.length > 0 ? sdeExec.serviceBaseRows : sdeForAccounting;
+  const sdrServiceRows = sdrExec.serviceBaseRows.length > 0 ? sdrExec.serviceBaseRows : sdrForAccounting;
+  sdeServiceRows.forEach(r => {
     const k = extractService(r.service);
     if (!services[k]) services[k] = { libelle: r.service.split(/[-–]/)[0].trim(), chargesPrev: 0, chargesReel: 0, reliquats: 0, tauxExecCharges: 0, produitsPrev: 0, produitsReel: 0, plusValues: 0, tauxExecProduits: 0, solde: 0 };
     services[k].chargesPrev += r.budget;
     services[k].chargesReel += r.realise;
   });
-  sdr.forEach(r => {
+  sdrServiceRows.forEach(r => {
     const k = extractService(r.service);
     if (!services[k]) services[k] = { libelle: r.service.split(/[-–]/)[0].trim(), chargesPrev: 0, chargesReel: 0, reliquats: 0, tauxExecCharges: 0, produitsPrev: 0, produitsReel: 0, plusValues: 0, tauxExecProduits: 0, solde: 0 };
     services[k].produitsPrev += r.budget;
@@ -251,20 +269,22 @@ export function calculerResultatsM96(
     s.solde = s.produitsReel - s.chargesReel;
   });
 
-  // ── Nature charges/produits ────────────────────────────────────────
+  // ── Nature charges/produits (détail uniquement) ────────────────────
   const chargesNature: Record<string, number> = {};
-  sde.forEach(r => {
+  sdeForAccounting.forEach(r => {
     const nat = r.compte.substring(0, 3);
     chargesNature[nat] = (chargesNature[nat] || 0) + r.realise;
   });
   const produitsOrigine: Record<string, number> = {};
-  sdr.forEach(r => {
+  sdrForAccounting.forEach(r => {
     const nat = r.compte.substring(0, 3);
     produitsOrigine[nat] = (produitsOrigine[nat] || 0) + r.realise;
   });
 
-  const tauxExecCharges  = totalChargesPrev > 0 ? totalChargesSde / totalChargesPrev : 0;
-  const tauxExecProduits = totalProduitsPrev > 0 ? totalProduitsSdr / totalProduitsPrev : 0;
+  // Taux d'exécution : utilise totalForRate du moteur de hiérarchie
+  // (engagé pour dépenses, AOR/réalisé pour recettes)
+  const tauxExecCharges  = totalChargesPrev > 0 ? sdeExec.totalForRate / totalChargesPrev : 0;
+  const tauxExecProduits = totalProduitsPrev > 0 ? sdrExec.totalForRate / totalProduitsPrev : 0;
 
   // ── Charges de fonctionnement (hors investissement) ────────────────
   // Le dénominateur REPROFI utilise uniquement les charges de fonctionnement,
@@ -291,11 +311,11 @@ export function calculerResultatsM96(
   const ratioFdrBfr      = bfr !== 0 ? fdrBas / bfr : 0;
 
   // Ressources propres : SDE/SDR si dispo, sinon balance classe 7
-  const ressourcesPropres = sdr.length > 0
-    ? sdr.filter(r => /^7[0-6]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
+  const ressourcesPropres = sdrForAccounting.length > 0
+    ? sdrForAccounting.filter(r => /^7[0-6]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
     : sumBal(bal, c => /^7[0-6]/.test(c), 'crd') - sumBal(bal, c => /^7[0-6]/.test(c), 'dbt');
-  const recettesAutogenerees = sdr.length > 0
-    ? sdr.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
+  const recettesAutogenerees = sdrForAccounting.length > 0
+    ? sdrForAccounting.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
     : sumBal(bal, c => /^7[0-3]/.test(c), 'crd') - sumBal(bal, c => /^7[0-3]/.test(c), 'dbt');
 
   // ── REPROFI — Jours FDR et Trésorerie ─────────────────────────────
@@ -365,7 +385,7 @@ export function calculerResultatsM96(
   const domaines: Record<string, DomaineData> = {};
   const buildDomKey = (d: string) => (d || '').charAt(0) || '0';
 
-  sde.forEach(r => {
+  sdeForAccounting.forEach(r => {
     const dk = buildDomKey(r.domaine);
     if (!domaines[dk]) domaines[dk] = {
       code: dk, libelle: DOMAINE_LABELS[dk] || `D${dk}`,
@@ -377,7 +397,7 @@ export function calculerResultatsM96(
     domaines[dk].chargesPrev += r.budget;
     domaines[dk].chargesReel += r.realise;
   });
-  sdr.forEach(r => {
+  sdrForAccounting.forEach(r => {
     const dk = buildDomKey(r.domaine);
     if (!domaines[dk]) domaines[dk] = {
       code: dk, libelle: DOMAINE_LABELS[dk] || `D${dk}`,
