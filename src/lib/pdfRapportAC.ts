@@ -394,7 +394,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 3. FONDS DE ROULEMENT + Graphiques
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('3. Analyse du fonds de roulement');
+  ys = sectionHeader('3. Analyse du fonds de roulement', ys);
   autoTable(doc, {
     startY: ys,
     head: [['Indicateur', 'Valeur']],
