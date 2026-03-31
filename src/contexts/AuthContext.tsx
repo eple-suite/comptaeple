@@ -40,7 +40,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Save current location before token expiry redirect
+      if (event === 'TOKEN_REFRESHED') {
+        // Token was refreshed successfully — no action needed
+      }
+      if (event === 'SIGNED_OUT') {
+        // Save last visited page for post-login restore
+        try { localStorage.setItem('__last_path', window.location.pathname); } catch {}
+      }
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {

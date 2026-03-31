@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Bell, Database, Building2, Save, Loader2, MapPin, Phone, Mail, Users } from "lucide-react";
+import { User, Bell, Database, Building2, Save, Loader2, MapPin, Phone, Mail, Users, Download, Upload } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -78,6 +78,56 @@ const SettingsPage = () => {
     } catch (e: any) {
       toast.error(e.message || "Erreur");
     } finally { setSavingProfile(false); }
+  };
+
+  const handleExportData = async () => {
+    if (!user) return;
+    try {
+      const tables = ['cofieple_exercises', 'cofieple_extra_indicators', 'cofieple_snapshots', 'cofieple_audit_trail', 'cofieple_import_logs'] as const;
+      const exportData: Record<string, any> = { _exportedAt: new Date().toISOString(), _userId: user.id };
+      for (const table of tables) {
+        const { data } = await supabase.from(table).select('*').eq('user_id', user.id);
+        exportData[table] = data || [];
+      }
+      const { data: ueData } = await supabase.from('user_establishments').select('establishment_id, establishments(*)').eq('user_id', user.id);
+      exportData['establishments'] = (ueData || []).map((r: any) => r.establishments);
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      a.download = `cockpit-eple-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click(); URL.revokeObjectURL(url);
+      toast.success('Données exportées avec succès');
+    } catch (e: any) { toast.error('Erreur export : ' + (e.message || '')); }
+  };
+
+  const handleImportData = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!data._exportedAt) throw new Error('Fichier invalide');
+      if (data.cofieple_exercises?.length > 0) {
+        for (const row of data.cofieple_exercises) {
+          const { id, created_at, ...rest } = row;
+          await supabase.from('cofieple_exercises').upsert({ ...rest, user_id: user.id }, { onConflict: 'user_id,uai,exercice,type_budget' });
+        }
+      }
+      if (data.cofieple_extra_indicators?.length > 0) {
+        for (const row of data.cofieple_extra_indicators) {
+          const { id, created_at, ...rest } = row;
+          await supabase.from('cofieple_extra_indicators').upsert({ ...rest, user_id: user.id }, { onConflict: 'user_id,uai,exercice' });
+        }
+      }
+      if (data.cofieple_snapshots?.length > 0) {
+        for (const row of data.cofieple_snapshots) {
+          const { id, created_at, ...rest } = row;
+          await supabase.from('cofieple_snapshots').upsert({ ...rest, user_id: user.id }, { onConflict: 'user_id,uai,exercice,budget_type' });
+        }
+      }
+      toast.success('Import terminé — données restaurées');
+    } catch (err: any) { toast.error('Erreur import : ' + (err.message || 'fichier invalide')); }
+    e.target.value = '';
   };
 
   const academies = [
@@ -288,8 +338,16 @@ const SettingsPage = () => {
             </Select>
           </div>
           <Separator />
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline">Exporter toutes les données</Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={handleExportData}>
+              <Download className="h-3.5 w-3.5" /> Exporter les données (JSON)
+            </Button>
+            <label>
+              <Button size="sm" variant="outline" className="gap-1.5 cursor-pointer" asChild>
+                <span><Upload className="h-3.5 w-3.5" /> Importer des données</span>
+              </Button>
+              <input type="file" accept=".json" className="hidden" onChange={handleImportData} />
+            </label>
             <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">Réinitialiser les données</Button>
           </div>
         </CardContent>
