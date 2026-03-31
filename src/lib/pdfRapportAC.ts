@@ -629,7 +629,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S1. RESULTAT ET AUTOFINANCEMENT
   // ════════════════════════════════════════════════════════════
-  let ys = sectionHeader('1. Resultat de l\'exercice et autofinancement');
+  let ys = sectionHeader('1. Resultat de l\'exercice et autofinancement', ph, 120);
 
   // Two-column layout: table left, chart right
   autoTable(doc, {
