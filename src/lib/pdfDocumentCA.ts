@@ -121,8 +121,8 @@ export function generateDocumentCA(data: DocumentCAData): void {
     head: [['Indicateur ordonnateur', 'Valeur N', 'Valeur N-1']],
     body: [
       ['Crédits / recettes ouverts', fmt(R.totalChargesPrev), fmt(R.totalProduitsPrev)],
-      ['Dépenses mandatées / payées', fmt(R.totalChargesReel), fmt(R.totalChargesSdeN1 || 0)],
-      ['Recettes encaissées', fmt(R.totalProduitsReel), fmt(R.totalProduitsSdrN1 || 0)],
+      ['Dépenses mandatées / payées', fmt(R.totalChargesSde), fmt(R.totalChargesSdeN1 || 0)],
+      ['Recettes encaissées', fmt(R.totalProduitsSdr), fmt(R.totalProduitsSdrN1 || 0)],
       ['Résultat budgétaire', fmt(R.resultatBudgetaire), fmt(R.resultatBudgetaireN1 || 0)],
       ['Taux d’exécution des dépenses', pct(R.tauxExecCharges), '—'],
       ['Taux d’exécution des recettes', pct(R.tauxExecProduits), '—'],
