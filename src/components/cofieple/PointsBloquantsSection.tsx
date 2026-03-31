@@ -64,20 +64,25 @@ const POINTS: PointBloquant[] = [
     },
   },
   {
-    code: 'PB-04', titre: 'Concordance SDE/SDR ↔ Balance (rapprochement ordo/AC)', niveau: 'PB',
-    refM96: 'M9-6 § II — Rapprochement', prescription: 'Les totaux des mandats/titres doivent correspondre aux classes 6/7 de la balance, aux opérations d\'ordre près.',
+    code: 'PB-04', titre: 'Concordance SDE/SDR ↔ Balance (rapprochement ordo/AC)', niveau: 'PA',
+    refM96: 'M9-6 § II — Rapprochement', prescription: 'Les totaux des mandats/titres doivent correspondre aux classes 6/7 de la balance, aux opérations d\'ordre près. Un écart modéré est normal (OO, centralisation, ajustements).',
     calculer: (R) => {
       const ecartC = Math.abs(R.totalChargesSde - R.totalChargesBalance);
       const ecartP = Math.abs(R.totalProduitsSdr - R.totalProduitsBalance);
-      // Les écarts SDE/SDR ↔ Balance sont normaux : les SDE/SDR ne contiennent que les mandats/titres
-      // tandis que la balance inclut les écritures directes (OO, centralisation, ajustements).
-      // Seuil de tolérance : 100 € (arrondis, centimes, ajustements de clôture)
-      const seuilTolerance = 100;
+      // Les écarts SDE/SDR ↔ Balance sont NORMAUX et ATTENDUS :
+      // - Les SDE/SDR ne contiennent que les mandats/titres (budgétaire)
+      // - La balance inclut les écritures d'ordre (dotations, reprises, neutralisations)
+      // - Ce n'est PAS un bloquant mais un point d'attention si l'écart est très élevé
+      // Seuil dynamique : 5% du total ou 5000€ minimum
+      const refCharges = Math.max(R.totalChargesSde, R.totalChargesBalance, 1);
+      const refProduits = Math.max(R.totalProduitsSdr, R.totalProduitsBalance, 1);
+      const seuilC = Math.max(5000, refCharges * 0.05);
+      const seuilP = Math.max(5000, refProduits * 0.05);
       return {
-        detecte: ecartC > seuilTolerance || ecartP > seuilTolerance,
-        detail: ecartC <= seuilTolerance && ecartP <= seuilTolerance
-          ? `Concordance vérifiée. Écart charges : ${formatEur(ecartC)}, Écart produits : ${formatEur(ecartP)} (dans la tolérance).`
-          : `Écart charges : ${formatEur(ecartC)}, Écart produits : ${formatEur(ecartP)}. Vérifier les écritures directes et OO.`
+        detecte: ecartC > seuilC || ecartP > seuilP,
+        detail: ecartC <= seuilC && ecartP <= seuilP
+          ? `Concordance vérifiée. Écart charges : ${formatEur(ecartC)} (seuil ${formatEur(seuilC)}), Écart produits : ${formatEur(ecartP)} (seuil ${formatEur(seuilP)}). Les écarts correspondent aux opérations d'ordre.`
+          : `Écart charges : ${formatEur(ecartC)} (seuil ${formatEur(seuilC)}), Écart produits : ${formatEur(ecartP)} (seuil ${formatEur(seuilP)}). Vérifier les écritures directes et OO.`
       };
     },
   },
