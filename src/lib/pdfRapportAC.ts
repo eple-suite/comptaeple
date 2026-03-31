@@ -524,7 +524,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 6. TMcap / TMnr + § 7. PATRIMOINE — On same page if room
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('6. Charges à payer et recouvrement / 7. Patrimoine');
+  ys = sectionHeader('6. Charges a payer et recouvrement / 7. Patrimoine', ys);
 
   // TMcap/TMnr table
   autoTable(doc, {
