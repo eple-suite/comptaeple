@@ -702,7 +702,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S2. FONDS DE ROULEMENT
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('2. Analyse du fonds de roulement', ys);
+  ys = sectionHeader('2. Analyse du fonds de roulement', ys, 110);
 
   // KPI strip
   const fdrKpiW = (contentWidth - 8) / 3;
