@@ -332,7 +332,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 2. RÉSULTAT ET AUTOFINANCEMENT + Graphiques
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('2. Présentation du résultat et de l\'autofinancement');
+  ys = sectionHeader('2. Presentation du resultat et de l\'autofinancement', ys);
   autoTable(doc, {
     startY: ys,
     head: [['Élément', 'Montant']],
