@@ -33,6 +33,7 @@ const SettingsPage = () => {
       setOrdonnateur(selectedEstablishment.ordonnateur || "");
       setAgentComptable(selectedEstablishment.agent_comptable || "");
       setSecretaireGeneral(selectedEstablishment.secretaire_general || "");
+      setOpaleNumber(selectedEstablishment.opale_number || "");
     }
   }, [selectedEstablishment]);
 
