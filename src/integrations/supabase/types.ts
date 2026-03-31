@@ -106,6 +106,7 @@ export type Database = {
           fdr: number
           id: string
           jours_autonomie: number
+          jours_tresorerie: number
           niveau_risque: string | null
           reserves: number
           reserves_srh: number
@@ -115,6 +116,8 @@ export type Database = {
           score_risque: number | null
           taux_exec_charges: number
           taux_exec_produits: number
+          tmcap: number
+          tmnr: number
           total_amortissements: number
           total_charges_prev: number
           total_charges_reel: number
@@ -135,6 +138,7 @@ export type Database = {
           fdr?: number
           id?: string
           jours_autonomie?: number
+          jours_tresorerie?: number
           niveau_risque?: string | null
           reserves?: number
           reserves_srh?: number
@@ -144,6 +148,8 @@ export type Database = {
           score_risque?: number | null
           taux_exec_charges?: number
           taux_exec_produits?: number
+          tmcap?: number
+          tmnr?: number
           total_amortissements?: number
           total_charges_prev?: number
           total_charges_reel?: number
@@ -164,6 +170,7 @@ export type Database = {
           fdr?: number
           id?: string
           jours_autonomie?: number
+          jours_tresorerie?: number
           niveau_risque?: string | null
           reserves?: number
           reserves_srh?: number
@@ -173,6 +180,8 @@ export type Database = {
           score_risque?: number | null
           taux_exec_charges?: number
           taux_exec_produits?: number
+          tmcap?: number
+          tmnr?: number
           total_amortissements?: number
           total_charges_prev?: number
           total_charges_reel?: number
