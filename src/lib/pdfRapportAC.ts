@@ -818,7 +818,7 @@ export function generateRapportACPdf(data: RapportACData) {
   doc.text('Tresorerie', donutCx, donutCy + 5, { align: 'center' });
 
   ys = Math.max(tresoTabBot, ys + 42) + 3;
-  ys = wrapText(ys, `La tresorerie nette s'eleve a ${fmt(R.tresorerie)}, soit ${Math.round(R.joursTresorerie)} jours de fonctionnement.`);
+  ys = wrapText(ys, `La tresorerie nette s'eleve a ${fmt(R.tresorerie)}, soit ${R.joursTresorerie.toFixed(2)} jours de fonctionnement.`);
   if (saisie.commentaireTresorerie) ys = wrapText(ys, saisie.commentaireTresorerie);
 
   // Trend
