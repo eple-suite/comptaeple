@@ -37,9 +37,11 @@ const POINTS: PointBloquant[] = [
     code: 'PB-02', titre: 'Déséquilibre de la balance', niveau: 'PB',
     refM96: 'M9-6 § II — Balance comptable', prescription: 'La somme des soldes débiteurs doit être égale à la somme des soldes créditeurs.',
     calculer: (_, bal) => {
-      const sd = bal.reduce((s: number, b: any) => s + (b.solDbt || 0), 0);
-      const sc = bal.reduce((s: number, b: any) => s + (b.solCrd || 0), 0);
-      return { detecte: Math.abs(sd - sc) > 0.05, detail: `SD = ${formatEur(sd)}, SC = ${formatEur(sc)}, Écart = ${formatEur(sd - sc)}` };
+      const filteredBal = bal.filter((b: any) => !b.isAggregate && b.compte);
+      const sd = filteredBal.reduce((s: number, b: any) => s + (b.solDbt || 0), 0);
+      const sc = filteredBal.reduce((s: number, b: any) => s + (b.solCrd || 0), 0);
+      // Tolérance de 1€ — les centimes d'arrondis Op@le sont normaux
+      return { detecte: Math.abs(sd - sc) > 1, detail: `SD = ${formatEur(sd)}, SC = ${formatEur(sc)}, Écart = ${formatEur(sd - sc)}` };
     },
   },
   {
