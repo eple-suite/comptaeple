@@ -114,9 +114,14 @@ export function calculerResultatsM96(
   //   Charges décaissables = Total SDE − Charges d'ordre SDE (cpt 68* + 675*)
   //   Produits encaissables = Total SDR − Produits d'ordre SDR (cpt 78* + 775* + 776* + 777*)
   // Équivalent : CAF = Résultat budgétaire + Charges OO(SDE) − Produits OO(SDR)
-  const chargesOrdre_SDE = sdeForAccounting.filter(r => /^(68|675)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const produitsOrdre_SDR = sdrForAccounting.filter(r => /^(78|775|776|777)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const cafBudgetaire = resultatBudgetaire + chargesOrdre_SDE - produitsOrdre_SDR;
+  // Fallback : quand SDE/SDR n'ont que des lignes agrégées (ECBU) sans comptes 68/78,
+  // on utilise les opérations d'ordre issues de la balance (chargesNonDecaissables / produitsNonEncaissables)
+  const chargesOrdre_SDE_raw = sdeForAccounting.filter(r => /^(68|675)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const produitsOrdre_SDR_raw = sdrForAccounting.filter(r => /^(78|775|776|777)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const hasOOinSDE = chargesOrdre_SDE_raw > 0 || produitsOrdre_SDR_raw > 0;
+  const cafBudgetaire = hasOOinSDE
+    ? resultatBudgetaire + chargesOrdre_SDE_raw - produitsOrdre_SDR_raw
+    : resultatBudgetaire + chargesNonDecaissables - produitsNonEncaissables;
 
   // Charges d'investissement (SDE classe 2) — conservé pour d'autres calculs
   const chInvSde = sdeForAccounting.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
