@@ -47,8 +47,12 @@ export function VueEnsembleSection() {
   // Safe access to REPROFI properties
   const joursFdr = R.joursFdr ?? 0;
   const joursTreso = R.joursTresorerie ?? 0;
+  const drfn = R.drfn ?? 0;
+  const drfnJour = drfn > 0 ? (drfn / 365) : 0;
   const tmcap = R.tmcap ?? 0;
   const tmnr = R.tmnr ?? 0;
+  const tooltipFdr = `Nombre de jours de fonctionnement couverts par le FDR, sur la base d'un coût journalier moyen de ${drfnJour > 0 ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(drfnJour) : '—'}/jour. Calcul conforme Op@le — Pièce 14 M9-6.`;
+  const tooltipTreso = `Nombre de jours de fonctionnement couverts par la Trésorerie, sur la base d'un coût journalier moyen de ${drfnJour > 0 ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(drfnJour) : '—'}/jour. Calcul conforme Op@le — Pièce 14 M9-6.`;
   const legacyBrokenImports =
     (sde.length > 0 && sde.every((row) => !row.compte && row.budget === 0 && row.realise === 0)) ||
     (sdr.length > 0 && sdr.every((row) => !row.compte && row.budget === 0 && row.realise === 0));
