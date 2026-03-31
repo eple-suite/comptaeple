@@ -180,7 +180,7 @@ function drawStackedBar(doc: jsPDF, x: number, y: number, w: number, h: number, 
 
 export function generateRapportACPdf(data: RapportACData) {
   const { etab, R, saisieComplementaire: saisie, aiText, history, nbAnom, nbBloq } = data;
-  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pw = doc.internal.pageSize.getWidth();
   const ph = doc.internal.pageSize.getHeight();
   const margin = 15;

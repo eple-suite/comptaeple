@@ -46,7 +46,7 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   const hasSDE = sdeRows.length > 0;
   const hasSDR = sdrRows.length > 0;
 
-  const doc = new jsPDF({ orientation: 'portrait' });
+  const doc = new jsPDF({ orientation: 'landscape' });
   const pw = doc.internal.pageSize.getWidth();
   const ph = doc.internal.pageSize.getHeight();
 
