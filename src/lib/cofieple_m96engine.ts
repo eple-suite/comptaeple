@@ -139,7 +139,7 @@ export function calculerResultatsM96(
   const aggregateClass1 = getAggregateClassRow(bal, '1');
   const aggregateClass2 = getAggregateClassRow(bal, '2');
   const aggregateFdr = aggregateClass1 && aggregateClass2
-    ? Math.max(0, (aggregateClass1.solCrd - aggregateClass1.solDbt) - (aggregateClass2.solDbt - aggregateClass2.solCrd))
+    ? (aggregateClass1.solCrd - aggregateClass1.solDbt) - (aggregateClass2.solDbt - aggregateClass2.solCrd)
     : null;
   const fdrHaut = aggregateFdr ?? (solCrdCl1 + solCrdCl2 + solCrd39 + solCrd49 + solCrd59 - solDbtCl1Hors - solDbtCl2 - solCrd185);
 
