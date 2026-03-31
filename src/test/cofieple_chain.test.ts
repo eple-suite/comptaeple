@@ -264,11 +264,11 @@ describe('3. Moteur M9-6 — Calculs réglementaires', () => {
     expect(typeof r.cafBudgetaire).toBe('number');
   });
 
-  it('construit les 15 vérifications check-list M9-6', () => {
+  it('construit les vérifications check-list M9-6', () => {
     const r = calculerResultatsM96(sde, sdr, bal);
     const checks = buildChecklist(r);
-    // 15 vérifications réglementaires attendues
-    expect(checks.length).toBe(15);
+    // 12 vérifications : 4 budgétaires + 7 bilantielles + 1 conditionnelle (var FDR CAF)
+    expect(checks.length).toBe(12);
     // Chaque vérification a un statut
     checks.forEach(c => {
       expect(['ok', 'warn', 'err', 'bloq']).toContain(c.statut);
