@@ -861,7 +861,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S5. TMCAP / TMNR
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('5. Charges a payer et recouvrement', ys);
+  ys = sectionHeader('5. Charges a payer et recouvrement', ys, 100);
 
   // Traffic lights + table
   drawTrafficLight(doc, margin, ys, R.tmcap, { green: 0, yellow: 10 }, 'TMcap (charges a payer)', '%');
