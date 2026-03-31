@@ -473,7 +473,7 @@ export function generateRapportACPdf(data: RapportACData) {
   if (etab.secretaireGeneral) { y += 6; doc.text(sanitize(`Secretaire general(e) : ${etab.secretaireGeneral}`), margin, y); }
 
   // ════════════════════════════════════════════════════════════
-  // PAGE SOMMAIRE (page dédiée)
+  // PAGE SOMMAIRE (page dédiée — 2 colonnes)
   // ════════════════════════════════════════════════════════════
   doc.addPage();
   // Blue header band
@@ -499,28 +499,45 @@ export function generateRapportACPdf(data: RapportACData) {
     { num: '10', title: 'Evolution pluriannuelle (Piece 14)' },
     { num: '11', title: 'Observations de l\'agent comptable' },
   ];
-  sommaire.forEach((s) => {
-    // Dot leader line
+  // 2-column layout
+  const somColW = (contentWidth - 10) / 2;
+  const leftCol = sommaire.slice(0, 6);
+  const rightCol = sommaire.slice(6);
+  const drawSomItem = (s: { num: string; title: string }, sx: number, sy: number) => {
     doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
-    doc.circle(margin + 2, y - 1.5, 1.5, 'F');
+    doc.circle(sx + 2, sy - 1.5, 1.5, 'F');
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
-    doc.text(s.num + '.', margin + 7, y);
+    doc.text(s.num + '.', sx + 7, sy);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(30, 30, 30);
-    doc.text(s.title, margin + 18, y);
-    // Dotted line
+    doc.text(s.title, sx + 18, sy);
+    // Dotted leader
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.15);
     const titleW = doc.getTextWidth(s.title);
-    const dotStart = margin + 18 + titleW + 3;
-    const dotEnd = pw - margin;
+    const dotStart = sx + 18 + titleW + 3;
+    const dotEnd = sx + somColW;
     for (let dx = dotStart; dx < dotEnd; dx += 2) {
-      doc.line(dx, y - 0.5, dx + 0.5, y - 0.5);
+      doc.line(dx, sy - 0.5, dx + 0.5, sy - 0.5);
     }
-    y += 10;
-  });
+  };
+  leftCol.forEach((s, i) => drawSomItem(s, margin, y + i * 14));
+  rightCol.forEach((s, i) => drawSomItem(s, margin + somColW + 10, y + i * 14));
+  // Decorative vertical separator
+  doc.setDrawColor(BLEU[0], BLEU[1], BLEU[2]);
+  doc.setLineWidth(0.3);
+  doc.line(margin + somColW + 5, y - 5, margin + somColW + 5, y + Math.max(leftCol.length, rightCol.length) * 14 - 5);
+  // Regulatory note at bottom of TOC page
+  const tocBottomY = y + Math.max(leftCol.length, rightCol.length) * 14 + 15;
+  doc.setFillColor(245, 247, 252);
+  doc.roundedRect(margin, tocBottomY, contentWidth, 18, 2, 2, 'F');
+  doc.setFontSize(7);
+  doc.setTextColor(GRIS[0], GRIS[1], GRIS[2]);
+  doc.setFont('helvetica', 'italic');
+  doc.text('Ce rapport est etabli en application de la M9-6 -- OP@LE (19 janvier 2026)', margin + 5, tocBottomY + 7);
+  doc.text('Il presente la situation comptable et financiere a la cloture de l\'exercice.', margin + 5, tocBottomY + 12);
 
   // ════════════════════════════════════════════════════════════
   // HELPERS
