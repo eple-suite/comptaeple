@@ -542,8 +542,10 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // HELPERS
   // ════════════════════════════════════════════════════════════
-  function sectionHeader(title: string, currentY: number = ph): number {
-    if (currentY > ph - 65) {
+  /** Ensures section header + content block starts on a page with enough room.
+   *  If remaining space < neededAfter, forces a new page. */
+  function sectionHeader(title: string, currentY: number = ph, neededAfter: number = 80): number {
+    if (currentY > ph - neededAfter) {
       doc.addPage();
       doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
       doc.rect(0, 0, pw, 12, 'F');
@@ -589,13 +591,23 @@ export function generateRapportACPdf(data: RapportACData) {
     return y;
   }
 
-  /** Comment box for each section */
+  /** Comment box for each section — auto-sizes to comment length, ALWAYS on same page as its content */
   function drawCommentBox(currentY: number, sectionLabel: string, existingComment?: string): number {
-    currentY = checkNewPage(currentY, 22);
+    const hasComment = existingComment && existingComment.trim();
+    // Estimate height needed
+    let boxH = 16;
+    let commentLines: string[] = [];
+    if (hasComment) {
+      doc.setFontSize(7);
+      commentLines = doc.splitTextToSize(sanitize(existingComment!), contentWidth - 6);
+      boxH = Math.max(16, 8 + commentLines.length * 3.5 + 4);
+    }
+    // Ensure box fits on current page
+    currentY = checkNewPage(currentY, boxH + 4);
     doc.setDrawColor(200, 205, 215);
     doc.setLineWidth(0.3);
     doc.setFillColor(252, 252, 255);
-    doc.roundedRect(margin, currentY, contentWidth, 16, 1.5, 1.5, 'FD');
+    doc.roundedRect(margin, currentY, contentWidth, boxH, 1.5, 1.5, 'FD');
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
@@ -603,9 +615,8 @@ export function generateRapportACPdf(data: RapportACData) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(80, 80, 80);
-    if (existingComment && existingComment.trim()) {
-      const lines = doc.splitTextToSize(sanitize(existingComment), contentWidth - 6);
-      lines.slice(0, 3).forEach((line: string, i: number) => {
+    if (hasComment) {
+      commentLines.forEach((line: string, i: number) => {
         doc.text(line, margin + 3, currentY + 8 + i * 3.5);
       });
     } else {
@@ -613,7 +624,7 @@ export function generateRapportACPdf(data: RapportACData) {
       doc.text('(A completer par l\'agent comptable)', margin + 3, currentY + 9);
     }
     doc.setTextColor(0, 0, 0);
-    return currentY + 20;
+    return currentY + boxH + 4;
   }
   // ════════════════════════════════════════════════════════════
   // S1. RESULTAT ET AUTOFINANCEMENT
