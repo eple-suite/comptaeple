@@ -34,7 +34,7 @@ interface RapportACData {
     joursFdr: number; joursTresorerie: number;
     fdrPartEncaissee: number; fdrPartNonEncaissee: number;
     fdrPctEncaissee: number; fdrPctNonEncaissee: number;
-    fdrMobilisable: number;
+    fdrMobilisable: number; drfn: number;
     tmcap: number; tmnr: number;
     totalCreances: number; totalDettes: number;
     creancesEtat: number; creancesCollectivite: number;
