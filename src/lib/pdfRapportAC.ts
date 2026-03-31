@@ -466,33 +466,54 @@ export function generateRapportACPdf(data: RapportACData) {
   doc.text(sanitize(`Agent comptable : ${etab.agentComptable || '--'}`), pw / 2, y);
   if (etab.secretaireGeneral) { y += 6; doc.text(sanitize(`Secretaire general(e) : ${etab.secretaireGeneral}`), margin, y); }
 
-  // Sommaire
-  y += 12;
-  doc.setFontSize(11);
+  // ════════════════════════════════════════════════════════════
+  // PAGE SOMMAIRE (page dédiée)
+  // ════════════════════════════════════════════════════════════
+  doc.addPage();
+  // Blue header band
+  doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
+  doc.rect(0, 0, pw, 16, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
-  doc.text('SOMMAIRE', margin, y);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.text('SOMMAIRE', pw / 2, 11, { align: 'center' });
+
+  y = 30;
   doc.setTextColor(0, 0, 0);
   const sommaire = [
-    '1. Resultat et autofinancement',
-    '2. Fonds de roulement',
-    '3. Besoin en fonds de roulement',
-    '4. Tresorerie',
-    '5. Charges a payer et recouvrement',
-    '6. Patrimoine',
-    '7. Creances et dettes',
-    '8. Reserves et affectation du resultat',
-    '9. Ratios de gestion M9-6',
-    '10. Evolution pluriannuelle',
-    '11. Observations de l\'agent comptable',
+    { num: '1', title: 'Resultat de l\'exercice et autofinancement' },
+    { num: '2', title: 'Analyse du fonds de roulement' },
+    { num: '3', title: 'Besoin en fonds de roulement' },
+    { num: '4', title: 'Analyse de la tresorerie' },
+    { num: '5', title: 'Charges a payer et recouvrement' },
+    { num: '6', title: 'Etat du patrimoine' },
+    { num: '7', title: 'Etat des creances et des dettes' },
+    { num: '8', title: 'Reserves et affectation du resultat' },
+    { num: '9', title: 'Ratios de gestion (M9-6 S IV)' },
+    { num: '10', title: 'Evolution pluriannuelle (Piece 14)' },
+    { num: '11', title: 'Observations de l\'agent comptable' },
   ];
-  const colSommaire = Math.ceil(sommaire.length / 2);
-  sommaire.forEach((s, i) => {
-    const sx = i < colSommaire ? margin + 5 : pw / 2;
-    const si = i < colSommaire ? i : i - colSommaire;
-    doc.text(s, sx, y + 8 + si * 5);
+  sommaire.forEach((s) => {
+    // Dot leader line
+    doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
+    doc.circle(margin + 2, y - 1.5, 1.5, 'F');
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
+    doc.text(s.num + '.', margin + 7, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(30, 30, 30);
+    doc.text(s.title, margin + 18, y);
+    // Dotted line
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.15);
+    const titleW = doc.getTextWidth(s.title);
+    const dotStart = margin + 18 + titleW + 3;
+    const dotEnd = pw - margin;
+    for (let dx = dotStart; dx < dotEnd; dx += 2) {
+      doc.line(dx, y - 0.5, dx + 0.5, y - 0.5);
+    }
+    y += 10;
   });
 
   // ════════════════════════════════════════════════════════════
