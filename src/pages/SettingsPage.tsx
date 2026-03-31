@@ -19,6 +19,7 @@ const SettingsPage = () => {
   const [ordonnateur, setOrdonnateur] = useState("");
   const [agentComptable, setAgentComptable] = useState("");
   const [secretaireGeneral, setSecretaireGeneral] = useState("");
+  const [opaleNumber, setOpaleNumber] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Profile
@@ -32,6 +33,7 @@ const SettingsPage = () => {
       setOrdonnateur(selectedEstablishment.ordonnateur || "");
       setAgentComptable(selectedEstablishment.agent_comptable || "");
       setSecretaireGeneral(selectedEstablishment.secretaire_general || "");
+      setOpaleNumber(selectedEstablishment.opale_number || "");
     }
   }, [selectedEstablishment]);
 
@@ -53,7 +55,7 @@ const SettingsPage = () => {
     try {
       const { error } = await supabase
         .from("establishments")
-        .update({ ordonnateur, agent_comptable: agentComptable, secretaire_general: secretaireGeneral })
+        .update({ ordonnateur, agent_comptable: agentComptable, secretaire_general: secretaireGeneral, opale_number: opaleNumber })
         .eq("id", selectedEstablishment.id);
       if (error) throw error;
       refetch();
@@ -160,11 +162,27 @@ const SettingsPage = () => {
                   <Label className="text-xs">Ville</Label>
                   <Input value={selectedEstablishment.city} disabled className="mt-1 bg-muted/30" />
                 </div>
-                <div>
-                  <Label className="text-xs">N° Op@le</Label>
-                  <Input value={selectedEstablishment.opale_number} disabled className="mt-1 bg-muted/30" />
-                </div>
               </div>
+
+              <Separator />
+              <div className="flex items-center gap-2 mb-2">
+                <Database className="h-3.5 w-3.5 text-primary" />
+                <Label className="text-xs font-bold uppercase tracking-wide text-primary">Identifiant Op@le</Label>
+              </div>
+              <div className="max-w-sm">
+                <Label className="text-xs">N° Op@le (ex : P12345)</Label>
+                <Input
+                  value={opaleNumber}
+                  onChange={e => setOpaleNumber(e.target.value.toUpperCase())}
+                  placeholder="P00000"
+                  className="mt-1 font-mono"
+                  maxLength={10}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">
+                  Ce numéro sera utilisé pour valider automatiquement les fichiers importés depuis Op@le. Tout document portant un numéro différent sera rejeté.
+                </p>
+              </div>
+
               <p className="text-[10px] text-muted-foreground italic">Les informations grisées sont modifiables depuis le menu « Établissements ».</p>
 
               <Button size="sm" onClick={handleSaveIdentity} disabled={saving}>
