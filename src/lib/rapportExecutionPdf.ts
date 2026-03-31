@@ -302,7 +302,7 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
     const totalDP = depServices.reduce((s, d) => s + d.dp, 0);
 
     autoTable(doc, {
-      startY: 30,
+      startY: yPos,
       head: [['Service', 'Crédits ouverts', 'Réalisé', 'Taux exéc.', 'Disponible']],
       body: depServices.map(s => [
         s.service,
