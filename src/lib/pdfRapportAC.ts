@@ -580,7 +580,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 8. CRÉANCES ET DETTES
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('8. État des créances et des dettes');
+  ys = sectionHeader('8. Etat des creances et des dettes', ys);
 
   // Créances + Dettes side by side approach: both tables on same page
   ys = subTitle(22, 'Créances');
