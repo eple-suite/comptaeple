@@ -515,7 +515,7 @@ export function calculerResultatsM96(
   const resultatBudgetaireN1 = 0;
   const fdrComptableN1 = fdrBasBE;
   const bfrN1 = bfrBE;
-  const tresorerieN1 = antDbtCl5 - antCrdCl5;
+  const tresorerieN1 = tresorerieAnt;
   const cafBudgetaireN1 = 0;
   const reservesN1Solde = reservesN1;
 
