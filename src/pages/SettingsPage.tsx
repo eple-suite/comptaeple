@@ -80,6 +80,56 @@ const SettingsPage = () => {
     } finally { setSavingProfile(false); }
   };
 
+  const handleExportData = async () => {
+    if (!user) return;
+    try {
+      const tables = ['cofieple_exercises', 'cofieple_extra_indicators', 'cofieple_snapshots', 'cofieple_audit_trail', 'cofieple_import_logs'] as const;
+      const exportData: Record<string, any> = { _exportedAt: new Date().toISOString(), _userId: user.id };
+      for (const table of tables) {
+        const { data } = await supabase.from(table).select('*').eq('user_id', user.id);
+        exportData[table] = data || [];
+      }
+      const { data: ueData } = await supabase.from('user_establishments').select('establishment_id, establishments(*)').eq('user_id', user.id);
+      exportData['establishments'] = (ueData || []).map((r: any) => r.establishments);
+      const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url;
+      a.download = `cockpit-eple-export-${new Date().toISOString().slice(0, 10)}.json`;
+      a.click(); URL.revokeObjectURL(url);
+      toast.success('Données exportées avec succès');
+    } catch (e: any) { toast.error('Erreur export : ' + (e.message || '')); }
+  };
+
+  const handleImportData = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!data._exportedAt) throw new Error('Fichier invalide');
+      if (data.cofieple_exercises?.length > 0) {
+        for (const row of data.cofieple_exercises) {
+          const { id, created_at, ...rest } = row;
+          await supabase.from('cofieple_exercises').upsert({ ...rest, user_id: user.id }, { onConflict: 'user_id,uai,exercice,type_budget' });
+        }
+      }
+      if (data.cofieple_extra_indicators?.length > 0) {
+        for (const row of data.cofieple_extra_indicators) {
+          const { id, created_at, ...rest } = row;
+          await supabase.from('cofieple_extra_indicators').upsert({ ...rest, user_id: user.id }, { onConflict: 'user_id,uai,exercice' });
+        }
+      }
+      if (data.cofieple_snapshots?.length > 0) {
+        for (const row of data.cofieple_snapshots) {
+          const { id, created_at, ...rest } = row;
+          await supabase.from('cofieple_snapshots').upsert({ ...rest, user_id: user.id }, { onConflict: 'user_id,uai,exercice,budget_type' });
+        }
+      }
+      toast.success('Import terminé — données restaurées');
+    } catch (err: any) { toast.error('Erreur import : ' + (err.message || 'fichier invalide')); }
+    e.target.value = '';
+  };
+
   const academies = [
     "Aix-Marseille", "Amiens", "Besançon", "Bordeaux", "Clermont-Ferrand",
     "Corse", "Créteil", "Dijon", "Grenoble", "Guadeloupe", "Guyane",
