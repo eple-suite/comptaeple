@@ -51,12 +51,15 @@ const POINTS: PointBloquant[] = [
       const ecart = R.resultatComptable - R.resultatBudgetaire;
       const soldeOO = R.operationsOrdre?.soldeOO ?? 0;
       const ecartInexplique = Math.abs(ecart - soldeOO);
-      // L'écart entre résultat budgétaire et comptable est NORMAL s'il est expliqué par les OO
+      // Tolérance élargie : les OO peuvent ne pas être complètement détaillées dans les imports
+      // Op@le arrondit aussi différemment entre budgétaire et comptable
+      // Seuil : 1% du total des charges ou 500€ minimum
+      const seuilDynamique = Math.max(500, Math.abs(R.totalChargesSde || R.totalChargesBalance || 0) * 0.01);
       return {
-        detecte: ecartInexplique > 100,
-        detail: ecartInexplique <= 100
+        detecte: ecartInexplique > seuilDynamique,
+        detail: ecartInexplique <= seuilDynamique
           ? `Écart de ${formatEur(Math.abs(ecart))} expliqué par les opérations d'ordre (solde OO = ${formatEur(soldeOO)}). Conforme M9-6.`
-          : `Écart inexpliqué = ${formatEur(ecartInexplique)}. Résultat budg. = ${formatEur(R.resultatBudgetaire)}, Résultat compt. = ${formatEur(R.resultatComptable)}, Solde OO = ${formatEur(soldeOO)}`
+          : `Écart inexpliqué = ${formatEur(ecartInexplique)} (seuil = ${formatEur(seuilDynamique)}). Résultat budg. = ${formatEur(R.resultatBudgetaire)}, Résultat compt. = ${formatEur(R.resultatComptable)}, Solde OO = ${formatEur(soldeOO)}`
       };
     },
   },
