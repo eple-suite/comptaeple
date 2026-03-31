@@ -275,6 +275,20 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
   let bestRows: Record<string, string>[] = [];
   let bestScore = -Infinity;
 
+  const getPreferredSheetScore = (sheetName: string, expected: string): number => {
+    const normalized = normalizeColumnName(sheetName);
+    let score = 0;
+
+    if ((expected === 'sde' || expected === 'sdr') && normalized.includes('ecbu')) score += 30;
+    if (expected === 'bal' && normalized.includes('balance')) score += 30;
+
+    // "Donnees" contains useful detail but often not the establishment-level totals;
+    // use it as fallback, not as primary source when ECBU/Balance is available.
+    if (normalized.includes('donnee')) score -= 8;
+
+    return score;
+  };
+
   for (const sheetName of wb.SheetNames) {
     const ws = wb.Sheets[sheetName];
 
@@ -317,11 +331,19 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
     const headers = Object.keys(rows[0] || {});
     const detected = detectDocumentType(headers, title);
 
+    const preferredSheetBoost = getPreferredSheetScore(sheetName, expectedType);
+
+    // Fast path: if we hit the canonical Op@le summary sheet for this slot and
+    // the detected structure matches, select it immediately.
+    if (preferredSheetBoost >= 30 && detected === expectedType) {
+      return { rows, title, meta };
+    }
+
     let score = 0;
     score += Math.min(rows.length, 200) / 40;
     if (detected) score += 6;
     if (detected === expectedType) score += 20;
-    if (normalizeColumnName(sheetName).includes('donnee')) score += 4;
+    score += preferredSheetBoost;
     if (headers.some((h) => normalizeColumnName(h).startsWith('montant colonne'))) score += 6;
 
     if (score > bestScore) {
