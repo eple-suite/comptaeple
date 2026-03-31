@@ -727,7 +727,6 @@ export function generateRapportACPdf(data: RapportACData) {
     ys += 30;
   }
 
-  if (saisie.commentaireFDR) ys = wrapText(ys, saisie.commentaireFDR);
   ys = drawCommentBox(ys, 'Fonds de roulement', saisie.commentaireFDR);
 
   // ════════════════════════════════════════════════════════════
