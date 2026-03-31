@@ -665,7 +665,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 10. RATIOS
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('10. Ratios de gestion (M9-6 § IV)');
+  ys = sectionHeader('10. Ratios de gestion (M9-6 § IV)', ys);
   autoTable(doc, {
     startY: ys,
     head: [['Ratio', 'Valeur', 'Interprétation']],
