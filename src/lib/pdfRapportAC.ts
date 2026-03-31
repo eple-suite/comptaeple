@@ -895,7 +895,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S6. PATRIMOINE
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('6. Etat du patrimoine', ys);
+  ys = sectionHeader('6. Etat du patrimoine', ys, 90);
   autoTable(doc, {
     startY: ys,
     head: [['Element', 'Montant']],
