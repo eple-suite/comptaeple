@@ -144,13 +144,25 @@ export function calculerResultatsM96(
   const fdrHaut = aggregateFdr ?? (solCrdCl1 + solCrdCl2 + solCrd39 + solCrd49 + solCrd59 - solDbtCl1Hors - solDbtCl2 - solCrd185);
 
   // ── FDR par le bas (actif circulant net - passif circulant) ────────
+  // Conforme Pièce 14 Op@le : FDR = BFR + Trésorerie = (Cl3+Cl4dbt+Cl5dbt) - (Cl4crd+Cl5crd)
+  // On ne réutilise PAS aggregateFdr ici car le FDR "par le haut" peut diverger
+  // (écarts sur Cl1/Cl2 liés aux comptes 18x). Le "par le bas" est la référence Pièce 14.
   const solDbtCl3       = sumBal(bal, c => c.charAt(0) === '3', 'solDbt');
   const solDbtCl4plus   = sumBal(bal, c => c.charAt(0) === '4' || ['181','185','186','187'].includes(c.substring(0, 3)), 'solDbt');
   const solDbtCl5       = sumBal(bal, c => c.charAt(0) === '5', 'solDbt');
   const solCrdCl4       = sumBal(bal, c => c.charAt(0) === '4', 'solCrd');
   const solCrdCl5       = sumBal(bal, c => c.charAt(0) === '5', 'solCrd');
   const solCrdCl18      = sumBal(bal, c => c.startsWith('18'), 'solCrd');
-  const fdrBas    = aggregateFdr ?? (solDbtCl3 + solDbtCl4plus + solDbtCl5 - solCrdCl4 - solCrdCl5 - solCrdCl18 + solCrd49 + solCrd59);
+
+  // Priorité 1 : agrégés classes 3/4/5 si disponibles
+  const aggregateClass3 = getAggregateClassRow(bal, '3');
+  const aggregateClass4 = getAggregateClassRow(bal, '4');
+  const aggregateClass5ForFdr = getAggregateClassRow(bal, '5');
+  const fdrBasFromAggregates = (aggregateClass4 && aggregateClass5ForFdr)
+    ? ((aggregateClass3?.solDbt ?? 0) + aggregateClass4.solDbt + aggregateClass5ForFdr.solDbt
+       - aggregateClass4.solCrd - aggregateClass5ForFdr.solCrd)
+    : null;
+  const fdrBas = fdrBasFromAggregates ?? (solDbtCl3 + solDbtCl4plus + solDbtCl5 - solCrdCl4 - solCrdCl5 - solCrdCl18 + solCrd49 + solCrd59);
   const fdrComptable = fdrBas;
 
   // ── Variations FDR (bilantiel BE→BF) ──────────────────────────────
