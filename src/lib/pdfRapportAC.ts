@@ -864,6 +864,7 @@ export function generateRapportACPdf(data: RapportACData) {
     drawTrendLine(doc, margin + colHalf + 8, ys, colHalf - 4, 20, fullHistory.map(h => h.tmnr ?? 0), ROUGE, 'Evolution TMNR (%)', histLabels);
     ys += 28;
   }
+  ys = drawCommentBox(ys, 'Charges a payer et recouvrement', saisie.commentaireChargesRecouvrement);
 
   // ════════════════════════════════════════════════════════════
   // S6. PATRIMOINE
