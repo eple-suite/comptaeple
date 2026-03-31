@@ -760,7 +760,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S3. BFR
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('3. Besoin en fonds de roulement', ys);
+  ys = sectionHeader('3. Besoin en fonds de roulement', ys, 90);
   autoTable(doc, {
     startY: ys,
     head: [['Element', 'Montant']],
