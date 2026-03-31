@@ -77,7 +77,7 @@ export function PluriannuelSection() {
 
   // Manual entry state for years N-1 to N-4
   const currentYear = etab.exercice || new Date().getFullYear() - 1;
-  const pastYears = [currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4];
+  const pastYears = [currentYear - 4, currentYear - 3, currentYear - 2, currentYear - 1];
   const [manualData, setManualData] = useState<Record<number, ExerciceData>>({});
   const [savingYear, setSavingYear] = useState<number | null>(null);
 
