@@ -800,7 +800,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S4. TRESORERIE
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('4. Analyse de la tresorerie', ys);
+  ys = sectionHeader('4. Analyse de la tresorerie', ys, 100);
 
   // Composition table + donut chart
   autoTable(doc, {
