@@ -232,8 +232,7 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   // ════════════════════════════════════════════════════════════
   // 3. COHÉRENCE BUDGÉTAIRE
   // ════════════════════════════════════════════════════════════
-  doc.addPage();
-  drawSectionHeader(doc, '3. COHÉRENCE BUDGÉTAIRE — CROISEMENT SDE / SDR', 'Ref. : M9-6 Tome 2 — §2.1.1 (équilibre, spécialité)');
+  yPos = drawSectionHeader(doc, '3. COHERENCE BUDGETAIRE -- CROISEMENT SDE / SDR', 'Ref. : M9-6 Tome 2 -- §2.1.1 (equilibre, specialite)');
 
   if (hasSDE && hasSDR) {
     const coherence = buildCoherence(sdeRows, sdrRows);
