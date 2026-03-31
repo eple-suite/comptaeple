@@ -280,20 +280,21 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
     const yEq = yAfter + 12;
     doc.setTextColor(0);
     doc.setFontSize(9);
-    doc.text(`Crédits ouverts (dépenses) : ${fmt(totalDepBudget)}`, 14, yEq);
-    doc.text(`Prévisions (recettes) : ${fmt(totalRecBudget)}`, 14, yEq + 7);
-    doc.text(`Écart : ${fmt(ecartEq)} — ${ecartEq < 1 ? '✓ Équilibre respecté' : '⚠ Déséquilibre constaté'}`, 14, yEq + 14);
+    doc.text(`Credits ouverts (depenses) : ${fmt(totalDepBudget)}`, 14, yEq);
+    doc.text(`Previsions (recettes) : ${fmt(totalRecBudget)}`, 14, yEq + 7);
+    doc.text(`Ecart : ${fmt(ecartEq)} -- ${ecartEq < 1 ? '✓ Equilibre respecte' : '⚠ Desequilibre constate'}`, 14, yEq + 14);
+    yPos = yEq + 22;
   } else {
     doc.setFontSize(9);
     doc.setTextColor(120);
-    doc.text('Croisement impossible — SDE et/ou SDR non importé(s).', 14, 35);
+    doc.text('Croisement impossible -- SDE et/ou SDR non importe(s).', 14, yPos + 5);
+    yPos += 15;
   }
 
   // ════════════════════════════════════════════════════════════
   // 4. TAUX D'EXÉCUTION PAR SERVICE
   // ════════════════════════════════════════════════════════════
-  doc.addPage();
-  drawSectionHeader(doc, '4. TAUX D\'EXÉCUTION PAR SERVICE', 'Pilotage budgétaire — Budget initial vs Budget exécuté');
+  yPos = drawSectionHeader(doc, '4. TAUX D\'EXECUTION PAR SERVICE', 'Pilotage budgetaire -- Budget initial vs Budget execute', yPos);
 
   if (hasSDE) {
     const depServices = aggregateDepByService(sdeRows);
