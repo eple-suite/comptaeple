@@ -1000,6 +1000,7 @@ export function generateRapportACPdf(data: RapportACData) {
       ? `Le resultat de l'exercice ${etab.exercice} (${fmt(R.resultatComptable)}) sera propose a l'affectation au compte de reserves (c/1068).`
       : `Le deficit de l'exercice ${etab.exercice} (${fmt(R.resultatComptable)}) sera impute sur les reserves (c/1068). Apres affectation : ${fmt(R.reserves + R.resultatComptable)}.`
   );
+  ys = drawCommentBox(ys, 'Reserves et affectation', saisie.commentaireReserves);
 
   // ════════════════════════════════════════════════════════════
   // S9. RATIOS DE GESTION
