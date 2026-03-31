@@ -449,7 +449,7 @@ export function generateRapportACPdf(data: RapportACData) {
   const kpiW = (contentWidth - 12) / 4;
   const fdrTrend = fullHistory.length >= 2 ? `${fullHistory[fullHistory.length - 1].fdr >= fullHistory[fullHistory.length - 2].fdr ? '+' : '-'} vs ${fullHistory[fullHistory.length - 2].exercice}` : undefined;
   drawKpiCard(doc, margin, y, kpiW, 'Fonds de roulement', fmtK(R.fdrComptable), fdrTrend, R.fdrComptable >= 0 ? BLEU : ROUGE);
-  drawKpiCard(doc, margin + kpiW + 4, y, kpiW, 'Tresorerie nette', fmtK(R.tresorerie), `${Math.round(R.joursTresorerie)} jours`, R.tresorerie >= 0 ? VERT : ROUGE);
+  drawKpiCard(doc, margin + kpiW + 4, y, kpiW, 'Tresorerie nette', fmtK(R.tresorerie), `${R.joursTresorerie.toFixed(2)} jours`, R.tresorerie >= 0 ? VERT : ROUGE);
   drawKpiCard(doc, margin + 2 * (kpiW + 4), y, kpiW, R.cafComptable >= 0 ? 'CAF' : 'IAF', fmtK(R.cafComptable), undefined, R.cafComptable >= 0 ? VERT : ROUGE);
   drawKpiCard(doc, margin + 3 * (kpiW + 4), y, kpiW, 'Resultat', fmtK(R.resultatComptable), undefined, R.resultatComptable >= 0 ? BLEU : ROUGE);
 
