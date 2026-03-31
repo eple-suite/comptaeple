@@ -1140,6 +1140,7 @@ export function generateRapportACPdf(data: RapportACData) {
       ys = (doc as any).lastAutoTable.finalY + 5;
     }
   }
+  ys = drawCommentBox(ys, 'Evolution pluriannuelle', saisie.commentairePluriannuel);
 
   // ════════════════════════════════════════════════════════════
   // S11. OBSERVATIONS
