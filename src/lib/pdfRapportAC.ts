@@ -566,6 +566,32 @@ export function generateRapportACPdf(data: RapportACData) {
     return y;
   }
 
+  /** Comment box for each section */
+  function drawCommentBox(currentY: number, sectionLabel: string, existingComment?: string): number {
+    currentY = checkNewPage(currentY, 22);
+    doc.setDrawColor(200, 205, 215);
+    doc.setLineWidth(0.3);
+    doc.setFillColor(252, 252, 255);
+    doc.roundedRect(margin, currentY, contentWidth, 16, 1.5, 1.5, 'FD');
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
+    doc.text(sanitize(`Commentaire -- ${sectionLabel}`), margin + 3, currentY + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(80, 80, 80);
+    if (existingComment && existingComment.trim()) {
+      const lines = doc.splitTextToSize(sanitize(existingComment), contentWidth - 6);
+      lines.slice(0, 3).forEach((line: string, i: number) => {
+        doc.text(line, margin + 3, currentY + 8 + i * 3.5);
+      });
+    } else {
+      doc.setTextColor(180, 180, 180);
+      doc.text('(A completer par l\'agent comptable)', margin + 3, currentY + 9);
+    }
+    doc.setTextColor(0, 0, 0);
+    return currentY + 20;
+  }
   // ════════════════════════════════════════════════════════════
   // S1. RESULTAT ET AUTOFINANCEMENT
   // ════════════════════════════════════════════════════════════
