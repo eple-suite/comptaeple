@@ -101,7 +101,7 @@ export function PluriannuelSection() {
         .limit(5);
 
       if (rows) {
-        const mapped = rows.map(r => ({
+        const mapped: ExerciceData[] = rows.map(r => ({
           exercice: r.exercice,
           resultat: Number(r.resultat_budgetaire),
           fdr: Number(r.fdr),
@@ -115,6 +115,9 @@ export function PluriannuelSection() {
           taux_exec_produits: Number(r.taux_exec_produits),
           total_charges_reel: Number(r.total_charges_reel),
           total_produits_reel: Number(r.total_produits_reel),
+          jours_tresorerie: Number((r as any).jours_tresorerie || 0),
+          tmcap: Number((r as any).tmcap || 0),
+          tmnr: Number((r as any).tmnr || 0),
         }));
         setHistorique(mapped);
         // Pre-fill manual data from DB
