@@ -830,6 +830,7 @@ export function generateRapportACPdf(data: RapportACData) {
     drawTrendLine(doc, margin + contentWidth * 0.5, ys, contentWidth * 0.45, 22, fullHistory.map(h => h.jours_tresorerie ?? 0), BLEU_CLAIR, 'Jours de tresorerie', histLabels);
     ys += 30;
   }
+  ys = drawCommentBox(ys, 'Tresorerie', saisie.commentaireTresorerie);
 
   // ════════════════════════════════════════════════════════════
   // S5. TMCAP / TMNR
