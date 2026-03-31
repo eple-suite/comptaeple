@@ -139,7 +139,7 @@ export function calculerResultatsM96(
   const aggregateClass1 = getAggregateClassRow(bal, '1');
   const aggregateClass2 = getAggregateClassRow(bal, '2');
   const aggregateFdr = aggregateClass1 && aggregateClass2
-    ? Math.max(0, (aggregateClass1.solCrd - aggregateClass1.solDbt) - (aggregateClass2.solDbt - aggregateClass2.solCrd))
+    ? (aggregateClass1.solCrd - aggregateClass1.solDbt) - (aggregateClass2.solDbt - aggregateClass2.solCrd)
     : null;
   const fdrHaut = aggregateFdr ?? (solCrdCl1 + solCrdCl2 + solCrd39 + solCrd49 + solCrd59 - solDbtCl1Hors - solDbtCl2 - solCrd185);
 
@@ -183,9 +183,11 @@ export function calculerResultatsM96(
   const varBfrSoustractive = varFdrBas - (solDbtCl5 - solCrdCl5 - antDbtCl5 + antCrdCl5);
 
   // ── Trésorerie ─────────────────────────────────────────────────────
-  // Budget Principal : TN = solde net classe 5 (C/515100 = dépôt au Trésor)
+  // Budget Principal : TN = ligne agrégée "5 -" de la balance (solDbt)
+  //   C'est le montant exact affiché sur la Pièce 14 Op@le.
+  //   Fallback: somme des comptes de trésorerie spécifiques ou solde net classe 5.
   // Budget Annexe : TN = C/185000 solde débiteur (trésorerie virtuelle via BP support)
-  //                 Pas de C/515100, le Trésor est porté par le budget principal
+  const aggregateClass5 = getAggregateClassRow(bal, '5');
   const comptesTresorerieAutorises = new Set(['511200', '511500', '511700', '515100', '515900', '531000']);
   const tresorerieOpale = bal
     .filter((b) => !b.isAggregate && comptesTresorerieAutorises.has(b.compte.replace(/^C\//i, '')))
@@ -198,7 +200,12 @@ export function calculerResultatsM96(
     const solCrd185fromCl5 = sumBal(bal, c => c.startsWith('185'), 'solCrd');
     tresorerie = solDbt185 - solCrd185fromCl5;
   } else {
-    tresorerie = tresorerieOpale || (solDbtCl5 - solCrdCl5);
+    // Priorité 1 : ligne agrégée "5 -" de la balance (conforme Pièce 14)
+    // Priorité 2 : somme des comptes trésorerie spécifiques
+    // Priorité 3 : solde net de toute la classe 5
+    tresorerie = aggregateClass5
+      ? (aggregateClass5.solDbt - aggregateClass5.solCrd)
+      : (tresorerieOpale || (solDbtCl5 - solCrdCl5));
   }
   const tresorerieClassique = solDbtCl5 - solCrdCl5; // toujours calculée pour vérification
   const antTresoClassique = antDbtCl5 - antCrdCl5;
@@ -208,7 +215,10 @@ export function calculerResultatsM96(
     const antCrd185val = sumBal(bal, c => c.startsWith('185'), 'antCrd');
     tresorerieAnt = antDbt185 - antCrd185val;
   } else {
-    tresorerieAnt = antTresoClassique;
+    // Pour N-1, utiliser aussi l'agrégé si disponible (antDbt - antCrd)
+    tresorerieAnt = aggregateClass5
+      ? (aggregateClass5.antDbt - aggregateClass5.antCrd)
+      : antTresoClassique;
   }
   const varTresorerieComptable = tresorerie - tresorerieAnt;
   const varTresorerieTableauFinancement = varFdrBas - varBfrSynthetique;
@@ -386,7 +396,7 @@ export function calculerResultatsM96(
   // Trésorerie nette = disponibilités (comptes 51/53/54) nettes
   // Part encaissée = min(FDR, TN) si les deux > 0
   // C'est la part du FDR effectivement disponible en trésorerie
-  const tresorerieNettePourFdr = isAnnexe ? tresorerie : tresorerieOpale;
+  const tresorerieNettePourFdr = isAnnexe ? tresorerie : tresorerie;
 
   const fdrPartEncaissee = fdrComptable > 0 && tresorerieNettePourFdr > 0
     ? Math.min(fdrComptable, tresorerieNettePourFdr)
@@ -505,7 +515,7 @@ export function calculerResultatsM96(
   const resultatBudgetaireN1 = 0;
   const fdrComptableN1 = fdrBasBE;
   const bfrN1 = bfrBE;
-  const tresorerieN1 = antDbtCl5 - antCrdCl5;
+  const tresorerieN1 = tresorerieAnt;
   const cafBudgetaireN1 = 0;
   const reservesN1Solde = reservesN1;
 
