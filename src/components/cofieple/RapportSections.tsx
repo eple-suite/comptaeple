@@ -992,7 +992,7 @@ export function RapportACSection() {
         if (!session.session) return;
         const { data } = await supabase
           .from('cofieple_exercises')
-          .select('exercice,fdr,bfr,tresorerie,caf,reserves,jours_autonomie,resultat_budgetaire,resultat_comptable')
+          .select('exercice,fdr,bfr,tresorerie,caf,reserves,jours_autonomie,resultat_budgetaire,resultat_comptable,jours_tresorerie,tmcap,tmnr')
           .eq('uai', etab.uai).eq('user_id', session.session.user.id)
           .order('exercice', { ascending: false }).limit(5);
         if (data) setHistory(data);
