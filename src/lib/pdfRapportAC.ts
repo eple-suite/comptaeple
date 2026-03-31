@@ -69,6 +69,12 @@ interface RapportACData {
     commentaireTresorerie: string;
     commentaireCreances: string;
     commentaireGeneral: string;
+    commentaireBFR?: string;
+    commentaireChargesRecouvrement?: string;
+    commentairePatrimoine?: string;
+    commentaireReserves?: string;
+    commentaireRatios?: string;
+    commentairePluriannuel?: string;
   };
   aiText: string;
   history: { exercice: number; fdr: number; bfr: number; tresorerie: number; caf: number; reserves: number; jours_autonomie: number; jours_tresorerie?: number; tmcap?: number; tmnr?: number; resultat?: number }[];
@@ -466,33 +472,54 @@ export function generateRapportACPdf(data: RapportACData) {
   doc.text(sanitize(`Agent comptable : ${etab.agentComptable || '--'}`), pw / 2, y);
   if (etab.secretaireGeneral) { y += 6; doc.text(sanitize(`Secretaire general(e) : ${etab.secretaireGeneral}`), margin, y); }
 
-  // Sommaire
-  y += 12;
-  doc.setFontSize(11);
+  // ════════════════════════════════════════════════════════════
+  // PAGE SOMMAIRE (page dédiée)
+  // ════════════════════════════════════════════════════════════
+  doc.addPage();
+  // Blue header band
+  doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
+  doc.rect(0, 0, pw, 16, 'F');
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
-  doc.text('SOMMAIRE', margin, y);
-  doc.setFont('helvetica', 'normal');
-  doc.setFontSize(8);
+  doc.text('SOMMAIRE', pw / 2, 11, { align: 'center' });
+
+  y = 30;
   doc.setTextColor(0, 0, 0);
   const sommaire = [
-    '1. Resultat et autofinancement',
-    '2. Fonds de roulement',
-    '3. Besoin en fonds de roulement',
-    '4. Tresorerie',
-    '5. Charges a payer et recouvrement',
-    '6. Patrimoine',
-    '7. Creances et dettes',
-    '8. Reserves et affectation du resultat',
-    '9. Ratios de gestion M9-6',
-    '10. Evolution pluriannuelle',
-    '11. Observations de l\'agent comptable',
+    { num: '1', title: 'Resultat de l\'exercice et autofinancement' },
+    { num: '2', title: 'Analyse du fonds de roulement' },
+    { num: '3', title: 'Besoin en fonds de roulement' },
+    { num: '4', title: 'Analyse de la tresorerie' },
+    { num: '5', title: 'Charges a payer et recouvrement' },
+    { num: '6', title: 'Etat du patrimoine' },
+    { num: '7', title: 'Etat des creances et des dettes' },
+    { num: '8', title: 'Reserves et affectation du resultat' },
+    { num: '9', title: 'Ratios de gestion (M9-6 S IV)' },
+    { num: '10', title: 'Evolution pluriannuelle (Piece 14)' },
+    { num: '11', title: 'Observations de l\'agent comptable' },
   ];
-  const colSommaire = Math.ceil(sommaire.length / 2);
-  sommaire.forEach((s, i) => {
-    const sx = i < colSommaire ? margin + 5 : pw / 2;
-    const si = i < colSommaire ? i : i - colSommaire;
-    doc.text(s, sx, y + 8 + si * 5);
+  sommaire.forEach((s) => {
+    // Dot leader line
+    doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
+    doc.circle(margin + 2, y - 1.5, 1.5, 'F');
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
+    doc.text(s.num + '.', margin + 7, y);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(30, 30, 30);
+    doc.text(s.title, margin + 18, y);
+    // Dotted line
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.15);
+    const titleW = doc.getTextWidth(s.title);
+    const dotStart = margin + 18 + titleW + 3;
+    const dotEnd = pw - margin;
+    for (let dx = dotStart; dx < dotEnd; dx += 2) {
+      doc.line(dx, y - 0.5, dx + 0.5, y - 0.5);
+    }
+    y += 10;
   });
 
   // ════════════════════════════════════════════════════════════
@@ -545,6 +572,32 @@ export function generateRapportACPdf(data: RapportACData) {
     return y;
   }
 
+  /** Comment box for each section */
+  function drawCommentBox(currentY: number, sectionLabel: string, existingComment?: string): number {
+    currentY = checkNewPage(currentY, 22);
+    doc.setDrawColor(200, 205, 215);
+    doc.setLineWidth(0.3);
+    doc.setFillColor(252, 252, 255);
+    doc.roundedRect(margin, currentY, contentWidth, 16, 1.5, 1.5, 'FD');
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
+    doc.text(sanitize(`Commentaire -- ${sectionLabel}`), margin + 3, currentY + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(7);
+    doc.setTextColor(80, 80, 80);
+    if (existingComment && existingComment.trim()) {
+      const lines = doc.splitTextToSize(sanitize(existingComment), contentWidth - 6);
+      lines.slice(0, 3).forEach((line: string, i: number) => {
+        doc.text(line, margin + 3, currentY + 8 + i * 3.5);
+      });
+    } else {
+      doc.setTextColor(180, 180, 180);
+      doc.text('(A completer par l\'agent comptable)', margin + 3, currentY + 9);
+    }
+    doc.setTextColor(0, 0, 0);
+    return currentY + 20;
+  }
   // ════════════════════════════════════════════════════════════
   // S1. RESULTAT ET AUTOFINANCEMENT
   // ════════════════════════════════════════════════════════════
@@ -617,6 +670,7 @@ export function generateRapportACPdf(data: RapportACData) {
     ys = (doc as any).lastAutoTable.finalY + 3;
   }
   if (saisie.explicationsResultat) ys = wrapText(ys, saisie.explicationsResultat);
+  ys = drawCommentBox(ys, 'Resultat et autofinancement', saisie.explicationsResultat);
 
   // ════════════════════════════════════════════════════════════
   // S2. FONDS DE ROULEMENT
@@ -675,6 +729,7 @@ export function generateRapportACPdf(data: RapportACData) {
   }
 
   if (saisie.commentaireFDR) ys = wrapText(ys, saisie.commentaireFDR);
+  ys = drawCommentBox(ys, 'Fonds de roulement', saisie.commentaireFDR);
 
   // ════════════════════════════════════════════════════════════
   // S3. BFR
@@ -714,6 +769,7 @@ export function generateRapportACPdf(data: RapportACData) {
       ? `Le BFR negatif (${fmt(R.bfr)}) constitue un degagement en fonds de roulement, situation classique des EPLE. Relation FDR = BFR + Tresorerie verifiee : ${fmt(R.fdrComptable)} = ${fmt(R.bfr)} + ${fmt(R.tresorerie)}.`
       : `Le BFR positif (${fmt(R.bfr)}) indique que les creances excedent les dettes d'exploitation.`
   );
+  ys = drawCommentBox(ys, 'Besoin en fonds de roulement', saisie.commentaireBFR);
 
   // ════════════════════════════════════════════════════════════
   // S4. TRESORERIE
@@ -774,6 +830,7 @@ export function generateRapportACPdf(data: RapportACData) {
     drawTrendLine(doc, margin + contentWidth * 0.5, ys, contentWidth * 0.45, 22, fullHistory.map(h => h.jours_tresorerie ?? 0), BLEU_CLAIR, 'Jours de tresorerie', histLabels);
     ys += 30;
   }
+  ys = drawCommentBox(ys, 'Tresorerie', saisie.commentaireTresorerie);
 
   // ════════════════════════════════════════════════════════════
   // S5. TMCAP / TMNR
@@ -807,6 +864,7 @@ export function generateRapportACPdf(data: RapportACData) {
     drawTrendLine(doc, margin + colHalf + 8, ys, colHalf - 4, 20, fullHistory.map(h => h.tmnr ?? 0), ROUGE, 'Evolution TMNR (%)', histLabels);
     ys += 28;
   }
+  ys = drawCommentBox(ys, 'Charges a payer et recouvrement', saisie.commentaireChargesRecouvrement);
 
   // ════════════════════════════════════════════════════════════
   // S6. PATRIMOINE
@@ -852,6 +910,7 @@ export function generateRapportACPdf(data: RapportACData) {
     doc.text('Valeur nette', chartX + chartW / 2, ys + 25, { align: 'center' });
   }
   ys = Math.max(patriTableBot, ys + 45) + 3;
+  ys = drawCommentBox(ys, 'Patrimoine', saisie.commentairePatrimoine);
 
   // ════════════════════════════════════════════════════════════
   // S7. CREANCES ET DETTES
@@ -904,6 +963,7 @@ export function generateRapportACPdf(data: RapportACData) {
 
   if (R.reliquatsSubventions > 0) ys = wrapText(ys, `Reliquats de subventions non consommees : ${fmt(R.reliquatsSubventions)}.`);
   if (saisie.commentaireCreances) ys = wrapText(ys, saisie.commentaireCreances);
+  ys = drawCommentBox(ys, 'Creances et dettes', saisie.commentaireCreances);
 
   // ════════════════════════════════════════════════════════════
   // S8. RESERVES
@@ -940,6 +1000,7 @@ export function generateRapportACPdf(data: RapportACData) {
       ? `Le resultat de l'exercice ${etab.exercice} (${fmt(R.resultatComptable)}) sera propose a l'affectation au compte de reserves (c/1068).`
       : `Le deficit de l'exercice ${etab.exercice} (${fmt(R.resultatComptable)}) sera impute sur les reserves (c/1068). Apres affectation : ${fmt(R.reserves + R.resultatComptable)}.`
   );
+  ys = drawCommentBox(ys, 'Reserves et affectation', saisie.commentaireReserves);
 
   // ════════════════════════════════════════════════════════════
   // S9. RATIOS DE GESTION
@@ -993,6 +1054,7 @@ export function generateRapportACPdf(data: RapportACData) {
     drawHBar(doc, margin, ys, contentWidth * 0.5, 4, ri.val, ri.max, ri.color, ri.label, ri.display);
     ys += 10;
   }
+  ys = drawCommentBox(ys, 'Ratios de gestion', saisie.commentaireRatios);
 
   // ════════════════════════════════════════════════════════════
   // S10. PLURIANNUEL (COMPLET)
@@ -1078,6 +1140,7 @@ export function generateRapportACPdf(data: RapportACData) {
       ys = (doc as any).lastAutoTable.finalY + 5;
     }
   }
+  ys = drawCommentBox(ys, 'Evolution pluriannuelle', saisie.commentairePluriannuel);
 
   // ════════════════════════════════════════════════════════════
   // S11. OBSERVATIONS
@@ -1109,7 +1172,7 @@ export function generateRapportACPdf(data: RapportACData) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.text(sanitize(`Fait a ${etab.commune || '............'},`), pw - margin - 60, ys);
-  doc.text(`le ......... / ......... / ${etab.exercice + 1}`, pw - margin - 60, ys + 5);
+  doc.text(`le 31 decembre ${etab.exercice}`, pw - margin - 60, ys + 5);
   ys += 18;
   doc.text(sanitize(etab.agentComptable || '..................'), margin, ys);
   doc.setFontSize(8);
