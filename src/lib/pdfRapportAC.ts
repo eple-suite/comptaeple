@@ -960,7 +960,6 @@ export function generateRapportACPdf(data: RapportACData) {
   ys += 25;
 
   if (R.reliquatsSubventions > 0) ys = wrapText(ys, `Reliquats de subventions non consommees : ${fmt(R.reliquatsSubventions)}.`);
-  if (saisie.commentaireCreances) ys = wrapText(ys, saisie.commentaireCreances);
   ys = drawCommentBox(ys, 'Creances et dettes', saisie.commentaireCreances);
 
   // ════════════════════════════════════════════════════════════
