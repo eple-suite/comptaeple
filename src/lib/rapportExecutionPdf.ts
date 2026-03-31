@@ -485,8 +485,27 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function drawSectionHeader(doc: jsPDF, title: string, subtitle: string) {
+function drawSectionHeader(doc: jsPDF, title: string, subtitle: string, currentY?: number) {
   const pw = doc.internal.pageSize.getWidth();
+  const ph = doc.internal.pageSize.getHeight();
+  // If currentY provided and enough room (>70mm), draw inline; otherwise new page
+  if (currentY != null && currentY < ph - 70) {
+    const y0 = currentY + 4;
+    doc.setFillColor(37, 68, 120);
+    doc.rect(14, y0, pw - 28, 16, 'F');
+    doc.setTextColor(255);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, 20, y0 + 10);
+    if (subtitle) {
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.text(subtitle, pw - 20, y0 + 10, { align: 'right' });
+    }
+    doc.setTextColor(0);
+    return y0 + 22;
+  }
+  doc.addPage();
   doc.setFillColor(37, 68, 120);
   doc.rect(0, 0, pw, 22, 'F');
   doc.setTextColor(255);
@@ -499,6 +518,7 @@ function drawSectionHeader(doc: jsPDF, title: string, subtitle: string) {
     doc.text(subtitle, pw - 14, 14, { align: 'right' });
   }
   doc.setTextColor(0);
+  return 30;
 }
 
 function aggregateDepByService(rows: LigneSDE[]) {
