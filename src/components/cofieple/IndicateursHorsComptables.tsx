@@ -12,8 +12,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
+import { idbStorage } from '@/lib/idbStorage';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
-import { Users, Utensils, BedDouble, MessageSquare, Save, Loader2, CheckCircle2, Building, Zap, Briefcase, Heart } from 'lucide-react';
+import { Users, Utensils, MessageSquare, Save, Loader2, CheckCircle2, Building, Briefcase, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ExtraIndicators {
@@ -57,19 +58,109 @@ const DEFAULTS: ExtraIndicators = {
   commentaire_caf: '', commentaire_general: '',
 };
 
+const DRAFT_PREFIX = 'cofieple_extra_indicators_draft_';
+
+function getDraftKey(establishmentId: string | null, uai: string, exercice: number) {
+  if (establishmentId) return `${DRAFT_PREFIX}${establishmentId}_${exercice}`;
+  if (uai) return `${DRAFT_PREFIX}uai_${uai}_${exercice}`;
+  return null;
+}
+
+function normalizeExtraIndicators(source: Partial<ExtraIndicators> | null | undefined): ExtraIndicators {
+  return {
+    ...DEFAULTS,
+    ...source,
+  };
+}
+
+async function loadDraft(key: string): Promise<ExtraIndicators | null> {
+  try {
+    const raw = localStorage.getItem(key) ?? await idbStorage.getItem(key);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as unknown;
+    const draftData = parsed && typeof parsed === 'object' && 'data' in parsed
+      ? (parsed as { data?: Partial<ExtraIndicators> }).data
+      : (parsed as Partial<ExtraIndicators>);
+    return normalizeExtraIndicators(draftData);
+  } catch {
+    return null;
+  }
+}
+
+function persistDraft(key: string, data: ExtraIndicators) {
+  const payload = JSON.stringify({ data, updatedAt: new Date().toISOString() });
+
+  try {
+    localStorage.setItem(key, payload);
+  } catch {
+    // ignore localStorage quota/availability issues
+  }
+
+  void idbStorage.setItem(key, payload).catch(() => {
+    // ignore IndexedDB write errors, localStorage remains fallback
+  });
+}
+
+async function clearDraft(key: string) {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // ignore localStorage availability issues
+  }
+
+  try {
+    await idbStorage.removeItem(key);
+  } catch {
+    // ignore IndexedDB cleanup issues
+  }
+}
+
 export function IndicateursHorsComptables() {
   const etab = useCofiepleStore(s => s.etablissement);
+  const currentEstablishmentId = useCofiepleStore(s => s.currentEstablishmentId);
   const [data, setData] = useState<ExtraIndicators>(DEFAULTS);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const draftKey = getDraftKey(currentEstablishmentId, etab.uai, etab.exercice);
 
   useEffect(() => {
-    if (!etab.uai) { setLoading(false); return; }
+    let active = true;
+
+    if (!draftKey && !etab.uai) {
+      setData(DEFAULTS);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setSaved(false);
+
     (async () => {
       try {
+        if (draftKey) {
+          const draft = await loadDraft(draftKey);
+          if (draft) {
+            if (active) {
+              setData(draft);
+              setLoading(false);
+            }
+            return;
+          }
+        }
+
+        if (!etab.uai) {
+          if (active) setData(DEFAULTS);
+          return;
+        }
+
         const { data: session } = await supabase.auth.getSession();
-        if (!session.session) { setLoading(false); return; }
+        if (!session.session) {
+          if (active) setData(DEFAULTS);
+          return;
+        }
+
         const { data: existing } = await supabase
           .from('cofieple_extra_indicators')
           .select('*')
@@ -77,16 +168,26 @@ export function IndicateursHorsComptables() {
           .eq('exercice', etab.exercice)
           .eq('user_id', session.session.user.id)
           .maybeSingle();
+
+        if (!active) return;
+
         if (existing) {
-          const d: ExtraIndicators = { ...DEFAULTS };
-          for (const k of Object.keys(DEFAULTS) as (keyof ExtraIndicators)[]) {
-            if (existing[k] != null) (d as any)[k] = existing[k];
-          }
-          setData(d);
+          const normalized = normalizeExtraIndicators(existing as Partial<ExtraIndicators>);
+          setData(normalized);
+        } else {
+          setData(DEFAULTS);
         }
-      } catch {} finally { setLoading(false); }
+      } catch {
+        if (active) setData(DEFAULTS);
+      } finally {
+        if (active) setLoading(false);
+      }
     })();
-  }, [etab.uai, etab.exercice]);
+
+    return () => {
+      active = false;
+    };
+  }, [draftKey, etab.uai, etab.exercice]);
 
   async function handleSave() {
     if (!etab.uai) { toast.error("Identifiez d'abord l'établissement (code UAI)"); return; }
@@ -97,6 +198,7 @@ export function IndicateursHorsComptables() {
       const payload = { user_id: session.session.user.id, uai: etab.uai, exercice: etab.exercice, ...data };
       const { error } = await supabase.from('cofieple_extra_indicators').upsert(payload, { onConflict: 'user_id,uai,exercice' });
       if (error) throw error;
+      if (draftKey) await clearDraft(draftKey);
       setSaved(true);
       toast.success('Indicateurs sauvegardés');
       setTimeout(() => setSaved(false), 3000);
@@ -105,7 +207,16 @@ export function IndicateursHorsComptables() {
   }
 
   function setField<K extends keyof ExtraIndicators>(key: K, value: ExtraIndicators[K]) {
-    setData(prev => ({ ...prev, [key]: value }));
+    let nextData: ExtraIndicators | null = null;
+    setData(prev => {
+      nextData = { ...prev, [key]: value };
+      return nextData;
+    });
+
+    if (draftKey && nextData) {
+      persistDraft(draftKey, nextData);
+    }
+
     setSaved(false);
   }
 
