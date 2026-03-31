@@ -312,12 +312,13 @@ export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
   const globalRows = meaningfulRows.filter((row) => row.aggregationLevel === 'global');
   const sortedGlobalRows = sortRowsByBudgetPriority(globalRows, (row) => getChargeRateBase(row));
   const preferredBudgetGlobal = sortedGlobalRows.find((row) => row.budget > 0);
+  const preferredRealGlobal = sortedGlobalRows.find((row) => row.realise > 0);
   const preferredRateGlobal = sortedGlobalRows.find((row) => getChargeRateBase(row) > 0);
   const serviceRowsWithBudget = serviceRows.filter((row) => row.budget > 0);
   const detailRowsWithBudget = detailRows.filter((row) => row.budget > 0);
 
   const budgetSource = preferredBudgetGlobal ? [preferredBudgetGlobal] : serviceRowsWithBudget.length ? serviceRowsWithBudget : detailRowsWithBudget.length ? detailRowsWithBudget : meaningfulRows;
-  const realisedSource = detailRows.length ? detailRows : serviceRows.length ? serviceRows : preferredRateGlobal ? [preferredRateGlobal] : meaningfulRows;
+  const realisedSource = preferredRealGlobal ? [preferredRealGlobal] : detailRows.length ? detailRows : serviceRows.length ? serviceRows : preferredRateGlobal ? [preferredRateGlobal] : meaningfulRows;
   const rateSource = preferredRateGlobal ? [preferredRateGlobal] : serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows;
   const serviceBaseRows = serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
 
@@ -336,12 +337,13 @@ export function deriveSdrExecutionTotals(rows: LigneSDR[]) {
   const globalRows = meaningfulRows.filter((row) => row.aggregationLevel === 'global');
   const sortedGlobalRows = sortRowsByBudgetPriority(globalRows, (row) => getProductRateBase(row));
   const preferredBudgetGlobal = sortedGlobalRows.find((row) => row.budget > 0);
+  const preferredRealGlobal = sortedGlobalRows.find((row) => row.realise > 0);
   const preferredRateGlobal = sortedGlobalRows.find((row) => getProductRateBase(row) > 0);
   const serviceRowsWithBudget = serviceRows.filter((row) => row.budget > 0);
   const detailRowsWithBudget = detailRows.filter((row) => row.budget > 0);
 
   const budgetSource = preferredBudgetGlobal ? [preferredBudgetGlobal] : serviceRowsWithBudget.length ? serviceRowsWithBudget : detailRowsWithBudget.length ? detailRowsWithBudget : meaningfulRows;
-  const realisedSource = detailRows.length ? detailRows : serviceRows.length ? serviceRows : preferredRateGlobal ? [preferredRateGlobal] : meaningfulRows;
+  const realisedSource = preferredRealGlobal ? [preferredRealGlobal] : detailRows.length ? detailRows : serviceRows.length ? serviceRows : preferredRateGlobal ? [preferredRateGlobal] : meaningfulRows;
   const rateSource = preferredRateGlobal ? [preferredRateGlobal] : serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows;
   const serviceBaseRows = serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
 

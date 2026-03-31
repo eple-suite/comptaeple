@@ -22,7 +22,11 @@ const EPS = 1.00;
 
 // ── Helpers ──────────────────────────────────────────────────────────
 function sumBal(bal: LigneBalance[], test: (c: string) => boolean, field: keyof LigneBalance): number {
-  return bal.filter(b => test(b.compte)).reduce((s, b) => s + ((b[field] as number) || 0), 0);
+  return bal.filter(b => !b.isAggregate && test(b.compte)).reduce((s, b) => s + ((b[field] as number) || 0), 0);
+}
+
+function getAggregateClassRow(bal: LigneBalance[], classe: string): LigneBalance | undefined {
+  return bal.find((row) => row.isAggregate && row.aggregateClass === classe);
 }
 function extractService(ligne: string): string {
   return (ligne.split(/[-–]/)[0].replace(/[^A-Z0-9]/gi, '') || 'AUTRE').substring(0, 6).trim();
@@ -127,7 +131,12 @@ export function calculerResultatsM96(
   const solDbtCl1Hors = sumBal(bal, c => c.charAt(0) === '1' && !['181','185','186','187'].includes(c.substring(0, 3)), 'solDbt');
   const solDbtCl2     = sumBal(bal, c => c.charAt(0) === '2', 'solDbt');
   const solCrd185     = sumBal(bal, c => c.startsWith('185'), 'solCrd');
-  const fdrHaut = solCrdCl1 + solCrdCl2 + solCrd39 + solCrd49 + solCrd59 - solDbtCl1Hors - solDbtCl2 - solCrd185;
+  const aggregateClass1 = getAggregateClassRow(bal, '1');
+  const aggregateClass2 = getAggregateClassRow(bal, '2');
+  const aggregateFdr = aggregateClass1 && aggregateClass2
+    ? Math.max(0, (aggregateClass1.solCrd - aggregateClass1.solDbt) - (aggregateClass2.solDbt - aggregateClass2.solCrd))
+    : null;
+  const fdrHaut = aggregateFdr ?? (solCrdCl1 + solCrdCl2 + solCrd39 + solCrd49 + solCrd59 - solDbtCl1Hors - solDbtCl2 - solCrd185);
 
   // ── FDR par le bas (actif circulant net - passif circulant) ────────
   const solDbtCl3       = sumBal(bal, c => c.charAt(0) === '3', 'solDbt');
@@ -136,7 +145,7 @@ export function calculerResultatsM96(
   const solCrdCl4       = sumBal(bal, c => c.charAt(0) === '4', 'solCrd');
   const solCrdCl5       = sumBal(bal, c => c.charAt(0) === '5', 'solCrd');
   const solCrdCl18      = sumBal(bal, c => c.startsWith('18'), 'solCrd');
-  const fdrBas    = solDbtCl3 + solDbtCl4plus + solDbtCl5 - solCrdCl4 - solCrdCl5 - solCrdCl18 + solCrd49 + solCrd59;
+  const fdrBas    = aggregateFdr ?? (solDbtCl3 + solDbtCl4plus + solDbtCl5 - solCrdCl4 - solCrdCl5 - solCrdCl18 + solCrd49 + solCrd59);
   const fdrComptable = fdrBas;
 
   // ── Variations FDR (bilantiel BE→BF) ──────────────────────────────
@@ -172,6 +181,11 @@ export function calculerResultatsM96(
   // Budget Principal : TN = solde net classe 5 (C/515100 = dépôt au Trésor)
   // Budget Annexe : TN = C/185000 solde débiteur (trésorerie virtuelle via BP support)
   //                 Pas de C/515100, le Trésor est porté par le budget principal
+  const comptesTresorerieAutorises = new Set(['511200', '511500', '511700', '515100', '515900', '531000']);
+  const tresorerieOpale = bal
+    .filter((b) => !b.isAggregate && comptesTresorerieAutorises.has(b.compte.replace(/^C\//i, '')))
+    .reduce((sum, b) => sum + (b.solDbt - b.solCrd), 0);
+
   let tresorerie: number;
   if (isAnnexe) {
     // Pour un budget annexe : trésorerie = C/185000 solde débiteur
@@ -179,7 +193,7 @@ export function calculerResultatsM96(
     const solCrd185fromCl5 = sumBal(bal, c => c.startsWith('185'), 'solCrd');
     tresorerie = solDbt185 - solCrd185fromCl5;
   } else {
-    tresorerie = solDbtCl5 - solCrdCl5;
+    tresorerie = tresorerieOpale || (solDbtCl5 - solCrdCl5);
   }
   const tresorerieClassique = solDbtCl5 - solCrdCl5; // toujours calculée pour vérification
   const antTresoClassique = antDbtCl5 - antCrdCl5;
@@ -313,38 +327,15 @@ export function calculerResultatsM96(
   // ── Ressources propres M9-6 ─────────────────────────────────────────
   // Ressources propres = recettes autogénérées (comptes 70-76) HORS subventions État (7411)
   // Depuis SDR : comptes 706/707/708/75/76 + subventions hors État (74 sauf 7411)
-  const ressourcesPropres = (() => {
-    if (sdrForAccounting.length > 0) {
-      let rp = 0;
-      for (const r of sdrForAccounting) {
-        const c = r.compte;
-        // Prestations de services, ventes, activités annexes
-        if (c.startsWith('706') || c.startsWith('707') || c.startsWith('708') ||
-            c.startsWith('75') || c.startsWith('76')) {
-          rp += r.realise;
-        }
-        // Subventions hors État (74 sauf 7411)
-        if (c.startsWith('74') && !c.startsWith('7411')) {
-          rp += r.realise;
-        }
-      }
-      return rp;
-    }
-    // Fallback balance
-    let rp = 0;
-    for (const b of bal) {
-      const c = b.compte;
-      const montant = (b.crd || 0) - (b.dbt || 0);
-      if (c.startsWith('706') || c.startsWith('707') || c.startsWith('708') ||
-          c.startsWith('75') || c.startsWith('76')) {
-        rp += montant;
-      }
-      if (c.startsWith('74') && !c.startsWith('7411')) {
-        rp += montant;
-      }
-    }
-    return rp;
-  })();
+  const comptesRessourcesPropres = new Set([
+    '706210', '706220', '706230', '706700', '706800',
+    '707000', '707100', '707200', '707300', '707800',
+    '708100', '708200', '708300', '708400', '708500', '708800',
+    '746800', '747000',
+  ]);
+  const ressourcesPropres = bal
+    .filter((b) => !b.isAggregate && comptesRessourcesPropres.has(b.compte.replace(/^C\//i, '')))
+    .reduce((sum, b) => sum + (b.solCrd || 0), 0);
   const recettesAutogenerees = sdrForAccounting.length > 0
     ? sdrForAccounting.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
     : sumBal(bal, c => /^7[0-3]/.test(c), 'crd') - sumBal(bal, c => /^7[0-3]/.test(c), 'dbt');
@@ -386,16 +377,7 @@ export function calculerResultatsM96(
   // Trésorerie nette = disponibilités (comptes 51/53/54) nettes
   // Part encaissée = min(FDR, TN) si les deux > 0
   // C'est la part du FDR effectivement disponible en trésorerie
-  const tresorerieNettePourFdr = (() => {
-    let tn = 0;
-    for (const b of bal) {
-      const c = b.compte;
-      if (c.startsWith('51') || c.startsWith('53') || c.startsWith('54')) {
-        tn += (b.solDbt || 0) - (b.solCrd || 0);
-      }
-    }
-    return tn;
-  })();
+  const tresorerieNettePourFdr = isAnnexe ? tresorerie : tresorerieOpale;
 
   const fdrPartEncaissee = fdrComptable > 0 && tresorerieNettePourFdr > 0
     ? Math.min(fdrComptable, tresorerieNettePourFdr)
@@ -487,7 +469,9 @@ export function calculerResultatsM96(
   const ratioLiquiditeGenerale = passifCirculant > 0 ? actifCirculant / passifCirculant : 0;
   const ratioLiquiditeReduite = passifCirculant > 0 ? (solDbtCl4only + solDbtCl5) / passifCirculant : 0;
   const ratioLiquiditeImmediate = passifCirculant > 0 ? solDbtCl5 / passifCirculant : 0;
-  const ratioAutonomieFinanciere = totalProduitsRef > 0 ? ressourcesPropres / totalProduitsRef : 0;
+  const ratioAutonomieFinanciere = totalProduitsSdr > 0
+    ? ressourcesPropres / totalProduitsSdr
+    : (totalProduitsRef > 0 ? ressourcesPropres / totalProduitsRef : 0);
   const capitauxPropres = sumBal(bal, c => ['10','11','12'].some(p => c.startsWith(p)), 'solCrd')
     - sumBal(bal, c => ['10','11','12'].some(p => c.startsWith(p)), 'solDbt');
   const totalPassif = capitauxPropres + totalDettes + sumBal(bal, c => c.startsWith('15'), 'solCrd');
