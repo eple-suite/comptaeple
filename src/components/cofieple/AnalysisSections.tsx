@@ -262,7 +262,7 @@ export function TableauxSection() {
               <FinancialRow label="Var. trésorerie comptable" value={R.varTresorerieComptable} formatFn={formatEur} />
               <FinancialRow label="Var. trésorerie tableau financement" value={R.varTresorerieTableauFinancement} formatFn={formatEur} />
               <FinancialRow label="Flux nets de trésorerie" value={R.totalFluxTresorerie} formatFn={formatEur} />
-              <FinancialRow label="Jours d'autonomie financière" value={R.joursAutonomie} formatFn={v => `${Math.round(v)} jours`} />
+              <FinancialRow label="Jours d'autonomie financière (FDR)" value={R.joursFdr} formatFn={v => `${v.toFixed(2)} jours`} />
             </FinancialBlock>
           </div>
 
