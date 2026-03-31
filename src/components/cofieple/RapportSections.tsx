@@ -980,8 +980,14 @@ export function RapportACSection() {
   const [prelevements, setPrelevements] = useState<Prelevement[]>([]);
   const [explicationsResultat, setExplicationsResultat] = useState('');
   const [commentaireFDR, setCommentaireFDR] = useState('');
+  const [commentaireBFR, setCommentaireBFR] = useState('');
   const [commentaireTresorerie, setCommentaireTresorerie] = useState('');
+  const [commentaireChargesRecouvrement, setCommentaireChargesRecouvrement] = useState('');
+  const [commentairePatrimoine, setCommentairePatrimoine] = useState('');
   const [commentaireCreances, setCommentaireCreances] = useState('');
+  const [commentaireReserves, setCommentaireReserves] = useState('');
+  const [commentaireRatios, setCommentaireRatios] = useState('');
+  const [commentairePluriannuel, setCommentairePluriannuel] = useState('');
   const [commentaireGeneral, setCommentaireGeneral] = useState('');
 
   useEffect(() => {
@@ -1226,8 +1232,14 @@ export function RapportACSection() {
           prelevements,
           explicationsResultat,
           commentaireFDR,
+          commentaireBFR,
           commentaireTresorerie,
+          commentaireChargesRecouvrement,
+          commentairePatrimoine,
           commentaireCreances,
+          commentaireReserves,
+          commentaireRatios,
+          commentairePluriannuel,
           commentaireGeneral,
         },
         aiText: aiObs,
@@ -1332,15 +1344,51 @@ export function RapportACSection() {
               rows={2} className="mt-1 text-xs bg-background" />
           </div>
           <div>
+            <Label className="text-xs font-bold">Commentaire sur le besoin en fonds de roulement (BFR)</Label>
+            <Textarea value={commentaireBFR} onChange={e => setCommentaireBFR(e.target.value)}
+              placeholder="Ex: Le BFR positif résulte de créances familles en attente de recouvrement…"
+              rows={2} className="mt-1 text-xs bg-background" />
+          </div>
+          <div>
             <Label className="text-xs font-bold">Commentaire sur la trésorerie</Label>
             <Textarea value={commentaireTresorerie} onChange={e => setCommentaireTresorerie(e.target.value)}
               placeholder="Ex: La trésorerie inclut des reliquats de subventions État pour un montant important…"
               rows={2} className="mt-1 text-xs bg-background" />
           </div>
           <div>
-            <Label className="text-xs font-bold">Commentaire sur les créances</Label>
+            <Label className="text-xs font-bold">Commentaire sur les charges à payer et le recouvrement</Label>
+            <Textarea value={commentaireChargesRecouvrement} onChange={e => setCommentaireChargesRecouvrement(e.target.value)}
+              placeholder="Ex: Le TMcap élevé s'explique par des factures de décembre réglées début janvier…"
+              rows={2} className="mt-1 text-xs bg-background" />
+          </div>
+          <div>
+            <Label className="text-xs font-bold">Commentaire sur le patrimoine</Label>
+            <Textarea value={commentairePatrimoine} onChange={e => setCommentairePatrimoine(e.target.value)}
+              placeholder="Ex: Les immobilisations comprennent le mobilier acquis lors de la restructuration de 2023…"
+              rows={2} className="mt-1 text-xs bg-background" />
+          </div>
+          <div>
+            <Label className="text-xs font-bold">Commentaire sur les créances et dettes</Label>
             <Textarea value={commentaireCreances} onChange={e => setCommentaireCreances(e.target.value)}
               placeholder="Ex: Les créances familles incluent des impayés de restauration faisant l'objet de poursuites…"
+              rows={2} className="mt-1 text-xs bg-background" />
+          </div>
+          <div>
+            <Label className="text-xs font-bold">Commentaire sur les réserves et l'affectation du résultat</Label>
+            <Textarea value={commentaireReserves} onChange={e => setCommentaireReserves(e.target.value)}
+              placeholder="Ex: Le niveau des réserves permet de couvrir le déficit prévu et de maintenir un FDR suffisant…"
+              rows={2} className="mt-1 text-xs bg-background" />
+          </div>
+          <div>
+            <Label className="text-xs font-bold">Commentaire sur les ratios de gestion</Label>
+            <Textarea value={commentaireRatios} onChange={e => setCommentaireRatios(e.target.value)}
+              placeholder="Ex: Le ratio de liquidité générale est satisfaisant et en progression par rapport à N-1…"
+              rows={2} className="mt-1 text-xs bg-background" />
+          </div>
+          <div>
+            <Label className="text-xs font-bold">Commentaire sur l'évolution pluriannuelle</Label>
+            <Textarea value={commentairePluriannuel} onChange={e => setCommentairePluriannuel(e.target.value)}
+              placeholder="Ex: L'évolution sur 5 ans montre une amélioration régulière du FDR et de la trésorerie…"
               rows={2} className="mt-1 text-xs bg-background" />
           </div>
           <div>

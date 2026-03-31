@@ -669,7 +669,6 @@ export function generateRapportACPdf(data: RapportACData) {
     });
     ys = (doc as any).lastAutoTable.finalY + 3;
   }
-  if (saisie.explicationsResultat) ys = wrapText(ys, saisie.explicationsResultat);
   ys = drawCommentBox(ys, 'Resultat et autofinancement', saisie.explicationsResultat);
 
   // ════════════════════════════════════════════════════════════
@@ -728,7 +727,6 @@ export function generateRapportACPdf(data: RapportACData) {
     ys += 30;
   }
 
-  if (saisie.commentaireFDR) ys = wrapText(ys, saisie.commentaireFDR);
   ys = drawCommentBox(ys, 'Fonds de roulement', saisie.commentaireFDR);
 
   // ════════════════════════════════════════════════════════════
@@ -962,7 +960,6 @@ export function generateRapportACPdf(data: RapportACData) {
   ys += 25;
 
   if (R.reliquatsSubventions > 0) ys = wrapText(ys, `Reliquats de subventions non consommees : ${fmt(R.reliquatsSubventions)}.`);
-  if (saisie.commentaireCreances) ys = wrapText(ys, saisie.commentaireCreances);
   ys = drawCommentBox(ys, 'Creances et dettes', saisie.commentaireCreances);
 
   // ════════════════════════════════════════════════════════════
