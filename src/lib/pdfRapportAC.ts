@@ -769,6 +769,7 @@ export function generateRapportACPdf(data: RapportACData) {
       ? `Le BFR negatif (${fmt(R.bfr)}) constitue un degagement en fonds de roulement, situation classique des EPLE. Relation FDR = BFR + Tresorerie verifiee : ${fmt(R.fdrComptable)} = ${fmt(R.bfr)} + ${fmt(R.tresorerie)}.`
       : `Le BFR positif (${fmt(R.bfr)}) indique que les creances excedent les dettes d'exploitation.`
   );
+  ys = drawCommentBox(ys, 'Besoin en fonds de roulement', saisie.commentaireBFR);
 
   // ════════════════════════════════════════════════════════════
   // S4. TRESORERIE
