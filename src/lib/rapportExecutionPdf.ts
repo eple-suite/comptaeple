@@ -122,7 +122,7 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   // 1. SITUATION DES DÉPENSES (SDE)
   // ════════════════════════════════════════════════════════════
   doc.addPage();
-  drawSectionHeader(doc, '1. SITUATION DES DÉPENSES ENGAGÉES (SDE)', 'Ref. : M9-6 Tome 2 — §2.3');
+  let yPos = drawSectionHeader(doc, '1. SITUATION DES DEPENSES ENGAGEES (SDE)', 'Ref. : M9-6 Tome 2 -- §2.3');
 
   if (hasSDE) {
     // Aggregate by service
