@@ -172,6 +172,9 @@ export function PluriannuelSection() {
         reserves_srh: 0,
         total_immo: 0,
         total_amortissements: 0,
+        jours_tresorerie: d.jours_tresorerie,
+        tmcap: d.tmcap,
+        tmnr: d.tmnr,
       };
 
       const { error } = await supabase.from('cofieple_exercises').upsert(payload, {
