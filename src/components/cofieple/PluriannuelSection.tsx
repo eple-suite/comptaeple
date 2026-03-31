@@ -36,6 +36,9 @@ interface ExerciceData {
   taux_exec_produits: number;
   total_charges_reel: number;
   total_produits_reel: number;
+  jours_tresorerie: number;
+  tmcap: number;
+  tmnr: number;
 }
 
 const EMPTY_ROW = (exercice: number): ExerciceData => ({
@@ -43,20 +46,24 @@ const EMPTY_ROW = (exercice: number): ExerciceData => ({
   jours_autonomie: 0, reserves: 0, score_risque: 0,
   taux_exec_charges: 0, taux_exec_produits: 0,
   total_charges_reel: 0, total_produits_reel: 0,
+  jours_tresorerie: 0, tmcap: 0, tmnr: 0,
 });
 
-const FIELDS: { key: keyof ExerciceData; label: string; unit: string }[] = [
-  { key: 'resultat', label: 'Résultat budgétaire', unit: '€' },
-  { key: 'fdr', label: 'Fonds de roulement (FDR)', unit: '€' },
-  { key: 'bfr', label: 'Besoin en fonds de roulement (BFR)', unit: '€' },
-  { key: 'tresorerie', label: 'Trésorerie nette', unit: '€' },
-  { key: 'caf', label: 'CAF / IAF budgétaire', unit: '€' },
-  { key: 'jours_autonomie', label: "Jours d'autonomie financière", unit: 'j.' },
-  { key: 'reserves', label: 'Réserves disponibles', unit: '€' },
-  { key: 'total_charges_reel', label: 'Total charges réelles', unit: '€' },
-  { key: 'total_produits_reel', label: 'Total produits réels', unit: '€' },
-  { key: 'taux_exec_charges', label: 'Taux exéc. charges', unit: '%' },
-  { key: 'taux_exec_produits', label: 'Taux exéc. produits', unit: '%' },
+// Pièce 14 indicators
+const FIELDS_PIECE14: { key: keyof ExerciceData; label: string; unit: string }[] = [
+  { key: 'fdr', label: 'Fonds de roulement', unit: '€' },
+  { key: 'jours_autonomie', label: 'Jours de fonds de roulement', unit: 'j.' },
+  { key: 'bfr', label: 'Besoin en fonds de roulement', unit: '€' },
+  { key: 'tresorerie', label: 'Trésorerie', unit: '€' },
+  { key: 'jours_tresorerie', label: 'Jours de trésorerie', unit: 'j.' },
+  { key: 'tmcap', label: 'Taux moyen de charge à payer', unit: '%' },
+  { key: 'tmnr', label: 'Taux de non recouvrement', unit: '%' },
+];
+
+// Pièce 5 indicators
+const FIELDS_PIECE5: { key: keyof ExerciceData; label: string; unit: string }[] = [
+  { key: 'resultat', label: 'Résultat', unit: '€' },
+  { key: 'caf', label: 'CAF / IAF', unit: '€' },
 ];
 
 export function PluriannuelSection() {
@@ -70,7 +77,7 @@ export function PluriannuelSection() {
 
   // Manual entry state for years N-1 to N-4
   const currentYear = etab.exercice || new Date().getFullYear() - 1;
-  const pastYears = [currentYear - 1, currentYear - 2, currentYear - 3, currentYear - 4];
+  const pastYears = [currentYear - 4, currentYear - 3, currentYear - 2, currentYear - 1];
   const [manualData, setManualData] = useState<Record<number, ExerciceData>>({});
   const [savingYear, setSavingYear] = useState<number | null>(null);
 
@@ -94,7 +101,7 @@ export function PluriannuelSection() {
         .limit(5);
 
       if (rows) {
-        const mapped = rows.map(r => ({
+        const mapped: ExerciceData[] = rows.map(r => ({
           exercice: r.exercice,
           resultat: Number(r.resultat_budgetaire),
           fdr: Number(r.fdr),
@@ -108,6 +115,9 @@ export function PluriannuelSection() {
           taux_exec_produits: Number(r.taux_exec_produits),
           total_charges_reel: Number(r.total_charges_reel),
           total_produits_reel: Number(r.total_produits_reel),
+          jours_tresorerie: Number((r as any).jours_tresorerie || 0),
+          tmcap: Number((r as any).tmcap || 0),
+          tmnr: Number((r as any).tmnr || 0),
         }));
         setHistorique(mapped);
         // Pre-fill manual data from DB
@@ -162,6 +172,9 @@ export function PluriannuelSection() {
         reserves_srh: 0,
         total_immo: 0,
         total_amortissements: 0,
+        jours_tresorerie: d.jours_tresorerie,
+        tmcap: d.tmcap,
+        tmnr: d.tmnr,
       };
 
       const { error } = await supabase.from('cofieple_exercises').upsert(payload, {
@@ -237,6 +250,9 @@ export function PluriannuelSection() {
       taux_exec_produits: R.tauxExecProduits,
       total_charges_reel: R.totalChargesReel,
       total_produits_reel: R.totalProduitsReel,
+      jours_tresorerie: R.joursTresorerie || 0,
+      tmcap: R.tmcap || 0,
+      tmnr: R.tmnr || 0,
     });
   }
   allData.sort((a, b) => a.exercice - b.exercice);
@@ -297,14 +313,14 @@ export function PluriannuelSection() {
             <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg">
               <CardTitle className="text-white text-sm flex items-center gap-2">
                 <PenLine className="h-4 w-4" />
-                Saisie des indicateurs comptables — Exercices {pastYears[pastYears.length - 1]} à {pastYears[0]}
+                Saisie des indicateurs comptables — Exercices {pastYears[0]} à {pastYears[pastYears.length - 1]}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-slate-700 text-white">
-                    <th className="px-3 py-2.5 text-left font-semibold sticky left-0 bg-slate-700 min-w-[180px]">Indicateur</th>
+                    <th className="px-3 py-2.5 text-left font-semibold sticky left-0 bg-slate-700 min-w-[220px]">Indicateur</th>
                     {pastYears.map(y => (
                       <th key={y} className="px-3 py-2.5 text-center font-semibold min-w-[140px]">
                         {y}
@@ -314,7 +330,38 @@ export function PluriannuelSection() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {FIELDS.map(field => (
+                  {/* Pièce 14 */}
+                  <tr className="bg-primary/10">
+                    <td colSpan={pastYears.length + 1} className="px-3 py-2 font-bold text-primary text-xs">
+                      Voir pièce 14
+                    </td>
+                  </tr>
+                  {FIELDS_PIECE14.map(field => (
+                    <tr key={field.key} className="hover:bg-muted/50">
+                      <td className="px-3 py-2 font-semibold text-muted-foreground sticky left-0 bg-background">
+                        {field.label} <span className="text-muted-foreground/50">({field.unit})</span>
+                      </td>
+                      {pastYears.map(y => (
+                        <td key={y} className="px-2 py-1.5">
+                          <Input
+                            type="number"
+                            step={field.unit === '%' ? '0.1' : '1'}
+                            className="h-8 text-xs text-right font-mono"
+                            value={manualData[y]?.[field.key] || ''}
+                            onChange={e => updateField(y, field.key, e.target.value)}
+                            placeholder="0"
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  {/* Pièce 5 */}
+                  <tr className="bg-primary/10">
+                    <td colSpan={pastYears.length + 1} className="px-3 py-2 font-bold text-primary text-xs">
+                      Pièce 5
+                    </td>
+                  </tr>
+                  {FIELDS_PIECE5.map(field => (
                     <tr key={field.key} className="hover:bg-muted/50">
                       <td className="px-3 py-2 font-semibold text-muted-foreground sticky left-0 bg-background">
                         {field.label} <span className="text-muted-foreground/50">({field.unit})</span>
@@ -357,8 +404,7 @@ export function PluriannuelSection() {
             </CardContent>
           </Card>
           <p className="text-xs text-muted-foreground mt-2">
-            💡 Reportez les données du bilan de santé financière Op@le pour chaque exercice antérieur.
-            Les graphiques de l'onglet « Graphiques & Tendances » seront mis à jour automatiquement.
+            💡 Reportez les données de la pièce 14 et de la pièce 5 du compte financier pour chaque exercice antérieur.
           </p>
         </TabsContent>
 

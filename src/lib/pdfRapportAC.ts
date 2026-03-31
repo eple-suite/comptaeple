@@ -67,7 +67,7 @@ interface RapportACData {
     commentaireGeneral: string;
   };
   aiText: string;
-  history: { exercice: number; fdr: number; bfr: number; tresorerie: number; caf: number; reserves: number; jours_autonomie: number }[];
+  history: { exercice: number; fdr: number; bfr: number; tresorerie: number; caf: number; reserves: number; jours_autonomie: number; jours_tresorerie?: number; tmcap?: number; tmnr?: number; resultat?: number }[];
   nbAnom: number; nbBloq: number;
 }
 
@@ -704,28 +704,31 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   if (history.length > 0) {
     ys = sectionHeader('11. Evolution pluriannuelle', ys);
+    const sortedHistory = [...history].sort((a, b) => a.exercice - b.exercice);
     autoTable(doc, {
       startY: ys,
-      head: [['Exercice', 'FDR', 'BFR', 'Trésorerie', 'CAF/IAF', 'Réserves', 'Jours']],
-      body: history.map(h => [
-        String(h.exercice), fmt(h.fdr), fmt(h.bfr), fmt(h.tresorerie),
-        fmt(h.caf), fmt(h.reserves), String(Math.round(h.jours_autonomie)),
+      head: [['Exercice', 'FDR', 'Jours FDR', 'BFR', 'Tresorerie', 'Jours Treso', 'TMCAP (%)', 'TMNR (%)', 'Resultat', 'CAF/IAF']],
+      body: sortedHistory.map(h => [
+        String(h.exercice), fmt(h.fdr), String(Math.round(h.jours_autonomie)),
+        fmt(h.bfr), fmt(h.tresorerie), String(Math.round(h.jours_tresorerie || 0)),
+        (h.tmcap || 0).toFixed(1), (h.tmnr || 0).toFixed(1),
+        fmt(h.resultat || 0), fmt(h.caf),
       ]),
-      headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255 },
-      styles: { fontSize: 8 },
-      columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' } },
+      headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 7 },
+      styles: { fontSize: 7 },
+      columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' }, 9: { halign: 'right' } },
       margin: { left: margin, right: margin },
     });
     ys = (doc as any).lastAutoTable.finalY + 8;
 
-    // 📊 Graphique pluriannuel FDR/Trésorerie
-    if (history.length >= 2) {
-      ys = subTitle(ys, '📊 Tendance FDR / Trésorerie');
+    // Graphique pluriannuel FDR/Tresorerie
+    if (sortedHistory.length >= 2) {
+      ys = subTitle(ys, 'Tendance FDR / Tresorerie');
       ys += 3;
-      const maxHist = Math.max(...history.map(h => Math.max(Math.abs(h.fdr), Math.abs(h.tresorerie))));
-      for (const h of history) {
+      const maxHist = Math.max(...sortedHistory.map(h => Math.max(Math.abs(h.fdr), Math.abs(h.tresorerie))));
+      for (const h of sortedHistory) {
         drawHBar(doc, margin, ys, contentWidth * 0.35, 3, h.fdr, maxHist, BLEU, `${h.exercice} FDR`, fmt(h.fdr));
-        drawHBar(doc, margin + contentWidth * 0.5, ys, contentWidth * 0.35, 3, h.tresorerie, maxHist, VERT, `${h.exercice} Tréso`, fmt(h.tresorerie));
+        drawHBar(doc, margin + contentWidth * 0.5, ys, contentWidth * 0.35, 3, h.tresorerie, maxHist, VERT, `${h.exercice} Treso`, fmt(h.tresorerie));
         ys += 9;
       }
       ys += 5;
