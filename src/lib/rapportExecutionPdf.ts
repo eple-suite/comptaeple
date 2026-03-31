@@ -435,6 +435,7 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   doc.setDrawColor(180);
   doc.setLineWidth(0.3);
   doc.rect(14, ySynth, pw - 28, 60);
+  yPos = ySynth + 65;
 
   // ════════════════════════════════════════════════════════════
   // 6. SIGNATURES — Ordonnateur + Secrétaire Général uniquement
