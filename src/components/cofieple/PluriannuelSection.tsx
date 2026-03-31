@@ -313,14 +313,14 @@ export function PluriannuelSection() {
             <CardHeader className="bg-gradient-to-r from-slate-800 to-slate-700 rounded-t-lg">
               <CardTitle className="text-white text-sm flex items-center gap-2">
                 <PenLine className="h-4 w-4" />
-                Saisie des indicateurs comptables — Exercices {pastYears[pastYears.length - 1]} à {pastYears[0]}
+                Saisie des indicateurs comptables — Exercices {pastYears[0]} à {pastYears[pastYears.length - 1]}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0 overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr className="bg-slate-700 text-white">
-                    <th className="px-3 py-2.5 text-left font-semibold sticky left-0 bg-slate-700 min-w-[180px]">Indicateur</th>
+                    <th className="px-3 py-2.5 text-left font-semibold sticky left-0 bg-slate-700 min-w-[220px]">Indicateur</th>
                     {pastYears.map(y => (
                       <th key={y} className="px-3 py-2.5 text-center font-semibold min-w-[140px]">
                         {y}
@@ -330,7 +330,38 @@ export function PluriannuelSection() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {FIELDS.map(field => (
+                  {/* Pièce 14 */}
+                  <tr className="bg-primary/10">
+                    <td colSpan={pastYears.length + 1} className="px-3 py-2 font-bold text-primary text-xs">
+                      Voir pièce 14
+                    </td>
+                  </tr>
+                  {FIELDS_PIECE14.map(field => (
+                    <tr key={field.key} className="hover:bg-muted/50">
+                      <td className="px-3 py-2 font-semibold text-muted-foreground sticky left-0 bg-background">
+                        {field.label} <span className="text-muted-foreground/50">({field.unit})</span>
+                      </td>
+                      {pastYears.map(y => (
+                        <td key={y} className="px-2 py-1.5">
+                          <Input
+                            type="number"
+                            step={field.unit === '%' ? '0.1' : '1'}
+                            className="h-8 text-xs text-right font-mono"
+                            value={manualData[y]?.[field.key] || ''}
+                            onChange={e => updateField(y, field.key, e.target.value)}
+                            placeholder="0"
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  {/* Pièce 5 */}
+                  <tr className="bg-primary/10">
+                    <td colSpan={pastYears.length + 1} className="px-3 py-2 font-bold text-primary text-xs">
+                      Pièce 5
+                    </td>
+                  </tr>
+                  {FIELDS_PIECE5.map(field => (
                     <tr key={field.key} className="hover:bg-muted/50">
                       <td className="px-3 py-2 font-semibold text-muted-foreground sticky left-0 bg-background">
                         {field.label} <span className="text-muted-foreground/50">({field.unit})</span>
@@ -373,8 +404,7 @@ export function PluriannuelSection() {
             </CardContent>
           </Card>
           <p className="text-xs text-muted-foreground mt-2">
-            💡 Reportez les données du bilan de santé financière Op@le pour chaque exercice antérieur.
-            Les graphiques de l'onglet « Graphiques & Tendances » seront mis à jour automatiquement.
+            💡 Reportez les données de la pièce 14 et de la pièce 5 du compte financier pour chaque exercice antérieur.
           </p>
         </TabsContent>
 
