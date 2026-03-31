@@ -735,7 +735,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 12. OBSERVATIONS
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('12. Observations de l\'agent comptable');
+  ys = sectionHeader('12. Observations de l\'agent comptable', ys);
   if (aiText) {
     ys = wrapText(22, aiText);
   }
