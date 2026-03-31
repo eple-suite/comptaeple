@@ -55,6 +55,8 @@ export interface LigneBalance {
   antDbt: number; antCrd: number; dbt: number; crd: number;
   solDbt: number; solCrd: number;
   poste: string; classe: string; ssClasse: string; ssSsClasse: string;
+  aggregateClass?: string;
+  isAggregate?: boolean;
   etablissement?: string;
   budgetScope?: BudgetScope; codeAnnexe?: string;
 }

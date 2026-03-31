@@ -7,7 +7,7 @@
 import type { LigneSDE, LigneSDR, LigneBalance } from './cofieple_types';
 import { calculerResultatsM96, buildChecklist, analyserBalance as analyserBalanceEngine, calculerBudgetAnnexe } from './cofieple_m96engine';
 import { fmtEur, fmtPct, parseSDE, parseSDR, parseBalance, detectBudgetType, normalizeCompte } from './cofieple_csvParser';
-import { enrichParsedSdeRow, enrichParsedSdrRow } from './opaleExecutionHierarchy';
+import { deriveSdeExecutionTotals, deriveSdrExecutionTotals, enrichParsedSdeRow, enrichParsedSdrRow } from './opaleExecutionHierarchy';
 import type {
   TypeBudget, ResultatsUI, CheckItem, AnomalieBalance,
   ServiceDataUI, IndicateursBA,
@@ -173,14 +173,35 @@ export function parserBalance(rows: Record<string, string>[], _typeBudget: TypeB
   });
   if (hasDirectCols) {
     return rows
-      .filter(r => {
-        const raw = findCol(r, 'Compte', 'compte', 'Compte et intitulé', 'Compte et intitule');
-        const compteSource = normalizeCompte(raw);
-        return compteSource && /^\d/.test(compteSource) && compteSource.length >= 3;
-      })
       .map(r => {
         const rawCompteSource = findCol(r, 'Compte', 'compte', 'Compte et intitulé', 'Compte et intitule');
         const compteSource = normalizeCompte(rawCompteSource);
+        const aggregateLabel = findCol(r, 'Étiquettes de lignes', 'Etiquettes de lignes');
+        const aggregateMatch = String(aggregateLabel || '').trim().match(/^(\d+)\s*-\s*$/);
+
+        if (!compteSource || !/^\d/.test(compteSource) || compteSource.length < 3) {
+          if (!aggregateMatch) return null;
+          const classe = aggregateMatch[1];
+          return {
+            compte: `__AGG_${classe}`,
+            intituleReduit: `Classe ${classe}`,
+            type: findCol(r, 'Type', 'type'),
+            antDbt: toNumDirect(findCol(r, 'Montant débit antérieur', 'Montant debit anterieur', 'antDbt')),
+            antCrd: toNumDirect(findCol(r, 'Montant crédit antérieur', 'Montant credit anterieur', 'antCrd')),
+            dbt: toNumDirect(findCol(r, 'Montant débit', 'Montant debit', 'dbt')),
+            crd: toNumDirect(findCol(r, 'Montant crédit', 'Montant credit', 'crd')),
+            solDbt: toNumDirect(findCol(r, 'Solde débit', 'Solde debit', 'solDbt')),
+            solCrd: toNumDirect(findCol(r, 'Solde crédit', 'Solde credit', 'solCrd')),
+            poste: findCol(r, 'Poste', 'poste'),
+            classe,
+            ssClasse: classe,
+            ssSsClasse: classe,
+            aggregateClass: classe,
+            isAggregate: true,
+            etablissement: findCol(r, 'Etablissement', 'etablissement'),
+          };
+        }
+
         const compte = compteSource.replace(/[^0-9]/g, '').substring(0, 9);
         const intituleDepuisCompte = compteSource.replace(/^\s*\d+\s*-\s*/, '').trim();
         const intituleExplicite = findCol(
@@ -207,10 +228,11 @@ export function parserBalance(rows: Record<string, string>[], _typeBudget: TypeB
           classe: compte.charAt(0),
           ssClasse: compte.substring(0, 2),
           ssSsClasse: compte.substring(0, 3),
+          isAggregate: false,
           etablissement: findCol(r, 'Etablissement', 'etablissement'),
         };
       })
-      .filter(r => r.compte !== '');
+      .filter((r): r is LigneBalance => !!r);
   }
   return parseBalance(rowsToCSV(rows));
 }
@@ -266,8 +288,10 @@ export function calculerResultats(
   }
 
   // ── Populate N-1 from imported SDE-1/SDR-1 ──────────────────────
-  const totalChargesSdeN1 = sde1.reduce((s, row) => s + row.realise, 0);
-  const totalProduitsSdrN1 = sdr1.reduce((s, row) => s + row.realise, 0);
+  const sdeExecN1 = deriveSdeExecutionTotals(sde1);
+  const sdrExecN1 = deriveSdrExecutionTotals(sdr1);
+  const totalChargesSdeN1 = sdeExecN1.totalRealise;
+  const totalProduitsSdrN1 = sdrExecN1.totalRealise;
   const resultatBudgetaireN1 = totalProduitsSdrN1 - totalChargesSdeN1;
 
   // Update domaines with N-1 data from sde1/sdr1
