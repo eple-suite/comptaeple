@@ -105,27 +105,27 @@ export function generateDocumentCA(data: DocumentCAData): void {
   };
 
   drawHeader(
-    'DOCUMENT CA — SPHÈRE ORDONNATEUR',
-    `${etab.nom || 'Établissement'} · UAI ${etab.uai || '—'} · Exercice ${ex}`,
+    'DOCUMENT CA \u2014 SPHERE ORDONNATEUR',
+    `${etab.nom || 'Etablissement'} \u00B7 UAI ${etab.uai || '\u2014'} \u00B7 Exercice ${ex}`,
   );
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.text('Tableau 1 — Exécution budgétaire', 14, 28);
+  doc.text('Tableau 1 \u2014 Execution budgetaire', 14, 28);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text('Synthèse strictement budgétaire : dépenses, recettes, résultat et taux d’exécution.', 14, 33);
+  doc.text('Synthese strictement budgetaire : depenses, recettes, resultat et taux d\'execution.', 14, 33);
 
   autoTable(doc, {
     startY: 38,
     head: [['Indicateur ordonnateur', 'Valeur N', 'Valeur N-1']],
     body: [
-      ['Crédits / recettes ouverts', fmt(R.totalChargesPrev), fmt(R.totalProduitsPrev)],
-      ['Dépenses mandatées / payées', fmt(R.totalChargesSde), fmt(R.totalChargesSdeN1 || 0)],
-      ['Recettes encaissées', fmt(R.totalProduitsSdr), fmt(R.totalProduitsSdrN1 || 0)],
-      ['Résultat budgétaire', fmt(R.resultatBudgetaire), fmt(R.resultatBudgetaireN1 || 0)],
-      ['Taux d’exécution des dépenses', pct(R.tauxExecCharges), '—'],
-      ['Taux d’exécution des recettes', pct(R.tauxExecProduits), '—'],
+      ['Credits / recettes ouverts', fmt(R.totalChargesPrev), fmt(R.totalProduitsPrev)],
+      ['Depenses mandatees / payees', fmt(R.totalChargesSde), fmt(R.totalChargesSdeN1 || 0)],
+      ['Recettes encaissees', fmt(R.totalProduitsSdr), fmt(R.totalProduitsSdrN1 || 0)],
+      ['Resultat budgetaire', fmt(R.resultatBudgetaire), fmt(R.resultatBudgetaireN1 || 0)],
+      ['Taux d\'execution des depenses', pct(R.tauxExecCharges), '\u2014'],
+      ['Taux d\'execution des recettes', pct(R.tauxExecProduits), '\u2014'],
     ],
     headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontStyle: 'bold', fontSize: 8 },
     bodyStyles: { fontSize: 8 },
@@ -135,8 +135,8 @@ export function generateDocumentCA(data: DocumentCAData): void {
   });
 
   const resultComment = R.resultatBudgetaire >= 0
-    ? `L’exercice ${ex} présente un excédent budgétaire de ${fmt(R.resultatBudgetaire)}.`
-    : `L’exercice ${ex} présente un déficit budgétaire de ${fmt(Math.abs(R.resultatBudgetaire))}.`;
+    ? `L'exercice ${ex} presente un excedent budgetaire de ${fmt(R.resultatBudgetaire)}.`
+    : `L'exercice ${ex} presente un deficit budgetaire de ${fmt(Math.abs(R.resultatBudgetaire))}.`;
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(8);
   doc.setTextColor(70);
@@ -144,31 +144,34 @@ export function generateDocumentCA(data: DocumentCAData): void {
 
   doc.addPage();
   drawHeader(
-    'DOCUMENT CA — SPHÈRE COMPTABLE',
-    `${etab.nom || 'Établissement'} · séparation ordonnateur / agent comptable respectée`,
+    'DOCUMENT CA \u2014 SPHERE COMPTABLE',
+    `${etab.nom || 'Etablissement'} \u00B7 separation ordonnateur / agent comptable respectee`,
   );
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
   doc.setTextColor(0);
-  doc.text('Tableau 2 — Santé financière et patrimoniale', 14, 28);
+  doc.text('Tableau 2 \u2014 Sante financiere et patrimoniale', 14, 28);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(8);
-  doc.text('Synthèse strictement comptable : FDR, trésorerie, CAF, patrimoine et ratios clefs.', 14, 33);
+  doc.text('Synthese strictement comptable : FDR, tresorerie, CAF, patrimoine et ratios clefs.', 14, 33);
 
   autoTable(doc, {
     startY: 38,
     head: [['Indicateur comptable', 'Valeur']],
     body: [
       ['Fonds de roulement (FDR)', fmt(R.fdrComptable)],
-      ['Trésorerie nette', fmt(R.tresorerieNette)],
-      ['Part encaissée du FDR', `${fmt(R.fdrPartEncaissee)} (${R.fdrPctEncaissee.toFixed(2)} %)`],
-      ['Part non encaissée du FDR', `${fmt(R.fdrPartNonEncaissee)} (${R.fdrPctNonEncaissee.toFixed(2)} %)`],
-      ['Capacité d’autofinancement', fmt(R.cafBudgetaire)],
-      ['Autonomie financière', `${(R.ratioAutonomieFinanciere * 100).toFixed(2)} %`],
-      ['TMcap', `${R.tmcap.toFixed(2)} %`],
-      ['TMnr', `${R.tmnr.toFixed(2)} %`],
-      ['Réserves', fmt(R.reserves)],
+      ['Jours de FDR', `${(R.joursFdr ?? 0).toFixed(2)} jours`],
+      ['Tresorerie nette', fmt(R.tresorerie)],
+      ['Jours de tresorerie', `${(R.joursTresorerie ?? 0).toFixed(2)} jours`],
+      ['Besoin en fonds de roulement (BFR)', fmt(R.bfr)],
+      ['Part encaissee du FDR', `${fmt(R.fdrPartEncaissee ?? 0)} (${(R.fdrPctEncaissee ?? 0).toFixed(2)} %)`],
+      ['Part non encaissee du FDR', `${fmt(R.fdrPartNonEncaissee ?? 0)} (${(R.fdrPctNonEncaissee ?? 0).toFixed(2)} %)`],
+      ['Capacite d\'autofinancement', fmt(R.cafBudgetaire)],
+      ['Autonomie financiere', `${((R.ratioAutonomieFinanciere ?? 0) * 100).toFixed(2)} %`],
+      ['TMcap', `${(R.tmcap ?? 0).toFixed(2)} %`],
+      ['TMnr', `${(R.tmnr ?? 0).toFixed(2)} %`],
+      ['Reserves', fmt(R.reserves)],
       ['Immobilisations nettes', fmt(R.valeurNette)],
     ],
     headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontStyle: 'bold', fontSize: 8 },
@@ -178,7 +181,7 @@ export function generateDocumentCA(data: DocumentCAData): void {
     columnStyles: { 1: { halign: 'right' } },
   });
 
-  addPDFFooters(doc, `Document CA — ${etab.nom} — Exercice ${ex}`);
+  addPDFFooters(doc, `Document CA \u2014 ${etab.nom} \u2014 Exercice ${ex}`);
 
   doc.save(`Document_CA_${etab.uai || 'EPLE'}_${ex}.pdf`);
 }
