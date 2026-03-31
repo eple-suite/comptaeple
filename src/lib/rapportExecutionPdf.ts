@@ -239,7 +239,7 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
     const titres = coherence.filter(l => l.ecart > 0);
 
     autoTable(doc, {
-      startY: 30,
+      startY: yPos,
       head: [['Service', 'Activité', 'Dépenses engagées', 'Recettes titrées', 'Écart', 'Constatation']],
       body: coherence.map(l => [
         l.service, l.activite,
