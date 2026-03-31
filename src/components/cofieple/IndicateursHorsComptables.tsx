@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { idbStorage } from '@/lib/idbStorage';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
-import { Users, Utensils, BedDouble, MessageSquare, Save, Loader2, CheckCircle2, Building, Zap, Briefcase, Heart } from 'lucide-react';
+import { Users, Utensils, MessageSquare, Save, Loader2, CheckCircle2, Building, Briefcase, Heart } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface ExtraIndicators {
@@ -78,8 +78,10 @@ async function loadDraft(key: string): Promise<ExtraIndicators | null> {
     const raw = localStorage.getItem(key) ?? await idbStorage.getItem(key);
     if (!raw) return null;
 
-    const parsed = JSON.parse(raw) as { data?: Partial<ExtraIndicators> } | Partial<ExtraIndicators>;
-    const draftData = 'data' in parsed ? parsed.data : parsed;
+    const parsed = JSON.parse(raw) as unknown;
+    const draftData = parsed && typeof parsed === 'object' && 'data' in parsed
+      ? (parsed as { data?: Partial<ExtraIndicators> }).data
+      : (parsed as Partial<ExtraIndicators>);
     return normalizeExtraIndicators(draftData);
   } catch {
     return null;
