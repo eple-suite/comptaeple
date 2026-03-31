@@ -179,7 +179,7 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   // 2. SITUATION DES RECETTES (SDR)
   // ════════════════════════════════════════════════════════════
   doc.addPage();
-  drawSectionHeader(doc, '2. SITUATION DES RECETTES (SDR)', 'Ref. : M9-6 Tome 2 — §2.2');
+  yPos = drawSectionHeader(doc, '2. SITUATION DES RECETTES (SDR)', 'Ref. : M9-6 Tome 2 -- §2.2');
 
   if (hasSDR) {
     const recServices = aggregateRecByService(sdrRows);
