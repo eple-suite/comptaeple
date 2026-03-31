@@ -291,7 +291,7 @@ export function generateRapportACPdf(data: RapportACData) {
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(0, 0, 0);
-    const lines = doc.splitTextToSize(text, contentWidth);
+    const lines = doc.splitTextToSize(sanitize(text), contentWidth);
     for (const line of lines) {
       if (y > maxY) { doc.addPage(); y = 20; }
       doc.text(line, margin, y);
