@@ -1029,7 +1029,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S9. RATIOS DE GESTION
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('9. Ratios de gestion (M9-6 S IV)', ys);
+  ys = sectionHeader('9. Ratios de gestion (M9-6 S IV)', ys, 110);
 
   // Professional table with color-coded interpretations
   autoTable(doc, {
