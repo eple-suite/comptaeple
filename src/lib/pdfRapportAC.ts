@@ -941,7 +941,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S7. CREANCES ET DETTES
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('7. Etat des creances et des dettes', ys);
+  ys = sectionHeader('7. Etat des creances et des dettes', ys, 100);
 
   // Créances table (left)
   ys = subTitle(ys, 'Creances');
