@@ -53,6 +53,10 @@ export interface DocumentCAData {
     chargesNature?: Record<string, number>;
     produitsOrigine?: Record<string, number>;
     prelevementsReserves?: { totalPrelevements: number };
+    totalChargesSdeN1?: number; totalProduitsSdrN1?: number; resultatBudgetaireN1?: number;
+    fdrPartEncaissee?: number; fdrPctEncaissee?: number;
+    fdrPartNonEncaissee?: number; fdrPctNonEncaissee?: number;
+    ratioAutonomieFinanciere?: number;
   };
   indicateurs?: {
     effectif_eleves?: number; effectif_dp?: number; effectif_internes?: number;

@@ -232,7 +232,7 @@ export function parserBalance(rows: Record<string, string>[], _typeBudget: TypeB
           etablissement: findCol(r, 'Etablissement', 'etablissement'),
         };
       })
-      .filter((r): r is LigneBalance => !!r);
+      .filter(Boolean) as LigneBalance[];
   }
   return parseBalance(rowsToCSV(rows));
 }
