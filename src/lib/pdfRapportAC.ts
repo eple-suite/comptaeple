@@ -69,6 +69,12 @@ interface RapportACData {
     commentaireTresorerie: string;
     commentaireCreances: string;
     commentaireGeneral: string;
+    commentaireBFR?: string;
+    commentaireChargesRecouvrement?: string;
+    commentairePatrimoine?: string;
+    commentaireReserves?: string;
+    commentaireRatios?: string;
+    commentairePluriannuel?: string;
   };
   aiText: string;
   history: { exercice: number; fdr: number; bfr: number; tresorerie: number; caf: number; reserves: number; jours_autonomie: number; jours_tresorerie?: number; tmcap?: number; tmnr?: number; resultat?: number }[];
