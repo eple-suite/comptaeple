@@ -480,7 +480,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 5. TRÉSORERIE
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('5. Analyse de la trésorerie');
+  ys = sectionHeader('5. Analyse de la tresorerie', ys);
   autoTable(doc, {
     startY: ys,
     head: [['Composante', 'Montant', '% Trésorerie']],
