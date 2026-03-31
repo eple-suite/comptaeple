@@ -348,10 +348,12 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
       doc.text(`${(taux * 100).toFixed(1)} %`, 145, yGraph + 4);
       yGraph += 9;
     }
+    yPos = yGraph + 5;
   } else {
     doc.setFontSize(9);
     doc.setTextColor(120);
-    doc.text('Données SDE non importées — section non disponible.', 14, 35);
+    doc.text('Donnees SDE non importees -- section non disponible.', 14, yPos + 5);
+    yPos += 15;
   }
 
   // ════════════════════════════════════════════════════════════
