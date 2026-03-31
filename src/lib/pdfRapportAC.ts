@@ -1,17 +1,21 @@
 // ═══════════════════════════════════════════════════════════════
 // PDF RAPPORT DE L'AGENT COMPTABLE — Document officiel
 // Modèle REPROFI enrichi — M9-6 2026 · Décret 2012-1246
-// Avec graphiques intégrés (barres horizontales, jauges)
+// Avec graphiques intégrés, visuels professionnels, radar, trend charts
 // ═══════════════════════════════════════════════════════════════
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 const BLEU = [0, 35, 149] as const;
+const BLEU_CLAIR = [41, 98, 255] as const;
 const ROUGE = [237, 41, 57] as const;
 const GRIS = [100, 100, 100] as const;
-const VERT = [34, 139, 34] as const;
-const ORANGE = [230, 126, 34] as const;
+const GRIS_CLAIR = [180, 180, 180] as const;
+const VERT = [22, 163, 74] as const;
+const ORANGE = [234, 88, 12] as const;
+const JAUNE = [202, 138, 4] as const;
+const BLANC = [255, 255, 255] as const;
 
 interface RapportACData {
   etab: {
@@ -71,7 +75,7 @@ interface RapportACData {
   nbAnom: number; nbBloq: number;
 }
 
-/** Strip exotic Unicode that jsPDF cannot render (Ø, Ü, Ê, ═, ☐, etc.) */
+/** Strip exotic Unicode that jsPDF cannot render */
 function sanitize(s: string): string {
   return s
     .replace(/[\u202F\u00A0]/g, ' ')
@@ -89,106 +93,318 @@ function sanitize(s: string): string {
 function fmt(n: number): string {
   return sanitize(new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(n));
 }
+function fmtK(n: number): string {
+  if (Math.abs(n) >= 1000) return sanitize(new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n));
+  return fmt(n);
+}
 function pct(v: number, t: number): string {
-  return t > 0 ? `${((v / t) * 100).toFixed(1)} %` : '—';
+  return t > 0 ? `${((v / t) * 100).toFixed(1)} %` : '--';
 }
 
-// ── Graphique: Barre horizontale avec étiquette ──
-function drawHBar(doc: jsPDF, x: number, y: number, width: number, height: number, value: number, maxValue: number, color: readonly number[], label: string, valueLabel: string) {
+type RGB = readonly [number, number, number];
+
+// ══════════════════════════════════════════════════════════════════
+// DRAWING PRIMITIVES — Professional chart components
+// ══════════════════════════════════════════════════════════════════
+
+/** Rounded rectangle with gradient-like effect */
+function drawCard(doc: jsPDF, x: number, y: number, w: number, h: number, bgColor: RGB, borderColor?: RGB) {
+  doc.setFillColor(bgColor[0], bgColor[1], bgColor[2]);
+  doc.roundedRect(x, y, w, h, 2, 2, 'F');
+  if (borderColor) {
+    doc.setDrawColor(borderColor[0], borderColor[1], borderColor[2]);
+    doc.setLineWidth(0.3);
+    doc.roundedRect(x, y, w, h, 2, 2, 'S');
+  }
+}
+
+/** KPI card with value, label, and optional trend */
+function drawKpiCard(doc: jsPDF, x: number, y: number, w: number, label: string, value: string, trend?: string, color: RGB = BLEU) {
+  drawCard(doc, x, y, w, 22, [245, 247, 252], color);
+  // Colored left stripe
+  doc.setFillColor(color[0], color[1], color[2]);
+  doc.rect(x, y, 2, 22, 'F');
+  // Value
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(11);
+  doc.setTextColor(color[0], color[1], color[2]);
+  doc.text(value, x + 6, y + 9);
+  // Label
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(7);
+  doc.setTextColor(80, 80, 80);
+  doc.text(sanitize(label), x + 6, y + 15);
+  // Trend
+  if (trend) {
+    doc.setFontSize(6);
+    doc.setTextColor(trend.startsWith('+') || trend.startsWith('hausse') ? VERT[0] : trend.startsWith('-') || trend.startsWith('baisse') ? ROUGE[0] : GRIS[0],
+      trend.startsWith('+') || trend.startsWith('hausse') ? VERT[1] : trend.startsWith('-') || trend.startsWith('baisse') ? ROUGE[1] : GRIS[1],
+      trend.startsWith('+') || trend.startsWith('hausse') ? VERT[2] : trend.startsWith('-') || trend.startsWith('baisse') ? ROUGE[2] : GRIS[2]);
+    doc.text(sanitize(trend), x + 6, y + 19);
+  }
+  doc.setTextColor(0, 0, 0);
+}
+
+/** Professional horizontal bar chart */
+function drawHBar(doc: jsPDF, x: number, y: number, width: number, height: number, value: number, maxValue: number, color: RGB, label: string, valueLabel: string) {
   const ratio = maxValue > 0 ? Math.min(Math.abs(value) / maxValue, 1) : 0;
-  // Background
   doc.setFillColor(235, 238, 245);
   doc.roundedRect(x, y, width, height, 1.5, 1.5, 'F');
-  // Fill
   const fillW = width * ratio;
   if (fillW > 2) {
     doc.setFillColor(color[0], color[1], color[2]);
     doc.roundedRect(x, y, fillW, height, 1.5, 1.5, 'F');
   }
-  // Label
   doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(60, 60, 60);
-  doc.text(label, x, y - 1.5);
-  // Value
+  doc.text(sanitize(label), x, y - 1.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(color[0], color[1], color[2]);
-  doc.text(valueLabel, x + width + 2, y + height - 1);
+  doc.text(valueLabel, x + width + 2, y + height - 0.5);
   doc.setTextColor(0, 0, 0);
 }
 
-// ── Graphique: Jauge circulaire (arc) ──
-function drawGauge(doc: jsPDF, cx: number, cy: number, radius: number, value: number, maxDays: number, label: string, color: readonly number[]) {
-  const pctVal = Math.min(value / maxDays, 1);
-  // Background circle
+/** Circular gauge with percentage arc */
+function drawGauge(doc: jsPDF, cx: number, cy: number, radius: number, value: number, maxDays: number, label: string, color: RGB) {
+  const pctVal = Math.min(Math.max(value, 0) / maxDays, 1);
   doc.setDrawColor(220, 225, 235);
   doc.setLineWidth(2.5);
   doc.circle(cx, cy, radius);
-  // Value arc (simplified as filled segment)
   if (pctVal > 0) {
     doc.setDrawColor(color[0], color[1], color[2]);
     doc.setLineWidth(3);
-    // Draw arc approximation
     const segments = Math.floor(pctVal * 36);
     for (let i = 0; i < segments; i++) {
       const a1 = (-Math.PI / 2) + (i / 36) * 2 * Math.PI;
       const a2 = (-Math.PI / 2) + ((i + 1) / 36) * 2 * Math.PI;
-      doc.line(
-        cx + radius * Math.cos(a1), cy + radius * Math.sin(a1),
-        cx + radius * Math.cos(a2), cy + radius * Math.sin(a2)
-      );
+      doc.line(cx + radius * Math.cos(a1), cy + radius * Math.sin(a1), cx + radius * Math.cos(a2), cy + radius * Math.sin(a2));
     }
   }
-  // Center text
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(11);
+  doc.setFontSize(12);
   doc.setTextColor(color[0], color[1], color[2]);
-  doc.text(`${Math.round(value)}j`, cx, cy + 1, { align: 'center' });
+  doc.text(`${Math.round(value)}j`, cx, cy + 1.5, { align: 'center' });
   doc.setFontSize(6);
   doc.setFont('helvetica', 'normal');
   doc.setTextColor(60, 60, 60);
-  doc.text(label, cx, cy + radius + 5, { align: 'center' });
+  doc.text(sanitize(label), cx, cy + radius + 5, { align: 'center' });
   doc.setLineWidth(0.5);
   doc.setDrawColor(0);
 }
 
-// ── Mini stacked bar ──
-function drawStackedBar(doc: jsPDF, x: number, y: number, w: number, h: number, parts: { value: number; color: readonly number[]; label: string }[], total: number) {
+/** Donut/Pie chart */
+function drawDonut(doc: jsPDF, cx: number, cy: number, outerR: number, innerR: number, slices: { value: number; color: RGB; label: string }[]) {
+  const total = slices.reduce((s, sl) => s + Math.abs(sl.value), 0);
+  if (total === 0) return;
+  let startAngle = -Math.PI / 2;
+  for (const slice of slices) {
+    const sweepAngle = (Math.abs(slice.value) / total) * 2 * Math.PI;
+    doc.setFillColor(slice.color[0], slice.color[1], slice.color[2]);
+    // Draw arc as polygon approximation
+    const points: [number, number][] = [];
+    const steps = Math.max(Math.ceil(sweepAngle / (Math.PI / 18)), 2);
+    for (let i = 0; i <= steps; i++) {
+      const a = startAngle + (i / steps) * sweepAngle;
+      points.push([cx + outerR * Math.cos(a), cy + outerR * Math.sin(a)]);
+    }
+    for (let i = steps; i >= 0; i--) {
+      const a = startAngle + (i / steps) * sweepAngle;
+      points.push([cx + innerR * Math.cos(a), cy + innerR * Math.sin(a)]);
+    }
+    // Draw filled polygon
+    if (points.length >= 3) {
+      const lines: number[] = [];
+      points.forEach(p => { lines.push(p[0]); lines.push(p[1]); });
+      // Use triangle fan approach
+      for (let i = 1; i < points.length - 1; i++) {
+        doc.triangle(
+          points[0][0], points[0][1],
+          points[i][0], points[i][1],
+          points[i + 1][0], points[i + 1][1],
+          'F'
+        );
+      }
+    }
+    startAngle += sweepAngle;
+  }
+}
+
+/** Mini sparkline / trend line chart */
+function drawTrendLine(doc: jsPDF, x: number, y: number, w: number, h: number, values: number[], color: RGB, label: string, labels?: string[]) {
+  if (values.length < 2) return;
+  const minV = Math.min(...values);
+  const maxV = Math.max(...values);
+  const range = maxV - minV || 1;
+  
+  // Background
+  doc.setFillColor(250, 251, 254);
+  doc.roundedRect(x, y, w, h, 1, 1, 'F');
+  doc.setDrawColor(230, 232, 240);
+  doc.setLineWidth(0.15);
+  doc.roundedRect(x, y, w, h, 1, 1, 'S');
+  
+  // Grid lines
+  doc.setDrawColor(235, 237, 245);
+  doc.setLineWidth(0.1);
+  for (let i = 1; i < 4; i++) {
+    const gy = y + (h * i) / 4;
+    doc.line(x + 2, gy, x + w - 2, gy);
+  }
+  
+  // Zero line if range crosses zero
+  if (minV < 0 && maxV > 0) {
+    const zeroY = y + h - ((0 - minV) / range) * (h - 8) - 4;
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.3);
+    doc.line(x + 2, zeroY, x + w - 2, zeroY);
+  }
+  
+  // Plot line
+  doc.setDrawColor(color[0], color[1], color[2]);
+  doc.setLineWidth(0.8);
+  const stepX = (w - 10) / (values.length - 1);
+  const points: [number, number][] = values.map((v, i) => [
+    x + 5 + i * stepX,
+    y + h - ((v - minV) / range) * (h - 12) - 6
+  ]);
+  for (let i = 0; i < points.length - 1; i++) {
+    doc.line(points[i][0], points[i][1], points[i + 1][0], points[i + 1][1]);
+  }
+  
+  // Dots
+  for (const pt of points) {
+    doc.setFillColor(color[0], color[1], color[2]);
+    doc.circle(pt[0], pt[1], 1, 'F');
+    doc.setFillColor(255, 255, 255);
+    doc.circle(pt[0], pt[1], 0.5, 'F');
+  }
+  
+  // Labels below
+  if (labels) {
+    doc.setFontSize(5);
+    doc.setTextColor(120, 120, 120);
+    labels.forEach((l, i) => {
+      if (i < points.length) doc.text(l, points[i][0], y + h + 3, { align: 'center' });
+    });
+  }
+  
+  // Title
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.setTextColor(color[0], color[1], color[2]);
+  doc.text(sanitize(label), x + 3, y - 1);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(0, 0, 0);
+}
+
+/** Stacked bar */
+function drawStackedBar(doc: jsPDF, x: number, y: number, w: number, h: number, parts: { value: number; color: RGB; label: string }[], total: number) {
   doc.setFillColor(235, 238, 245);
   doc.roundedRect(x, y, w, h, 1, 1, 'F');
   let cx = x;
   for (const p of parts) {
-    const pw = total > 0 ? (p.value / total) * w : 0;
+    const pw = total > 0 ? (Math.abs(p.value) / total) * w : 0;
     if (pw > 1) {
       doc.setFillColor(p.color[0], p.color[1], p.color[2]);
       doc.rect(cx, y, pw, h, 'F');
     }
     cx += pw;
   }
-  // Legend
   let lx = x;
   doc.setFontSize(5.5);
   for (const p of parts) {
-    const pctV = total > 0 ? ((p.value / total) * 100).toFixed(0) : '0';
+    const pctV = total > 0 ? ((Math.abs(p.value) / total) * 100).toFixed(0) : '0';
     doc.setFillColor(p.color[0], p.color[1], p.color[2]);
     doc.rect(lx, y + h + 2, 3, 2, 'F');
     doc.setTextColor(60, 60, 60);
-    doc.text(`${p.label} (${pctV}%)`, lx + 4, y + h + 3.5);
-    lx += 35;
+    doc.text(`${sanitize(p.label)} (${pctV}%)`, lx + 4, y + h + 3.5);
+    lx += 38;
   }
 }
+
+/** Traffic light indicator */
+function drawTrafficLight(doc: jsPDF, x: number, y: number, value: number, thresholds: { green: number; yellow: number }, label: string, unit: string = '') {
+  const color: RGB = value >= thresholds.green ? VERT : value >= thresholds.yellow ? JAUNE : ROUGE;
+  doc.setFillColor(color[0], color[1], color[2]);
+  doc.circle(x + 4, y + 4, 3.5, 'F');
+  doc.setFillColor(255, 255, 255);
+  doc.circle(x + 4, y + 4, 1.5, 'F');
+  doc.setFillColor(color[0], color[1], color[2]);
+  doc.circle(x + 4, y + 4, 0.8, 'F');
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(color[0], color[1], color[2]);
+  doc.text(`${typeof value === 'number' ? (Number.isInteger(value) ? value : value.toFixed(1)) : value}${unit}`, x + 11, y + 5.5);
+  doc.setFont('helvetica', 'normal');
+  doc.setFontSize(6);
+  doc.setTextColor(80, 80, 80);
+  doc.text(sanitize(label), x + 11, y + 9);
+  doc.setTextColor(0, 0, 0);
+}
+
+/** Waterfall-style comparison bars (vertical) */
+function drawComparisonBars(doc: jsPDF, x: number, y: number, w: number, h: number, items: { label: string; value: number; color: RGB }[]) {
+  const maxVal = Math.max(...items.map(i => Math.abs(i.value)), 1);
+  const barW = Math.min((w - 8) / items.length - 3, 20);
+  const startX = x + (w - items.length * (barW + 3)) / 2;
+  
+  // Baseline
+  doc.setDrawColor(200, 200, 200);
+  doc.setLineWidth(0.2);
+  doc.line(x, y + h, x + w, y + h);
+  
+  items.forEach((item, i) => {
+    const bx = startX + i * (barW + 3);
+    const barH = (Math.abs(item.value) / maxVal) * (h - 4);
+    const by = item.value >= 0 ? y + h - barH : y + h;
+    
+    doc.setFillColor(item.color[0], item.color[1], item.color[2]);
+    if (barH > 1) doc.roundedRect(bx, by, barW, barH, 1, 1, 'F');
+    
+    // Value on top
+    doc.setFontSize(5.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(item.color[0], item.color[1], item.color[2]);
+    doc.text(fmtK(item.value), bx + barW / 2, item.value >= 0 ? by - 2 : by + barH + 4, { align: 'center' });
+    
+    // Label below
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(5);
+    doc.setTextColor(80, 80, 80);
+    doc.text(sanitize(item.label), bx + barW / 2, y + h + 5, { align: 'center' });
+  });
+  doc.setTextColor(0, 0, 0);
+}
+
+
+// ══════════════════════════════════════════════════════════════════
+// MAIN EXPORT
+// ══════════════════════════════════════════════════════════════════
 
 export function generateRapportACPdf(data: RapportACData) {
   const { etab, R, saisieComplementaire: saisie, aiText, history, nbAnom, nbBloq } = data;
   const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
   const pw = doc.internal.pageSize.getWidth();
   const ph = doc.internal.pageSize.getHeight();
-  const margin = 15;
+  const margin = 14;
   const contentWidth = pw - 2 * margin;
+  const colHalf = (contentWidth - 4) / 2;
+
+  // Sort history chronologically
+  const sortedHistory = [...history].sort((a, b) => a.exercice - b.exercice);
+  // Include current year in history for charts if not already there
+  const currentInHistory = sortedHistory.find(h => h.exercice === etab.exercice);
+  const fullHistory = currentInHistory ? sortedHistory : [
+    ...sortedHistory,
+    { exercice: etab.exercice, fdr: R.fdrComptable, bfr: R.bfr, tresorerie: R.tresorerie, caf: R.cafComptable, reserves: R.reserves, jours_autonomie: R.joursFdr, jours_tresorerie: R.joursTresorerie, tmcap: R.tmcap, tmnr: R.tmnr, resultat: R.resultatComptable }
+  ];
+  const histLabels = fullHistory.map(h => String(h.exercice));
 
   // ════════════════════════════════════════════════════════════
   // PAGE DE GARDE
   // ════════════════════════════════════════════════════════════
+  // Tricolore top
   doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
   doc.rect(0, 0, pw / 3, 8, 'F');
   doc.setFillColor(255, 255, 255);
@@ -196,305 +412,329 @@ export function generateRapportACPdf(data: RapportACData) {
   doc.setFillColor(ROUGE[0], ROUGE[1], ROUGE[2]);
   doc.rect((2 * pw) / 3, 0, pw / 3, 8, 'F');
 
+  // Blue header band
   doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
-  doc.rect(0, 20, pw, 45, 'F');
+  doc.rect(0, 18, pw, 48, 'F');
   doc.setTextColor(255, 255, 255);
-  doc.setFontSize(20);
+  doc.setFontSize(22);
   doc.setFont('helvetica', 'bold');
   doc.text('RAPPORT FINANCIER', pw / 2, 36, { align: 'center' });
   doc.setFontSize(14);
   doc.text("DE L'AGENT COMPTABLE", pw / 2, 44, { align: 'center' });
   doc.setFontSize(11);
   doc.setFont('helvetica', 'normal');
-  doc.text(`COMPTE FINANCIER — EXERCICE ${etab.exercice}`, pw / 2, 55, { align: 'center' });
+  doc.text(`COMPTE FINANCIER -- EXERCICE ${etab.exercice}`, pw / 2, 56, { align: 'center' });
 
   let y = 80;
   doc.setTextColor(0, 0, 0);
-  doc.setFontSize(14);
+  doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
-  doc.text(etab.nom || 'Établissement', pw / 2, y, { align: 'center' });
+  doc.text(sanitize(etab.nom || 'Etablissement'), pw / 2, y, { align: 'center' });
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   y += 8;
   doc.text(`RNE : ${etab.uai}`, pw / 2, y, { align: 'center' });
-  if (etab.adresse) { y += 6; doc.text(etab.adresse, pw / 2, y, { align: 'center' }); }
-  if (etab.codePostal || etab.commune) { y += 6; doc.text(`${etab.codePostal || ''} ${etab.commune || ''}`, pw / 2, y, { align: 'center' }); }
-  if (etab.academie) { y += 6; doc.text(`Académie de ${etab.academie}`, pw / 2, y, { align: 'center' }); }
+  if (etab.adresse) { y += 6; doc.text(sanitize(etab.adresse), pw / 2, y, { align: 'center' }); }
+  if (etab.codePostal || etab.commune) { y += 6; doc.text(sanitize(`${etab.codePostal || ''} ${etab.commune || ''}`), pw / 2, y, { align: 'center' }); }
+  if (etab.academie) { y += 6; doc.text(sanitize(`Academie de ${etab.academie}`), pw / 2, y, { align: 'center' }); }
 
-  y += 20;
-  doc.setFillColor(240, 243, 248);
-  doc.roundedRect(margin, y, contentWidth, 28, 2, 2, 'F');
-  doc.setFontSize(8);
+  // KPI strip on cover page
+  y += 15;
+  const kpiW = (contentWidth - 12) / 4;
+  const fdrTrend = fullHistory.length >= 2 ? `${fullHistory[fullHistory.length - 1].fdr >= fullHistory[fullHistory.length - 2].fdr ? '+' : '-'} vs ${fullHistory[fullHistory.length - 2].exercice}` : undefined;
+  drawKpiCard(doc, margin, y, kpiW, 'Fonds de roulement', fmtK(R.fdrComptable), fdrTrend, R.fdrComptable >= 0 ? BLEU : ROUGE);
+  drawKpiCard(doc, margin + kpiW + 4, y, kpiW, 'Tresorerie nette', fmtK(R.tresorerie), `${Math.round(R.joursTresorerie)} jours`, R.tresorerie >= 0 ? VERT : ROUGE);
+  drawKpiCard(doc, margin + 2 * (kpiW + 4), y, kpiW, R.cafComptable >= 0 ? 'CAF' : 'IAF', fmtK(R.cafComptable), undefined, R.cafComptable >= 0 ? VERT : ROUGE);
+  drawKpiCard(doc, margin + 3 * (kpiW + 4), y, kpiW, 'Resultat', fmtK(R.resultatComptable), undefined, R.resultatComptable >= 0 ? BLEU : ROUGE);
+
+  y += 32;
+  // Regulatory box
+  doc.setFillColor(245, 247, 252);
+  doc.roundedRect(margin, y, contentWidth, 22, 2, 2, 'F');
+  doc.setFontSize(7);
   doc.setTextColor(GRIS[0], GRIS[1], GRIS[2]);
   doc.setFont('helvetica', 'bold');
-  doc.text('CADRE RÉGLEMENTAIRE', margin + 5, y + 7);
+  doc.text('CADRE REGLEMENTAIRE', margin + 5, y + 6);
   doc.setFont('helvetica', 'normal');
-  doc.text('Instruction codificatrice M9-6 — OP@LE du 19 janvier 2026', margin + 5, y + 13);
-  doc.text('Décret n°2012-1246 du 7 novembre 2012 (RGCP) — Art. 195-199', margin + 5, y + 18);
-  doc.text("Code de l'Éducation — Art. R421-68 et suivants", margin + 5, y + 23);
+  doc.text('Instruction codificatrice M9-6 -- OP@LE du 19 janvier 2026', margin + 5, y + 11);
+  doc.text("Decret n. 2012-1246 du 7 novembre 2012 (RGCP) -- Art. 195-199 / Code de l'Education Art. R421-68+", margin + 5, y + 16);
 
-  y += 38;
+  y += 28;
   doc.setTextColor(0, 0, 0);
-  doc.setFontSize(10);
-  doc.text(`Ordonnateur : ${etab.ordonnateur || '—'}`, margin, y);
-  doc.text(`Agent comptable : ${etab.agentComptable || '—'}`, margin, y + 7);
-  if (etab.secretaireGeneral) doc.text(`Secrétaire général(e) : ${etab.secretaireGeneral}`, margin, y + 14);
+  doc.setFontSize(9);
+  doc.text(sanitize(`Ordonnateur : ${etab.ordonnateur || '--'}`), margin, y);
+  doc.text(sanitize(`Agent comptable : ${etab.agentComptable || '--'}`), pw / 2, y);
+  if (etab.secretaireGeneral) { y += 6; doc.text(sanitize(`Secretaire general(e) : ${etab.secretaireGeneral}`), margin, y); }
 
-  y += (etab.secretaireGeneral ? 28 : 25);
-  doc.setFontSize(12);
+  // Sommaire
+  y += 12;
+  doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
   doc.text('SOMMAIRE', margin, y);
   doc.setFont('helvetica', 'normal');
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setTextColor(0, 0, 0);
   const sommaire = [
-    '1. Rappel des dispositions réglementaires',
-    '2. Présentation du résultat et de l\'autofinancement',
-    '3. Analyse du fonds de roulement',
-    '4. Analyse du besoin en fonds de roulement',
-    '5. Analyse de la trésorerie',
-    '6. Taux de charges à payer et de non-recouvrement',
-    '7. État du patrimoine',
-    '8. Créances et dettes',
-    '9. Réserves et affectation du résultat',
-    '10. Ratios de gestion M9-6',
-    '11. Évolution pluriannuelle',
-    '12. Observations de l\'agent comptable',
+    '1. Resultat et autofinancement',
+    '2. Fonds de roulement',
+    '3. Besoin en fonds de roulement',
+    '4. Tresorerie',
+    '5. Charges a payer et recouvrement',
+    '6. Patrimoine',
+    '7. Creances et dettes',
+    '8. Reserves et affectation du resultat',
+    '9. Ratios de gestion M9-6',
+    '10. Evolution pluriannuelle',
+    '11. Observations de l\'agent comptable',
   ];
-  sommaire.forEach((s, i) => doc.text(s, margin + 5, y + 10 + i * 6));
+  const colSommaire = Math.ceil(sommaire.length / 2);
+  sommaire.forEach((s, i) => {
+    const sx = i < colSommaire ? margin + 5 : pw / 2;
+    const si = i < colSommaire ? i : i - colSommaire;
+    doc.text(s, sx, y + 8 + si * 5);
+  });
 
   // ════════════════════════════════════════════════════════════
-  // HELPER FUNCTIONS
+  // HELPERS
   // ════════════════════════════════════════════════════════════
   function sectionHeader(title: string, currentY: number = ph): number {
-    // Add a new page only if less than 70mm remain on current page
-    if (currentY > ph - 70) {
+    if (currentY > ph - 65) {
       doc.addPage();
       doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
-      doc.rect(0, 0, pw, 14, 'F');
+      doc.rect(0, 0, pw, 12, 'F');
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(11);
+      doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
-      doc.text(title.toUpperCase(), pw / 2, 9, { align: 'center' });
-      return 22;
+      doc.text(sanitize(title.toUpperCase()), pw / 2, 8, { align: 'center' });
+      return 18;
     }
-    // Inline section header on current page
     doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
-    doc.rect(margin, currentY, contentWidth, 10, 'F');
+    doc.roundedRect(margin, currentY, contentWidth, 9, 1, 1, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
-    doc.text(title.toUpperCase(), pw / 2, currentY + 7, { align: 'center' });
-    return currentY + 16;
+    doc.text(sanitize(title.toUpperCase()), pw / 2, currentY + 6.5, { align: 'center' });
+    return currentY + 14;
   }
 
   function subTitle(y: number, text: string): number {
-    doc.setFontSize(10);
+    doc.setFontSize(9);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
-    doc.text(text, margin, y);
+    doc.text(sanitize(text), margin, y);
     doc.setTextColor(0, 0, 0);
-    return y + 6;
+    return y + 5;
   }
 
-  function wrapText(y: number, text: string, maxY: number = ph - 25): number {
-    doc.setFontSize(9);
+  function wrapText(y: number, text: string, maxY: number = ph - 20): number {
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(0, 0, 0);
     const lines = doc.splitTextToSize(sanitize(text), contentWidth);
     for (const line of lines) {
-      if (y > maxY) { doc.addPage(); y = 20; }
+      if (y > maxY) { doc.addPage(); y = 18; }
       doc.text(line, margin, y);
-      y += 4.5;
+      y += 4;
     }
     return y + 2;
   }
 
   function checkNewPage(y: number, needed: number): number {
-    if (y + needed > ph - 25) { doc.addPage(); return 20; }
+    if (y + needed > ph - 20) { doc.addPage(); return 18; }
     return y;
   }
 
   // ════════════════════════════════════════════════════════════
-  // § 1. RAPPEL RÉGLEMENTAIRE
+  // S1. RESULTAT ET AUTOFINANCEMENT
   // ════════════════════════════════════════════════════════════
-  let ys = sectionHeader('1. Rappel des dispositions réglementaires');
-  ys = wrapText(ys,
-    "L'agent comptable informe le conseil d'administration de l'état du patrimoine, des stocks, " +
-    "des créances, des reliquats de subventions. Il présente et explique les différents indicateurs " +
-    "financiers mentionnés à la pièce 14 du compte financier. L'analyse des données financières " +
-    "s'effectue à partir du résultat, de la capacité d'autofinancement ainsi que des divers " +
-    "indicateurs et de leur évolution. Elle est présentée par l'agent comptable qui explique, " +
-    "notamment en fonction de la composition du fonds de roulement, la marge dont dispose " +
-    "l'établissement pour financer des actions sur fonds propres.");
+  let ys = sectionHeader('1. Resultat de l\'exercice et autofinancement');
 
-  // ════════════════════════════════════════════════════════════
-  // § 2. RÉSULTAT ET AUTOFINANCEMENT + Graphiques
-  // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('2. Presentation du resultat et de l\'autofinancement', ys);
+  // Two-column layout: table left, chart right
   autoTable(doc, {
     startY: ys,
-    head: [['Élément', 'Montant']],
+    head: [['Element', 'Montant']],
     body: [
-      ['Charges nettes (classe 6)', fmt(R.totalChargesSde)],
-      ['Produits nets (classe 7)', fmt(R.totalProduitsSdr)],
-      ['RÉSULTAT COMPTABLE', fmt(R.resultatComptable)],
-      ['Charges non décaissables (68+675)', fmt(R.chargesNonDecaissables)],
-      ['Produits non encaissables (78+775…)', fmt(R.produitsNonEncaissables)],
-      [R.cafComptable >= 0 ? 'CAF (Capacité d\'autofinancement)' : 'IAF (Insuffisance d\'autofinancement)', fmt(R.cafComptable)],
+      ['Charges nettes (cl. 6)', fmt(R.totalChargesSde)],
+      ['Produits nets (cl. 7)', fmt(R.totalProduitsSdr)],
+      ['RESULTAT COMPTABLE', fmt(R.resultatComptable)],
+      ['Charges non decaissables (68+675)', fmt(R.chargesNonDecaissables)],
+      ['Produits non encaissables (78+775...)', fmt(R.produitsNonEncaissables)],
+      [R.cafComptable >= 0 ? 'CAF' : 'IAF', fmt(R.cafComptable)],
     ],
-    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255 },
-    styles: { fontSize: 9 },
+    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 8 },
+    styles: { fontSize: 8 },
     columnStyles: { 1: { halign: 'right' } },
-    margin: { left: margin, right: margin },
+    margin: { left: margin, right: pw - margin - colHalf },
     didParseCell: (d: any) => {
       if (d.section === 'body' && (d.row.index === 2 || d.row.index === 5)) {
         d.cell.styles.fontStyle = 'bold';
-        d.cell.styles.fillColor = d.row.index === 2 ? (R.resultatComptable >= 0 ? [220, 237, 200] : [255, 220, 220]) : (R.cafComptable >= 0 ? [220, 237, 200] : [255, 220, 220]);
+        d.cell.styles.fillColor = d.row.index === 2
+          ? (R.resultatComptable >= 0 ? [220, 245, 220] : [255, 225, 225])
+          : (R.cafComptable >= 0 ? [220, 245, 220] : [255, 225, 225]);
       }
     },
   });
-  ys = (doc as any).lastAutoTable.finalY + 8;
+  const tableBottom = (doc as any).lastAutoTable.finalY;
 
-  // 📊 Graphique: Charges vs Produits
-  const maxCP = Math.max(R.totalChargesSde, R.totalProduitsSdr);
-  ys = subTitle(ys, '📊 Comparaison Charges / Produits');
-  ys += 3;
-  drawHBar(doc, margin, ys, contentWidth * 0.65, 5, R.totalChargesSde, maxCP, ROUGE, 'Charges (cl.6)', fmt(R.totalChargesSde));
-  ys += 12;
-  drawHBar(doc, margin, ys, contentWidth * 0.65, 5, R.totalProduitsSdr, maxCP, VERT, 'Produits (cl.7)', fmt(R.totalProduitsSdr));
-  ys += 15;
+  // Chart: Charges vs Produits comparison bars (right side)
+  const chartX = margin + colHalf + 8;
+  const chartW = colHalf - 4;
+  drawComparisonBars(doc, chartX, ys, chartW, 35, [
+    { label: 'Charges', value: R.totalChargesSde, color: ROUGE },
+    { label: 'Produits', value: R.totalProduitsSdr, color: VERT },
+    { label: 'Resultat', value: R.resultatComptable, color: R.resultatComptable >= 0 ? BLEU : ROUGE },
+    { label: R.cafComptable >= 0 ? 'CAF' : 'IAF', value: R.cafComptable, color: R.cafComptable >= 0 ? VERT : ORANGE },
+  ]);
 
-  // Prélèvements
+  ys = Math.max(tableBottom, ys + 45) + 5;
+
+  // Trend line if history
+  if (fullHistory.length >= 2) {
+    ys = checkNewPage(ys, 35);
+    drawTrendLine(doc, margin, ys, colHalf, 25, fullHistory.map(h => h.resultat ?? 0), BLEU, 'Tendance du resultat', histLabels);
+    drawTrendLine(doc, margin + colHalf + 8, ys, colHalf - 4, 25, fullHistory.map(h => h.caf), R.cafComptable >= 0 ? VERT : ROUGE, 'Tendance CAF/IAF', histLabels);
+    ys += 33;
+  }
+
+  // Prelevements
   if (saisie.prelevements.length > 0) {
-    ys = checkNewPage(ys, 40);
-    ys = subTitle(ys, 'Prélèvements sur fonds de roulement autorisés par le CA');
+    ys = checkNewPage(ys, 35);
+    ys = subTitle(ys, 'Prelevements sur fonds de roulement autorises par le CA');
     const totalPrelev = saisie.prelevements.reduce((s, p) => s + p.montant, 0);
     autoTable(doc, {
       startY: ys,
       head: [['Objet', 'Montant', 'Date du CA']],
       body: [
-        ...saisie.prelevements.map(p => [p.objet, fmt(p.montant), p.dateCA]),
-        ['TOTAL PRÉLEVÉ', fmt(totalPrelev), ''],
+        ...saisie.prelevements.map(p => [sanitize(p.objet), fmt(p.montant), p.dateCA]),
+        ['TOTAL PRELEVE', fmt(totalPrelev), ''],
       ],
       headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255 },
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7.5 },
       columnStyles: { 1: { halign: 'right' } },
       margin: { left: margin, right: margin },
     });
     ys = (doc as any).lastAutoTable.finalY + 3;
-    const resultatHorsPrelev = R.resultatComptable + totalPrelev;
-    ys = wrapText(ys,
-      `Le résultat de l'exercice (${fmt(R.resultatComptable)}) inclut ${saisie.prelevements.length} prélèvement(s) sur fonds de roulement ` +
-      `pour un total de ${fmt(totalPrelev)}. Sans ces prélèvements, le résultat aurait été de ${fmt(resultatHorsPrelev)}.`);
   }
   if (saisie.explicationsResultat) ys = wrapText(ys, saisie.explicationsResultat);
 
   // ════════════════════════════════════════════════════════════
-  // § 3. FONDS DE ROULEMENT + Graphiques
+  // S2. FONDS DE ROULEMENT
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('3. Analyse du fonds de roulement', ys);
+  ys = sectionHeader('2. Analyse du fonds de roulement', ys);
+
+  // KPI strip
+  const fdrKpiW = (contentWidth - 8) / 3;
+  drawKpiCard(doc, margin, ys, fdrKpiW, 'FDR comptable', fmtK(R.fdrComptable), undefined, R.fdrComptable >= 0 ? BLEU : ROUGE);
+  drawKpiCard(doc, margin + fdrKpiW + 4, ys, fdrKpiW, 'Jours de fonctionnement', `${Math.round(R.joursFdr)} jours`, R.joursFdr >= 30 ? 'Superieur au seuil de 30j' : 'INFERIEUR au seuil de 30j', R.joursFdr >= 30 ? VERT : ROUGE);
+  drawKpiCard(doc, margin + 2 * (fdrKpiW + 4), ys, fdrKpiW, 'FDR mobilisable', fmtK(R.fdrMobilisable), undefined, BLEU);
+  ys += 28;
+
+  // Table + gauges side by side
   autoTable(doc, {
     startY: ys,
     head: [['Indicateur', 'Valeur']],
     body: [
       ['FDR comptable (par le bas)', fmt(R.fdrComptable)],
-      ['Jours de fonctionnement', `${Math.round(R.joursFdr)} jours`],
-      ['Part encaissée (autonomie financière)', `${fmt(R.fdrPartEncaissee)} (${R.fdrPctEncaissee.toFixed(1)} %)`],
-      ['Part non encaissée (créances)', `${fmt(R.fdrPartNonEncaissee)} (${R.fdrPctNonEncaissee.toFixed(1)} %)`],
-      ['FDR mobilisable (hors stocks, c/416, cr. anciennes)', fmt(R.fdrMobilisable)],
+      ['Part encaissee (autonomie financiere)', `${fmt(R.fdrPartEncaissee)} (${R.fdrPctEncaissee.toFixed(1)} %)`],
+      ['Part non encaissee (creances)', `${fmt(R.fdrPartNonEncaissee)} (${R.fdrPctNonEncaissee.toFixed(1)} %)`],
+      ['FDR mobilisable', fmt(R.fdrMobilisable)],
     ],
-    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255 },
-    styles: { fontSize: 9 },
+    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 8 },
+    styles: { fontSize: 8 },
     columnStyles: { 1: { halign: 'right' } },
-    margin: { left: margin, right: margin },
+    margin: { left: margin, right: pw - margin - colHalf },
   });
-  ys = (doc as any).lastAutoTable.finalY + 8;
+  const fdrTableBottom = (doc as any).lastAutoTable.finalY;
 
-  // 📊 Jauges FDR et Trésorerie
-  ys = subTitle(ys, '📊 Jours d\'autonomie');
-  ys += 5;
-  const fdrColor = R.joursFdr >= 30 ? VERT : (R.joursFdr >= 15 ? ORANGE : ROUGE);
-  const tresoColor = R.joursTresorerie >= 20 ? VERT : (R.joursTresorerie >= 10 ? ORANGE : ROUGE);
-  drawGauge(doc, margin + 30, ys + 12, 10, R.joursFdr, 90, 'FDR', fdrColor);
-  drawGauge(doc, pw / 2, ys + 12, 10, R.joursTresorerie, 90, 'Trésorerie', tresoColor);
-  // Seuil 30j
-  doc.setFontSize(6);
-  doc.setTextColor(ROUGE[0], ROUGE[1], ROUGE[2]);
-  doc.text('Seuil : 30 jours minimum', pw - margin - 40, ys + 12);
-  doc.setTextColor(0, 0, 0);
-  ys += 35;
+  // Gauges on right
+  const fdrColor: RGB = R.joursFdr >= 30 ? VERT : (R.joursFdr >= 15 ? ORANGE : ROUGE);
+  const tresoColor: RGB = R.joursTresorerie >= 20 ? VERT : (R.joursTresorerie >= 10 ? ORANGE : ROUGE);
+  drawGauge(doc, chartX + 30, ys + 15, 11, R.joursFdr, 120, 'Jours FDR', fdrColor);
+  drawGauge(doc, chartX + chartW - 30, ys + 15, 11, R.joursTresorerie, 300, 'Jours Treso', tresoColor);
 
-  // 📊 Composition FDR (stacked bar)
-  ys = subTitle(ys, '📊 Composition du FDR');
-  ys += 2;
-  drawStackedBar(doc, margin, ys, contentWidth * 0.7, 6,
+  ys = Math.max(fdrTableBottom, ys + 38) + 5;
+
+  // Composition stacked bar
+  ys = subTitle(ys, 'Composition du FDR');
+  ys += 1;
+  drawStackedBar(doc, margin, ys, contentWidth * 0.7, 5,
     [
-      { value: R.fdrPartEncaissee, color: BLEU, label: 'Encaissée' },
-      { value: R.fdrPartNonEncaissee, color: ORANGE, label: 'Non encaissée' },
+      { value: R.fdrPartEncaissee, color: BLEU, label: 'Encaissee' },
+      { value: R.fdrPartNonEncaissee, color: ORANGE, label: 'Non encaissee' },
     ],
-    Math.abs(R.fdrComptable)
+    Math.abs(R.fdrComptable) || 1
   );
-  ys += 16;
+  ys += 14;
+
+  // Trend
+  if (fullHistory.length >= 2) {
+    drawTrendLine(doc, margin, ys, contentWidth * 0.45, 22, fullHistory.map(h => h.fdr), BLEU, 'Evolution du FDR', histLabels);
+    drawTrendLine(doc, margin + contentWidth * 0.5, ys, contentWidth * 0.45, 22, fullHistory.map(h => h.jours_autonomie), fdrColor, 'Evolution jours FDR', histLabels);
+    ys += 30;
+  }
 
   if (saisie.commentaireFDR) ys = wrapText(ys, saisie.commentaireFDR);
 
   // ════════════════════════════════════════════════════════════
-  // § 4. BFR — Sur la même page si possible
+  // S3. BFR
   // ════════════════════════════════════════════════════════════
-  ys = checkNewPage(ys, 60);
-  ys = subTitle(ys, '4. Analyse du besoin en fonds de roulement');
-  ys += 2;
+  ys = sectionHeader('3. Besoin en fonds de roulement', ys);
   autoTable(doc, {
     startY: ys,
-    head: [['Élément', 'Montant']],
+    head: [['Element', 'Montant']],
     body: [
-      ['Créances (cl.4 débit)', fmt(R.totalCreances)],
-      ['Dettes (cl.4 crédit)', fmt(R.totalDettes)],
-      [R.bfr < 0 ? 'DÉGAGEMENT EN FONDS DE ROULEMENT' : 'BESOIN EN FONDS DE ROULEMENT', fmt(R.bfr)],
+      ['Creances (cl.4 debit)', fmt(R.totalCreances)],
+      ['Dettes (cl.4 credit)', fmt(R.totalDettes)],
+      [R.bfr < 0 ? 'DEGAGEMENT EN FONDS DE ROULEMENT' : 'BESOIN EN FONDS DE ROULEMENT', fmt(R.bfr)],
     ],
-    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255 },
-    styles: { fontSize: 9 },
+    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 8 },
+    styles: { fontSize: 8 },
     columnStyles: { 1: { halign: 'right' } },
-    margin: { left: margin, right: margin },
+    margin: { left: margin, right: pw - margin - colHalf },
+    didParseCell: (d: any) => {
+      if (d.section === 'body' && d.row.index === 2) {
+        d.cell.styles.fontStyle = 'bold';
+        d.cell.styles.fillColor = R.bfr < 0 ? [220, 245, 220] : [255, 240, 220];
+      }
+    },
   });
-  ys = (doc as any).lastAutoTable.finalY + 5;
+  const bfrTableBot = (doc as any).lastAutoTable.finalY;
+
+  // Equation FDR = BFR + TN (bar chart right)
+  drawComparisonBars(doc, chartX, ys, chartW, 28, [
+    { label: 'FDR', value: R.fdrComptable, color: BLEU },
+    { label: 'BFR', value: R.bfr, color: R.bfr < 0 ? VERT : ORANGE },
+    { label: 'Tresorerie', value: R.tresorerie, color: BLEU_CLAIR },
+  ]);
+
+  ys = Math.max(bfrTableBot, ys + 38) + 3;
   ys = wrapText(ys,
     R.bfr < 0
-      ? `Le BFR négatif (${fmt(R.bfr)}) constitue un dégagement en fonds de roulement, situation classique des EPLE. La relation FDR = BFR + Trésorerie est vérifiée : ${fmt(R.fdrComptable)} = ${fmt(R.bfr)} + ${fmt(R.tresorerie)}.`
-      : `Le BFR positif (${fmt(R.bfr)}) indique que les créances excèdent les dettes d'exploitation.`
+      ? `Le BFR negatif (${fmt(R.bfr)}) constitue un degagement en fonds de roulement, situation classique des EPLE. Relation FDR = BFR + Tresorerie verifiee : ${fmt(R.fdrComptable)} = ${fmt(R.bfr)} + ${fmt(R.tresorerie)}.`
+      : `Le BFR positif (${fmt(R.bfr)}) indique que les creances excedent les dettes d'exploitation.`
   );
 
-  // 📊 Équation FDR = BFR + Trésorerie
-  ys = checkNewPage(ys, 25);
-  ys += 3;
-  const maxFBT = Math.max(Math.abs(R.fdrComptable), Math.abs(R.bfr), Math.abs(R.tresorerie));
-  drawHBar(doc, margin, ys, contentWidth * 0.55, 4, R.fdrComptable, maxFBT, BLEU, 'FDR', fmt(R.fdrComptable));
-  ys += 10;
-  drawHBar(doc, margin, ys, contentWidth * 0.55, 4, R.bfr, maxFBT, R.bfr < 0 ? VERT : ORANGE, 'BFR', fmt(R.bfr));
-  ys += 10;
-  drawHBar(doc, margin, ys, contentWidth * 0.55, 4, R.tresorerie, maxFBT, BLEU, 'Trésorerie', fmt(R.tresorerie));
-  ys += 15;
+  // ════════════════════════════════════════════════════════════
+  // S4. TRESORERIE
+  // ════════════════════════════════════════════════════════════
+  ys = sectionHeader('4. Analyse de la tresorerie', ys);
 
-  // ════════════════════════════════════════════════════════════
-  // § 5. TRÉSORERIE
-  // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('5. Analyse de la tresorerie', ys);
+  // Composition table + donut chart
   autoTable(doc, {
     startY: ys,
-    head: [['Composante', 'Montant', '% Trésorerie']],
+    head: [['Composante', 'Montant', '% Tresorerie']],
     body: [
-      ['Autonomie financière', fmt(R.tresoComposition.autonomieFinanciere), pct(Math.abs(R.tresoComposition.autonomieFinanciere), R.tresorerie)],
-      ['Dépôts et cautions', fmt(R.tresoComposition.depotsCautions), pct(R.tresoComposition.depotsCautions, R.tresorerie)],
-      ['Règlements en attente', fmt(R.tresoComposition.reglementsEnAttente), pct(R.tresoComposition.reglementsEnAttente, R.tresorerie)],
-      ['Reliquats de subventions', fmt(R.tresoComposition.reliquatsSubventions), pct(R.tresoComposition.reliquatsSubventions, R.tresorerie)],
-      ['TRÉSORERIE TOTALE', fmt(R.tresorerie), '100 %'],
+      ['Autonomie financiere', fmt(R.tresoComposition.autonomieFinanciere), pct(Math.abs(R.tresoComposition.autonomieFinanciere), Math.abs(R.tresorerie))],
+      ['Depots et cautions', fmt(R.tresoComposition.depotsCautions), pct(R.tresoComposition.depotsCautions, Math.abs(R.tresorerie))],
+      ['Reglements en attente', fmt(R.tresoComposition.reglementsEnAttente), pct(R.tresoComposition.reglementsEnAttente, Math.abs(R.tresorerie))],
+      ['Reliquats de subventions', fmt(R.tresoComposition.reliquatsSubventions), pct(R.tresoComposition.reliquatsSubventions, Math.abs(R.tresorerie))],
+      ['TRESORERIE TOTALE', fmt(R.tresorerie), '100 %'],
     ],
-    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255 },
-    styles: { fontSize: 9 },
+    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 8 },
+    styles: { fontSize: 8 },
     columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } },
-    margin: { left: margin, right: margin },
+    margin: { left: margin, right: pw - margin - colHalf },
     didParseCell: (d: any) => {
       if (d.section === 'body' && d.row.index === 4) {
         d.cell.styles.fontStyle = 'bold';
@@ -502,91 +742,127 @@ export function generateRapportACPdf(data: RapportACData) {
       }
     },
   });
-  ys = (doc as any).lastAutoTable.finalY + 5;
-  ys = wrapText(ys, `La trésorerie nette s'élève à ${fmt(R.tresorerie)}, soit ${Math.round(R.joursTresorerie)} jours de fonctionnement.`);
+  const tresoTabBot = (doc as any).lastAutoTable.finalY;
 
-  // 📊 Composition trésorerie
-  ys += 2;
-  ys = subTitle(ys, '📊 Répartition de la trésorerie');
-  ys += 2;
-  drawStackedBar(doc, margin, ys, contentWidth * 0.7, 6,
-    [
-      { value: Math.abs(R.tresoComposition.autonomieFinanciere), color: BLEU, label: 'Autonomie' },
-      { value: R.tresoComposition.depotsCautions, color: VERT, label: 'Dépôts' },
-      { value: R.tresoComposition.reglementsEnAttente, color: ORANGE, label: 'En attente' },
-      { value: R.tresoComposition.reliquatsSubventions, color: ROUGE, label: 'Reliquats' },
-    ],
-    R.tresorerie
-  );
-  ys += 15;
+  // Donut on right
+  const donutCx = chartX + chartW / 2;
+  const donutCy = ys + 18;
+  drawDonut(doc, donutCx, donutCy, 14, 8, [
+    { value: Math.abs(R.tresoComposition.autonomieFinanciere), color: BLEU, label: 'Autonomie' },
+    { value: R.tresoComposition.depotsCautions, color: VERT, label: 'Depots' },
+    { value: R.tresoComposition.reglementsEnAttente, color: ORANGE, label: 'En attente' },
+    { value: R.tresoComposition.reliquatsSubventions, color: ROUGE, label: 'Reliquats' },
+  ]);
+  // Donut center label
+  doc.setFont('helvetica', 'bold');
+  doc.setFontSize(8);
+  doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
+  doc.text(fmtK(R.tresorerie), donutCx, donutCy + 1, { align: 'center' });
+  doc.setFontSize(5);
+  doc.setFont('helvetica', 'normal');
+  doc.setTextColor(80, 80, 80);
+  doc.text('Tresorerie', donutCx, donutCy + 5, { align: 'center' });
+
+  ys = Math.max(tresoTabBot, ys + 42) + 3;
+  ys = wrapText(ys, `La tresorerie nette s'eleve a ${fmt(R.tresorerie)}, soit ${Math.round(R.joursTresorerie)} jours de fonctionnement.`);
   if (saisie.commentaireTresorerie) ys = wrapText(ys, saisie.commentaireTresorerie);
 
-  // ════════════════════════════════════════════════════════════
-  // § 6. TMcap / TMnr + § 7. PATRIMOINE — On same page if room
-  // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('6. Charges a payer et recouvrement / 7. Patrimoine', ys);
-
-  // TMcap/TMnr table
-  autoTable(doc, {
-    startY: ys,
-    head: [['Indicateur', 'Valeur', 'Interprétation']],
-    body: [
-      ['TMcap (charges à payer / charges)', `${R.tmcap.toFixed(2)} %`, R.tmcap < 5 ? 'Solvabilité correcte' : 'À surveiller'],
-      ['TMnr (non-recouvrement)', `${R.tmnr.toFixed(2)} %`, R.tmnr < 5 ? 'Recouvrement satisfaisant' : 'Diligences nécessaires'],
-      ['DGP (délai global paiement)', `${Math.round(R.dgpJours)} jours`, R.dgpJours <= 30 ? '≤ 30 jours — conforme' : '> 30 jours — attention'],
-      ['DGR (délai global recouvrement)', `${Math.round(R.dgrJours)} jours`, R.dgrJours <= 60 ? 'Délai acceptable' : '> 60 jours — attention'],
-    ],
-    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255 },
-    styles: { fontSize: 9 },
-    margin: { left: margin, right: margin },
-  });
-  ys = (doc as any).lastAutoTable.finalY + 8;
-
-  // Patrimoine on same page
-  ys = subTitle(ys, '7. État du patrimoine');
-  ys += 2;
-  autoTable(doc, {
-    startY: ys,
-    head: [['Élément', 'Montant']],
-    body: [
-      ['Immobilisations brutes (classe 2)', fmt(R.totalImmo)],
-      ['Amortissements cumulés (compte 28)', `- ${fmt(R.totalAmortissements)}`],
-      ['VALEUR RÉSIDUELLE', fmt(R.valeurNette)],
-      ['Variation annuelle', fmt(R.variationPatrimoine)],
-      [`Origines — Fonds propres (${R.patrimoineOriginesPctFP.toFixed(1)} %)`, fmt(R.patrimoineOriginesFondsPropres)],
-      [`Origines — Subventions d'investissement (${R.patrimoineOriginesPctSub.toFixed(1)} %)`, fmt(R.patrimoineOriginesSubventions)],
-    ],
-    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255 },
-    styles: { fontSize: 9 },
-    columnStyles: { 1: { halign: 'right' } },
-    margin: { left: margin, right: margin },
-  });
-  ys = (doc as any).lastAutoTable.finalY + 5;
-
-  // 📊 Origines patrimoine (stacked bar)
-  if (R.totalImmo > 0) {
-    ys = subTitle(ys, '📊 Origines du patrimoine');
-    ys += 2;
-    drawStackedBar(doc, margin, ys, contentWidth * 0.6, 6,
-      [
-        { value: R.patrimoineOriginesFondsPropres, color: BLEU, label: 'Fonds propres' },
-        { value: R.patrimoineOriginesSubventions, color: VERT, label: 'Subventions' },
-      ],
-      R.patrimoineOriginesFondsPropres + R.patrimoineOriginesSubventions
-    );
-    ys += 15;
+  // Trend
+  if (fullHistory.length >= 2) {
+    ys = checkNewPage(ys, 30);
+    drawTrendLine(doc, margin, ys, contentWidth * 0.45, 22, fullHistory.map(h => h.tresorerie), VERT, 'Evolution tresorerie', histLabels);
+    drawTrendLine(doc, margin + contentWidth * 0.5, ys, contentWidth * 0.45, 22, fullHistory.map(h => h.jours_tresorerie ?? 0), BLEU_CLAIR, 'Jours de tresorerie', histLabels);
+    ys += 30;
   }
 
   // ════════════════════════════════════════════════════════════
-  // § 8. CRÉANCES ET DETTES
+  // S5. TMCAP / TMNR
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('8. Etat des creances et des dettes', ys);
+  ys = sectionHeader('5. Charges a payer et recouvrement', ys);
 
-  // Créances + Dettes side by side approach: both tables on same page
-  ys = subTitle(22, 'Créances');
+  // Traffic lights + table
+  drawTrafficLight(doc, margin, ys, R.tmcap, { green: 0, yellow: 10 }, 'TMcap (charges a payer)', '%');
+  drawTrafficLight(doc, margin + 70, ys, R.tmnr, { green: 0, yellow: 10 }, 'TMNR (non-recouvrement)', '%');
+  drawTrafficLight(doc, margin + 140, ys, Math.round(R.dgpJours), { green: 0, yellow: 30 }, 'DGP (delai paiement)', 'j');
+  drawTrafficLight(doc, margin + 210, ys, Math.round(R.dgrJours), { green: 0, yellow: 60 }, 'DGR (delai recouvrement)', 'j');
+  ys += 18;
+
+  autoTable(doc, {
+    startY: ys,
+    head: [['Indicateur', 'Valeur', 'Interpretation']],
+    body: [
+      ['TMcap (charges a payer / charges)', `${R.tmcap.toFixed(2)} %`, R.tmcap < 5 ? 'Solvabilite correcte' : R.tmcap < 15 ? 'Normal en cloture d\'exercice' : 'A surveiller'],
+      ['TMnr (non-recouvrement)', `${R.tmnr.toFixed(2)} %`, R.tmnr < 5 ? 'Recouvrement satisfaisant' : 'Diligences necessaires'],
+      ['DGP (delai global paiement)', `${Math.round(R.dgpJours)} jours`, R.dgpJours <= 30 ? 'Conforme (<=30j)' : '> 30 jours -- attention'],
+      ['DGR (delai global recouvrement)', `${Math.round(R.dgrJours)} jours`, R.dgrJours <= 60 ? 'Delai acceptable' : '> 60 jours -- attention'],
+    ],
+    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 8 },
+    styles: { fontSize: 8 },
+    margin: { left: margin, right: margin },
+  });
+  ys = (doc as any).lastAutoTable.finalY + 5;
+
+  if (fullHistory.length >= 2) {
+    drawTrendLine(doc, margin, ys, colHalf, 20, fullHistory.map(h => h.tmcap ?? 0), ORANGE, 'Evolution TMcap (%)', histLabels);
+    drawTrendLine(doc, margin + colHalf + 8, ys, colHalf - 4, 20, fullHistory.map(h => h.tmnr ?? 0), ROUGE, 'Evolution TMNR (%)', histLabels);
+    ys += 28;
+  }
+
+  // ════════════════════════════════════════════════════════════
+  // S6. PATRIMOINE
+  // ════════════════════════════════════════════════════════════
+  ys = sectionHeader('6. Etat du patrimoine', ys);
+  autoTable(doc, {
+    startY: ys,
+    head: [['Element', 'Montant']],
+    body: [
+      ['Immobilisations brutes (cl. 2)', fmt(R.totalImmo)],
+      ['Amortissements cumules (c/28)', `- ${fmt(R.totalAmortissements)}`],
+      ['VALEUR RESIDUELLE', fmt(R.valeurNette)],
+      ['Variation annuelle', fmt(R.variationPatrimoine)],
+      [`Origines -- Fonds propres (${R.patrimoineOriginesPctFP.toFixed(1)} %)`, fmt(R.patrimoineOriginesFondsPropres)],
+      [`Origines -- Subventions d'investissement (${R.patrimoineOriginesPctSub.toFixed(1)} %)`, fmt(R.patrimoineOriginesSubventions)],
+    ],
+    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 8 },
+    styles: { fontSize: 8 },
+    columnStyles: { 1: { halign: 'right' } },
+    margin: { left: margin, right: pw - margin - colHalf },
+    didParseCell: (d: any) => {
+      if (d.section === 'body' && d.row.index === 2) {
+        d.cell.styles.fontStyle = 'bold';
+        d.cell.styles.fillColor = [240, 243, 248];
+      }
+    },
+  });
+  const patriTableBot = (doc as any).lastAutoTable.finalY;
+
+  // Donut patrimoine
+  if (R.totalImmo > 0) {
+    drawDonut(doc, chartX + chartW / 2, ys + 20, 14, 8, [
+      { value: R.patrimoineOriginesFondsPropres, color: BLEU, label: 'FP' },
+      { value: R.patrimoineOriginesSubventions, color: VERT, label: 'Sub' },
+    ]);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(7);
+    doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
+    doc.text(fmtK(R.valeurNette), chartX + chartW / 2, ys + 21, { align: 'center' });
+    doc.setFontSize(5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(80, 80, 80);
+    doc.text('Valeur nette', chartX + chartW / 2, ys + 25, { align: 'center' });
+  }
+  ys = Math.max(patriTableBot, ys + 45) + 3;
+
+  // ════════════════════════════════════════════════════════════
+  // S7. CREANCES ET DETTES
+  // ════════════════════════════════════════════════════════════
+  ys = sectionHeader('7. Etat des creances et des dettes', ys);
+
+  // Créances table (left)
+  ys = subTitle(ys, 'Creances');
   const creancesBody: string[][] = [];
-  if (R.creancesEtat > 0) creancesBody.push(['État', fmt(R.creancesEtat), pct(R.creancesEtat, R.totalCreances)]);
-  if (R.creancesCollectivite > 0) creancesBody.push(['Collectivité', fmt(R.creancesCollectivite), pct(R.creancesCollectivite, R.totalCreances)]);
+  if (R.creancesEtat > 0) creancesBody.push(['Etat', fmt(R.creancesEtat), pct(R.creancesEtat, R.totalCreances)]);
+  if (R.creancesCollectivite > 0) creancesBody.push(['Collectivite', fmt(R.creancesCollectivite), pct(R.creancesCollectivite, R.totalCreances)]);
   if (R.creancesFamilles > 0) creancesBody.push(['Familles', fmt(R.creancesFamilles), pct(R.creancesFamilles, R.totalCreances)]);
   if (R.creancesAutres > 0) creancesBody.push(['Autres', fmt(R.creancesAutres), pct(R.creancesAutres, R.totalCreances)]);
   creancesBody.push(['TOTAL', fmt(R.totalCreances), '100 %']);
@@ -594,167 +870,236 @@ export function generateRapportACPdf(data: RapportACData) {
     startY: ys,
     head: [['Origine', 'Montant', '%']],
     body: creancesBody,
-    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255 },
-    styles: { fontSize: 8 },
+    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 7.5 },
+    styles: { fontSize: 7.5 },
     columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } },
-    margin: { left: margin, right: margin },
+    margin: { left: margin, right: pw - margin - colHalf },
   });
-  ys = (doc as any).lastAutoTable.finalY + 5;
+  const creancesBot = (doc as any).lastAutoTable.finalY;
 
-  ys = subTitle(ys, 'Dettes');
+  // Dettes table (right)
   const dettesBody: string[][] = [];
   if (R.dettesFournisseurs > 0) dettesBody.push(['Fournisseurs', fmt(R.dettesFournisseurs), pct(R.dettesFournisseurs, R.totalDettes)]);
-  if (R.dettesEtat > 0) dettesBody.push(['État', fmt(R.dettesEtat), pct(R.dettesEtat, R.totalDettes)]);
-  if (R.dettesCollectivite > 0) dettesBody.push(['Collectivité', fmt(R.dettesCollectivite), pct(R.dettesCollectivite, R.totalDettes)]);
+  if (R.dettesEtat > 0) dettesBody.push(['Etat', fmt(R.dettesEtat), pct(R.dettesEtat, R.totalDettes)]);
+  if (R.dettesCollectivite > 0) dettesBody.push(['Collectivite', fmt(R.dettesCollectivite), pct(R.dettesCollectivite, R.totalDettes)]);
   if (R.dettesAutres > 0) dettesBody.push(['Autres', fmt(R.dettesAutres), pct(R.dettesAutres, R.totalDettes)]);
   dettesBody.push(['TOTAL', fmt(R.totalDettes), '100 %']);
   autoTable(doc, {
     startY: ys,
     head: [['Type', 'Montant', '%']],
     body: dettesBody,
-    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255 },
-    styles: { fontSize: 8 },
+    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 7.5 },
+    styles: { fontSize: 7.5 },
     columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' } },
-    margin: { left: margin, right: margin },
+    margin: { left: margin + colHalf + 8, right: margin },
   });
-  ys = (doc as any).lastAutoTable.finalY + 3;
-  if (R.reliquatsSubventions > 0) ys = wrapText(ys, `Reliquats de subventions non consommées : ${fmt(R.reliquatsSubventions)}.`);
+  ys = Math.max(creancesBot, (doc as any).lastAutoTable.finalY) + 5;
+
+  // Comparison bars
+  ys = checkNewPage(ys, 25);
+  const maxCD = Math.max(R.totalCreances, R.totalDettes, 1);
+  drawHBar(doc, margin, ys + 2, contentWidth * 0.5, 4, R.totalCreances, maxCD, ORANGE, 'Creances', fmt(R.totalCreances));
+  drawHBar(doc, margin, ys + 14, contentWidth * 0.5, 4, R.totalDettes, maxCD, BLEU, 'Dettes', fmt(R.totalDettes));
+  ys += 25;
+
+  if (R.reliquatsSubventions > 0) ys = wrapText(ys, `Reliquats de subventions non consommees : ${fmt(R.reliquatsSubventions)}.`);
   if (saisie.commentaireCreances) ys = wrapText(ys, saisie.commentaireCreances);
 
-  // 📊 Barres créances / dettes
-  ys = checkNewPage(ys, 25);
-  ys += 2;
-  ys = subTitle(ys, '📊 Créances vs Dettes');
-  ys += 3;
-  const maxCD = Math.max(R.totalCreances, R.totalDettes);
-  drawHBar(doc, margin, ys, contentWidth * 0.55, 5, R.totalCreances, maxCD, ORANGE, 'Créances', fmt(R.totalCreances));
-  ys += 12;
-  drawHBar(doc, margin, ys, contentWidth * 0.55, 5, R.totalDettes, maxCD, BLEU, 'Dettes', fmt(R.totalDettes));
-  ys += 15;
-
   // ════════════════════════════════════════════════════════════
-  // § 9. RÉSERVES — On same page if room
+  // S8. RESERVES
   // ════════════════════════════════════════════════════════════
   ys = checkNewPage(ys, 50);
-  ys = subTitle(ys, '9. Réserves et affectation du résultat');
-  ys += 2;
+  ys = sectionHeader('8. Reserves et affectation du resultat', ys);
   autoTable(doc, {
     startY: ys,
     head: [['Compte', 'Montant']],
     body: [
-      ['Réserves (c/1068)', fmt(R.reserves)],
+      ['Reserves (c/1068)', fmt(R.reserves)],
       ['Dont SRH (c/106870)', fmt(R.reservesSRH)],
       ['Variation annuelle', fmt(R.prelevementsReserves.variationReserves)],
       ...(R.prelevementsReserves.totalPrelevements > 0 ? [
-        ['Dont prélèvements investissement', fmt(R.prelevementsReserves.prelevementsInvestissement)],
-        ['Dont prélèvements fonctionnement', fmt(R.prelevementsReserves.prelevementsFonctionnement)],
+        ['Dont prelevements investissement', fmt(R.prelevementsReserves.prelevementsInvestissement)],
+        ['Dont prelevements fonctionnement', fmt(R.prelevementsReserves.prelevementsFonctionnement)],
       ] : []),
     ],
-    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255 },
-    styles: { fontSize: 9 },
+    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 8 },
+    styles: { fontSize: 8 },
     columnStyles: { 1: { halign: 'right' } },
-    margin: { left: margin, right: margin },
+    margin: { left: margin, right: pw - margin - colHalf },
   });
-  ys = (doc as any).lastAutoTable.finalY + 5;
+  const resTableBot = (doc as any).lastAutoTable.finalY;
+
+  // Reserves trend
+  if (fullHistory.length >= 2) {
+    drawTrendLine(doc, chartX, ys, chartW, 22, fullHistory.map(h => h.reserves), BLEU, 'Evolution des reserves', histLabels);
+  }
+  ys = Math.max(resTableBot, ys + 30) + 3;
+
   ys = wrapText(ys,
     R.resultatComptable >= 0
-      ? `Le résultat de l'exercice ${etab.exercice} (${fmt(R.resultatComptable)}) sera proposé à l'affectation au compte de réserves (c/1068).`
-      : `Le déficit de l'exercice ${etab.exercice} (${fmt(R.resultatComptable)}) sera imputé sur les réserves (c/1068). Après affectation : ${fmt(R.reserves + R.resultatComptable)}.`
+      ? `Le resultat de l'exercice ${etab.exercice} (${fmt(R.resultatComptable)}) sera propose a l'affectation au compte de reserves (c/1068).`
+      : `Le deficit de l'exercice ${etab.exercice} (${fmt(R.resultatComptable)}) sera impute sur les reserves (c/1068). Apres affectation : ${fmt(R.reserves + R.resultatComptable)}.`
   );
 
   // ════════════════════════════════════════════════════════════
-  // § 10. RATIOS
+  // S9. RATIOS DE GESTION
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('10. Ratios de gestion (M9-6 § IV)', ys);
+  ys = sectionHeader('9. Ratios de gestion (M9-6 S IV)', ys);
+
+  // Professional table with color-coded interpretations
   autoTable(doc, {
     startY: ys,
-    head: [['Ratio', 'Valeur', 'Interprétation']],
+    head: [['Ratio', 'Valeur', 'Seuil', 'Interpretation']],
     body: [
-      ['Liquidité générale', R.ratioLiquiditeGenerale.toFixed(2), R.ratioLiquiditeGenerale >= 1 ? '✓ Couverture correcte' : '⚠ Insuffisante'],
-      ['Liquidité réduite', R.ratioLiquiditeReduite.toFixed(2), R.ratioLiquiditeReduite >= 0.8 ? '✓' : '⚠'],
-      ['Liquidité immédiate', R.ratioLiquiditeImmediate.toFixed(2), R.ratioLiquiditeImmediate >= 0.3 ? '✓' : '⚠'],
-      ['Autonomie financière', `${(R.ratioAutonomieFinanciere * 100).toFixed(1)} %`, R.ratioAutonomieFinanciere >= 0.5 ? '✓ > 50%' : '⚠ < 50%'],
-      ['Solvabilité', `${(R.ratioSolvabilite * 100).toFixed(1)} %`, R.ratioSolvabilite >= 0.5 ? '✓' : '⚠'],
-      ['Endettement', R.ratioEndettement.toFixed(2), R.ratioEndettement < 1 ? '✓' : '⚠ Élevé'],
-      ['Charges personnel / Total', `${(R.ratioChargesPersonnel * 100).toFixed(1)} %`, '—'],
-      ['Couverture charges par FDR', `${(R.ratioCouvertureCharges * 100).toFixed(1)} %`, R.ratioCouvertureCharges >= 0.08 ? '✓ > 30 j' : '⚠ < 30 j'],
+      ['Liquidite generale', R.ratioLiquiditeGenerale.toFixed(2), '>= 1,00', R.ratioLiquiditeGenerale >= 1 ? 'Couverture correcte' : 'Insuffisante'],
+      ['Liquidite reduite', R.ratioLiquiditeReduite.toFixed(2), '>= 0,80', R.ratioLiquiditeReduite >= 0.8 ? 'OK' : 'Insuffisante'],
+      ['Liquidite immediate', R.ratioLiquiditeImmediate.toFixed(2), '>= 0,30', R.ratioLiquiditeImmediate >= 0.3 ? 'OK' : 'A surveiller'],
+      ['Autonomie financiere', `${(R.ratioAutonomieFinanciere * 100).toFixed(1)} %`, '>= 50 %', R.ratioAutonomieFinanciere >= 0.5 ? '> 50%' : '< 50%'],
+      ['Solvabilite', `${(R.ratioSolvabilite * 100).toFixed(1)} %`, '>= 50 %', R.ratioSolvabilite >= 0.5 ? 'OK' : 'A surveiller'],
+      ['Endettement', R.ratioEndettement.toFixed(2), '< 1,00', R.ratioEndettement < 1 ? 'OK' : 'Eleve'],
+      ['Charges personnel / Total', `${(R.ratioChargesPersonnel * 100).toFixed(1)} %`, '--', 'Information'],
+      ['Couverture charges par FDR', `${(R.ratioCouvertureCharges * 100).toFixed(1)} %`, '>= 8 %', R.ratioCouvertureCharges >= 0.08 ? '> 30 jours' : '< 30 jours'],
+      ['Taux execution depenses', `${(R.tauxExecCharges * 100).toFixed(1)} %`, '>= 85 %', R.tauxExecCharges >= 0.85 ? 'Conforme' : 'Sous-consommation'],
+      ['Taux execution recettes', `${(R.tauxExecProduits * 100).toFixed(1)} %`, '>= 90 %', R.tauxExecProduits >= 0.9 ? 'Conforme' : 'Sous-estimation'],
     ],
-    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255 },
-    styles: { fontSize: 8 },
+    headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 7.5 },
+    styles: { fontSize: 7.5 },
+    columnStyles: { 1: { halign: 'right' }, 2: { halign: 'center' } },
     margin: { left: margin, right: margin },
+    didParseCell: (d: any) => {
+      if (d.section === 'body' && d.column.index === 3) {
+        const val = d.cell.raw as string;
+        if (val.includes('Insuffisante') || val.includes('Eleve') || val.includes('Sous')) {
+          d.cell.styles.textColor = [ROUGE[0], ROUGE[1], ROUGE[2]];
+        } else if (val !== 'Information' && val !== '--') {
+          d.cell.styles.textColor = [VERT[0], VERT[1], VERT[2]];
+        }
+      }
+    },
   });
   ys = (doc as any).lastAutoTable.finalY + 8;
 
-  // 📊 Radar simplifié → barres horizontales pour les ratios clés
-  ys = subTitle(ys, '📊 Indicateurs de santé financière');
-  ys += 3;
+  // Horizontal bars for key ratios
+  ys = checkNewPage(ys, 50);
+  ys = subTitle(ys, 'Indicateurs de sante financiere');
+  ys += 2;
   const ratioItems = [
-    { label: 'Liquidité', val: Math.min(R.ratioLiquiditeGenerale, 3), max: 3, color: R.ratioLiquiditeGenerale >= 1 ? VERT : ROUGE, display: R.ratioLiquiditeGenerale.toFixed(2) },
-    { label: 'Autonomie fin.', val: R.ratioAutonomieFinanciere * 100, max: 100, color: R.ratioAutonomieFinanciere >= 0.5 ? VERT : ROUGE, display: `${(R.ratioAutonomieFinanciere * 100).toFixed(1)}%` },
-    { label: 'Taux exec. charges', val: R.tauxExecCharges, max: 100, color: R.tauxExecCharges >= 85 ? VERT : ORANGE, display: `${R.tauxExecCharges.toFixed(1)}%` },
-    { label: 'Taux exec. produits', val: R.tauxExecProduits, max: 100, color: R.tauxExecProduits >= 85 ? VERT : ORANGE, display: `${R.tauxExecProduits.toFixed(1)}%` },
+    { label: 'Liquidite', val: Math.min(R.ratioLiquiditeGenerale, 3), max: 3, color: (R.ratioLiquiditeGenerale >= 1 ? VERT : ROUGE) as RGB, display: R.ratioLiquiditeGenerale.toFixed(2) },
+    { label: 'Autonomie fin.', val: R.ratioAutonomieFinanciere * 100, max: 100, color: (R.ratioAutonomieFinanciere >= 0.5 ? VERT : ROUGE) as RGB, display: `${(R.ratioAutonomieFinanciere * 100).toFixed(1)}%` },
+    { label: 'Tx exec. charges', val: R.tauxExecCharges * 100, max: 100, color: (R.tauxExecCharges >= 0.85 ? VERT : ORANGE) as RGB, display: `${(R.tauxExecCharges * 100).toFixed(1)}%` },
+    { label: 'Tx exec. produits', val: R.tauxExecProduits * 100, max: 100, color: (R.tauxExecProduits >= 0.9 ? VERT : ORANGE) as RGB, display: `${(R.tauxExecProduits * 100).toFixed(1)}%` },
   ];
   for (const ri of ratioItems) {
     drawHBar(doc, margin, ys, contentWidth * 0.5, 4, ri.val, ri.max, ri.color, ri.label, ri.display);
-    ys += 11;
+    ys += 10;
   }
 
   // ════════════════════════════════════════════════════════════
-  // § 11. PLURIANNUEL
+  // S10. PLURIANNUEL (COMPLET)
   // ════════════════════════════════════════════════════════════
-  if (history.length > 0) {
-    ys = sectionHeader('11. Evolution pluriannuelle', ys);
-    const sortedHistory = [...history].sort((a, b) => a.exercice - b.exercice);
+  if (fullHistory.length > 1) {
+    ys = sectionHeader('10. Evolution pluriannuelle (Piece 14)', ys);
+
+    // Full table
     autoTable(doc, {
       startY: ys,
-      head: [['Exercice', 'FDR', 'Jours FDR', 'BFR', 'Tresorerie', 'Jours Treso', 'TMCAP (%)', 'TMNR (%)', 'Resultat', 'CAF/IAF']],
-      body: sortedHistory.map(h => [
+      head: [['Exercice', 'FDR', 'Jours FDR', 'BFR', 'Tresorerie', 'Jours Treso', 'TMcap %', 'TMNR %', 'Resultat', 'CAF/IAF', 'Reserves']],
+      body: fullHistory.map(h => [
         String(h.exercice), fmt(h.fdr), String(Math.round(h.jours_autonomie)),
         fmt(h.bfr), fmt(h.tresorerie), String(Math.round(h.jours_tresorerie || 0)),
         (h.tmcap || 0).toFixed(1), (h.tmnr || 0).toFixed(1),
-        fmt(h.resultat || 0), fmt(h.caf),
+        fmt(h.resultat || 0), fmt(h.caf), fmt(h.reserves),
       ]),
-      headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 7 },
-      styles: { fontSize: 7 },
-      columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' }, 6: { halign: 'right' }, 7: { halign: 'right' }, 8: { halign: 'right' }, 9: { halign: 'right' } },
+      headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 6.5 },
+      styles: { fontSize: 6.5 },
+      columnStyles: Object.fromEntries(Array.from({ length: 10 }, (_, i) => [i + 1, { halign: 'right' as const }])),
       margin: { left: margin, right: margin },
+      // Highlight current year row
+      didParseCell: (d: any) => {
+        if (d.section === 'body') {
+          const rowExercice = fullHistory[d.row.index]?.exercice;
+          if (rowExercice === etab.exercice) {
+            d.cell.styles.fontStyle = 'bold';
+            d.cell.styles.fillColor = [235, 240, 255];
+          }
+        }
+      },
     });
     ys = (doc as any).lastAutoTable.finalY + 8;
 
-    // Graphique pluriannuel FDR/Tresorerie
-    if (sortedHistory.length >= 2) {
-      ys = subTitle(ys, 'Tendance FDR / Tresorerie');
-      ys += 3;
-      const maxHist = Math.max(...sortedHistory.map(h => Math.max(Math.abs(h.fdr), Math.abs(h.tresorerie))));
-      for (const h of sortedHistory) {
-        drawHBar(doc, margin, ys, contentWidth * 0.35, 3, h.fdr, maxHist, BLEU, `${h.exercice} FDR`, fmt(h.fdr));
-        drawHBar(doc, margin + contentWidth * 0.5, ys, contentWidth * 0.35, 3, h.tresorerie, maxHist, VERT, `${h.exercice} Treso`, fmt(h.tresorerie));
-        ys += 9;
+    // Four trend charts in 2x2 grid
+    ys = checkNewPage(ys, 60);
+    ys = subTitle(ys, 'Graphiques d\'evolution');
+    ys += 2;
+    const chartTrendW = colHalf - 2;
+    const chartTrendH = 24;
+    drawTrendLine(doc, margin, ys, chartTrendW, chartTrendH, fullHistory.map(h => h.fdr), BLEU, 'FDR', histLabels);
+    drawTrendLine(doc, margin + colHalf + 6, ys, chartTrendW, chartTrendH, fullHistory.map(h => h.tresorerie), VERT, 'Tresorerie', histLabels);
+    ys += chartTrendH + 12;
+    drawTrendLine(doc, margin, ys, chartTrendW, chartTrendH, fullHistory.map(h => h.caf), BLEU_CLAIR, 'CAF/IAF', histLabels);
+    drawTrendLine(doc, margin + colHalf + 6, ys, chartTrendW, chartTrendH, fullHistory.map(h => h.reserves), ORANGE, 'Reserves', histLabels);
+    ys += chartTrendH + 10;
+
+    // Variations table
+    if (fullHistory.length >= 2) {
+      ys = checkNewPage(ys, 35);
+      ys = subTitle(ys, 'Variations annuelles');
+      const varBody: string[][] = [];
+      for (let i = 1; i < fullHistory.length; i++) {
+        const prev = fullHistory[i - 1];
+        const curr = fullHistory[i];
+        const varFdr = curr.fdr - prev.fdr;
+        const varTreso = curr.tresorerie - prev.tresorerie;
+        const varCaf = curr.caf - prev.caf;
+        const varRes = curr.reserves - prev.reserves;
+        varBody.push([
+          `${prev.exercice} -> ${curr.exercice}`,
+          fmt(varFdr), prev.fdr !== 0 ? `${((varFdr / Math.abs(prev.fdr)) * 100).toFixed(1)} %` : '--',
+          fmt(varTreso), fmt(varCaf), fmt(varRes),
+        ]);
       }
-      ys += 5;
+      autoTable(doc, {
+        startY: ys,
+        head: [['Periode', 'Var. FDR', '% FDR', 'Var. Treso', 'Var. CAF', 'Var. Reserves']],
+        body: varBody,
+        headStyles: { fillColor: [BLEU[0], BLEU[1], BLEU[2]], textColor: 255, fontSize: 7 },
+        styles: { fontSize: 7 },
+        columnStyles: { 1: { halign: 'right' }, 2: { halign: 'right' }, 3: { halign: 'right' }, 4: { halign: 'right' }, 5: { halign: 'right' } },
+        margin: { left: margin, right: margin },
+        didParseCell: (d: any) => {
+          if (d.section === 'body' && d.column.index >= 1) {
+            const rawVal = d.cell.raw as string;
+            if (rawVal.startsWith('-') || rawVal.startsWith('- ')) {
+              d.cell.styles.textColor = [ROUGE[0], ROUGE[1], ROUGE[2]];
+            }
+          }
+        },
+      });
+      ys = (doc as any).lastAutoTable.finalY + 5;
     }
   }
 
   // ════════════════════════════════════════════════════════════
-  // § 12. OBSERVATIONS
+  // S11. OBSERVATIONS
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('12. Observations de l\'agent comptable', ys);
+  ys = sectionHeader('11. Observations de l\'agent comptable', ys);
   if (aiText) {
-    ys = wrapText(22, aiText);
+    ys = wrapText(ys, aiText);
   }
   if (saisie.commentaireGeneral) {
     ys = wrapText(ys, saisie.commentaireGeneral);
   }
   if (!aiText && !saisie.commentaireGeneral) {
-    ys = wrapText(22, '(Observations à compléter par l\'agent comptable)');
+    ys = wrapText(ys, '(Observations a completer par l\'agent comptable)');
   }
 
   // ════════════════════════════════════════════════════════════
   // SIGNATURE
   // ════════════════════════════════════════════════════════════
-  if (ys > ph - 50) { doc.addPage(); ys = 20; }
-  ys += 10;
-  doc.setDrawColor(0);
+  ys = checkNewPage(ys, 45);
+  ys += 8;
+  doc.setDrawColor(BLEU[0], BLEU[1], BLEU[2]);
+  doc.setLineWidth(0.5);
   doc.line(margin, ys, pw - margin, ys);
   ys += 8;
   doc.setFontSize(10);
@@ -763,29 +1108,31 @@ export function generateRapportACPdf(data: RapportACData) {
   doc.text("L'agent comptable", margin, ys);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
-  doc.text(`Fait à ${etab.commune || '………………'},`, pw - margin - 60, ys);
-  doc.text(`le ……… / ……… / ${etab.exercice + 1}`, pw - margin - 60, ys + 5);
-  ys += 20;
-  doc.text(etab.agentComptable || '……………………', margin, ys);
+  doc.text(sanitize(`Fait a ${etab.commune || '............'},`), pw - margin - 60, ys);
+  doc.text(`le ......... / ......... / ${etab.exercice + 1}`, pw - margin - 60, ys + 5);
+  ys += 18;
+  doc.text(sanitize(etab.agentComptable || '..................'), margin, ys);
   doc.setFontSize(8);
   doc.setTextColor(GRIS[0], GRIS[1], GRIS[2]);
   doc.text('Signature et cachet', margin, ys + 5);
 
   // ════════════════════════════════════════════════════════════
-  // FOOTERS
+  // FOOTERS on all pages
   // ════════════════════════════════════════════════════════════
   const pageCount = doc.getNumberOfPages();
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
+    // Tricolore bottom
     doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
     doc.rect(0, ph - 3, pw / 3, 3, 'F');
     doc.setFillColor(255, 255, 255);
     doc.rect(pw / 3, ph - 3, pw / 3, 3, 'F');
     doc.setFillColor(ROUGE[0], ROUGE[1], ROUGE[2]);
     doc.rect((2 * pw) / 3, ph - 3, pw / 3, 3, 'F');
-    doc.setFontSize(7);
+    // Text
+    doc.setFontSize(6.5);
     doc.setTextColor(GRIS[0], GRIS[1], GRIS[2]);
-    doc.text(`${etab.nom} — Rapport de l'agent comptable — Exercice ${etab.exercice}`, pw / 2, ph - 6, { align: 'center' });
+    doc.text(sanitize(`${etab.nom} -- Rapport de l'agent comptable -- Exercice ${etab.exercice}`), pw / 2, ph - 6, { align: 'center' });
     doc.text(`Page ${i} / ${pageCount}`, pw - margin, ph - 6, { align: 'right' });
   }
 

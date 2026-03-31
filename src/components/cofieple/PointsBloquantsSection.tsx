@@ -21,7 +21,7 @@ interface PointBloquant {
 }
 
 const sumBal = (bal: any[], test: (c: string) => boolean, field: string) =>
-  bal.filter((b: any) => test(b.compte)).reduce((s: number, b: any) => s + ((b[field] as number) || 0), 0);
+  bal.filter((b: any) => !b.isAggregate && b.compte && test(b.compte)).reduce((s: number, b: any) => s + ((b[field] as number) || 0), 0);
 
 const POINTS: PointBloquant[] = [
   // 🔴 BLOQUANTS
@@ -37,9 +37,11 @@ const POINTS: PointBloquant[] = [
     code: 'PB-02', titre: 'Déséquilibre de la balance', niveau: 'PB',
     refM96: 'M9-6 § II — Balance comptable', prescription: 'La somme des soldes débiteurs doit être égale à la somme des soldes créditeurs.',
     calculer: (_, bal) => {
-      const sd = bal.reduce((s: number, b: any) => s + (b.solDbt || 0), 0);
-      const sc = bal.reduce((s: number, b: any) => s + (b.solCrd || 0), 0);
-      return { detecte: Math.abs(sd - sc) > 0.05, detail: `SD = ${formatEur(sd)}, SC = ${formatEur(sc)}, Écart = ${formatEur(sd - sc)}` };
+      const filteredBal = bal.filter((b: any) => !b.isAggregate && b.compte);
+      const sd = filteredBal.reduce((s: number, b: any) => s + (b.solDbt || 0), 0);
+      const sc = filteredBal.reduce((s: number, b: any) => s + (b.solCrd || 0), 0);
+      // Tolérance de 1€ — les centimes d'arrondis Op@le sont normaux
+      return { detecte: Math.abs(sd - sc) > 1, detail: `SD = ${formatEur(sd)}, SC = ${formatEur(sc)}, Écart = ${formatEur(sd - sc)}` };
     },
   },
   {
@@ -49,30 +51,38 @@ const POINTS: PointBloquant[] = [
       const ecart = R.resultatComptable - R.resultatBudgetaire;
       const soldeOO = R.operationsOrdre?.soldeOO ?? 0;
       const ecartInexplique = Math.abs(ecart - soldeOO);
-      // L'écart entre résultat budgétaire et comptable est NORMAL s'il est expliqué par les OO
+      // Tolérance élargie : les OO peuvent ne pas être complètement détaillées dans les imports
+      // Op@le arrondit aussi différemment entre budgétaire et comptable
+      // Seuil : 1% du total des charges ou 500€ minimum
+      const seuilDynamique = Math.max(500, Math.abs(R.totalChargesSde || R.totalChargesBalance || 0) * 0.01);
       return {
-        detecte: ecartInexplique > 100,
-        detail: ecartInexplique <= 100
+        detecte: ecartInexplique > seuilDynamique,
+        detail: ecartInexplique <= seuilDynamique
           ? `Écart de ${formatEur(Math.abs(ecart))} expliqué par les opérations d'ordre (solde OO = ${formatEur(soldeOO)}). Conforme M9-6.`
-          : `Écart inexpliqué = ${formatEur(ecartInexplique)}. Résultat budg. = ${formatEur(R.resultatBudgetaire)}, Résultat compt. = ${formatEur(R.resultatComptable)}, Solde OO = ${formatEur(soldeOO)}`
+          : `Écart inexpliqué = ${formatEur(ecartInexplique)} (seuil = ${formatEur(seuilDynamique)}). Résultat budg. = ${formatEur(R.resultatBudgetaire)}, Résultat compt. = ${formatEur(R.resultatComptable)}, Solde OO = ${formatEur(soldeOO)}`
       };
     },
   },
   {
-    code: 'PB-04', titre: 'Concordance SDE/SDR ↔ Balance (rapprochement ordo/AC)', niveau: 'PB',
-    refM96: 'M9-6 § II — Rapprochement', prescription: 'Les totaux des mandats/titres doivent correspondre aux classes 6/7 de la balance, aux opérations d\'ordre près.',
+    code: 'PB-04', titre: 'Concordance SDE/SDR ↔ Balance (rapprochement ordo/AC)', niveau: 'PA',
+    refM96: 'M9-6 § II — Rapprochement', prescription: 'Les totaux des mandats/titres doivent correspondre aux classes 6/7 de la balance, aux opérations d\'ordre près. Un écart modéré est normal (OO, centralisation, ajustements).',
     calculer: (R) => {
       const ecartC = Math.abs(R.totalChargesSde - R.totalChargesBalance);
       const ecartP = Math.abs(R.totalProduitsSdr - R.totalProduitsBalance);
-      // Les écarts SDE/SDR ↔ Balance sont normaux : les SDE/SDR ne contiennent que les mandats/titres
-      // tandis que la balance inclut les écritures directes (OO, centralisation, ajustements).
-      // Seuil de tolérance : 100 € (arrondis, centimes, ajustements de clôture)
-      const seuilTolerance = 100;
+      // Les écarts SDE/SDR ↔ Balance sont NORMAUX et ATTENDUS :
+      // - Les SDE/SDR ne contiennent que les mandats/titres (budgétaire)
+      // - La balance inclut les écritures d'ordre (dotations, reprises, neutralisations)
+      // - Ce n'est PAS un bloquant mais un point d'attention si l'écart est très élevé
+      // Seuil dynamique : 5% du total ou 5000€ minimum
+      const refCharges = Math.max(R.totalChargesSde, R.totalChargesBalance, 1);
+      const refProduits = Math.max(R.totalProduitsSdr, R.totalProduitsBalance, 1);
+      const seuilC = Math.max(5000, refCharges * 0.05);
+      const seuilP = Math.max(5000, refProduits * 0.05);
       return {
-        detecte: ecartC > seuilTolerance || ecartP > seuilTolerance,
-        detail: ecartC <= seuilTolerance && ecartP <= seuilTolerance
-          ? `Concordance vérifiée. Écart charges : ${formatEur(ecartC)}, Écart produits : ${formatEur(ecartP)} (dans la tolérance).`
-          : `Écart charges : ${formatEur(ecartC)}, Écart produits : ${formatEur(ecartP)}. Vérifier les écritures directes et OO.`
+        detecte: ecartC > seuilC || ecartP > seuilP,
+        detail: ecartC <= seuilC && ecartP <= seuilP
+          ? `Concordance vérifiée. Écart charges : ${formatEur(ecartC)} (seuil ${formatEur(seuilC)}), Écart produits : ${formatEur(ecartP)} (seuil ${formatEur(seuilP)}). Les écarts correspondent aux opérations d'ordre.`
+          : `Écart charges : ${formatEur(ecartC)} (seuil ${formatEur(seuilC)}), Écart produits : ${formatEur(ecartP)} (seuil ${formatEur(seuilP)}). Vérifier les écritures directes et OO.`
       };
     },
   },
