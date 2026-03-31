@@ -317,19 +317,20 @@ export function TableauxSection() {
           <CardContent className="p-5 space-y-2">
             <FinancialRow label="CAF/IAF budgétaire" value={R.cafBudgetaire} highlight formatFn={formatEur} />
             <FinancialRow label="CAF/IAF comptable" value={R.cafComptable} formatFn={formatEur} />
-            <FinancialRow label="Jours d'autonomie financière" value={R.joursAutonomie} formatFn={v => `${Math.round(v)} jours`} />
+            <FinancialRow label="Jours de FDR" value={R.joursFdr} formatFn={v => `${v.toFixed(2)} jours`} />
+            <FinancialRow label="Jours de Trésorerie" value={R.joursTresorerie} formatFn={v => `${v.toFixed(2)} jours`} />
             <FinancialRow label="Ratio FDR / BFR" value={R.ratioFdrBfr} formatFn={v => v.toFixed(2)} />
             <FinancialRow label="Ressources propres (Cl. 70-76)" value={R.ressourcesPropres} formatFn={formatEur} />
             <FinancialRow label="Recettes auto-générées (Cl. 70-73)" value={R.recettesAutogenerees} formatFn={formatEur} />
             {/* Seuil réglementaire des 30 jours */}
             <div className={`text-xs font-semibold mt-2 px-2 py-1.5 rounded ${
-              R.joursAutonomie >= 30
+              R.joursFdr >= 30
                 ? 'text-emerald-700 bg-emerald-100 dark:bg-emerald-900/20'
                 : 'text-destructive bg-destructive/10'
             }`}>
-              {R.joursAutonomie >= 30
-                ? '✅ Au-dessus du seuil d\'alerte de 30 jours d\'autonomie'
-                : `⚠️ En dessous du seuil d'alerte de 30 jours (${Math.round(R.joursAutonomie)} j.) — Situation à signaler`}
+              {R.joursFdr >= 30
+                ? `✅ Au-dessus du seuil d'alerte de 30 jours de FDR (${R.joursFdr.toFixed(2)} j.)`
+                : `⚠️ En dessous du seuil d'alerte de 30 jours (${R.joursFdr.toFixed(2)} j.) — Situation à signaler`}
             </div>
           </CardContent>
         </Card>
