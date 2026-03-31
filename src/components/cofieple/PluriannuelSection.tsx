@@ -36,6 +36,9 @@ interface ExerciceData {
   taux_exec_produits: number;
   total_charges_reel: number;
   total_produits_reel: number;
+  jours_tresorerie: number;
+  tmcap: number;
+  tmnr: number;
 }
 
 const EMPTY_ROW = (exercice: number): ExerciceData => ({
@@ -43,20 +46,24 @@ const EMPTY_ROW = (exercice: number): ExerciceData => ({
   jours_autonomie: 0, reserves: 0, score_risque: 0,
   taux_exec_charges: 0, taux_exec_produits: 0,
   total_charges_reel: 0, total_produits_reel: 0,
+  jours_tresorerie: 0, tmcap: 0, tmnr: 0,
 });
 
-const FIELDS: { key: keyof ExerciceData; label: string; unit: string }[] = [
-  { key: 'resultat', label: 'Résultat budgétaire', unit: '€' },
-  { key: 'fdr', label: 'Fonds de roulement (FDR)', unit: '€' },
-  { key: 'bfr', label: 'Besoin en fonds de roulement (BFR)', unit: '€' },
-  { key: 'tresorerie', label: 'Trésorerie nette', unit: '€' },
-  { key: 'caf', label: 'CAF / IAF budgétaire', unit: '€' },
-  { key: 'jours_autonomie', label: "Jours d'autonomie financière", unit: 'j.' },
-  { key: 'reserves', label: 'Réserves disponibles', unit: '€' },
-  { key: 'total_charges_reel', label: 'Total charges réelles', unit: '€' },
-  { key: 'total_produits_reel', label: 'Total produits réels', unit: '€' },
-  { key: 'taux_exec_charges', label: 'Taux exéc. charges', unit: '%' },
-  { key: 'taux_exec_produits', label: 'Taux exéc. produits', unit: '%' },
+// Pièce 14 indicators
+const FIELDS_PIECE14: { key: keyof ExerciceData; label: string; unit: string }[] = [
+  { key: 'fdr', label: 'Fonds de roulement', unit: '€' },
+  { key: 'jours_autonomie', label: 'Jours de fonds de roulement', unit: 'j.' },
+  { key: 'bfr', label: 'Besoin en fonds de roulement', unit: '€' },
+  { key: 'tresorerie', label: 'Trésorerie', unit: '€' },
+  { key: 'jours_tresorerie', label: 'Jours de trésorerie', unit: 'j.' },
+  { key: 'tmcap', label: 'Taux moyen de charge à payer', unit: '%' },
+  { key: 'tmnr', label: 'Taux de non recouvrement', unit: '%' },
+];
+
+// Pièce 5 indicators
+const FIELDS_PIECE5: { key: keyof ExerciceData; label: string; unit: string }[] = [
+  { key: 'resultat', label: 'Résultat', unit: '€' },
+  { key: 'caf', label: 'CAF / IAF', unit: '€' },
 ];
 
 export function PluriannuelSection() {

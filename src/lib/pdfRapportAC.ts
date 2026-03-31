@@ -67,7 +67,7 @@ interface RapportACData {
     commentaireGeneral: string;
   };
   aiText: string;
-  history: { exercice: number; fdr: number; bfr: number; tresorerie: number; caf: number; reserves: number; jours_autonomie: number }[];
+  history: { exercice: number; fdr: number; bfr: number; tresorerie: number; caf: number; reserves: number; jours_autonomie: number; jours_tresorerie?: number; tmcap?: number; tmnr?: number; resultat?: number }[];
   nbAnom: number; nbBloq: number;
 }
 
