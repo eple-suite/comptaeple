@@ -910,6 +910,7 @@ export function generateRapportACPdf(data: RapportACData) {
     doc.text('Valeur nette', chartX + chartW / 2, ys + 25, { align: 'center' });
   }
   ys = Math.max(patriTableBot, ys + 45) + 3;
+  ys = drawCommentBox(ys, 'Patrimoine', saisie.commentairePatrimoine);
 
   // ════════════════════════════════════════════════════════════
   // S7. CREANCES ET DETTES
