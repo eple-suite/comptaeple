@@ -267,19 +267,26 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // HELPER FUNCTIONS
   // ════════════════════════════════════════════════════════════
-  function sectionHeader(title: string, forceNewPage = false): number {
-    // Only add a new page if forced or if less than 60mm remain
-    if (forceNewPage || doc.internal.pageSize.getHeight() - (doc as any).__lastY < 60) {
+  function sectionHeader(title: string, currentY: number = ph): number {
+    // Add a new page only if less than 70mm remain on current page
+    if (currentY > ph - 70) {
       doc.addPage();
+      doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
+      doc.rect(0, 0, pw, 14, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(title.toUpperCase(), pw / 2, 9, { align: 'center' });
+      return 22;
     }
-    const yStart = (doc as any).__lastY && !forceNewPage ? (doc as any).__lastY + 6 : 0;
+    // Inline section header on current page
     doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
-    doc.rect(0, yStart, pw, 14, 'F');
+    doc.rect(margin, currentY, contentWidth, 10, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text(title.toUpperCase(), pw / 2, yStart + 9, { align: 'center' });
-    return yStart + 22;
+    doc.text(title.toUpperCase(), pw / 2, currentY + 7, { align: 'center' });
+    return currentY + 16;
   }
 
   function subTitle(y: number, text: string): number {
