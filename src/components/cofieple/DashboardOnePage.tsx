@@ -90,7 +90,7 @@ export function DashboardOnePage({ historique = [] }: Props) {
           sub={bfr <= 0 ? 'Négatif ✓' : 'À couvrir'}
           color={bfr <= 0 ? 'green' : bfr < fdr ? 'amber' : 'red'} />
         <GaugeKPI label="Trésorerie" value={formatEur(treso)}
-          sub={`${Math.round(jours)} jours`}
+          sub={`${jours.toFixed(2)} jours`}
           color={jours >= 30 ? 'green' : jours > 0 ? 'amber' : 'red'}
           trend={historique.length > 0 ? (treso > historique[historique.length - 1].tresorerie ? 'up' : treso < historique[historique.length - 1].tresorerie ? 'down' : 'stable') : undefined} />
         <GaugeKPI label="CAF/IAF" value={formatEur(caf)}
