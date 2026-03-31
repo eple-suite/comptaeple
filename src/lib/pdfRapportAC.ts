@@ -670,6 +670,7 @@ export function generateRapportACPdf(data: RapportACData) {
     ys = (doc as any).lastAutoTable.finalY + 3;
   }
   if (saisie.explicationsResultat) ys = wrapText(ys, saisie.explicationsResultat);
+  ys = drawCommentBox(ys, 'Resultat et autofinancement', saisie.explicationsResultat);
 
   // ════════════════════════════════════════════════════════════
   // S2. FONDS DE ROULEMENT
