@@ -63,8 +63,8 @@ const Indicators = () => {
       { label: "FDR mobilisable", value: formatCurrency(r.fdrMobilisable), formula: "FDR - Stocks - Créances anc." },
       { label: "TMcap", value: formatPercent(r.tmcap), formula: "Dettes fourn. / Total SDE × 100" },
       { label: "TMnr", value: formatPercent(r.tmnr), formula: "Créances Cl.4 / Total SDR × 100" },
-      { label: "Jours FDR", value: `${Math.round(r.joursFdr)} j`, formula: "FDR / (Ch. fonct. / 365)" },
-      { label: "Jours trésorerie", value: `${Math.round(r.joursTresorerie)} j`, formula: "Trésorerie / (Ch. fonct. / 365)" },
+      { label: "Jours FDR", value: `${r.joursFdr.toFixed(2)} j`, formula: "(FDR × 365) / DRFN" },
+      { label: "Jours trésorerie", value: `${r.joursTresorerie.toFixed(2)} j`, formula: "(Trésorerie × 365) / DRFN" },
       { label: "Variation FDR budg.", value: formatCurrency(r.varFdrCaf), formula: "CAF - Emplois d'investissement" },
     ];
   }, [r]);

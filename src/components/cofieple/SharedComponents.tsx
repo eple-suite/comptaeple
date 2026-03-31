@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 export function EmptyState({ msg }: { msg: string }) {
   return (
@@ -17,7 +18,7 @@ export function EmptyState({ msg }: { msg: string }) {
 }
 
 export function KPICard({
-  label, value, color, icon, sub, isText = false,
+  label, value, color, icon, sub, isText = false, tooltip,
 }: {
   label: string;
   value: string | number;
@@ -25,6 +26,7 @@ export function KPICard({
   icon?: string;
   sub?: string;
   isText?: boolean;
+  tooltip?: string;
 }) {
   const borderColors: Record<string, string> = {
     green: 'border-l-emerald-500',
@@ -41,7 +43,7 @@ export function KPICard({
     purple: 'text-purple-600 dark:text-purple-400',
   };
 
-  return (
+  const cardContent = (
     <Card className={`border-l-4 ${borderColors[color]}`}>
       <CardContent className="p-4">
         <div className="text-xs text-muted-foreground font-semibold uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
@@ -53,6 +55,21 @@ export function KPICard({
       </CardContent>
     </Card>
   );
+
+  if (tooltip) {
+    return (
+      <TooltipProvider delayDuration={300}>
+        <Tooltip>
+          <TooltipTrigger asChild>{cardContent}</TooltipTrigger>
+          <TooltipContent side="bottom" className="max-w-xs text-xs">
+            <p>{tooltip}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  return cardContent;
 }
 
 export function FinancialBlock({

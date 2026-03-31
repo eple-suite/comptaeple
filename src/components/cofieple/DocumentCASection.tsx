@@ -201,11 +201,13 @@ export function DocumentCASection() {
           {/* KPI Cards */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
             <KPICard label="Fonds de roulement" value={formatEur(fdr)} color={fdr >= 0 ? 'green' : 'red'}
-              icon="🏦" sub={`${Math.round(R.joursFdr)} jours`} isText />
+              icon="🏦" sub={`${R.joursFdr.toFixed(2)} jours`} isText
+              tooltip={`Nombre de jours de fonctionnement couverts par le FDR, sur la base de la DRFN. Calcul conforme Op@le — Pièce 14 M9-6.`} />
             <KPICard label="Besoin en FDR" value={formatEur(R.bfr)} color={R.bfr <= fdr ? 'green' : 'amber'}
               icon="📦" isText />
             <KPICard label="Trésorerie nette" value={formatEur(treso)} color={treso >= 0 ? 'green' : 'red'}
-              icon="💰" sub={`${Math.round(R.joursAutonomie)} j. autonomie`} isText />
+              icon="💰" sub={`${R.joursTresorerie.toFixed(2)} j. trésorerie`} isText
+              tooltip={`Nombre de jours de fonctionnement couverts par la Trésorerie, sur la base de la DRFN. Calcul conforme Op@le — Pièce 14 M9-6.`} />
             <KPICard label="CAF budgétaire" value={formatEur(caf)} color={caf >= 0 ? 'green' : 'red'}
               icon={caf >= 0 ? '📈' : '📉'} isText />
             <KPICard label="Réserves" value={formatEur(R.reserves)} color="green"

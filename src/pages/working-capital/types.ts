@@ -76,7 +76,7 @@ export function calculerAnalyse(donnees: DonneesFinancieres, prelevements: Prele
 
   const fdrApresPrelevements = fondsRoulementMobilisable - totalPrelevementsVotes;
   const chargesJournalieres = donnees.chargesAnnuelles / 365;
-  const joursfonctionnement = chargesJournalieres > 0 ? fdrApresPrelevements / chargesJournalieres : 0;
+  const joursfonctionnement = chargesJournalieres > 0 ? (fdrApresPrelevements * 365) / donnees.chargesAnnuelles : 0;
   const seuilCritique = chargesJournalieres * SEUIL_CRITIQUE_JOURS;
   const margePrelevement = Math.max(0, fondsRoulementMobilisable - seuilCritique);
 

@@ -47,8 +47,12 @@ export function VueEnsembleSection() {
   // Safe access to REPROFI properties
   const joursFdr = R.joursFdr ?? 0;
   const joursTreso = R.joursTresorerie ?? 0;
+  const drfn = R.drfn ?? 0;
+  const drfnJour = drfn > 0 ? (drfn / 365) : 0;
   const tmcap = R.tmcap ?? 0;
   const tmnr = R.tmnr ?? 0;
+  const tooltipFdr = `Nombre de jours de fonctionnement couverts par le FDR, sur la base d'un coût journalier moyen de ${drfnJour > 0 ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(drfnJour) : '—'}/jour. Calcul conforme Op@le — Pièce 14 M9-6.`;
+  const tooltipTreso = `Nombre de jours de fonctionnement couverts par la Trésorerie, sur la base d'un coût journalier moyen de ${drfnJour > 0 ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(drfnJour) : '—'}/jour. Calcul conforme Op@le — Pièce 14 M9-6.`;
   const legacyBrokenImports =
     (sde.length > 0 && sde.every((row) => !row.compte && row.budget === 0 && row.realise === 0)) ||
     (sdr.length > 0 && sdr.every((row) => !row.compte && row.budget === 0 && row.realise === 0));
@@ -128,11 +132,11 @@ export function VueEnsembleSection() {
       {/* 6 KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
         <KPICard label="Fonds de roulement" value={formatEur(fdr)} color={fdr >= 0 ? 'green' : 'red'}
-          icon="🏦" sub={`${Math.round(joursFdr)} jours`} isText />
+          icon="🏦" sub={`${joursFdr.toFixed(2)} jours`} isText tooltip={tooltipFdr} />
         <KPICard label="Besoin en FDR" value={formatEur(bfr)} color={bfr < fdr ? 'green' : 'amber'}
           icon="📊" sub={bfr < 0 ? 'Dégagement' : 'Besoin'} isText />
         <KPICard label="Trésorerie nette" value={formatEur(treso)} color={treso >= 0 ? 'green' : 'red'}
-          icon="💳" sub={`${Math.round(joursTreso)} jours`} isText />
+          icon="💳" sub={`${joursTreso.toFixed(2)} jours`} isText tooltip={tooltipTreso} />
         <KPICard label="CAF / IAF" value={formatEur(caf)} color={caf >= 0 ? 'green' : 'red'}
           icon="🔄" sub={caf >= 0 ? 'Capacité' : 'Insuffisance'} isText />
         <KPICard label="Taux exéc. dépenses" value={tauxChargesDisplay} color={effectiveChargeRate !== null && effectiveChargeRate >= 0.85 && effectiveChargeRate <= 1 ? 'green' : 'amber'}
