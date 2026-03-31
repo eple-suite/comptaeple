@@ -38,13 +38,14 @@ export interface DocumentCAData {
   };
   R: {
     resultatBudgetaire: number; resultatComptable: number;
-    totalChargesReel: number; totalProduitsReel: number;
+    totalChargesSde: number; totalProduitsSdr: number;
     totalChargesPrev: number; totalProduitsPrev: number;
     tauxExecCharges: number; tauxExecProduits: number;
     cafBudgetaire: number; cafComptable: number;
     chargesNonDecaissables: number; produitsNonEncaissables: number;
-    fdrComptable: number; bfr: number; tresorerie: number; tresorerieNette: number;
+    fdrComptable: number; bfr: number; tresorerie: number;
     joursFdr: number; joursTresorerie: number; joursAutonomie: number;
+    drfn: number;
     fdrMobilisable: number; tmcap: number; tmnr: number;
     totalCreances: number; totalDettes: number;
     totalImmo: number; totalAmortissements: number; valeurNette: number;
