@@ -122,7 +122,7 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   // 1. SITUATION DES DÉPENSES (SDE)
   // ════════════════════════════════════════════════════════════
   doc.addPage();
-  drawSectionHeader(doc, '1. SITUATION DES DÉPENSES ENGAGÉES (SDE)', 'Ref. : M9-6 Tome 2 — §2.3');
+  let yPos = drawSectionHeader(doc, '1. SITUATION DES DEPENSES ENGAGEES (SDE)', 'Ref. : M9-6 Tome 2 -- §2.3');
 
   if (hasSDE) {
     // Aggregate by service
@@ -179,7 +179,7 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   // 2. SITUATION DES RECETTES (SDR)
   // ════════════════════════════════════════════════════════════
   doc.addPage();
-  drawSectionHeader(doc, '2. SITUATION DES RECETTES (SDR)', 'Ref. : M9-6 Tome 2 — §2.2');
+  yPos = drawSectionHeader(doc, '2. SITUATION DES RECETTES (SDR)', 'Ref. : M9-6 Tome 2 -- §2.2');
 
   if (hasSDR) {
     const recServices = aggregateRecByService(sdrRows);
@@ -232,15 +232,14 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   // ════════════════════════════════════════════════════════════
   // 3. COHÉRENCE BUDGÉTAIRE
   // ════════════════════════════════════════════════════════════
-  doc.addPage();
-  drawSectionHeader(doc, '3. COHÉRENCE BUDGÉTAIRE — CROISEMENT SDE / SDR', 'Ref. : M9-6 Tome 2 — §2.1.1 (équilibre, spécialité)');
+  yPos = drawSectionHeader(doc, '3. COHERENCE BUDGETAIRE -- CROISEMENT SDE / SDR', 'Ref. : M9-6 Tome 2 -- §2.1.1 (equilibre, specialite)');
 
   if (hasSDE && hasSDR) {
     const coherence = buildCoherence(sdeRows, sdrRows);
     const titres = coherence.filter(l => l.ecart > 0);
 
     autoTable(doc, {
-      startY: 30,
+      startY: yPos,
       head: [['Service', 'Activité', 'Dépenses engagées', 'Recettes titrées', 'Écart', 'Constatation']],
       body: coherence.map(l => [
         l.service, l.activite,
@@ -281,20 +280,21 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
     const yEq = yAfter + 12;
     doc.setTextColor(0);
     doc.setFontSize(9);
-    doc.text(`Crédits ouverts (dépenses) : ${fmt(totalDepBudget)}`, 14, yEq);
-    doc.text(`Prévisions (recettes) : ${fmt(totalRecBudget)}`, 14, yEq + 7);
-    doc.text(`Écart : ${fmt(ecartEq)} — ${ecartEq < 1 ? '✓ Équilibre respecté' : '⚠ Déséquilibre constaté'}`, 14, yEq + 14);
+    doc.text(`Credits ouverts (depenses) : ${fmt(totalDepBudget)}`, 14, yEq);
+    doc.text(`Previsions (recettes) : ${fmt(totalRecBudget)}`, 14, yEq + 7);
+    doc.text(`Ecart : ${fmt(ecartEq)} -- ${ecartEq < 1 ? '✓ Equilibre respecte' : '⚠ Desequilibre constate'}`, 14, yEq + 14);
+    yPos = yEq + 22;
   } else {
     doc.setFontSize(9);
     doc.setTextColor(120);
-    doc.text('Croisement impossible — SDE et/ou SDR non importé(s).', 14, 35);
+    doc.text('Croisement impossible -- SDE et/ou SDR non importe(s).', 14, yPos + 5);
+    yPos += 15;
   }
 
   // ════════════════════════════════════════════════════════════
   // 4. TAUX D'EXÉCUTION PAR SERVICE
   // ════════════════════════════════════════════════════════════
-  doc.addPage();
-  drawSectionHeader(doc, '4. TAUX D\'EXÉCUTION PAR SERVICE', 'Pilotage budgétaire — Budget initial vs Budget exécuté');
+  yPos = drawSectionHeader(doc, '4. TAUX D\'EXECUTION PAR SERVICE', 'Pilotage budgetaire -- Budget initial vs Budget execute', yPos);
 
   if (hasSDE) {
     const depServices = aggregateDepByService(sdeRows);
@@ -302,7 +302,7 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
     const totalDP = depServices.reduce((s, d) => s + d.dp, 0);
 
     autoTable(doc, {
-      startY: 30,
+      startY: yPos,
       head: [['Service', 'Crédits ouverts', 'Réalisé', 'Taux exéc.', 'Disponible']],
       body: depServices.map(s => [
         s.service,
@@ -348,19 +348,20 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
       doc.text(`${(taux * 100).toFixed(1)} %`, 145, yGraph + 4);
       yGraph += 9;
     }
+    yPos = yGraph + 5;
   } else {
     doc.setFontSize(9);
     doc.setTextColor(120);
-    doc.text('Données SDE non importées — section non disponible.', 14, 35);
+    doc.text('Donnees SDE non importees -- section non disponible.', 14, yPos + 5);
+    yPos += 15;
   }
 
   // ════════════════════════════════════════════════════════════
   // 5. SYNTHÈSE ET FAITS CARACTÉRISTIQUES
   // ════════════════════════════════════════════════════════════
-  doc.addPage();
-  drawSectionHeader(doc, '5. SYNTHÈSE ET FAITS CARACTÉRISTIQUES', 'Points d\'attention pour l\'ordonnateur');
+  yPos = drawSectionHeader(doc, '5. SYNTHESE ET FAITS CARACTERISTIQUES', 'Points d\'attention pour l\'ordonnateur', yPos);
 
-  let ySynth = 30;
+  let ySynth = yPos;
   doc.setFontSize(9);
   doc.setTextColor(0);
 
@@ -434,14 +435,14 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   doc.setDrawColor(180);
   doc.setLineWidth(0.3);
   doc.rect(14, ySynth, pw - 28, 60);
+  yPos = ySynth + 65;
 
   // ════════════════════════════════════════════════════════════
   // 6. SIGNATURES — Ordonnateur + Secrétaire Général uniquement
   // ════════════════════════════════════════════════════════════
-  doc.addPage();
-  drawSectionHeader(doc, '6. SIGNATURES', '');
+  yPos = drawSectionHeader(doc, '6. SIGNATURES', '', yPos);
 
-  let ySig = 40;
+  let ySig = yPos + 10;
   doc.setFontSize(9);
   doc.setTextColor(0);
   doc.text(`Fait à ${etab.commune || '_______________'}, le ${date}`, 14, ySig);
@@ -485,8 +486,27 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function drawSectionHeader(doc: jsPDF, title: string, subtitle: string) {
+function drawSectionHeader(doc: jsPDF, title: string, subtitle: string, currentY?: number) {
   const pw = doc.internal.pageSize.getWidth();
+  const ph = doc.internal.pageSize.getHeight();
+  // If currentY provided and enough room (>70mm), draw inline; otherwise new page
+  if (currentY != null && currentY < ph - 70) {
+    const y0 = currentY + 4;
+    doc.setFillColor(37, 68, 120);
+    doc.rect(14, y0, pw - 28, 16, 'F');
+    doc.setTextColor(255);
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, 20, y0 + 10);
+    if (subtitle) {
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.text(subtitle, pw - 20, y0 + 10, { align: 'right' });
+    }
+    doc.setTextColor(0);
+    return y0 + 22;
+  }
+  doc.addPage();
   doc.setFillColor(37, 68, 120);
   doc.rect(0, 0, pw, 22, 'F');
   doc.setTextColor(255);
@@ -499,6 +519,7 @@ function drawSectionHeader(doc: jsPDF, title: string, subtitle: string) {
     doc.text(subtitle, pw - 14, 14, { align: 'right' });
   }
   doc.setTextColor(0);
+  return 30;
 }
 
 function aggregateDepByService(rows: LigneSDE[]) {

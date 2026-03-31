@@ -267,15 +267,26 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // HELPER FUNCTIONS
   // ════════════════════════════════════════════════════════════
-  function sectionHeader(title: string): number {
-    doc.addPage();
+  function sectionHeader(title: string, currentY: number = ph): number {
+    // Add a new page only if less than 70mm remain on current page
+    if (currentY > ph - 70) {
+      doc.addPage();
+      doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
+      doc.rect(0, 0, pw, 14, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text(title.toUpperCase(), pw / 2, 9, { align: 'center' });
+      return 22;
+    }
+    // Inline section header on current page
     doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
-    doc.rect(0, 0, pw, 14, 'F');
+    doc.rect(margin, currentY, contentWidth, 10, 'F');
     doc.setTextColor(255, 255, 255);
-    doc.setFontSize(11);
+    doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
-    doc.text(title.toUpperCase(), pw / 2, 9, { align: 'center' });
-    return 22;
+    doc.text(title.toUpperCase(), pw / 2, currentY + 7, { align: 'center' });
+    return currentY + 16;
   }
 
   function subTitle(y: number, text: string): number {
@@ -321,7 +332,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 2. RÉSULTAT ET AUTOFINANCEMENT + Graphiques
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('2. Présentation du résultat et de l\'autofinancement');
+  ys = sectionHeader('2. Presentation du resultat et de l\'autofinancement', ys);
   autoTable(doc, {
     startY: ys,
     head: [['Élément', 'Montant']],
@@ -383,7 +394,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 3. FONDS DE ROULEMENT + Graphiques
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('3. Analyse du fonds de roulement');
+  ys = sectionHeader('3. Analyse du fonds de roulement', ys);
   autoTable(doc, {
     startY: ys,
     head: [['Indicateur', 'Valeur']],
@@ -469,7 +480,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 5. TRÉSORERIE
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('5. Analyse de la trésorerie');
+  ys = sectionHeader('5. Analyse de la tresorerie', ys);
   autoTable(doc, {
     startY: ys,
     head: [['Composante', 'Montant', '% Trésorerie']],
@@ -513,7 +524,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 6. TMcap / TMnr + § 7. PATRIMOINE — On same page if room
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('6. Charges à payer et recouvrement / 7. Patrimoine');
+  ys = sectionHeader('6. Charges a payer et recouvrement / 7. Patrimoine', ys);
 
   // TMcap/TMnr table
   autoTable(doc, {
@@ -569,7 +580,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 8. CRÉANCES ET DETTES
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('8. État des créances et des dettes');
+  ys = sectionHeader('8. Etat des creances et des dettes', ys);
 
   // Créances + Dettes side by side approach: both tables on same page
   ys = subTitle(22, 'Créances');
@@ -654,7 +665,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 10. RATIOS
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('10. Ratios de gestion (M9-6 § IV)');
+  ys = sectionHeader('10. Ratios de gestion (M9-6 § IV)', ys);
   autoTable(doc, {
     startY: ys,
     head: [['Ratio', 'Valeur', 'Interprétation']],
@@ -692,7 +703,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // § 11. PLURIANNUEL
   // ════════════════════════════════════════════════════════════
   if (history.length > 0) {
-    ys = sectionHeader('11. Évolution pluriannuelle');
+    ys = sectionHeader('11. Evolution pluriannuelle', ys);
     autoTable(doc, {
       startY: ys,
       head: [['Exercice', 'FDR', 'BFR', 'Trésorerie', 'CAF/IAF', 'Réserves', 'Jours']],
@@ -724,7 +735,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // § 12. OBSERVATIONS
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('12. Observations de l\'agent comptable');
+  ys = sectionHeader('12. Observations de l\'agent comptable', ys);
   if (aiText) {
     ys = wrapText(22, aiText);
   }
