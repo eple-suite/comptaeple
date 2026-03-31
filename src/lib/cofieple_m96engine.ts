@@ -215,7 +215,10 @@ export function calculerResultatsM96(
     const antCrd185val = sumBal(bal, c => c.startsWith('185'), 'antCrd');
     tresorerieAnt = antDbt185 - antCrd185val;
   } else {
-    tresorerieAnt = antTresoClassique;
+    // Pour N-1, utiliser aussi l'agrégé si disponible (antDbt - antCrd)
+    tresorerieAnt = aggregateClass5
+      ? (aggregateClass5.antDbt - aggregateClass5.antCrd)
+      : antTresoClassique;
   }
   const varTresorerieComptable = tresorerie - tresorerieAnt;
   const varTresorerieTableauFinancement = varFdrBas - varBfrSynthetique;
