@@ -1054,6 +1054,7 @@ export function generateRapportACPdf(data: RapportACData) {
     drawHBar(doc, margin, ys, contentWidth * 0.5, 4, ri.val, ri.max, ri.color, ri.label, ri.display);
     ys += 10;
   }
+  ys = drawCommentBox(ys, 'Ratios de gestion', saisie.commentaireRatios);
 
   // ════════════════════════════════════════════════════════════
   // S10. PLURIANNUEL (COMPLET)
