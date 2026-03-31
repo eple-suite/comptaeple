@@ -21,7 +21,7 @@ interface PointBloquant {
 }
 
 const sumBal = (bal: any[], test: (c: string) => boolean, field: string) =>
-  bal.filter((b: any) => test(b.compte)).reduce((s: number, b: any) => s + ((b[field] as number) || 0), 0);
+  bal.filter((b: any) => !b.isAggregate && b.compte && test(b.compte)).reduce((s: number, b: any) => s + ((b[field] as number) || 0), 0);
 
 const POINTS: PointBloquant[] = [
   // 🔴 BLOQUANTS
