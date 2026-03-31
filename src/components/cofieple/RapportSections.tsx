@@ -980,8 +980,14 @@ export function RapportACSection() {
   const [prelevements, setPrelevements] = useState<Prelevement[]>([]);
   const [explicationsResultat, setExplicationsResultat] = useState('');
   const [commentaireFDR, setCommentaireFDR] = useState('');
+  const [commentaireBFR, setCommentaireBFR] = useState('');
   const [commentaireTresorerie, setCommentaireTresorerie] = useState('');
+  const [commentaireChargesRecouvrement, setCommentaireChargesRecouvrement] = useState('');
+  const [commentairePatrimoine, setCommentairePatrimoine] = useState('');
   const [commentaireCreances, setCommentaireCreances] = useState('');
+  const [commentaireReserves, setCommentaireReserves] = useState('');
+  const [commentaireRatios, setCommentaireRatios] = useState('');
+  const [commentairePluriannuel, setCommentairePluriannuel] = useState('');
   const [commentaireGeneral, setCommentaireGeneral] = useState('');
 
   useEffect(() => {
