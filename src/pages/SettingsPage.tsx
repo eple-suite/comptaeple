@@ -288,8 +288,16 @@ const SettingsPage = () => {
             </Select>
           </div>
           <Separator />
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline">Exporter toutes les données</Button>
+          <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant="outline" className="gap-1.5" onClick={handleExportData}>
+              <Download className="h-3.5 w-3.5" /> Exporter les données (JSON)
+            </Button>
+            <label>
+              <Button size="sm" variant="outline" className="gap-1.5 cursor-pointer" asChild>
+                <span><Upload className="h-3.5 w-3.5" /> Importer des données</span>
+              </Button>
+              <input type="file" accept=".json" className="hidden" onChange={handleImportData} />
+            </label>
             <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">Réinitialiser les données</Button>
           </div>
         </CardContent>
