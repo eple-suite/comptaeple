@@ -247,6 +247,9 @@ export function PluriannuelSection() {
       taux_exec_produits: R.tauxExecProduits,
       total_charges_reel: R.totalChargesReel,
       total_produits_reel: R.totalProduitsReel,
+      jours_tresorerie: R.joursTresorerie || 0,
+      tmcap: R.tmcap || 0,
+      tmnr: R.tmnr || 0,
     });
   }
   allData.sort((a, b) => a.exercice - b.exercice);
