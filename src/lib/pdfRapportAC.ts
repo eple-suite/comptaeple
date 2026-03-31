@@ -993,8 +993,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S8. RESERVES
   // ════════════════════════════════════════════════════════════
-  ys = checkNewPage(ys, 50);
-  ys = sectionHeader('8. Reserves et affectation du resultat', ys);
+  ys = sectionHeader('8. Reserves et affectation du resultat', ys, 90);
   autoTable(doc, {
     startY: ys,
     head: [['Compte', 'Montant']],
