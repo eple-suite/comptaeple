@@ -20,8 +20,23 @@ interface RapportParams {
   nomSecretaireGeneral?: string;
 }
 
+/** Strip exotic Unicode that jsPDF cannot render */
+function sanitize(s: string): string {
+  return s
+    .replace(/[\u202F\u00A0]/g, ' ')
+    .replace(/[═╔╗╚╝║╠╣╬─│┌┐└┘├┤┬┴┼☐☑☒Ø×÷←→↑↓≤≥≠≈∞∑∏√∫∂∆∇⊕⊗⊘⊙⊚⊛⊜⊝]/g, '')
+    .replace(/[ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖÙÚÛÜÝÞ]/g, (c) => {
+      const map: Record<string, string> = { 'À':'A','Á':'A','Â':'A','Ã':'A','Ä':'A','Å':'A','Æ':'AE','Ç':'C','È':'E','É':'E','Ê':'E','Ë':'E','Ì':'I','Í':'I','Î':'I','Ï':'I','Ð':'D','Ñ':'N','Ò':'O','Ó':'O','Ô':'O','Õ':'O','Ö':'O','Ù':'U','Ú':'U','Û':'U','Ü':'U','Ý':'Y','Þ':'TH' };
+      return map[c] ?? c;
+    })
+    .replace(/[àáâãäåæçèéêëìíîïðñòóôõöùúûüýþÿ]/g, (c) => {
+      const map: Record<string, string> = { 'à':'a','á':'a','â':'a','ã':'a','ä':'a','å':'a','æ':'ae','ç':'c','è':'e','é':'e','ê':'e','ë':'e','ì':'i','í':'i','î':'i','ï':'i','ð':'d','ñ':'n','ò':'o','ó':'o','ô':'o','õ':'o','ö':'o','ù':'u','ú':'u','û':'u','ü':'u','ý':'y','þ':'th','ÿ':'y' };
+      return map[c] ?? c;
+    });
+}
+
 function fmt(n: number): string {
-  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(n).replace(/[\u202F\u00A0]/g, ' ');
+  return sanitize(new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 2 }).format(n));
 }
 
 export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation, nomOrdonnateur, nomSecretaireGeneral }: RapportParams) {
@@ -31,7 +46,7 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   const hasSDE = sdeRows.length > 0;
   const hasSDR = sdrRows.length > 0;
 
-  const doc = new jsPDF({ orientation: 'portrait' });
+  const doc = new jsPDF({ orientation: 'landscape' });
   const pw = doc.internal.pageSize.getWidth();
   const ph = doc.internal.pageSize.getHeight();
 
