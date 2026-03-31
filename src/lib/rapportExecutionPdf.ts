@@ -90,33 +90,64 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   doc.text('Tome 2 — §2.1.1 Principes budgétaires (annualité, unité, universalité, spécialité, sincérité, équilibre)', 18, y + 21);
   doc.text('Tome 2 — §2.2 Exécution des recettes / §2.3 Exécution des dépenses', 18, y + 28);
 
-  // Sommaire
-  y += 48;
-  doc.setTextColor(37, 68, 120);
-  doc.setFontSize(12);
+  // ════════════════════════════════════════════════════════════
+  // PAGE SOMMAIRE (page dédiée — 2 colonnes)
+  // ════════════════════════════════════════════════════════════
+  doc.addPage();
+  doc.setFillColor(37, 68, 120);
+  doc.rect(0, 0, pw, 22, 'F');
+  doc.setTextColor(255);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('SOMMAIRE', 14, y);
+  doc.text('SOMMAIRE', pw / 2, 14, { align: 'center' });
+
+  const somY = 38;
   doc.setTextColor(0);
-  doc.setFontSize(9);
-  doc.setFont('helvetica', 'normal');
   const sommaire = [
-    '1. Situation des dépenses engagées (SDE)',
+    '1. Situation des depenses engagees (SDE)',
     '2. Situation des recettes (SDR)',
-    '3. Cohérence budgétaire — Croisement SDE / SDR',
-    '4. Taux d\'exécution par service',
-    '5. Synthèse et faits caractéristiques',
+    '3. Coherence budgetaire -- Croisement SDE / SDR',
+    '4. Taux d\'execution par service',
+    '5. Synthese et faits caracteristiques',
     '6. Signatures',
   ];
-  sommaire.forEach((item, i) => {
-    doc.text(item, 20, y + 10 + i * 7);
-  });
+  const somColW = (pw - 42) / 2;
+  const leftItems = sommaire.slice(0, 3);
+  const rightItems = sommaire.slice(3);
+  const drawSomEntry = (item: string, sx: number, sy: number) => {
+    doc.setFillColor(37, 68, 120);
+    doc.circle(sx + 2, sy - 1.5, 1.5, 'F');
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(30, 30, 30);
+    doc.text(item, sx + 7, sy);
+    doc.setDrawColor(200, 200, 200);
+    doc.setLineWidth(0.15);
+    const tw = doc.getTextWidth(item);
+    const dotStart = sx + 7 + tw + 3;
+    const dotEnd = sx + somColW;
+    for (let dx = dotStart; dx < dotEnd; dx += 2) {
+      doc.line(dx, sy - 0.5, dx + 0.5, sy - 0.5);
+    }
+  };
+  leftItems.forEach((item, i) => drawSomEntry(item, 14, somY + i * 14));
+  rightItems.forEach((item, i) => drawSomEntry(item, 14 + somColW + 14, somY + i * 14));
+  // Vertical separator
+  doc.setDrawColor(37, 68, 120);
+  doc.setLineWidth(0.3);
+  doc.line(14 + somColW + 7, somY - 5, 14 + somColW + 7, somY + Math.max(leftItems.length, rightItems.length) * 14 - 5);
 
-  // Mention
-  y += 10 + sommaire.length * 7 + 10;
-  doc.setFontSize(7);
-  doc.setTextColor(120);
-  doc.text('Analyse strictement limitée aux dispositions explicites de la M9-6 — OP@LE (19 janvier 2026).', 14, y);
-  doc.text('Aucun calcul prospectif, prévisionnel ou statistique n\'est effectué car non prévu par l\'instruction.', 14, y + 5);
+  // Regulatory box at bottom of TOC page
+  const tocBotY = somY + Math.max(leftItems.length, rightItems.length) * 14 + 20;
+  doc.setFillColor(240, 243, 248);
+  doc.roundedRect(14, tocBotY, pw - 28, 28, 2, 2, 'F');
+  doc.setFontSize(8);
+  doc.setTextColor(60);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Cadre reglementaire', 18, tocBotY + 7);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Instruction codificatrice M9-6 -- OP@LE du 19 janvier 2026', 18, tocBotY + 14);
+  doc.text('Tome 2 -- §2.1.1 Principes budgetaires / §2.2 Execution des recettes / §2.3 Execution des depenses', 18, tocBotY + 21);
 
   // ════════════════════════════════════════════════════════════
   // 1. SITUATION DES DÉPENSES (SDE)

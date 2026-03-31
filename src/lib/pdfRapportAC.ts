@@ -473,7 +473,7 @@ export function generateRapportACPdf(data: RapportACData) {
   if (etab.secretaireGeneral) { y += 6; doc.text(sanitize(`Secretaire general(e) : ${etab.secretaireGeneral}`), margin, y); }
 
   // ════════════════════════════════════════════════════════════
-  // PAGE SOMMAIRE (page dédiée)
+  // PAGE SOMMAIRE (page dédiée — 2 colonnes)
   // ════════════════════════════════════════════════════════════
   doc.addPage();
   // Blue header band
@@ -499,34 +499,53 @@ export function generateRapportACPdf(data: RapportACData) {
     { num: '10', title: 'Evolution pluriannuelle (Piece 14)' },
     { num: '11', title: 'Observations de l\'agent comptable' },
   ];
-  sommaire.forEach((s) => {
-    // Dot leader line
+  // 2-column layout
+  const somColW = (contentWidth - 10) / 2;
+  const leftCol = sommaire.slice(0, 6);
+  const rightCol = sommaire.slice(6);
+  const drawSomItem = (s: { num: string; title: string }, sx: number, sy: number) => {
     doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
-    doc.circle(margin + 2, y - 1.5, 1.5, 'F');
+    doc.circle(sx + 2, sy - 1.5, 1.5, 'F');
     doc.setFontSize(10);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
-    doc.text(s.num + '.', margin + 7, y);
+    doc.text(s.num + '.', sx + 7, sy);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(30, 30, 30);
-    doc.text(s.title, margin + 18, y);
-    // Dotted line
+    doc.text(s.title, sx + 18, sy);
+    // Dotted leader
     doc.setDrawColor(200, 200, 200);
     doc.setLineWidth(0.15);
     const titleW = doc.getTextWidth(s.title);
-    const dotStart = margin + 18 + titleW + 3;
-    const dotEnd = pw - margin;
+    const dotStart = sx + 18 + titleW + 3;
+    const dotEnd = sx + somColW;
     for (let dx = dotStart; dx < dotEnd; dx += 2) {
-      doc.line(dx, y - 0.5, dx + 0.5, y - 0.5);
+      doc.line(dx, sy - 0.5, dx + 0.5, sy - 0.5);
     }
-    y += 10;
-  });
+  };
+  leftCol.forEach((s, i) => drawSomItem(s, margin, y + i * 14));
+  rightCol.forEach((s, i) => drawSomItem(s, margin + somColW + 10, y + i * 14));
+  // Decorative vertical separator
+  doc.setDrawColor(BLEU[0], BLEU[1], BLEU[2]);
+  doc.setLineWidth(0.3);
+  doc.line(margin + somColW + 5, y - 5, margin + somColW + 5, y + Math.max(leftCol.length, rightCol.length) * 14 - 5);
+  // Regulatory note at bottom of TOC page
+  const tocBottomY = y + Math.max(leftCol.length, rightCol.length) * 14 + 15;
+  doc.setFillColor(245, 247, 252);
+  doc.roundedRect(margin, tocBottomY, contentWidth, 18, 2, 2, 'F');
+  doc.setFontSize(7);
+  doc.setTextColor(GRIS[0], GRIS[1], GRIS[2]);
+  doc.setFont('helvetica', 'italic');
+  doc.text('Ce rapport est etabli en application de la M9-6 -- OP@LE (19 janvier 2026)', margin + 5, tocBottomY + 7);
+  doc.text('Il presente la situation comptable et financiere a la cloture de l\'exercice.', margin + 5, tocBottomY + 12);
 
   // ════════════════════════════════════════════════════════════
   // HELPERS
   // ════════════════════════════════════════════════════════════
-  function sectionHeader(title: string, currentY: number = ph): number {
-    if (currentY > ph - 65) {
+  /** Ensures section header + content block starts on a page with enough room.
+   *  If remaining space < neededAfter, forces a new page. */
+  function sectionHeader(title: string, currentY: number = ph, neededAfter: number = 80): number {
+    if (currentY > ph - neededAfter) {
       doc.addPage();
       doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
       doc.rect(0, 0, pw, 12, 'F');
@@ -572,13 +591,23 @@ export function generateRapportACPdf(data: RapportACData) {
     return y;
   }
 
-  /** Comment box for each section */
+  /** Comment box for each section — auto-sizes to comment length, ALWAYS on same page as its content */
   function drawCommentBox(currentY: number, sectionLabel: string, existingComment?: string): number {
-    currentY = checkNewPage(currentY, 22);
+    const hasComment = existingComment && existingComment.trim();
+    // Estimate height needed
+    let boxH = 16;
+    let commentLines: string[] = [];
+    if (hasComment) {
+      doc.setFontSize(7);
+      commentLines = doc.splitTextToSize(sanitize(existingComment!), contentWidth - 6);
+      boxH = Math.max(16, 8 + commentLines.length * 3.5 + 4);
+    }
+    // Ensure box fits on current page
+    currentY = checkNewPage(currentY, boxH + 4);
     doc.setDrawColor(200, 205, 215);
     doc.setLineWidth(0.3);
     doc.setFillColor(252, 252, 255);
-    doc.roundedRect(margin, currentY, contentWidth, 16, 1.5, 1.5, 'FD');
+    doc.roundedRect(margin, currentY, contentWidth, boxH, 1.5, 1.5, 'FD');
     doc.setFontSize(6.5);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(BLEU[0], BLEU[1], BLEU[2]);
@@ -586,9 +615,8 @@ export function generateRapportACPdf(data: RapportACData) {
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(7);
     doc.setTextColor(80, 80, 80);
-    if (existingComment && existingComment.trim()) {
-      const lines = doc.splitTextToSize(sanitize(existingComment), contentWidth - 6);
-      lines.slice(0, 3).forEach((line: string, i: number) => {
+    if (hasComment) {
+      commentLines.forEach((line: string, i: number) => {
         doc.text(line, margin + 3, currentY + 8 + i * 3.5);
       });
     } else {
@@ -596,12 +624,12 @@ export function generateRapportACPdf(data: RapportACData) {
       doc.text('(A completer par l\'agent comptable)', margin + 3, currentY + 9);
     }
     doc.setTextColor(0, 0, 0);
-    return currentY + 20;
+    return currentY + boxH + 4;
   }
   // ════════════════════════════════════════════════════════════
   // S1. RESULTAT ET AUTOFINANCEMENT
   // ════════════════════════════════════════════════════════════
-  let ys = sectionHeader('1. Resultat de l\'exercice et autofinancement');
+  let ys = sectionHeader('1. Resultat de l\'exercice et autofinancement', ph, 120);
 
   // Two-column layout: table left, chart right
   autoTable(doc, {
@@ -674,7 +702,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S2. FONDS DE ROULEMENT
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('2. Analyse du fonds de roulement', ys);
+  ys = sectionHeader('2. Analyse du fonds de roulement', ys, 110);
 
   // KPI strip
   const fdrKpiW = (contentWidth - 8) / 3;
@@ -732,7 +760,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S3. BFR
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('3. Besoin en fonds de roulement', ys);
+  ys = sectionHeader('3. Besoin en fonds de roulement', ys, 90);
   autoTable(doc, {
     startY: ys,
     head: [['Element', 'Montant']],
@@ -772,7 +800,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S4. TRESORERIE
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('4. Analyse de la tresorerie', ys);
+  ys = sectionHeader('4. Analyse de la tresorerie', ys, 100);
 
   // Composition table + donut chart
   autoTable(doc, {
@@ -833,7 +861,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S5. TMCAP / TMNR
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('5. Charges a payer et recouvrement', ys);
+  ys = sectionHeader('5. Charges a payer et recouvrement', ys, 100);
 
   // Traffic lights + table
   drawTrafficLight(doc, margin, ys, R.tmcap, { green: 0, yellow: 10 }, 'TMcap (charges a payer)', '%');
@@ -867,7 +895,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S6. PATRIMOINE
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('6. Etat du patrimoine', ys);
+  ys = sectionHeader('6. Etat du patrimoine', ys, 90);
   autoTable(doc, {
     startY: ys,
     head: [['Element', 'Montant']],
@@ -913,7 +941,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S7. CREANCES ET DETTES
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('7. Etat des creances et des dettes', ys);
+  ys = sectionHeader('7. Etat des creances et des dettes', ys, 100);
 
   // Créances table (left)
   ys = subTitle(ys, 'Creances');
@@ -965,8 +993,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S8. RESERVES
   // ════════════════════════════════════════════════════════════
-  ys = checkNewPage(ys, 50);
-  ys = sectionHeader('8. Reserves et affectation du resultat', ys);
+  ys = sectionHeader('8. Reserves et affectation du resultat', ys, 90);
   autoTable(doc, {
     startY: ys,
     head: [['Compte', 'Montant']],
@@ -1002,7 +1029,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S9. RATIOS DE GESTION
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('9. Ratios de gestion (M9-6 S IV)', ys);
+  ys = sectionHeader('9. Ratios de gestion (M9-6 S IV)', ys, 110);
 
   // Professional table with color-coded interpretations
   autoTable(doc, {
@@ -1057,7 +1084,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // S10. PLURIANNUEL (COMPLET)
   // ════════════════════════════════════════════════════════════
   if (fullHistory.length > 1) {
-    ys = sectionHeader('10. Evolution pluriannuelle (Piece 14)', ys);
+    ys = sectionHeader('10. Evolution pluriannuelle (Piece 14)', ys, 100);
 
     // Full table
     autoTable(doc, {
@@ -1142,7 +1169,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // S11. OBSERVATIONS
   // ════════════════════════════════════════════════════════════
-  ys = sectionHeader('11. Observations de l\'agent comptable', ys);
+  ys = sectionHeader('11. Observations de l\'agent comptable', ys, 60);
   if (aiText) {
     ys = wrapText(ys, aiText);
   }
