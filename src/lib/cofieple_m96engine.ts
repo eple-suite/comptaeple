@@ -396,7 +396,7 @@ export function calculerResultatsM96(
   // Trésorerie nette = disponibilités (comptes 51/53/54) nettes
   // Part encaissée = min(FDR, TN) si les deux > 0
   // C'est la part du FDR effectivement disponible en trésorerie
-  const tresorerieNettePourFdr = isAnnexe ? tresorerie : tresorerieOpale;
+  const tresorerieNettePourFdr = isAnnexe ? tresorerie : tresorerie;
 
   const fdrPartEncaissee = fdrComptable > 0 && tresorerieNettePourFdr > 0
     ? Math.min(fdrComptable, tresorerieNettePourFdr)
