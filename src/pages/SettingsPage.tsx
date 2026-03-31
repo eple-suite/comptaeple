@@ -19,6 +19,7 @@ const SettingsPage = () => {
   const [ordonnateur, setOrdonnateur] = useState("");
   const [agentComptable, setAgentComptable] = useState("");
   const [secretaireGeneral, setSecretaireGeneral] = useState("");
+  const [opaleNumber, setOpaleNumber] = useState("");
   const [saving, setSaving] = useState(false);
 
   // Profile
