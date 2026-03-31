@@ -437,10 +437,9 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   // ════════════════════════════════════════════════════════════
   // 6. SIGNATURES — Ordonnateur + Secrétaire Général uniquement
   // ════════════════════════════════════════════════════════════
-  doc.addPage();
-  drawSectionHeader(doc, '6. SIGNATURES', '');
+  yPos = drawSectionHeader(doc, '6. SIGNATURES', '', yPos);
 
-  let ySig = 40;
+  let ySig = yPos + 10;
   doc.setFontSize(9);
   doc.setTextColor(0);
   doc.text(`Fait à ${etab.commune || '_______________'}, le ${date}`, 14, ySig);
