@@ -55,7 +55,7 @@ const SettingsPage = () => {
     try {
       const { error } = await supabase
         .from("establishments")
-        .update({ ordonnateur, agent_comptable: agentComptable, secretaire_general: secretaireGeneral })
+        .update({ ordonnateur, agent_comptable: agentComptable, secretaire_general: secretaireGeneral, opale_number: opaleNumber })
         .eq("id", selectedEstablishment.id);
       if (error) throw error;
       refetch();
