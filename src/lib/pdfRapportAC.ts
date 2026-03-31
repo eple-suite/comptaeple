@@ -267,15 +267,19 @@ export function generateRapportACPdf(data: RapportACData) {
   // ════════════════════════════════════════════════════════════
   // HELPER FUNCTIONS
   // ════════════════════════════════════════════════════════════
-  function sectionHeader(title: string): number {
-    doc.addPage();
+  function sectionHeader(title: string, forceNewPage = false): number {
+    // Only add a new page if forced or if less than 60mm remain
+    if (forceNewPage || doc.internal.pageSize.getHeight() - (doc as any).__lastY < 60) {
+      doc.addPage();
+    }
+    const yStart = (doc as any).__lastY && !forceNewPage ? (doc as any).__lastY + 6 : 0;
     doc.setFillColor(BLEU[0], BLEU[1], BLEU[2]);
-    doc.rect(0, 0, pw, 14, 'F');
+    doc.rect(0, yStart, pw, 14, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text(title.toUpperCase(), pw / 2, 9, { align: 'center' });
-    return 22;
+    doc.text(title.toUpperCase(), pw / 2, yStart + 9, { align: 'center' });
+    return yStart + 22;
   }
 
   function subTitle(y: number, text: string): number {
