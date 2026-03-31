@@ -703,7 +703,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // § 11. PLURIANNUEL
   // ════════════════════════════════════════════════════════════
   if (history.length > 0) {
-    ys = sectionHeader('11. Évolution pluriannuelle');
+    ys = sectionHeader('11. Evolution pluriannuelle', ys);
     autoTable(doc, {
       startY: ys,
       head: [['Exercice', 'FDR', 'BFR', 'Trésorerie', 'CAF/IAF', 'Réserves', 'Jours']],
