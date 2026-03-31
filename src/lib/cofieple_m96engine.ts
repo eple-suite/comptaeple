@@ -306,27 +306,31 @@ export function calculerResultatsM96(
   const tauxExecProduits = totalProduitsPrev > 0 ? sdrExec.totalForRate / totalProduitsPrev : 0;
 
   // ── Charges de fonctionnement (hors investissement) ────────────────
-  // Le dénominateur REPROFI utilise uniquement les charges de fonctionnement,
-  // c'est-à-dire le total SDE moins les charges d'investissement (classe 2)
-  // FALLBACK : si pas de SDE importée, utiliser la balance classe 6
-  // (charges comptabilisées) hors charges d'investissement comptabilisées
   const chargesFonctSDE = totalChargesSde - chInvSde;
-  const chargesBalanceCl6 = totalChargesBalance; // dbt6 - crd6 (mouvements exercice)
+  const chargesBalanceCl6 = totalChargesBalance;
   const chInvBalance = sumBal(bal, c => c.charAt(0) === '2' && !c.startsWith('28') && !c.startsWith('29'), 'dbt')
     - sumBal(bal, c => c.charAt(0) === '2' && !c.startsWith('28') && !c.startsWith('29'), 'crd');
   const chargesFonctBalance = chargesBalanceCl6 > 0 ? chargesBalanceCl6 : 0;
-  // Priorité SDE, sinon balance classe 6
   const chargesFonctionnement = chargesFonctSDE > 0 ? chargesFonctSDE : chargesFonctBalance;
-  // Dénominateur total charges pour TMcap/TMnr : SDE si dispo, sinon balance
   const totalChargesRef = totalChargesSde > 0 ? totalChargesSde : (chargesBalanceCl6 > 0 ? chargesBalanceCl6 : 0);
   const totalProduitsRef = totalProduitsSdr > 0 ? totalProduitsSdr : (totalProduitsBalance > 0 ? totalProduitsBalance : 0);
 
-  // ── Jours d'autonomie financière (REPROFI) ─────────────────────────
-  // = FDR / charges quotidiennes de fonctionnement
-  // REPROFI utilise le FDR (pas la trésorerie) car il mesure la capacité
-  // de l'établissement à faire face à ses charges sans recettes nouvelles
-  const chargesFonctQuotidiennes = chargesFonctionnement / 365;
-  const joursAutonomie   = chargesFonctQuotidiennes > 0 ? (fdrComptable / chargesFonctQuotidiennes) : 0;
+  // ── DRFN — Dépenses Réelles de Fonctionnement Nettes ───────────────
+  // Conforme Op@le Pièce 14 / M9-6 :
+  //   DRFN = Total dépenses mandatées de FONCTIONNEMENT (SDE réalisé, section FONC)
+  //          MOINS les dotations aux amortissements (comptes 681xxx)
+  //          MOINS les opérations d'ordre non décaissables
+  // Les 681xxx ne sont pas des décaissements réels → exclusion obligatoire
+  const amortSDE = sdeForAccounting.filter(r => /^681/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
+  const amortBalance681 = sumBal(bal, c => c.startsWith('681'), 'dbt') - sumBal(bal, c => c.startsWith('681'), 'crd');
+  const amortEffectif = amortSDE > 0 ? amortSDE : (amortBalance681 > 0 ? amortBalance681 : 0);
+  const drfn = chargesFonctionnement - amortEffectif;
+
+  // ── Jours d'autonomie financière (Op@le Pièce 14) ──────────────────
+  // Jours FDR = (FDR × 365) / DRFN
+  // Jours Trésorerie = (Trésorerie × 365) / DRFN
+  const drfnQuotidien = drfn / 365;
+  const joursAutonomie   = drfnQuotidien > 0 ? (fdrComptable / drfnQuotidien) : 0;
   const ratioFdrBfr      = bfr !== 0 ? fdrBas / bfr : 0;
 
   // ── Ressources propres M9-6 ─────────────────────────────────────────
