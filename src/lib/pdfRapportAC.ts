@@ -1109,7 +1109,7 @@ export function generateRapportACPdf(data: RapportACData) {
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(9);
   doc.text(sanitize(`Fait a ${etab.commune || '............'},`), pw - margin - 60, ys);
-  doc.text(`le ......... / ......... / ${etab.exercice + 1}`, pw - margin - 60, ys + 5);
+  doc.text(`le 31 decembre ${etab.exercice}`, pw - margin - 60, ys + 5);
   ys += 18;
   doc.text(sanitize(etab.agentComptable || '..................'), margin, ys);
   doc.setFontSize(8);
