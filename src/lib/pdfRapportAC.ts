@@ -679,7 +679,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // KPI strip
   const fdrKpiW = (contentWidth - 8) / 3;
   drawKpiCard(doc, margin, ys, fdrKpiW, 'FDR comptable', fmtK(R.fdrComptable), undefined, R.fdrComptable >= 0 ? BLEU : ROUGE);
-  drawKpiCard(doc, margin + fdrKpiW + 4, ys, fdrKpiW, 'Jours de fonctionnement', `${Math.round(R.joursFdr)} jours`, R.joursFdr >= 30 ? 'Superieur au seuil de 30j' : 'INFERIEUR au seuil de 30j', R.joursFdr >= 30 ? VERT : ROUGE);
+  drawKpiCard(doc, margin + fdrKpiW + 4, ys, fdrKpiW, 'Jours de fonctionnement', `${R.joursFdr.toFixed(2)} jours`, R.joursFdr >= 30 ? 'Superieur au seuil de 30j' : 'INFERIEUR au seuil de 30j', R.joursFdr >= 30 ? VERT : ROUGE);
   drawKpiCard(doc, margin + 2 * (fdrKpiW + 4), ys, fdrKpiW, 'FDR mobilisable', fmtK(R.fdrMobilisable), undefined, BLEU);
   ys += 28;
 
