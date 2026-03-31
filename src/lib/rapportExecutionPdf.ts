@@ -357,10 +357,9 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
   // ════════════════════════════════════════════════════════════
   // 5. SYNTHÈSE ET FAITS CARACTÉRISTIQUES
   // ════════════════════════════════════════════════════════════
-  doc.addPage();
-  drawSectionHeader(doc, '5. SYNTHÈSE ET FAITS CARACTÉRISTIQUES', 'Points d\'attention pour l\'ordonnateur');
+  yPos = drawSectionHeader(doc, '5. SYNTHESE ET FAITS CARACTERISTIQUES', 'Points d\'attention pour l\'ordonnateur', yPos);
 
-  let ySynth = 30;
+  let ySynth = yPos;
   doc.setFontSize(9);
   doc.setTextColor(0);
 
