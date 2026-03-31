@@ -1084,7 +1084,7 @@ export function generateRapportACPdf(data: RapportACData) {
   // S10. PLURIANNUEL (COMPLET)
   // ════════════════════════════════════════════════════════════
   if (fullHistory.length > 1) {
-    ys = sectionHeader('10. Evolution pluriannuelle (Piece 14)', ys);
+    ys = sectionHeader('10. Evolution pluriannuelle (Piece 14)', ys, 100);
 
     // Full table
     autoTable(doc, {
