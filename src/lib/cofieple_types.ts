@@ -124,6 +124,7 @@ export interface ResultatsM96 {
   totalProduitsSdr: number; totalProduitsPrev: number;
   totalChargesBalance: number; totalProduitsBalance: number;
   chargesFonctionnement: number;  // Charges fonct. hors investissement (SDE ou balance Cl.6)
+  drfn: number;                   // Dépenses Réelles de Fonctionnement Nettes (hors amort 681xxx)
   totalChargesRef: number;        // Dénominateur de référence charges (SDE ou balance)
   totalProduitsRef: number;       // Dénominateur de référence produits (SDR ou balance)
   reserves: number; reservesSsSpeciaux: number; reservesSRH: number;

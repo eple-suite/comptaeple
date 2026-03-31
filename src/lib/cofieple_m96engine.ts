@@ -349,10 +349,10 @@ export function calculerResultatsM96(
     ? sdrForAccounting.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
     : sumBal(bal, c => /^7[0-3]/.test(c), 'crd') - sumBal(bal, c => /^7[0-3]/.test(c), 'dbt');
 
-  // ── REPROFI — Jours FDR et Trésorerie ─────────────────────────────
-  // Dénominateur = charges de fonctionnement quotidiennes (hors investissement)
-  const joursFdr = chargesFonctQuotidiennes > 0 ? fdrComptable / chargesFonctQuotidiennes : 0;
-  const joursTresorerie = chargesFonctQuotidiennes > 0 ? tresorerie / chargesFonctQuotidiennes : 0;
+  // ── Jours FDR et Trésorerie (Op@le Pièce 14) ────────────────────────
+  // Dénominateur = DRFN quotidien (charges fonctionnement nettes / 365)
+  const joursFdr = drfnQuotidien > 0 ? fdrComptable / drfnQuotidien : 0;
+  const joursTresorerie = drfnQuotidien > 0 ? tresorerie / drfnQuotidien : 0;
 
   // ── REPROFI — TMcap (Taux moyen charges à payer) ──────────────────
   // Part impayée des charges = dettes fournisseurs / charges réalisées
