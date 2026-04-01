@@ -822,6 +822,9 @@ function getSensNormal(compte: string): SensNormal {
   if (cl === '5') {
     if (r3 === '519') return 'crediteur';
     if (r2 === '59') return 'crediteur';
+    // 515900 : Trésor règlements en cours — crédité (paiements émis) puis soldé/débité
+    // à réception du relevé DFT → sens MIXTE (peut être débiteur ou créditeur)
+    if (c.startsWith('5159') || c === '515900') return 'mixte';
     return 'debiteur';
   }
 
