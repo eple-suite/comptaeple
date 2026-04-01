@@ -311,7 +311,7 @@ export function RapportOrdoSection() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-3 flex-wrap no-print">
         <Button onClick={genererIA} disabled={aiLoading}>
           {aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bot className="h-4 w-4 mr-2" />}
           {aiLoading ? 'Génération IA…' : 'Générer commentaires IA'}
@@ -334,7 +334,7 @@ export function RapportOrdoSection() {
 
       {/* ═══════════ ANALYSE AUTO POUR LE CA ═══════════ */}
       {autoComments.length > 0 && (
-        <Card className="border-primary/20 bg-primary/5">
+        <Card className="border-primary/20 bg-primary/5 no-print">
           <CardHeader className="py-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <Bot className="h-4 w-4 text-primary" />
@@ -354,7 +354,7 @@ export function RapportOrdoSection() {
 
       {/* ═══════════ PRÉCONISATIONS IA ═══════════ */}
       {preconisationsRaw.length > 0 && (
-        <Card className="border-warning/20 bg-warning/5">
+        <Card className="border-warning/20 bg-warning/5 no-print">
           <CardHeader className="py-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <Target className="h-4 w-4 text-warning" />
@@ -1864,18 +1864,31 @@ function IndicatorBadge({ icon, label, value }: { icon: React.ReactNode; label: 
 }
 
 function CommentaireBox({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const textareaRef = (el: HTMLTextAreaElement | null) => {
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = `${Math.max(48, el.scrollHeight)}px`;
+    }
+  };
   return (
-    <div className="mb-4">
-      <div className="flex items-center gap-1 mb-1">
+    <div className="mb-4 section-rapport">
+      <div className="flex items-center gap-1 mb-1 no-print">
         <MessageSquare className="h-3 w-3 text-muted-foreground" />
         <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">{label}</span>
       </div>
       <Textarea
+        ref={textareaRef}
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={e => {
+          onChange(e.target.value);
+          const t = e.target;
+          t.style.height = 'auto';
+          t.style.height = `${Math.max(48, t.scrollHeight)}px`;
+        }}
         placeholder={placeholder || `Saisissez ici les faits caractéristiques de cette rubrique…`}
         rows={2}
-        className="bg-muted/30 text-xs"
+        className="bg-muted/30 text-xs resize-none overflow-hidden"
+        style={{ minHeight: 48 }}
       />
     </div>
   );
