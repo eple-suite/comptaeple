@@ -10,6 +10,7 @@ import { createStyledPDF, addPDFFooters } from '@/lib/pdfUtils';
 import { formatCurrency } from '@/lib/mockData';
 import type { LigneSDE, LigneSDR } from '@/lib/cofieple_types';
 import type { EtablissementUI } from '@/lib/cofieple_storeTypes';
+import { getLeafSdeRows, getLeafSdrRows, getEtsSdeRow, getEtsSdrRow } from '@/lib/executionRowFilters';
 
 interface RapportParams {
   etab: EtablissementUI;

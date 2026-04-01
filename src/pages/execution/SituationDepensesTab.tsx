@@ -1,7 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 // SITUATION DES DÉPENSES ENGAGÉES (SDE)
 // Ref. : M9-6 Tome 2 — §2.3 Exécution des dépenses
-// Principes : spécialité (§2.1.1), engagement, liquidation, ordonnancement
 // ═══════════════════════════════════════════════════════════════
 
 import { useMemo } from "react";
@@ -9,7 +8,6 @@ import { AlertTriangle, CheckCircle2, Download, FileText } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "@/components/ui/table";
 import { useCofiepleStore } from "@/store/useCofiepleStore";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
@@ -17,6 +15,7 @@ import { formatCurrency } from "@/lib/mockData";
 import { createStyledPDF, savePDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
 import type { LigneSDE } from "@/lib/cofieple_types";
+import { getLeafSdeRows, getEtsSdeRow, checkSdeHierarchy, formatEuros } from "@/lib/executionRowFilters";
 
 interface ServiceAggregate {
   service: string;
@@ -35,11 +34,14 @@ const SituationDepensesTab = () => {
 
   const hasData = sdeRows && sdeRows.length > 0;
 
-  // Aggregate by service
+  // ══ FILTRE FEUILLES UNIQUEMENT — éviter les doubles comptes ══
+  const leafRows = useMemo(() => getLeafSdeRows(sdeRows || []), [sdeRows]);
+
+  // Aggregate by service using ONLY leaf rows
   const serviceAggregates = useMemo<ServiceAggregate[]>(() => {
-    if (!hasData) return [];
+    if (!hasData || leafRows.length === 0) return [];
     const map = new Map<string, ServiceAggregate>();
-    for (const row of sdeRows) {
+    for (const row of leafRows) {
       const svc = row.service || 'INCONNU';
       let agg = map.get(svc);
       if (!agg) {
@@ -53,15 +55,26 @@ const SituationDepensesTab = () => {
       agg.lignes.push(row);
     }
     return Array.from(map.values());
-  }, [sdeRows, hasData]);
+  }, [leafRows, hasData]);
 
-  // Detect violations of spécialité (crédits dépassés)
+  // Detect violations of spécialité
   const creditsDepasses = useMemo(() => {
     if (!hasData) return [];
-    return sdeRows.filter(r => (r.disponible ?? 0) < 0);
-  }, [sdeRows, hasData]);
+    return leafRows.filter(r => (r.disponible ?? 0) < 0);
+  }, [leafRows, hasData]);
 
+  // ══ TOTAUX : préférer le niveau ETS si disponible ══
   const totaux = useMemo(() => {
+    const etsRow = getEtsSdeRow(sdeRows || []);
+    if (etsRow) {
+      return {
+        creditsOuverts: etsRow.budget,
+        engagements: etsRow.engage,
+        demandePaiement: etsRow.realise,
+        disponible: etsRow.disponible,
+      };
+    }
+    // Fallback: somme des agrégats par service
     const t = { creditsOuverts: 0, engagements: 0, demandePaiement: 0, disponible: 0 };
     for (const s of serviceAggregates) {
       t.creditsOuverts += s.creditsOuverts;
@@ -70,7 +83,10 @@ const SituationDepensesTab = () => {
       t.disponible += s.disponible;
     }
     return t;
-  }, [serviceAggregates]);
+  }, [sdeRows, serviceAggregates]);
+
+  // ══ CONTRÔLES HIÉRARCHIQUES ══
+  const hierarchyCheck = useMemo(() => checkSdeHierarchy(sdeRows || []), [sdeRows]);
 
   const generatePDF = () => {
     const doc = createStyledPDF({
@@ -138,6 +154,25 @@ const SituationDepensesTab = () => {
 
   return (
     <div className="space-y-4 mt-4">
+      {/* Contrôles hiérarchiques */}
+      {hierarchyCheck && (!hierarchyCheck.sgEqualsSubServices || !hierarchyCheck.totalEqualsEts) && (
+        <Card className="border-l-4 border-l-red-600 bg-red-50 dark:bg-red-950/20">
+          <CardContent className="pt-3 pb-3">
+            <p className="text-sm font-bold text-red-700">⚠ ALERTE COHÉRENCE HIÉRARCHIQUE</p>
+            {!hierarchyCheck.sgEqualsSubServices && (
+              <p className="text-xs text-red-600">
+                AP + VE + ALO ({formatEuros(hierarchyCheck.subServicesBudget)}) ≠ SG ({formatEuros(hierarchyCheck.sgBudget)})
+              </p>
+            )}
+            {!hierarchyCheck.totalEqualsEts && (
+              <p className="text-xs text-red-600">
+                SG + SS ({formatEuros(hierarchyCheck.sgPlusSs)}) ≠ ETS ({formatEuros(hierarchyCheck.etsBudget)})
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Anomalies banner */}
       {creditsDepasses.length > 0 ? (
         <Card className="border-l-4 border-l-destructive bg-destructive/5">
@@ -283,7 +318,6 @@ const SituationDepensesTab = () => {
         </CardContent>
       </Card>
 
-      {/* Mention légale */}
       <p className="text-[10px] text-muted-foreground italic text-center">
         Analyse strictement limitée aux dispositions explicites de la M9-6 — OP@LE (19 janvier 2026).
         Aucun calcul prospectif, prévisionnel ou statistique n'est effectué car non prévu par l'instruction.
