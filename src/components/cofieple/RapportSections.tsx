@@ -334,7 +334,7 @@ export function RapportOrdoSection() {
 
       {/* ═══════════ ANALYSE AUTO POUR LE CA ═══════════ */}
       {autoComments.length > 0 && (
-        <Card className="border-primary/20 bg-primary/5">
+        <Card className="border-primary/20 bg-primary/5 no-print">
           <CardHeader className="py-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <Bot className="h-4 w-4 text-primary" />
