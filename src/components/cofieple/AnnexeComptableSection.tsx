@@ -1322,17 +1322,24 @@ export function AnnexeComptableSection() {
       </Tabs>
 
       {/* Signature — Comptable seul pour l'annexe */}
-      <Card className="print:shadow-none print:border-0 mt-6">
-        <CardContent className="p-8">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <div>
-              <strong className="block text-foreground text-sm">L'agent comptable</strong>
-              <div className="mt-12">{etab.agentComptable || '……………………'}</div>
-              <span>Signature et cachet</span>
+      <Card className="print:shadow-none print:border-0 mt-8 border-2 border-dashed border-muted-foreground/20">
+        <CardContent className="p-10">
+          <div className="text-center mb-8">
+            <div className="inline-block px-4 py-1 bg-muted/30 rounded-full text-xs text-muted-foreground uppercase tracking-widest font-bold">
+              Visa & Signature
             </div>
-            <div className="text-right">
-              <p>Fait à {etab.commune || '………………'},</p>
-              <p>le ……… / ……… / {etab.exercice + 1}</p>
+          </div>
+          <div className="flex justify-between text-muted-foreground">
+            <div className="text-center">
+              <strong className="block text-foreground text-base font-bold mb-1">L'agent comptable</strong>
+              <p className="text-sm text-muted-foreground mb-16">Signature et cachet</p>
+              <div className="border-t-2 border-foreground/30 pt-2 px-8">
+                <p className="text-sm font-medium text-foreground">{etab.agentComptable || '……………………………………'}</p>
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-base text-foreground font-medium">Fait à {etab.commune || '………………'},</p>
+              <p className="text-base text-foreground mt-1">le ……… / ……… / {etab.exercice + 1}</p>
             </div>
           </div>
         </CardContent>
