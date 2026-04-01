@@ -12,8 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
@@ -24,17 +23,16 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
   Bot, Loader2, FileText, Sparkles,
-  TrendingUp, AlertTriangle, Activity, Landmark, Scale, BookOpen,
+  TrendingUp, AlertTriangle, Activity, BookOpen,
   ArrowRight, BarChart3, CheckCircle2, Search,
-  Shield, Eye, Table2, ArrowDown, ArrowUp,
+  Shield, Eye, Table2,
   ShieldAlert, Download, Lock, Unlock, FileWarning,
   Package, CreditCard, Coins, PiggyBank, Receipt, Info, Building
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend, Line, Area, AreaChart,
-  ReferenceLine, Cell, LineChart
+  Tooltip, ResponsiveContainer, Legend, Line, Area, AreaChart
 } from 'recharts';
 
 // ── Types ────────────────────────────────────────────────────
@@ -808,43 +806,56 @@ export function AnnexeComptableSection() {
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer l'annexe comptable réglementaire (M9-6 § V.3)." />;
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-muted/30 to-muted/10 rounded-xl p-5 border border-border">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="outline" className="text-[10px] font-bold border-primary/40 text-primary">M9-6 2026</Badge>
-              <Badge variant="outline" className="text-[10px] border-muted-foreground/30">11 composantes réglementaires</Badge>
-              {canGenerateAnnexe ? (
-                <Badge className="bg-emerald-600 text-white text-[10px]"><Unlock className="h-3 w-3 mr-1" />Prêt</Badge>
-              ) : (
-                <Badge className="bg-destructive text-destructive-foreground text-[10px]"><Lock className="h-3 w-3 mr-1" />{unjustifiedBlocking.length} bloq.</Badge>
-              )}
+    <div className="space-y-6">
+      {/* Header — Professionnel */}
+      <div className="relative overflow-hidden rounded-2xl border border-primary/20 shadow-lg">
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(215,70%,15%)] via-[hsl(215,50%,20%)] to-[hsl(215,40%,28%)]" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9InAiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTAgMEw2MCAwTDYwIDYwTDAgNjBaIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3QgZmlsbD0idXJsKCNwKSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIvPjwvc3ZnPg==')] opacity-50" />
+        <div className="relative px-7 py-6">
+          <div className="flex items-start justify-between gap-6 flex-wrap">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-warning to-amber-600 flex items-center justify-center shadow-lg shadow-warning/20">
+                  <BookOpen className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-black tracking-tight text-white">Annexe au Compte Financier</h1>
+                  <p className="text-sm text-blue-200/70 mt-0.5 font-medium">{etab.nom || 'Établissement'} — RNE {etab.uai} — Exercice {etab.exercice}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap mt-1">
+                <Badge className="bg-white/10 text-white border-white/20 text-xs font-bold backdrop-blur-sm">M9-6 2026</Badge>
+                <Badge className="bg-white/10 text-white/80 border-white/10 text-xs backdrop-blur-sm">11 composantes réglementaires</Badge>
+                {canGenerateAnnexe ? (
+                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs"><Unlock className="h-3 w-3 mr-1" />Prêt à générer</Badge>
+                ) : (
+                  <Badge className="bg-red-500/20 text-red-300 border-red-500/30 text-xs"><Lock className="h-3 w-3 mr-1" />{unjustifiedBlocking.length} bloquant(s)</Badge>
+                )}
+              </div>
             </div>
-            <h1 className="text-xl font-black tracking-tight text-foreground">Annexe au Compte Financier</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">{etab.nom || 'Établissement'} — RNE {etab.uai} — Exercice {etab.exercice}</p>
+            <div className="flex flex-col gap-2.5 items-end shrink-0">
+              <Button onClick={genererTout} disabled={!!loadingSection || !canGenerateAnnexe} size="lg" className="gap-2.5 font-bold text-sm shadow-lg bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90">
+                {loadingSection ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-5 w-5" />}
+                Générer toutes les notes (IA)
+              </Button>
+              <Button variant="default" onClick={exportDemact} disabled={exportingPdf || !canGenerateAnnexe} className="gap-2 text-sm bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm">
+                {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                Export Dém'act (PDF)
+              </Button>
+              <Button variant="ghost" onClick={exportComplianceCertificate} disabled={exportingPdf} className="gap-2 text-xs text-white/60 hover:text-white hover:bg-white/10">
+                <Shield className="h-3 w-3" />
+                Certificat de conformité
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-col gap-2 items-end shrink-0">
-            <Button onClick={genererTout} disabled={!!loadingSection || !canGenerateAnnexe} className="gap-2 font-bold">
-              {loadingSection ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
-              Générer toutes les notes (IA)
-            </Button>
-            <Button variant="default" onClick={exportDemact} disabled={exportingPdf || !canGenerateAnnexe} className="gap-2 text-xs bg-primary">
-              {exportingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-              Export Dém'act (PDF)
-            </Button>
-            <Button variant="outline" onClick={exportComplianceCertificate} disabled={exportingPdf} className="gap-2 text-xs">
-              <Shield className="h-3 w-3" />
-              Certificat de conformité
-            </Button>
+          <div className="mt-5 flex items-center gap-4 bg-white/5 rounded-lg px-4 py-3 backdrop-blur-sm border border-white/10">
+            <span className="text-xs text-blue-200/60 uppercase tracking-widest font-bold shrink-0">Complétude</span>
+            <div className="flex-1 h-3 bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-warning to-amber-400 rounded-full transition-all duration-700 ease-out" style={{ width: `${progressPct}%` }} />
+            </div>
+            <span className="text-sm text-white font-bold font-mono shrink-0">{completedSections}/{AI_SECTIONS.length}</span>
+            {completedSections === AI_SECTIONS.length && <CheckCircle2 className="h-5 w-5 text-emerald-400" />}
           </div>
-        </div>
-        <div className="mt-4 flex items-center gap-3">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold shrink-0">Complétude</span>
-          <Progress value={progressPct} className="flex-1 h-2" />
-          <span className="text-xs text-muted-foreground font-mono shrink-0">{completedSections}/{AI_SECTIONS.length}</span>
-          {completedSections === AI_SECTIONS.length && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
         </div>
       </div>
 
@@ -860,24 +871,32 @@ export function AnnexeComptableSection() {
       )}
 
       {/* ═══ TABS : 11 composantes + Auto-Audit ═══ */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AnnexeSectionId)} className="space-y-4">
-        <TabsList className="w-full h-auto flex-wrap bg-muted/30 p-1 rounded-lg gap-1">
-          {ANNEXE_TABS.map(tab => (
-            <TabsTrigger key={tab.id} value={tab.id}
-              className="flex-1 min-w-[80px] gap-1 text-[11px] font-bold py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              {tab.icon}
-              <span className="hidden sm:inline">{tab.label}</span>
-              {tab.id === 'autoAudit' && blockingAnomalies.length > 0 && (
-                <span className={`ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                  canGenerateAnnexe ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'
-                }`}>{blockingAnomalies.length}</span>
-              )}
-              {tab.id !== 'autoAudit' && texts[tab.id as Exclude<AnnexeSectionId, 'autoAudit'>] && (
-                <CheckCircle2 className="h-3 w-3 text-emerald-500 ml-1" />
-              )}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AnnexeSectionId)} className="space-y-6">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-2">
+          <div className="flex flex-wrap gap-1.5">
+            {ANNEXE_TABS.map(tab => {
+              const isActive = activeTab === tab.id;
+              const hasText = tab.id !== 'autoAudit' && texts[tab.id as Exclude<AnnexeSectionId, 'autoAudit'>];
+              return (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-primary to-blue-600 text-white shadow-md shadow-primary/25'
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                  }`}>
+                  {tab.icon}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  {tab.id === 'autoAudit' && blockingAnomalies.length > 0 && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      isActive ? 'bg-white/20 text-white' : canGenerateAnnexe ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'
+                    }`}>{blockingAnomalies.length}</span>
+                  )}
+                  {hasText && <CheckCircle2 className={`h-3.5 w-3.5 ${isActive ? 'text-emerald-300' : 'text-emerald-500'}`} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* ═══ AUTO-AUDIT ═══ */}
         <TabsContent value="autoAudit" className="space-y-5 mt-0">
@@ -1301,17 +1320,24 @@ export function AnnexeComptableSection() {
       </Tabs>
 
       {/* Signature — Comptable seul pour l'annexe */}
-      <Card className="print:shadow-none print:border-0 mt-6">
-        <CardContent className="p-8">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <div>
-              <strong className="block text-foreground text-sm">L'agent comptable</strong>
-              <div className="mt-12">{etab.agentComptable || '……………………'}</div>
-              <span>Signature et cachet</span>
+      <Card className="print:shadow-none print:border-0 mt-8 border-2 border-dashed border-muted-foreground/20">
+        <CardContent className="p-10">
+          <div className="text-center mb-8">
+            <div className="inline-block px-4 py-1 bg-muted/30 rounded-full text-xs text-muted-foreground uppercase tracking-widest font-bold">
+              Visa & Signature
             </div>
-            <div className="text-right">
-              <p>Fait à {etab.commune || '………………'},</p>
-              <p>le ……… / ……… / {etab.exercice + 1}</p>
+          </div>
+          <div className="flex justify-between text-muted-foreground">
+            <div className="text-center">
+              <strong className="block text-foreground text-base font-bold mb-1">L'agent comptable</strong>
+              <p className="text-sm text-muted-foreground mb-16">Signature et cachet</p>
+              <div className="border-t-2 border-foreground/30 pt-2 px-8">
+                <p className="text-sm font-medium text-foreground">{etab.agentComptable || '……………………………………'}</p>
+              </div>
+            </div>
+            <div className="text-center">
+              <p className="text-base text-foreground font-medium">Fait à {etab.commune || '………………'},</p>
+              <p className="text-base text-foreground mt-1">le ……… / ……… / {etab.exercice + 1}</p>
             </div>
           </div>
         </CardContent>
@@ -1333,38 +1359,49 @@ function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading, 
   const [editMode, setEditMode] = useState(!text);
   const meta = SECTION_META[sectionId];
   return (
-    <Card>
-      <CardHeader className="py-3 flex-row items-center gap-2 bg-muted/10">
-        <div className="flex items-center gap-2 flex-1">
-          {meta?.icon}
-          <CardTitle className="text-sm font-bold">{meta?.label}</CardTitle>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          {text && (
-            <Button variant="ghost" size="sm" onClick={() => setEditMode(!editMode)} className="text-xs h-7">
-              {editMode ? 'Aperçu' : '✏️ Modifier'}
+    <Card className="overflow-hidden border-border/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+      <div className="bg-gradient-to-r from-primary/8 via-primary/4 to-transparent border-b border-border/60">
+        <div className="px-6 py-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+            {meta?.icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-foreground leading-tight">{meta?.label}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Rédaction libre ou assistée par IA</p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            {text && (
+              <Button variant="ghost" size="sm" onClick={() => setEditMode(!editMode)} className="text-sm h-9 gap-1.5 font-medium">
+                {editMode ? <><Eye className="h-4 w-4" /> Aperçu</> : <><FileText className="h-4 w-4" /> Modifier</>}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={onGenerate} disabled={loading} className="text-sm h-9 gap-1.5 font-medium border-primary/30 text-primary hover:bg-primary/5">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
+              {loading ? 'Génération…' : 'Générer (IA)'}
             </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={onGenerate} disabled={loading} className="text-xs h-7 gap-1">
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Bot className="h-3 w-3" />}
-            {loading ? 'IA…' : 'Générer (IA)'}
-          </Button>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent className="p-5">
+      </div>
+      <CardContent className="p-6">
         {editMode || !text ? (
-          <Textarea value={text} onChange={e => onTextChange(e.target.value)}
-            onBlur={onBlur}
-            placeholder="Saisissez votre commentaire ici, ou utilisez le bouton « Générer (IA) » pour une rédaction assistée…"
-            className="text-sm min-h-[120px] bg-muted/5 leading-relaxed" />
+          <div className="space-y-2">
+            <Textarea value={text} onChange={e => onTextChange(e.target.value)}
+              onBlur={onBlur}
+              placeholder="Saisissez votre commentaire ici, ou utilisez le bouton « Générer (IA) » pour une rédaction assistée…"
+              className="text-base min-h-[160px] bg-muted/5 leading-relaxed border-2 border-dashed border-muted-foreground/15 focus:border-primary/40 rounded-xl p-4 placeholder:text-muted-foreground/40" />
+            <p className="text-xs text-muted-foreground/60 italic flex items-center gap-1.5">
+              <Sparkles className="h-3 w-3" />
+              Astuce : rédigez manuellement pour un contrôle total, ou utilisez l'IA pour un premier jet.
+            </p>
+          </div>
         ) : (
-          <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground">
+          <div className="prose prose-base max-w-none text-base leading-relaxed text-foreground bg-muted/5 rounded-xl p-5 border border-border/40">
             <ReactMarkdown>{text}</ReactMarkdown>
           </div>
         )}
         {lastMod && (
-          <div className="mt-3 pt-2 border-t border-border/50 text-[10px] text-muted-foreground flex items-center gap-1">
-            <Eye className="h-3 w-3" />
+          <div className="mt-4 pt-3 border-t border-border/40 text-xs text-muted-foreground flex items-center gap-1.5">
+            <Eye className="h-3.5 w-3.5" />
             Dernière modification par <strong className="text-foreground">{lastMod.user_name}</strong> le{' '}
             {new Date(lastMod.created_at).toLocaleDateString('fr-FR')} à{' '}
             {new Date(lastMod.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
@@ -1382,32 +1419,33 @@ function RegulatoryTable({ title, refM96, columns, rows, onDrilldown, totalLabel
 }) {
   if (rows.length === 0) return null;
   return (
-    <Card>
-      <CardHeader className="py-3">
-        <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-          <Table2 className="h-4 w-4" /> {title}
-          <Badge variant="outline" className="ml-auto text-[10px]">{refM96}</Badge>
-        </CardTitle>
-      </CardHeader>
+    <Card className="overflow-hidden shadow-sm">
+      <div className="bg-gradient-to-r from-muted/40 to-muted/10 px-5 py-3.5 border-b border-border/60 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Table2 className="h-4 w-4 text-primary" />
+        </div>
+        <h4 className="text-sm font-bold text-foreground flex-1">{title}</h4>
+        <Badge variant="outline" className="text-xs font-semibold border-primary/30 text-primary">{refM96}</Badge>
+      </div>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/20">
+              <tr className="border-b-2 border-primary/10 bg-muted/20">
                 {columns.map((c, i) => (
-                  <th key={i} className="py-2 px-3 text-left font-bold text-muted-foreground uppercase tracking-wider">{c}</th>
+                  <th key={i} className="py-3 px-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">{c}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.map((row, i) => (
                 <tr key={i} onClick={() => row.compte && onDrilldown(row.compte)}
-                  className={`border-b border-border/50 ${row.compte ? 'cursor-pointer hover:bg-muted/20' : ''} transition-colors ${row.isAtypical ? 'bg-destructive/5 font-semibold' : ''}`}>
+                  className={`border-b border-border/30 ${row.compte ? 'cursor-pointer hover:bg-primary/5' : ''} transition-colors ${row.isAtypical ? 'bg-destructive/5 font-semibold' : i % 2 === 0 ? '' : 'bg-muted/5'}`}>
                   {row.cells.map((cell, j) => (
-                    <td key={j} className={`py-2 px-3 ${j >= 2 ? 'font-mono text-right' : ''}`}>
+                    <td key={j} className={`py-2.5 px-4 ${j >= 2 ? 'font-mono text-right' : ''}`}>
                       {j === 0 && row.isAtypical ? (
-                        <span className="flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3 text-destructive shrink-0" />
+                        <span className="flex items-center gap-1.5">
+                          <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
                           <span className="font-mono">{cell}</span>
                         </span>
                       ) : cell}
@@ -1416,9 +1454,9 @@ function RegulatoryTable({ title, refM96, columns, rows, onDrilldown, totalLabel
                 </tr>
               ))}
               {totalLabel && (
-                <tr className="bg-muted/30 font-bold border-t-2 border-border">
-                  <td colSpan={columns.length - 1} className="py-2 px-3">{totalLabel}</td>
-                  <td className="py-2 px-3 font-mono text-right">{totalValue}</td>
+                <tr className="bg-primary/5 font-bold border-t-2 border-primary/20">
+                  <td colSpan={columns.length - 1} className="py-3 px-4 text-foreground">{totalLabel}</td>
+                  <td className="py-3 px-4 font-mono text-right text-primary font-bold">{totalValue}</td>
                 </tr>
               )}
             </tbody>
@@ -1431,39 +1469,44 @@ function RegulatoryTable({ title, refM96, columns, rows, onDrilldown, totalLabel
 
 function DrilldownTable({ comptes, prefix }: { comptes: any[]; prefix: string }) {
   if (comptes.length === 0) {
-    return <div className="text-center py-4 text-muted-foreground text-sm">Aucune écriture pour <span className="font-mono font-bold">{prefix}*</span></div>;
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <Search className="h-8 w-8 mx-auto mb-2 opacity-30" />
+        <p className="text-sm">Aucune écriture pour <span className="font-mono font-bold text-foreground">{prefix}*</span></p>
+      </div>
+    );
   }
   return (
-    <div className="overflow-x-auto border border-border rounded-lg">
-      <table className="w-full text-xs">
+    <div className="overflow-x-auto border border-border/60 rounded-xl shadow-sm">
+      <table className="w-full text-sm">
         <thead>
-          <tr className="bg-muted/30 border-b border-border">
-            <th className="py-2 px-3 text-left font-bold">Compte</th>
-            <th className="py-2 px-3 text-left font-bold">Intitulé</th>
-            <th className="py-2 px-3 text-right font-bold">Débit</th>
-            <th className="py-2 px-3 text-right font-bold">Crédit</th>
-            <th className="py-2 px-3 text-right font-bold">Solde Net</th>
+          <tr className="bg-gradient-to-r from-muted/40 to-muted/20 border-b-2 border-primary/10">
+            <th className="py-3 px-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">Compte</th>
+            <th className="py-3 px-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">Intitulé</th>
+            <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">Débit</th>
+            <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">Crédit</th>
+            <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">Solde Net</th>
           </tr>
         </thead>
         <tbody>
           {comptes.map((c, i) => (
-            <tr key={i} className="border-b border-border/50">
-              <td className="py-1.5 px-3 font-mono">{c.compte}</td>
-              <td className="py-1.5 px-3 truncate max-w-[200px]">{c.intitule}</td>
-              <td className="py-1.5 px-3 text-right font-mono">{c.debit ? formatEur(c.debit) : '—'}</td>
-              <td className="py-1.5 px-3 text-right font-mono">{c.credit ? formatEur(c.credit) : '—'}</td>
-              <td className={`py-1.5 px-3 text-right font-mono font-bold ${c.soldeNet >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+            <tr key={i} className={`border-b border-border/30 transition-colors hover:bg-primary/5 ${i % 2 === 0 ? '' : 'bg-muted/5'}`}>
+              <td className="py-2.5 px-4 font-mono font-medium">{c.compte}</td>
+              <td className="py-2.5 px-4 truncate max-w-[250px]">{c.intitule}</td>
+              <td className="py-2.5 px-4 text-right font-mono">{c.debit ? formatEur(c.debit) : <span className="text-muted-foreground/40">—</span>}</td>
+              <td className="py-2.5 px-4 text-right font-mono">{c.credit ? formatEur(c.credit) : <span className="text-muted-foreground/40">—</span>}</td>
+              <td className={`py-2.5 px-4 text-right font-mono font-bold ${c.soldeNet >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
                 {formatEur(c.soldeNet)}
               </td>
             </tr>
           ))}
         </tbody>
         <tfoot>
-          <tr className="bg-muted/20 font-bold border-t-2 border-border">
-            <td colSpan={2} className="py-2 px-3">Total {prefix}*</td>
-            <td className="py-2 px-3 text-right font-mono">{formatEur(comptes.reduce((s: number, c: any) => s + c.debit, 0))}</td>
-            <td className="py-2 px-3 text-right font-mono">{formatEur(comptes.reduce((s: number, c: any) => s + c.credit, 0))}</td>
-            <td className="py-2 px-3 text-right font-mono font-bold">{formatEur(comptes.reduce((s: number, c: any) => s + c.soldeNet, 0))}</td>
+          <tr className="bg-primary/5 font-bold border-t-2 border-primary/20">
+            <td colSpan={2} className="py-3 px-4 text-foreground">Total {prefix}*</td>
+            <td className="py-3 px-4 text-right font-mono">{formatEur(comptes.reduce((s: number, c: any) => s + c.debit, 0))}</td>
+            <td className="py-3 px-4 text-right font-mono">{formatEur(comptes.reduce((s: number, c: any) => s + c.credit, 0))}</td>
+            <td className="py-3 px-4 text-right font-mono font-bold text-primary">{formatEur(comptes.reduce((s: number, c: any) => s + c.soldeNet, 0))}</td>
           </tr>
         </tfoot>
       </table>
@@ -1476,8 +1519,8 @@ function ContextField({ label, value, onChange, placeholder, className = '' }: {
 }) {
   return (
     <div className={className}>
-      <Label className="text-xs text-muted-foreground font-medium">{label}</Label>
-      <Input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="mt-1 text-sm" />
+      <Label className="text-sm text-foreground font-semibold mb-1.5 block">{label}</Label>
+      <Input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="mt-1 text-base h-11" />
     </div>
   );
 }
