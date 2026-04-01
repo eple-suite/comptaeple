@@ -570,8 +570,9 @@ function aggregateDepByService(rows: LigneSDE[]) {
 }
 
 function aggregateRecByService(rows: LigneSDR[]) {
+  const leafRows = getLeafSdrRows(rows);
   const map = new Map<string, { service: string; prev: number; aor: number; enc: number; ec: number; pv: number }>();
-  for (const r of rows) {
+  for (const r of leafRows) {
     const svc = r.service || 'INCONNU';
     const agg = map.get(svc) || { service: svc, prev: 0, aor: 0, enc: 0, ec: 0, pv: 0 };
     agg.prev += r.budget || 0;
