@@ -977,20 +977,21 @@ export function RapportACSection() {
   const [history, setHistory] = useState<any[]>([]);
   const tmcapAlertThreshold = Math.max(0, etab.tmcapSeuilAlerte ?? 15);
 
-  // ── Saisie complémentaire ──────────────────────────────────
-  const [nomAgentComptable, setNomAgentComptable] = useState(etab.agentComptable || '');
-  const [prelevements, setPrelevements] = useState<Prelevement[]>([]);
-  const [explicationsResultat, setExplicationsResultat] = useState('');
-  const [commentaireFDR, setCommentaireFDR] = useState('');
-  const [commentaireBFR, setCommentaireBFR] = useState('');
-  const [commentaireTresorerie, setCommentaireTresorerie] = useState('');
-  const [commentaireChargesRecouvrement, setCommentaireChargesRecouvrement] = useState('');
-  const [commentairePatrimoine, setCommentairePatrimoine] = useState('');
-  const [commentaireCreances, setCommentaireCreances] = useState('');
-  const [commentaireReserves, setCommentaireReserves] = useState('');
-  const [commentaireRatios, setCommentaireRatios] = useState('');
-  const [commentairePluriannuel, setCommentairePluriannuel] = useState('');
-  const [commentaireGeneral, setCommentaireGeneral] = useState('');
+  // ── Saisie complémentaire (persistée) ──────────────────────
+  const acKey = `cofieple_rapport_ac_${etab.uai}_${etab.exercice}`;
+  const [nomAgentComptable, setNomAgentComptable] = usePersistedState(`${acKey}_nom_ac`, etab.agentComptable || '');
+  const [prelevements, setPrelevements] = usePersistedState<Prelevement[]>(`${acKey}_prelevements`, []);
+  const [explicationsResultat, setExplicationsResultat] = usePersistedState(`${acKey}_expl_resultat`, '');
+  const [commentaireFDR, setCommentaireFDR] = usePersistedState(`${acKey}_com_fdr`, '');
+  const [commentaireBFR, setCommentaireBFR] = usePersistedState(`${acKey}_com_bfr`, '');
+  const [commentaireTresorerie, setCommentaireTresorerie] = usePersistedState(`${acKey}_com_tresorerie`, '');
+  const [commentaireChargesRecouvrement, setCommentaireChargesRecouvrement] = usePersistedState(`${acKey}_com_charges`, '');
+  const [commentairePatrimoine, setCommentairePatrimoine] = usePersistedState(`${acKey}_com_patrimoine`, '');
+  const [commentaireCreances, setCommentaireCreances] = usePersistedState(`${acKey}_com_creances`, '');
+  const [commentaireReserves, setCommentaireReserves] = usePersistedState(`${acKey}_com_reserves`, '');
+  const [commentaireRatios, setCommentaireRatios] = usePersistedState(`${acKey}_com_ratios`, '');
+  const [commentairePluriannuel, setCommentairePluriannuel] = usePersistedState(`${acKey}_com_pluriannuel`, '');
+  const [commentaireGeneral, setCommentaireGeneral] = usePersistedState(`${acKey}_com_general`, '');
 
   useEffect(() => {
     if (!etab.uai || !R) return;
