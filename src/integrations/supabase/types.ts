@@ -1068,6 +1068,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_create_establishment_with_uai: {
+        Args: { _uai: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
