@@ -86,22 +86,23 @@ export function RapportOrdoSection() {
   const [aiText3, setAiText3] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   // Noms des signataires
-  const [nomOrdonnateur, setNomOrdonnateur] = useState(etab.ordonnateur || '');
-  const [nomSecretaireGeneral, setNomSecretaireGeneral] = useState(etab.secretaireGeneral || '');
+  const pKey = `cofieple_rapport_ordo_${etab.uai}_${etab.exercice}`;
+  const [nomOrdonnateur, setNomOrdonnateur] = usePersistedState(`${pKey}_nom_ordo`, etab.ordonnateur || '');
+  const [nomSecretaireGeneral, setNomSecretaireGeneral] = usePersistedState(`${pKey}_nom_sg`, etab.secretaireGeneral || '');
   // Commentaires ordonnateur sur chaque rubrique (REPROFI-style "Faits caractéristiques")
-  const [commentairePresentation, setCommentairePresentation] = useState('');
-  const [commentaireResultat, setCommentaireResultat] = useState('');
-  const [commentaireRepartition, setCommentaireRepartition] = useState('');
-  const [commentaireEvolution, setCommentaireEvolution] = useState('');
-  const [commentaireDomaines, setCommentaireDomaines] = useState('');
-  const [commentaireFDR, setCommentaireFDR] = useState('');
-  const [commentaireTresorerie, setCommentaireTresorerie] = useState('');
-  const [commentaireOO, setCommentaireOO] = useState('');
-  const [commentaireSRH, setCommentaireSRH] = useState('');
-  const [commentaireSubventions, setCommentaireSubventions] = useState('');
-  const [commentairePatrimoine, setCommentairePatrimoine] = useState('');
-  const [commentairePerspectives, setCommentairePerspectives] = useState('');
-  const [commentairePilotage, setCommentairePilotage] = useState('');
+  const [commentairePresentation, setCommentairePresentation] = usePersistedState(`${pKey}_com_presentation`, '');
+  const [commentaireResultat, setCommentaireResultat] = usePersistedState(`${pKey}_com_resultat`, '');
+  const [commentaireRepartition, setCommentaireRepartition] = usePersistedState(`${pKey}_com_repartition`, '');
+  const [commentaireEvolution, setCommentaireEvolution] = usePersistedState(`${pKey}_com_evolution`, '');
+  const [commentaireDomaines, setCommentaireDomaines] = usePersistedState(`${pKey}_com_domaines`, '');
+  const [commentaireFDR, setCommentaireFDR] = usePersistedState(`${pKey}_com_fdr`, '');
+  const [commentaireTresorerie, setCommentaireTresorerie] = usePersistedState(`${pKey}_com_tresorerie`, '');
+  const [commentaireOO, setCommentaireOO] = usePersistedState(`${pKey}_com_oo`, '');
+  const [commentaireSRH, setCommentaireSRH] = usePersistedState(`${pKey}_com_srh`, '');
+  const [commentaireSubventions, setCommentaireSubventions] = usePersistedState(`${pKey}_com_subventions`, '');
+  const [commentairePatrimoine, setCommentairePatrimoine] = usePersistedState(`${pKey}_com_patrimoine`, '');
+  const [commentairePerspectives, setCommentairePerspectives] = usePersistedState(`${pKey}_com_perspectives`, '');
+  const [commentairePilotage, setCommentairePilotage] = usePersistedState(`${pKey}_com_pilotage`, '');
 
   const depNatureDataRaw = useMemo(() => {
     if (!R) return [];
