@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Outlet } from "react-router-dom";
@@ -16,6 +17,8 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
+import { hasCofieplePersistedData } from "@/hooks/usePersistedState";
+import { toast } from "sonner";
 
 export function AppLayout() {
   const { profile, role, signOut } = useAuth();
