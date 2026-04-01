@@ -873,24 +873,32 @@ export function AnnexeComptableSection() {
       )}
 
       {/* ═══ TABS : 11 composantes + Auto-Audit ═══ */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AnnexeSectionId)} className="space-y-4">
-        <TabsList className="w-full h-auto flex-wrap bg-muted/30 p-1 rounded-lg gap-1">
-          {ANNEXE_TABS.map(tab => (
-            <TabsTrigger key={tab.id} value={tab.id}
-              className="flex-1 min-w-[80px] gap-1 text-[11px] font-bold py-2 data-[state=active]:bg-background data-[state=active]:shadow-sm">
-              {tab.icon}
-              <span className="hidden sm:inline">{tab.label}</span>
-              {tab.id === 'autoAudit' && blockingAnomalies.length > 0 && (
-                <span className={`ml-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
-                  canGenerateAnnexe ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'
-                }`}>{blockingAnomalies.length}</span>
-              )}
-              {tab.id !== 'autoAudit' && texts[tab.id as Exclude<AnnexeSectionId, 'autoAudit'>] && (
-                <CheckCircle2 className="h-3 w-3 text-emerald-500 ml-1" />
-              )}
-            </TabsTrigger>
-          ))}
-        </TabsList>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as AnnexeSectionId)} className="space-y-6">
+        <div className="bg-card rounded-xl border border-border shadow-sm p-2">
+          <div className="flex flex-wrap gap-1.5">
+            {ANNEXE_TABS.map(tab => {
+              const isActive = activeTab === tab.id;
+              const hasText = tab.id !== 'autoAudit' && texts[tab.id as Exclude<AnnexeSectionId, 'autoAudit'>];
+              return (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-primary to-blue-600 text-white shadow-md shadow-primary/25'
+                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                  }`}>
+                  {tab.icon}
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  {tab.id === 'autoAudit' && blockingAnomalies.length > 0 && (
+                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${
+                      isActive ? 'bg-white/20 text-white' : canGenerateAnnexe ? 'bg-warning text-warning-foreground' : 'bg-destructive text-destructive-foreground'
+                    }`}>{blockingAnomalies.length}</span>
+                  )}
+                  {hasText && <CheckCircle2 className={`h-3.5 w-3.5 ${isActive ? 'text-emerald-300' : 'text-emerald-500'}`} />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
 
         {/* ═══ AUTO-AUDIT ═══ */}
         <TabsContent value="autoAudit" className="space-y-5 mt-0">
