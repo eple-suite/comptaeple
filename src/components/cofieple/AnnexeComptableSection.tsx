@@ -1330,7 +1330,7 @@ function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading, 
   lastMod?: { user_name: string; created_at: string } | null;
   onBlur?: () => void;
 }) {
-  const [editMode, setEditMode] = useState(false);
+  const [editMode, setEditMode] = useState(!text);
   const meta = SECTION_META[sectionId];
   return (
     <Card>
@@ -1340,34 +1340,26 @@ function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading, 
           <CardTitle className="text-sm font-bold">{meta?.label}</CardTitle>
         </div>
         <div className="flex gap-2 shrink-0">
-          <Button variant="ghost" size="sm" onClick={onGenerate} disabled={loading} className="text-xs h-7 gap-1">
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Bot className="h-3 w-3" />}
-            {loading ? 'IA…' : 'Générer l\'analyse'}
-          </Button>
           {text && (
             <Button variant="ghost" size="sm" onClick={() => setEditMode(!editMode)} className="text-xs h-7">
-              {editMode ? 'Aperçu' : 'Modifier'}
+              {editMode ? 'Aperçu' : '✏️ Modifier'}
             </Button>
           )}
+          <Button variant="outline" size="sm" onClick={onGenerate} disabled={loading} className="text-xs h-7 gap-1">
+            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Bot className="h-3 w-3" />}
+            {loading ? 'IA…' : 'Générer (IA)'}
+          </Button>
         </div>
       </CardHeader>
       <CardContent className="p-5">
-        {text ? (
-          editMode ? (
-            <Textarea value={text} onChange={e => onTextChange(e.target.value)}
-              onBlur={onBlur}
-              className="text-sm min-h-[120px] bg-muted/5 leading-relaxed" />
-          ) : (
-            <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground">
-              <ReactMarkdown>{text}</ReactMarkdown>
-            </div>
-          )
+        {editMode || !text ? (
+          <Textarea value={text} onChange={e => onTextChange(e.target.value)}
+            onBlur={onBlur}
+            placeholder="Saisissez votre commentaire ici, ou utilisez le bouton « Générer (IA) » pour une rédaction assistée…"
+            className="text-sm min-h-[120px] bg-muted/5 leading-relaxed" />
         ) : (
-          <div className="bg-muted/5 rounded-lg p-6 text-center">
-            <Bot className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
-            <p className="text-xs text-muted-foreground">
-              Cliquez sur <strong>Générer l'analyse</strong> pour que l'IA rédige cette note.
-            </p>
+          <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground">
+            <ReactMarkdown>{text}</ReactMarkdown>
           </div>
         )}
         {lastMod && (
