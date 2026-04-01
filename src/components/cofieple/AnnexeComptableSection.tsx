@@ -32,8 +32,7 @@ import {
 import { toast } from 'sonner';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend, Line, Area, AreaChart,
-  ReferenceLine, Cell, LineChart
+  Tooltip, ResponsiveContainer, Legend, Line, Area, AreaChart
 } from 'recharts';
 
 // ── Types ────────────────────────────────────────────────────
