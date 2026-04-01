@@ -245,8 +245,9 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
     }
 
     // Recouvrement
-    const totalTitre = sdrRows.reduce((s, r) => s + (r.aor || 0), 0);
-    const totalEncaisse = sdrRows.reduce((s, r) => s + (r.realise || 0), 0);
+    const leafSdrRows = getLeafSdrRows(sdrRows);
+    const totalTitre = leafSdrRows.reduce((s, r) => s + (r.aor || 0), 0);
+    const totalEncaisse = leafSdrRows.reduce((s, r) => s + (r.realise || 0), 0);
     const rar = totalTitre - totalEncaisse;
     const yRec = yAfter + 12;
     doc.setTextColor(0);
