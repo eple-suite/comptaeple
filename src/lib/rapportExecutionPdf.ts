@@ -399,10 +399,13 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
 
   // Key budget metrics
   if (hasSDE && hasSDR) {
-    const totalDepBudget = sdeRows.reduce((s, r) => s + (r.budget || 0), 0);
-    const totalDepRealise = sdeRows.reduce((s, r) => s + (r.realise || 0), 0);
-    const totalRecBudget = sdrRows.reduce((s, r) => s + (r.budget || 0), 0);
-    const totalRecRealise = sdrRows.reduce((s, r) => s + (r.realise || 0), 0);
+    // Use ETS aggregate rows for correct totals (avoid double-counting)
+    const etsSDERow = getEtsSdeRow(sdeRows);
+    const etsSdrRow = getEtsSdrRow(sdrRows);
+    const totalDepBudget = etsSDERow?.budget ?? getLeafSdeRows(sdeRows).reduce((s, r) => s + (r.budget || 0), 0);
+    const totalDepRealise = etsSDERow?.realise ?? getLeafSdeRows(sdeRows).reduce((s, r) => s + (r.realise || 0), 0);
+    const totalRecBudget = etsSdrRow?.budget ?? getLeafSdrRows(sdrRows).reduce((s, r) => s + (r.budget || 0), 0);
+    const totalRecRealise = etsSdrRow?.realise ?? getLeafSdrRows(sdrRows).reduce((s, r) => s + (r.realise || 0), 0);
     const ecartEq = Math.abs(totalDepBudget - totalRecBudget);
 
     doc.setFont('helvetica', 'bold');
