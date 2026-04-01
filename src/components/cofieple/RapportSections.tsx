@@ -1864,18 +1864,31 @@ function IndicatorBadge({ icon, label, value }: { icon: React.ReactNode; label: 
 }
 
 function CommentaireBox({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+  const textareaRef = (el: HTMLTextAreaElement | null) => {
+    if (el) {
+      el.style.height = 'auto';
+      el.style.height = `${Math.max(48, el.scrollHeight)}px`;
+    }
+  };
   return (
-    <div className="mb-4">
-      <div className="flex items-center gap-1 mb-1">
+    <div className="mb-4 section-rapport">
+      <div className="flex items-center gap-1 mb-1 no-print">
         <MessageSquare className="h-3 w-3 text-muted-foreground" />
         <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">{label}</span>
       </div>
       <Textarea
+        ref={textareaRef}
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={e => {
+          onChange(e.target.value);
+          const t = e.target;
+          t.style.height = 'auto';
+          t.style.height = `${Math.max(48, t.scrollHeight)}px`;
+        }}
         placeholder={placeholder || `Saisissez ici les faits caractéristiques de cette rubrique…`}
         rows={2}
-        className="bg-muted/30 text-xs"
+        className="bg-muted/30 text-xs resize-none overflow-hidden"
+        style={{ minHeight: 48 }}
       />
     </div>
   );

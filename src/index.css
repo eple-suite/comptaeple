@@ -128,3 +128,145 @@
     background-size: 24px 24px;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   PRINT STYLES — Rapport Ordonnateur / Agent Comptable
+   Suppression pages blanches, alignement colonnes, expansion texte
+   ═══════════════════════════════════════════════════════════════ */
+@media print {
+  * {
+    box-sizing: border-box !important;
+  }
+
+  /* Hide non-report UI elements */
+  nav,
+  .no-print,
+  button,
+  [data-sidebar],
+  [data-radix-popper-content-wrapper],
+  .sticky,
+  header {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* The main report card should fill the page cleanly */
+  .max-w-5xl {
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Card borders/shadows are unnecessary in print */
+  .shadow-card,
+  [class*="shadow"] {
+    box-shadow: none !important;
+  }
+
+  /* Sections should not break mid-content */
+  .section-rapport,
+  table,
+  .mb-4,
+  .mb-6 {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Force page breaks before major sections */
+  .page-break-before {
+    page-break-before: always;
+    break-before: always;
+  }
+
+  /* Eliminate empty containers generating blank pages */
+  div:empty,
+  section:empty {
+    display: none !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* ── Textareas become auto-expanding text blocks ── */
+  textarea {
+    overflow: visible !important;
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    resize: none !important;
+    border: none !important;
+    background: transparent !important;
+    padding: 4px 0 !important;
+    white-space: pre-wrap !important;
+    font-size: 11px !important;
+    line-height: 1.5 !important;
+    color: black !important;
+    field-sizing: content;
+  }
+
+  /* Hide textarea placeholders in print */
+  textarea::placeholder {
+    color: transparent !important;
+  }
+
+  /* Hide empty comment boxes entirely */
+  textarea:placeholder-shown {
+    display: none !important;
+  }
+
+  /* Table alignment for financial data */
+  table thead th,
+  table tbody td,
+  table tfoot td {
+    text-align: right;
+    vertical-align: middle;
+    padding: 4px 8px !important;
+    white-space: nowrap;
+    font-size: 10px !important;
+  }
+
+  table thead th:first-child,
+  table tbody td:first-child,
+  table tfoot td:first-child {
+    text-align: left;
+    white-space: normal;
+  }
+
+  /* Recharts SVG should print cleanly */
+  .recharts-responsive-container {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+
+  /* Input fields: show as text */
+  input[type="text"],
+  input:not([type]) {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    font-weight: 600 !important;
+  }
+
+  /* Reduce spacing to avoid orphan pages */
+  .space-y-4 > * + * {
+    margin-top: 0.75rem !important;
+  }
+
+  .gap-3, .gap-4 {
+    gap: 0.5rem !important;
+  }
+
+  /* Force print-friendly colors */
+  .bg-slate-800,
+  .bg-slate-700 {
+    background-color: #1e293b !important;
+    color: white !important;
+  }
+}
