@@ -311,7 +311,7 @@ export function RapportOrdoSection() {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-3 flex-wrap">
+      <div className="flex gap-3 flex-wrap no-print">
         <Button onClick={genererIA} disabled={aiLoading}>
           {aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bot className="h-4 w-4 mr-2" />}
           {aiLoading ? 'Génération IA…' : 'Générer commentaires IA'}
