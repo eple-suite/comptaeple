@@ -7,6 +7,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useMemo } from 'react';
+import { usePersistedState } from '@/hooks/usePersistedState';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
