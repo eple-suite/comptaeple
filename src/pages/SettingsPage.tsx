@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { User, Bell, Database, Building2, Save, Loader2, MapPin, Phone, Mail, Users, Download, Upload } from "lucide-react";
+import { User, Bell, Database, Building2, Save, Loader2, MapPin, Phone, Mail, Users, Download, Upload, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,10 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { clearAllCofiepleData } from "@/hooks/usePersistedState";
 
 const SettingsPage = () => {
   const { selectedEstablishment, refetch } = useEstablishment();
@@ -348,7 +350,35 @@ const SettingsPage = () => {
               </Button>
               <input type="file" accept=".json" className="hidden" onChange={handleImportData} />
             </label>
-            <Button size="sm" variant="outline" className="text-destructive hover:text-destructive">Réinitialiser les données</Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="outline" className="text-destructive hover:text-destructive gap-1.5">
+                  <Trash2 className="h-3.5 w-3.5" /> Effacer toutes les données
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>🗑️ Effacer toutes les données saisies</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Êtes-vous sûr ? Cette action supprimera définitivement toutes vos données saisies
+                    (commentaires, rapports, indicateurs manuels). Cette action est irréversible.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => {
+                      clearAllCofiepleData();
+                      toast.success("Toutes les données locales ont été supprimées.");
+                      window.location.reload();
+                    }}
+                  >
+                    Confirmer la suppression
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </CardContent>
       </Card>

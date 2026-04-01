@@ -7,6 +7,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useMemo } from 'react';
+import { usePersistedState } from '@/hooks/usePersistedState';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -85,22 +86,23 @@ export function RapportOrdoSection() {
   const [aiText3, setAiText3] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
   // Noms des signataires
-  const [nomOrdonnateur, setNomOrdonnateur] = useState(etab.ordonnateur || '');
-  const [nomSecretaireGeneral, setNomSecretaireGeneral] = useState(etab.secretaireGeneral || '');
+  const pKey = `cofieple_rapport_ordo_${etab.uai}_${etab.exercice}`;
+  const [nomOrdonnateur, setNomOrdonnateur] = usePersistedState(`${pKey}_nom_ordo`, etab.ordonnateur || '');
+  const [nomSecretaireGeneral, setNomSecretaireGeneral] = usePersistedState(`${pKey}_nom_sg`, etab.secretaireGeneral || '');
   // Commentaires ordonnateur sur chaque rubrique (REPROFI-style "Faits caractéristiques")
-  const [commentairePresentation, setCommentairePresentation] = useState('');
-  const [commentaireResultat, setCommentaireResultat] = useState('');
-  const [commentaireRepartition, setCommentaireRepartition] = useState('');
-  const [commentaireEvolution, setCommentaireEvolution] = useState('');
-  const [commentaireDomaines, setCommentaireDomaines] = useState('');
-  const [commentaireFDR, setCommentaireFDR] = useState('');
-  const [commentaireTresorerie, setCommentaireTresorerie] = useState('');
-  const [commentaireOO, setCommentaireOO] = useState('');
-  const [commentaireSRH, setCommentaireSRH] = useState('');
-  const [commentaireSubventions, setCommentaireSubventions] = useState('');
-  const [commentairePatrimoine, setCommentairePatrimoine] = useState('');
-  const [commentairePerspectives, setCommentairePerspectives] = useState('');
-  const [commentairePilotage, setCommentairePilotage] = useState('');
+  const [commentairePresentation, setCommentairePresentation] = usePersistedState(`${pKey}_com_presentation`, '');
+  const [commentaireResultat, setCommentaireResultat] = usePersistedState(`${pKey}_com_resultat`, '');
+  const [commentaireRepartition, setCommentaireRepartition] = usePersistedState(`${pKey}_com_repartition`, '');
+  const [commentaireEvolution, setCommentaireEvolution] = usePersistedState(`${pKey}_com_evolution`, '');
+  const [commentaireDomaines, setCommentaireDomaines] = usePersistedState(`${pKey}_com_domaines`, '');
+  const [commentaireFDR, setCommentaireFDR] = usePersistedState(`${pKey}_com_fdr`, '');
+  const [commentaireTresorerie, setCommentaireTresorerie] = usePersistedState(`${pKey}_com_tresorerie`, '');
+  const [commentaireOO, setCommentaireOO] = usePersistedState(`${pKey}_com_oo`, '');
+  const [commentaireSRH, setCommentaireSRH] = usePersistedState(`${pKey}_com_srh`, '');
+  const [commentaireSubventions, setCommentaireSubventions] = usePersistedState(`${pKey}_com_subventions`, '');
+  const [commentairePatrimoine, setCommentairePatrimoine] = usePersistedState(`${pKey}_com_patrimoine`, '');
+  const [commentairePerspectives, setCommentairePerspectives] = usePersistedState(`${pKey}_com_perspectives`, '');
+  const [commentairePilotage, setCommentairePilotage] = usePersistedState(`${pKey}_com_pilotage`, '');
 
   const depNatureDataRaw = useMemo(() => {
     if (!R) return [];
@@ -975,20 +977,21 @@ export function RapportACSection() {
   const [history, setHistory] = useState<any[]>([]);
   const tmcapAlertThreshold = Math.max(0, etab.tmcapSeuilAlerte ?? 15);
 
-  // ── Saisie complémentaire ──────────────────────────────────
-  const [nomAgentComptable, setNomAgentComptable] = useState(etab.agentComptable || '');
-  const [prelevements, setPrelevements] = useState<Prelevement[]>([]);
-  const [explicationsResultat, setExplicationsResultat] = useState('');
-  const [commentaireFDR, setCommentaireFDR] = useState('');
-  const [commentaireBFR, setCommentaireBFR] = useState('');
-  const [commentaireTresorerie, setCommentaireTresorerie] = useState('');
-  const [commentaireChargesRecouvrement, setCommentaireChargesRecouvrement] = useState('');
-  const [commentairePatrimoine, setCommentairePatrimoine] = useState('');
-  const [commentaireCreances, setCommentaireCreances] = useState('');
-  const [commentaireReserves, setCommentaireReserves] = useState('');
-  const [commentaireRatios, setCommentaireRatios] = useState('');
-  const [commentairePluriannuel, setCommentairePluriannuel] = useState('');
-  const [commentaireGeneral, setCommentaireGeneral] = useState('');
+  // ── Saisie complémentaire (persistée) ──────────────────────
+  const acKey = `cofieple_rapport_ac_${etab.uai}_${etab.exercice}`;
+  const [nomAgentComptable, setNomAgentComptable] = usePersistedState(`${acKey}_nom_ac`, etab.agentComptable || '');
+  const [prelevements, setPrelevements] = usePersistedState<Prelevement[]>(`${acKey}_prelevements`, []);
+  const [explicationsResultat, setExplicationsResultat] = usePersistedState(`${acKey}_expl_resultat`, '');
+  const [commentaireFDR, setCommentaireFDR] = usePersistedState(`${acKey}_com_fdr`, '');
+  const [commentaireBFR, setCommentaireBFR] = usePersistedState(`${acKey}_com_bfr`, '');
+  const [commentaireTresorerie, setCommentaireTresorerie] = usePersistedState(`${acKey}_com_tresorerie`, '');
+  const [commentaireChargesRecouvrement, setCommentaireChargesRecouvrement] = usePersistedState(`${acKey}_com_charges`, '');
+  const [commentairePatrimoine, setCommentairePatrimoine] = usePersistedState(`${acKey}_com_patrimoine`, '');
+  const [commentaireCreances, setCommentaireCreances] = usePersistedState(`${acKey}_com_creances`, '');
+  const [commentaireReserves, setCommentaireReserves] = usePersistedState(`${acKey}_com_reserves`, '');
+  const [commentaireRatios, setCommentaireRatios] = usePersistedState(`${acKey}_com_ratios`, '');
+  const [commentairePluriannuel, setCommentairePluriannuel] = usePersistedState(`${acKey}_com_pluriannuel`, '');
+  const [commentaireGeneral, setCommentaireGeneral] = usePersistedState(`${acKey}_com_general`, '');
 
   useEffect(() => {
     if (!etab.uai || !R) return;

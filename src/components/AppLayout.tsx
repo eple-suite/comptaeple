@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Outlet } from "react-router-dom";
@@ -16,11 +17,21 @@ import {
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
 import { useNavigate } from "react-router-dom";
+import { hasCofieplePersistedData } from "@/hooks/usePersistedState";
+import { toast } from "sonner";
 
 export function AppLayout() {
   const { profile, role, signOut } = useAuth();
   const { establishments, selectedEstablishment, selectEstablishment } = useEstablishment();
   const navigate = useNavigate();
+  const toastShown = useRef(false);
+
+  useEffect(() => {
+    if (!toastShown.current && hasCofieplePersistedData()) {
+      toastShown.current = true;
+      toast.info("📂 Vos données précédentes ont été restaurées automatiquement.", { duration: 4000 });
+    }
+  }, []);
 
   const initials = profile
     ? `${(profile.first_name?.[0] || "").toUpperCase()}${(profile.last_name?.[0] || "").toUpperCase()}`
