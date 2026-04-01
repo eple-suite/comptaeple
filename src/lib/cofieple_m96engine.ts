@@ -784,7 +784,9 @@ function getSensNormal(compte: string): SensNormal {
     // 44312 / 443120 : Bourses — Part familles (excédent à rembourser) → DÉBITEUR
     // 4432 / 443200 : Primes et indemnités État → CRÉDITEUR
     // 4438 / 443800 : Fonds sociaux État → CRÉDITEUR
-    if (c.startsWith('44311') || c.startsWith('443110')) return 'crediteur';
+    // 443110 : Bourses — Crédit à répartir. Normalement créditeur (avances État),
+    // mais peut être temporairement débiteur (bourses distribuées avant versement État) → MIXTE
+    if (c.startsWith('44311') || c.startsWith('443110')) return 'mixte';
     if (c.startsWith('44313') || c.startsWith('443130')) return 'crediteur';
     if (c.startsWith('44312') || c.startsWith('443120')) return 'debiteur';
     if (c.startsWith('4432') || c.startsWith('443200')) return 'crediteur';
