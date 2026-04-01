@@ -1361,38 +1361,49 @@ function NarrativeSection({ sectionId, text, onTextChange, onGenerate, loading, 
   const [editMode, setEditMode] = useState(!text);
   const meta = SECTION_META[sectionId];
   return (
-    <Card>
-      <CardHeader className="py-3 flex-row items-center gap-2 bg-muted/10">
-        <div className="flex items-center gap-2 flex-1">
-          {meta?.icon}
-          <CardTitle className="text-sm font-bold">{meta?.label}</CardTitle>
-        </div>
-        <div className="flex gap-2 shrink-0">
-          {text && (
-            <Button variant="ghost" size="sm" onClick={() => setEditMode(!editMode)} className="text-xs h-7">
-              {editMode ? 'Aperçu' : '✏️ Modifier'}
+    <Card className="overflow-hidden border-border/60 shadow-sm hover:shadow-md transition-shadow duration-300">
+      <div className="bg-gradient-to-r from-primary/8 via-primary/4 to-transparent border-b border-border/60">
+        <div className="px-6 py-4 flex items-center gap-3">
+          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+            {meta?.icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-foreground leading-tight">{meta?.label}</h3>
+            <p className="text-xs text-muted-foreground mt-0.5">Rédaction libre ou assistée par IA</p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            {text && (
+              <Button variant="ghost" size="sm" onClick={() => setEditMode(!editMode)} className="text-sm h-9 gap-1.5 font-medium">
+                {editMode ? <><Eye className="h-4 w-4" /> Aperçu</> : <><FileText className="h-4 w-4" /> Modifier</>}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={onGenerate} disabled={loading} className="text-sm h-9 gap-1.5 font-medium border-primary/30 text-primary hover:bg-primary/5">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
+              {loading ? 'Génération…' : 'Générer (IA)'}
             </Button>
-          )}
-          <Button variant="outline" size="sm" onClick={onGenerate} disabled={loading} className="text-xs h-7 gap-1">
-            {loading ? <Loader2 className="h-3 w-3 animate-spin" /> : <Bot className="h-3 w-3" />}
-            {loading ? 'IA…' : 'Générer (IA)'}
-          </Button>
+          </div>
         </div>
-      </CardHeader>
-      <CardContent className="p-5">
+      </div>
+      <CardContent className="p-6">
         {editMode || !text ? (
-          <Textarea value={text} onChange={e => onTextChange(e.target.value)}
-            onBlur={onBlur}
-            placeholder="Saisissez votre commentaire ici, ou utilisez le bouton « Générer (IA) » pour une rédaction assistée…"
-            className="text-sm min-h-[120px] bg-muted/5 leading-relaxed" />
+          <div className="space-y-2">
+            <Textarea value={text} onChange={e => onTextChange(e.target.value)}
+              onBlur={onBlur}
+              placeholder="Saisissez votre commentaire ici, ou utilisez le bouton « Générer (IA) » pour une rédaction assistée…"
+              className="text-base min-h-[160px] bg-muted/5 leading-relaxed border-2 border-dashed border-muted-foreground/15 focus:border-primary/40 rounded-xl p-4 placeholder:text-muted-foreground/40" />
+            <p className="text-xs text-muted-foreground/60 italic flex items-center gap-1.5">
+              <Sparkles className="h-3 w-3" />
+              Astuce : rédigez manuellement pour un contrôle total, ou utilisez l'IA pour un premier jet.
+            </p>
+          </div>
         ) : (
-          <div className="prose prose-sm max-w-none text-sm leading-relaxed text-foreground">
+          <div className="prose prose-base max-w-none text-base leading-relaxed text-foreground bg-muted/5 rounded-xl p-5 border border-border/40">
             <ReactMarkdown>{text}</ReactMarkdown>
           </div>
         )}
         {lastMod && (
-          <div className="mt-3 pt-2 border-t border-border/50 text-[10px] text-muted-foreground flex items-center gap-1">
-            <Eye className="h-3 w-3" />
+          <div className="mt-4 pt-3 border-t border-border/40 text-xs text-muted-foreground flex items-center gap-1.5">
+            <Eye className="h-3.5 w-3.5" />
             Dernière modification par <strong className="text-foreground">{lastMod.user_name}</strong> le{' '}
             {new Date(lastMod.created_at).toLocaleDateString('fr-FR')} à{' '}
             {new Date(lastMod.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
