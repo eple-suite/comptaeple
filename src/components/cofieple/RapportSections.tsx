@@ -354,7 +354,7 @@ export function RapportOrdoSection() {
 
       {/* ═══════════ PRÉCONISATIONS IA ═══════════ */}
       {preconisationsRaw.length > 0 && (
-        <Card className="border-warning/20 bg-warning/5">
+        <Card className="border-warning/20 bg-warning/5 no-print">
           <CardHeader className="py-3">
             <CardTitle className="text-sm flex items-center gap-2">
               <Target className="h-4 w-4 text-warning" />
