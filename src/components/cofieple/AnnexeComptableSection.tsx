@@ -808,43 +808,56 @@ export function AnnexeComptableSection() {
   if (!R) return <EmptyState msg="Lancez l'analyse pour générer l'annexe comptable réglementaire (M9-6 § V.3)." />;
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-muted/30 to-muted/10 rounded-xl p-5 border border-border">
-        <div className="flex items-start justify-between gap-4 flex-wrap">
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <Badge variant="outline" className="text-[10px] font-bold border-primary/40 text-primary">M9-6 2026</Badge>
-              <Badge variant="outline" className="text-[10px] border-muted-foreground/30">11 composantes réglementaires</Badge>
-              {canGenerateAnnexe ? (
-                <Badge className="bg-emerald-600 text-white text-[10px]"><Unlock className="h-3 w-3 mr-1" />Prêt</Badge>
-              ) : (
-                <Badge className="bg-destructive text-destructive-foreground text-[10px]"><Lock className="h-3 w-3 mr-1" />{unjustifiedBlocking.length} bloq.</Badge>
-              )}
+    <div className="space-y-6">
+      {/* Header — Professionnel */}
+      <div className="relative overflow-hidden rounded-2xl border border-primary/20 shadow-lg">
+        <div className="absolute inset-0 bg-gradient-to-br from-[hsl(215,70%,15%)] via-[hsl(215,50%,20%)] to-[hsl(215,40%,28%)]" />
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9InAiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTTAgMEw2MCAwTDYwIDYwTDAgNjBaIiBmaWxsPSJub25lIiBzdHJva2U9InJnYmEoMjU1LDI1NSwyNTUsMC4wMykiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3QgZmlsbD0idXJsKCNwKSIgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIvPjwvc3ZnPg==')] opacity-50" />
+        <div className="relative px-7 py-6">
+          <div className="flex items-start justify-between gap-6 flex-wrap">
+            <div>
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-warning to-amber-600 flex items-center justify-center shadow-lg shadow-warning/20">
+                  <BookOpen className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-black tracking-tight text-white">Annexe au Compte Financier</h1>
+                  <p className="text-sm text-blue-200/70 mt-0.5 font-medium">{etab.nom || 'Établissement'} — RNE {etab.uai} — Exercice {etab.exercice}</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 flex-wrap mt-1">
+                <Badge className="bg-white/10 text-white border-white/20 text-xs font-bold backdrop-blur-sm">M9-6 2026</Badge>
+                <Badge className="bg-white/10 text-white/80 border-white/10 text-xs backdrop-blur-sm">11 composantes réglementaires</Badge>
+                {canGenerateAnnexe ? (
+                  <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs"><Unlock className="h-3 w-3 mr-1" />Prêt à générer</Badge>
+                ) : (
+                  <Badge className="bg-red-500/20 text-red-300 border-red-500/30 text-xs"><Lock className="h-3 w-3 mr-1" />{unjustifiedBlocking.length} bloquant(s)</Badge>
+                )}
+              </div>
             </div>
-            <h1 className="text-xl font-black tracking-tight text-foreground">Annexe au Compte Financier</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">{etab.nom || 'Établissement'} — RNE {etab.uai} — Exercice {etab.exercice}</p>
+            <div className="flex flex-col gap-2.5 items-end shrink-0">
+              <Button onClick={genererTout} disabled={!!loadingSection || !canGenerateAnnexe} size="lg" className="gap-2.5 font-bold text-sm shadow-lg bg-gradient-to-r from-primary to-blue-600 hover:from-primary/90 hover:to-blue-600/90">
+                {loadingSection ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-5 w-5" />}
+                Générer toutes les notes (IA)
+              </Button>
+              <Button variant="default" onClick={exportDemact} disabled={exportingPdf || !canGenerateAnnexe} className="gap-2 text-sm bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm">
+                {exportingPdf ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+                Export Dém'act (PDF)
+              </Button>
+              <Button variant="ghost" onClick={exportComplianceCertificate} disabled={exportingPdf} className="gap-2 text-xs text-white/60 hover:text-white hover:bg-white/10">
+                <Shield className="h-3 w-3" />
+                Certificat de conformité
+              </Button>
+            </div>
           </div>
-          <div className="flex flex-col gap-2 items-end shrink-0">
-            <Button onClick={genererTout} disabled={!!loadingSection || !canGenerateAnnexe} className="gap-2 font-bold">
-              {loadingSection ? <Loader2 className="h-4 w-4 animate-spin" /> : <Bot className="h-4 w-4" />}
-              Générer toutes les notes (IA)
-            </Button>
-            <Button variant="default" onClick={exportDemact} disabled={exportingPdf || !canGenerateAnnexe} className="gap-2 text-xs bg-primary">
-              {exportingPdf ? <Loader2 className="h-3 w-3 animate-spin" /> : <Download className="h-3 w-3" />}
-              Export Dém'act (PDF)
-            </Button>
-            <Button variant="outline" onClick={exportComplianceCertificate} disabled={exportingPdf} className="gap-2 text-xs">
-              <Shield className="h-3 w-3" />
-              Certificat de conformité
-            </Button>
+          <div className="mt-5 flex items-center gap-4 bg-white/5 rounded-lg px-4 py-3 backdrop-blur-sm border border-white/10">
+            <span className="text-xs text-blue-200/60 uppercase tracking-widest font-bold shrink-0">Complétude</span>
+            <div className="flex-1 h-3 bg-white/10 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-warning to-amber-400 rounded-full transition-all duration-700 ease-out" style={{ width: `${progressPct}%` }} />
+            </div>
+            <span className="text-sm text-white font-bold font-mono shrink-0">{completedSections}/{AI_SECTIONS.length}</span>
+            {completedSections === AI_SECTIONS.length && <CheckCircle2 className="h-5 w-5 text-emerald-400" />}
           </div>
-        </div>
-        <div className="mt-4 flex items-center gap-3">
-          <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-bold shrink-0">Complétude</span>
-          <Progress value={progressPct} className="flex-1 h-2" />
-          <span className="text-xs text-muted-foreground font-mono shrink-0">{completedSections}/{AI_SECTIONS.length}</span>
-          {completedSections === AI_SECTIONS.length && <CheckCircle2 className="h-4 w-4 text-emerald-500" />}
         </div>
       </div>
 
