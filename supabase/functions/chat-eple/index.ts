@@ -681,6 +681,9 @@ Quand on te pose une question sur le compte financier :
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
+  const authError = await verifyAuth(req);
+  if (authError) return authError;
+
   try {
     const { messages } = await req.json() as { messages?: ChatMessage[] };
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
