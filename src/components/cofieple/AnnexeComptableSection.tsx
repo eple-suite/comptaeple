@@ -123,10 +123,11 @@ export function AnnexeComptableSection() {
   const R = resultats[activeBudget];
   const { logAction, getLastModification, getAuditHistory } = useAuditTrail();
 
+  const annexeKey = `cofieple_annexe_${etab.uai}_${etab.exercice}_${activeBudget}`;
   const [activeTab, setActiveTab] = useState<AnnexeSectionId>('autoAudit');
-  const [texts, setTexts] = useState<AnnexeTexts>({ ...INITIAL_TEXTS });
+  const [texts, setTexts] = usePersistedState<AnnexeTexts>(`${annexeKey}_texts`, { ...INITIAL_TEXTS });
   const [loadingSection, setLoadingSection] = useState<string | null>(null);
-  const [contexte, setContexte] = useState<ContexteQualif>({
+  const [contexte, setContexte] = usePersistedState<ContexteQualif>(`${annexeKey}_contexte`, {
     changementOrdonnateur: '', changementGestionnaire: '', mouvementsAgence: '',
     evenementsMarquants: '', travauxImportants: '', reformesPedagogiques: '', difficultes: '',
   });
