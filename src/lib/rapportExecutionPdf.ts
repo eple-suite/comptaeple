@@ -306,8 +306,11 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
     }
 
     // Equilibre global
-    const totalDepBudget = sdeRows.reduce((s, r) => s + (r.budget || 0), 0);
-    const totalRecBudget = sdrRows.reduce((s, r) => s + (r.budget || 0), 0);
+    // Use ETS rows for correct totals
+    const etsSDERow2 = getEtsSdeRow(sdeRows);
+    const etsSdrRow2 = getEtsSdrRow(sdrRows);
+    const totalDepBudget = etsSDERow2?.budget ?? getLeafSdeRows(sdeRows).reduce((s, r) => s + (r.budget || 0), 0);
+    const totalRecBudget = etsSdrRow2?.budget ?? getLeafSdrRows(sdrRows).reduce((s, r) => s + (r.budget || 0), 0);
     const ecartEq = Math.abs(totalDepBudget - totalRecBudget);
     const yEq = yAfter + 12;
     doc.setTextColor(0);
