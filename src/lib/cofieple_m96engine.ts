@@ -784,7 +784,9 @@ function getSensNormal(compte: string): SensNormal {
     // 44312 / 443120 : Bourses — Part familles (excédent à rembourser) → DÉBITEUR
     // 4432 / 443200 : Primes et indemnités État → CRÉDITEUR
     // 4438 / 443800 : Fonds sociaux État → CRÉDITEUR
-    if (c.startsWith('44311') || c.startsWith('443110')) return 'crediteur';
+    // 443110 : Bourses — Crédit à répartir. Normalement créditeur (avances État),
+    // mais peut être temporairement débiteur (bourses distribuées avant versement État) → MIXTE
+    if (c.startsWith('44311') || c.startsWith('443110')) return 'mixte';
     if (c.startsWith('44313') || c.startsWith('443130')) return 'crediteur';
     if (c.startsWith('44312') || c.startsWith('443120')) return 'debiteur';
     if (c.startsWith('4432') || c.startsWith('443200')) return 'crediteur';
@@ -820,6 +822,9 @@ function getSensNormal(compte: string): SensNormal {
   if (cl === '5') {
     if (r3 === '519') return 'crediteur';
     if (r2 === '59') return 'crediteur';
+    // 515900 : Trésor règlements en cours — crédité (paiements émis) puis soldé/débité
+    // à réception du relevé DFT → sens MIXTE (peut être débiteur ou créditeur)
+    if (c.startsWith('5159') || c === '515900') return 'mixte';
     return 'debiteur';
   }
 
