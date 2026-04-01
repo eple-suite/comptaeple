@@ -1471,39 +1471,44 @@ function RegulatoryTable({ title, refM96, columns, rows, onDrilldown, totalLabel
 
 function DrilldownTable({ comptes, prefix }: { comptes: any[]; prefix: string }) {
   if (comptes.length === 0) {
-    return <div className="text-center py-4 text-muted-foreground text-sm">Aucune écriture pour <span className="font-mono font-bold">{prefix}*</span></div>;
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        <Search className="h-8 w-8 mx-auto mb-2 opacity-30" />
+        <p className="text-sm">Aucune écriture pour <span className="font-mono font-bold text-foreground">{prefix}*</span></p>
+      </div>
+    );
   }
   return (
-    <div className="overflow-x-auto border border-border rounded-lg">
-      <table className="w-full text-xs">
+    <div className="overflow-x-auto border border-border/60 rounded-xl shadow-sm">
+      <table className="w-full text-sm">
         <thead>
-          <tr className="bg-muted/30 border-b border-border">
-            <th className="py-2 px-3 text-left font-bold">Compte</th>
-            <th className="py-2 px-3 text-left font-bold">Intitulé</th>
-            <th className="py-2 px-3 text-right font-bold">Débit</th>
-            <th className="py-2 px-3 text-right font-bold">Crédit</th>
-            <th className="py-2 px-3 text-right font-bold">Solde Net</th>
+          <tr className="bg-gradient-to-r from-muted/40 to-muted/20 border-b-2 border-primary/10">
+            <th className="py-3 px-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">Compte</th>
+            <th className="py-3 px-4 text-left text-xs font-bold uppercase tracking-wider text-muted-foreground">Intitulé</th>
+            <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">Débit</th>
+            <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">Crédit</th>
+            <th className="py-3 px-4 text-right text-xs font-bold uppercase tracking-wider text-muted-foreground">Solde Net</th>
           </tr>
         </thead>
         <tbody>
           {comptes.map((c, i) => (
-            <tr key={i} className="border-b border-border/50">
-              <td className="py-1.5 px-3 font-mono">{c.compte}</td>
-              <td className="py-1.5 px-3 truncate max-w-[200px]">{c.intitule}</td>
-              <td className="py-1.5 px-3 text-right font-mono">{c.debit ? formatEur(c.debit) : '—'}</td>
-              <td className="py-1.5 px-3 text-right font-mono">{c.credit ? formatEur(c.credit) : '—'}</td>
-              <td className={`py-1.5 px-3 text-right font-mono font-bold ${c.soldeNet >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
+            <tr key={i} className={`border-b border-border/30 transition-colors hover:bg-primary/5 ${i % 2 === 0 ? '' : 'bg-muted/5'}`}>
+              <td className="py-2.5 px-4 font-mono font-medium">{c.compte}</td>
+              <td className="py-2.5 px-4 truncate max-w-[250px]">{c.intitule}</td>
+              <td className="py-2.5 px-4 text-right font-mono">{c.debit ? formatEur(c.debit) : <span className="text-muted-foreground/40">—</span>}</td>
+              <td className="py-2.5 px-4 text-right font-mono">{c.credit ? formatEur(c.credit) : <span className="text-muted-foreground/40">—</span>}</td>
+              <td className={`py-2.5 px-4 text-right font-mono font-bold ${c.soldeNet >= 0 ? 'text-emerald-600' : 'text-destructive'}`}>
                 {formatEur(c.soldeNet)}
               </td>
             </tr>
           ))}
         </tbody>
         <tfoot>
-          <tr className="bg-muted/20 font-bold border-t-2 border-border">
-            <td colSpan={2} className="py-2 px-3">Total {prefix}*</td>
-            <td className="py-2 px-3 text-right font-mono">{formatEur(comptes.reduce((s: number, c: any) => s + c.debit, 0))}</td>
-            <td className="py-2 px-3 text-right font-mono">{formatEur(comptes.reduce((s: number, c: any) => s + c.credit, 0))}</td>
-            <td className="py-2 px-3 text-right font-mono font-bold">{formatEur(comptes.reduce((s: number, c: any) => s + c.soldeNet, 0))}</td>
+          <tr className="bg-primary/5 font-bold border-t-2 border-primary/20">
+            <td colSpan={2} className="py-3 px-4 text-foreground">Total {prefix}*</td>
+            <td className="py-3 px-4 text-right font-mono">{formatEur(comptes.reduce((s: number, c: any) => s + c.debit, 0))}</td>
+            <td className="py-3 px-4 text-right font-mono">{formatEur(comptes.reduce((s: number, c: any) => s + c.credit, 0))}</td>
+            <td className="py-3 px-4 text-right font-mono font-bold text-primary">{formatEur(comptes.reduce((s: number, c: any) => s + c.soldeNet, 0))}</td>
           </tr>
         </tfoot>
       </table>
@@ -1516,8 +1521,8 @@ function ContextField({ label, value, onChange, placeholder, className = '' }: {
 }) {
   return (
     <div className={className}>
-      <Label className="text-xs text-muted-foreground font-medium">{label}</Label>
-      <Input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="mt-1 text-sm" />
+      <Label className="text-sm text-foreground font-semibold mb-1.5 block">{label}</Label>
+      <Input value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} className="mt-1 text-base h-11" />
     </div>
   );
 }
