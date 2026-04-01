@@ -23,9 +23,9 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import {
   Bot, Loader2, FileText, Sparkles,
-  TrendingUp, AlertTriangle, Activity, Landmark, Scale, BookOpen,
+  TrendingUp, AlertTriangle, Activity, BookOpen,
   ArrowRight, BarChart3, CheckCircle2, Search,
-  Shield, Eye, Table2, ArrowDown, ArrowUp,
+  Shield, Eye, Table2,
   ShieldAlert, Download, Lock, Unlock, FileWarning,
   Package, CreditCard, Coins, PiggyBank, Receipt, Info, Building
 } from 'lucide-react';
