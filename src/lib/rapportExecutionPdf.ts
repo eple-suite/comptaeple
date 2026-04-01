@@ -586,15 +586,17 @@ function aggregateRecByService(rows: LigneSDR[]) {
 }
 
 function buildCoherence(sde: LigneSDE[], sdr: LigneSDR[]) {
+  const leafSde = getLeafSdeRows(sde);
+  const leafSdr = getLeafSdrRows(sdr);
   const depMap = new Map<string, { service: string; activite: string; total: number }>();
-  for (const r of sde) {
+  for (const r of leafSde) {
     const key = `${r.service}|${r.activite}`;
     const ex = depMap.get(key);
     if (ex) ex.total += r.engage || 0;
     else depMap.set(key, { service: r.service, activite: r.activite, total: r.engage || 0 });
   }
   const recMap = new Map<string, number>();
-  for (const r of sdr) {
+  for (const r of leafSdr) {
     const key = `${r.service}|${r.activite}`;
     recMap.set(key, (recMap.get(key) || 0) + (r.aor || 0));
   }
