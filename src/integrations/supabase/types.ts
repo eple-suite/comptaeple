@@ -1075,6 +1075,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_unclaimed_establishment: {
+        Args: { _establishment_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "agent"
