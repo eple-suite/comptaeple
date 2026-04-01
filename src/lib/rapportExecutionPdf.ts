@@ -555,8 +555,9 @@ function drawSectionHeader(doc: jsPDF, title: string, subtitle: string, currentY
 }
 
 function aggregateDepByService(rows: LigneSDE[]) {
+  const leafRows = getLeafSdeRows(rows);
   const map = new Map<string, { service: string; co: number; eng: number; dp: number; dispo: number }>();
-  for (const r of rows) {
+  for (const r of leafRows) {
     const svc = r.service || 'INCONNU';
     const agg = map.get(svc) || { service: svc, co: 0, eng: 0, dp: 0, dispo: 0 };
     agg.co += r.budget || 0;
