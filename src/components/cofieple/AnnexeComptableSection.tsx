@@ -1421,32 +1421,33 @@ function RegulatoryTable({ title, refM96, columns, rows, onDrilldown, totalLabel
 }) {
   if (rows.length === 0) return null;
   return (
-    <Card>
-      <CardHeader className="py-3">
-        <CardTitle className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
-          <Table2 className="h-4 w-4" /> {title}
-          <Badge variant="outline" className="ml-auto text-[10px]">{refM96}</Badge>
-        </CardTitle>
-      </CardHeader>
+    <Card className="overflow-hidden shadow-sm">
+      <div className="bg-gradient-to-r from-muted/40 to-muted/10 px-5 py-3.5 border-b border-border/60 flex items-center gap-3">
+        <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Table2 className="h-4 w-4 text-primary" />
+        </div>
+        <h4 className="text-sm font-bold text-foreground flex-1">{title}</h4>
+        <Badge variant="outline" className="text-xs font-semibold border-primary/30 text-primary">{refM96}</Badge>
+      </div>
       <CardContent className="p-0">
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border bg-muted/20">
+              <tr className="border-b-2 border-primary/10 bg-muted/20">
                 {columns.map((c, i) => (
-                  <th key={i} className="py-2 px-3 text-left font-bold text-muted-foreground uppercase tracking-wider">{c}</th>
+                  <th key={i} className="py-3 px-4 text-left text-xs font-bold text-muted-foreground uppercase tracking-wider">{c}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {rows.map((row, i) => (
                 <tr key={i} onClick={() => row.compte && onDrilldown(row.compte)}
-                  className={`border-b border-border/50 ${row.compte ? 'cursor-pointer hover:bg-muted/20' : ''} transition-colors ${row.isAtypical ? 'bg-destructive/5 font-semibold' : ''}`}>
+                  className={`border-b border-border/30 ${row.compte ? 'cursor-pointer hover:bg-primary/5' : ''} transition-colors ${row.isAtypical ? 'bg-destructive/5 font-semibold' : i % 2 === 0 ? '' : 'bg-muted/5'}`}>
                   {row.cells.map((cell, j) => (
-                    <td key={j} className={`py-2 px-3 ${j >= 2 ? 'font-mono text-right' : ''}`}>
+                    <td key={j} className={`py-2.5 px-4 ${j >= 2 ? 'font-mono text-right' : ''}`}>
                       {j === 0 && row.isAtypical ? (
-                        <span className="flex items-center gap-1">
-                          <AlertTriangle className="h-3 w-3 text-destructive shrink-0" />
+                        <span className="flex items-center gap-1.5">
+                          <AlertTriangle className="h-3.5 w-3.5 text-destructive shrink-0" />
                           <span className="font-mono">{cell}</span>
                         </span>
                       ) : cell}
@@ -1455,9 +1456,9 @@ function RegulatoryTable({ title, refM96, columns, rows, onDrilldown, totalLabel
                 </tr>
               ))}
               {totalLabel && (
-                <tr className="bg-muted/30 font-bold border-t-2 border-border">
-                  <td colSpan={columns.length - 1} className="py-2 px-3">{totalLabel}</td>
-                  <td className="py-2 px-3 font-mono text-right">{totalValue}</td>
+                <tr className="bg-primary/5 font-bold border-t-2 border-primary/20">
+                  <td colSpan={columns.length - 1} className="py-3 px-4 text-foreground">{totalLabel}</td>
+                  <td className="py-3 px-4 font-mono text-right text-primary font-bold">{totalValue}</td>
                 </tr>
               )}
             </tbody>
