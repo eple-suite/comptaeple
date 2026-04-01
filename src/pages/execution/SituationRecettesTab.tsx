@@ -1,7 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 // SITUATION DES RECETTES (SDR)
 // Ref. : M9-6 Tome 2 — §2.2 Exécution des recettes
-// Liquidation, titres de recettes, prise en charge, recouvrement
 // ═══════════════════════════════════════════════════════════════
 
 import { useMemo } from "react";
@@ -16,12 +15,13 @@ import { formatCurrency } from "@/lib/mockData";
 import { createStyledPDF, savePDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
 import type { LigneSDR } from "@/lib/cofieple_types";
+import { getLeafSdrRows, getEtsSdrRow } from "@/lib/executionRowFilters";
 
 interface ServiceRecetteAggregate {
   service: string;
   previsions: number;
-  droitsConstates: number;   // AOR (avis des sommes à payer / titres émis)
-  realise: number;           // encaissé
+  droitsConstates: number;
+  realise: number;
   enCours: number;
   plusValues: number;
   lignes: LigneSDR[];
@@ -35,10 +35,13 @@ const SituationRecettesTab = () => {
 
   const hasData = sdrRows && sdrRows.length > 0;
 
+  // ══ FILTRE FEUILLES UNIQUEMENT ══
+  const leafRows = useMemo(() => getLeafSdrRows(sdrRows || []), [sdrRows]);
+
   const serviceAggregates = useMemo<ServiceRecetteAggregate[]>(() => {
-    if (!hasData) return [];
+    if (!hasData || leafRows.length === 0) return [];
     const map = new Map<string, ServiceRecetteAggregate>();
-    for (const row of sdrRows) {
+    for (const row of leafRows) {
       const svc = row.service || 'INCONNU';
       let agg = map.get(svc);
       if (!agg) {
@@ -53,16 +56,25 @@ const SituationRecettesTab = () => {
       agg.lignes.push(row);
     }
     return Array.from(map.values());
-  }, [sdrRows, hasData]);
+  }, [leafRows, hasData]);
 
-  // Détection : prévisions significatives (> 100 €) sans titre émis (aor = 0)
-  // Les lignes avec de petits montants résiduels ne sont pas signalées
   const droitsSansTitre = useMemo(() => {
     if (!hasData) return [];
-    return sdrRows.filter(r => (r.budget || 0) > 100 && (r.aor || 0) === 0 && (r.realise || 0) === 0);
-  }, [sdrRows, hasData]);
+    return leafRows.filter(r => (r.budget || 0) > 100 && (r.aor || 0) === 0 && (r.realise || 0) === 0);
+  }, [leafRows, hasData]);
 
+  // ══ TOTAUX : préférer le niveau ETS ══
   const totaux = useMemo(() => {
+    const etsRow = getEtsSdrRow(sdrRows || []);
+    if (etsRow) {
+      return {
+        previsions: etsRow.budget,
+        droitsConstates: etsRow.aor,
+        realise: etsRow.realise,
+        enCours: etsRow.encours,
+        plusValues: etsRow.plusValues,
+      };
+    }
     const t = { previsions: 0, droitsConstates: 0, realise: 0, enCours: 0, plusValues: 0 };
     for (const s of serviceAggregates) {
       t.previsions += s.previsions;
@@ -72,7 +84,7 @@ const SituationRecettesTab = () => {
       t.plusValues += s.plusValues;
     }
     return t;
-  }, [serviceAggregates]);
+  }, [sdrRows, serviceAggregates]);
 
   const generatePDF = () => {
     const doc = createStyledPDF({
@@ -134,7 +146,6 @@ const SituationRecettesTab = () => {
 
   return (
     <div className="space-y-4 mt-4">
-      {/* Anomalies banner */}
       {droitsSansTitre.length > 0 ? (
         <Card className="border-l-4 border-l-amber-500 bg-amber-50 dark:bg-amber-950/20">
           <CardContent className="pt-3 pb-3 flex items-center gap-3">
@@ -170,7 +181,6 @@ const SituationRecettesTab = () => {
         </Card>
       )}
 
-      {/* Regulatory note */}
       <Card className="bg-muted/30 border-dashed">
         <CardContent className="pt-3 pb-3">
           <p className="text-xs text-muted-foreground leading-relaxed">
@@ -182,7 +192,6 @@ const SituationRecettesTab = () => {
         </CardContent>
       </Card>
 
-      {/* By service */}
       {serviceAggregates.map(svc => {
         const tauxRecouvrement = svc.droitsConstates > 0 ? (svc.realise / svc.droitsConstates) * 100 : 0;
         const lignesSansTitre = svc.lignes.filter(l => (l.budget || 0) > 0 && (l.aor || 0) === 0 && (l.realise || 0) === 0);
@@ -248,7 +257,6 @@ const SituationRecettesTab = () => {
         );
       })}
 
-      {/* Grand total */}
       <Card className="shadow-card bg-primary/5">
         <CardContent className="pt-4 pb-4">
           <div className="grid grid-cols-5 gap-4 text-center">

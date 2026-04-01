@@ -10,6 +10,7 @@ import { createStyledPDF, addPDFFooters } from '@/lib/pdfUtils';
 import { formatCurrency } from '@/lib/mockData';
 import type { LigneSDE, LigneSDR } from '@/lib/cofieple_types';
 import type { EtablissementUI } from '@/lib/cofieple_storeTypes';
+import { getLeafSdeRows, getLeafSdrRows, getEtsSdeRow, getEtsSdrRow } from '@/lib/executionRowFilters';
 
 interface RapportParams {
   etab: EtablissementUI;
@@ -244,8 +245,9 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
     }
 
     // Recouvrement
-    const totalTitre = sdrRows.reduce((s, r) => s + (r.aor || 0), 0);
-    const totalEncaisse = sdrRows.reduce((s, r) => s + (r.realise || 0), 0);
+    const leafSdrRows = getLeafSdrRows(sdrRows);
+    const totalTitre = leafSdrRows.reduce((s, r) => s + (r.aor || 0), 0);
+    const totalEncaisse = leafSdrRows.reduce((s, r) => s + (r.realise || 0), 0);
     const rar = totalTitre - totalEncaisse;
     const yRec = yAfter + 12;
     doc.setTextColor(0);
@@ -305,8 +307,11 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
     }
 
     // Equilibre global
-    const totalDepBudget = sdeRows.reduce((s, r) => s + (r.budget || 0), 0);
-    const totalRecBudget = sdrRows.reduce((s, r) => s + (r.budget || 0), 0);
+    // Use ETS rows for correct totals
+    const etsSDERow2 = getEtsSdeRow(sdeRows);
+    const etsSdrRow2 = getEtsSdrRow(sdrRows);
+    const totalDepBudget = etsSDERow2?.budget ?? getLeafSdeRows(sdeRows).reduce((s, r) => s + (r.budget || 0), 0);
+    const totalRecBudget = etsSdrRow2?.budget ?? getLeafSdrRows(sdrRows).reduce((s, r) => s + (r.budget || 0), 0);
     const ecartEq = Math.abs(totalDepBudget - totalRecBudget);
     const yEq = yAfter + 12;
     doc.setTextColor(0);
@@ -398,10 +403,13 @@ export function generateRapportExecution({ etab, sdeRows, sdrRows, dateSituation
 
   // Key budget metrics
   if (hasSDE && hasSDR) {
-    const totalDepBudget = sdeRows.reduce((s, r) => s + (r.budget || 0), 0);
-    const totalDepRealise = sdeRows.reduce((s, r) => s + (r.realise || 0), 0);
-    const totalRecBudget = sdrRows.reduce((s, r) => s + (r.budget || 0), 0);
-    const totalRecRealise = sdrRows.reduce((s, r) => s + (r.realise || 0), 0);
+    // Use ETS aggregate rows for correct totals (avoid double-counting)
+    const etsSDERow = getEtsSdeRow(sdeRows);
+    const etsSdrRow = getEtsSdrRow(sdrRows);
+    const totalDepBudget = etsSDERow?.budget ?? getLeafSdeRows(sdeRows).reduce((s, r) => s + (r.budget || 0), 0);
+    const totalDepRealise = etsSDERow?.realise ?? getLeafSdeRows(sdeRows).reduce((s, r) => s + (r.realise || 0), 0);
+    const totalRecBudget = etsSdrRow?.budget ?? getLeafSdrRows(sdrRows).reduce((s, r) => s + (r.budget || 0), 0);
+    const totalRecRealise = etsSdrRow?.realise ?? getLeafSdrRows(sdrRows).reduce((s, r) => s + (r.realise || 0), 0);
     const ecartEq = Math.abs(totalDepBudget - totalRecBudget);
 
     doc.setFont('helvetica', 'bold');
@@ -554,8 +562,9 @@ function drawSectionHeader(doc: jsPDF, title: string, subtitle: string, currentY
 }
 
 function aggregateDepByService(rows: LigneSDE[]) {
+  const leafRows = getLeafSdeRows(rows);
   const map = new Map<string, { service: string; co: number; eng: number; dp: number; dispo: number }>();
-  for (const r of rows) {
+  for (const r of leafRows) {
     const svc = r.service || 'INCONNU';
     const agg = map.get(svc) || { service: svc, co: 0, eng: 0, dp: 0, dispo: 0 };
     agg.co += r.budget || 0;
@@ -568,8 +577,9 @@ function aggregateDepByService(rows: LigneSDE[]) {
 }
 
 function aggregateRecByService(rows: LigneSDR[]) {
+  const leafRows = getLeafSdrRows(rows);
   const map = new Map<string, { service: string; prev: number; aor: number; enc: number; ec: number; pv: number }>();
-  for (const r of rows) {
+  for (const r of leafRows) {
     const svc = r.service || 'INCONNU';
     const agg = map.get(svc) || { service: svc, prev: 0, aor: 0, enc: 0, ec: 0, pv: 0 };
     agg.prev += r.budget || 0;
@@ -583,15 +593,17 @@ function aggregateRecByService(rows: LigneSDR[]) {
 }
 
 function buildCoherence(sde: LigneSDE[], sdr: LigneSDR[]) {
+  const leafSde = getLeafSdeRows(sde);
+  const leafSdr = getLeafSdrRows(sdr);
   const depMap = new Map<string, { service: string; activite: string; total: number }>();
-  for (const r of sde) {
+  for (const r of leafSde) {
     const key = `${r.service}|${r.activite}`;
     const ex = depMap.get(key);
     if (ex) ex.total += r.engage || 0;
     else depMap.set(key, { service: r.service, activite: r.activite, total: r.engage || 0 });
   }
   const recMap = new Map<string, number>();
-  for (const r of sdr) {
+  for (const r of leafSdr) {
     const key = `${r.service}|${r.activite}`;
     recMap.set(key, (recMap.get(key) || 0) + (r.aor || 0));
   }

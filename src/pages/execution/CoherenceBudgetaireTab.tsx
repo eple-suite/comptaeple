@@ -1,7 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 // COHÉRENCE & ÉQUILIBRE BUDGÉTAIRE
 // Ref. : M9-6 Tome 2 — §2.1.1 Principes budgétaires
-// Croisement SDE / SDR par service et activité
 // ═══════════════════════════════════════════════════════════════
 
 import { useMemo } from "react";
@@ -16,6 +15,7 @@ import { formatCurrency } from "@/lib/mockData";
 import { createStyledPDF, savePDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
 import type { LigneSDE, LigneSDR } from "@/lib/cofieple_types";
+import { getLeafSdeRows, getLeafSdrRows, getEtsSdeRow, getEtsSdrRow } from "@/lib/executionRowFilters";
 
 interface LigneCoherence {
   service: string;
@@ -37,22 +37,23 @@ const CoherenceBudgetaireTab = () => {
   const hasSDR = sdrRows && sdrRows.length > 0;
   const hasData = hasSDE && hasSDR;
 
-  // Cross-reference SDE vs SDR by service + activité
+  // ══ FILTRE FEUILLES UNIQUEMENT ══
+  const leafSde = useMemo(() => getLeafSdeRows(sdeRows || []), [sdeRows]);
+  const leafSdr = useMemo(() => getLeafSdrRows(sdrRows || []), [sdrRows]);
+
   const lignesCoherence = useMemo<LigneCoherence[]>(() => {
     if (!hasData) return [];
 
-    // Aggregate SDE by service+activite
     const depMap = new Map<string, { service: string; activite: string; total: number }>();
-    for (const r of sdeRows) {
+    for (const r of leafSde) {
       const key = `${r.service}|${r.activite}`;
       const existing = depMap.get(key);
       if (existing) existing.total += r.engage || 0;
       else depMap.set(key, { service: r.service, activite: r.activite, total: r.engage || 0 });
     }
 
-    // Aggregate SDR by service+activite
     const recMap = new Map<string, number>();
-    for (const r of sdrRows) {
+    for (const r of leafSdr) {
       const key = `${r.service}|${r.activite}`;
       recMap.set(key, (recMap.get(key) || 0) + (r.aor || 0));
     }
@@ -62,16 +63,12 @@ const CoherenceBudgetaireTab = () => {
       const recettes = recMap.get(key) || 0;
       const ecart = dep.total - recettes;
       result.push({
-        service: dep.service,
-        activite: dep.activite,
-        depensesEngagees: dep.total,
-        recettesTitrees: recettes,
-        ecart,
-        titreRecetteNecessaire: ecart > 0,
+        service: dep.service, activite: dep.activite,
+        depensesEngagees: dep.total, recettesTitrees: recettes,
+        ecart, titreRecetteNecessaire: ecart > 0,
       });
     }
 
-    // Add SDR-only entries (recettes without matching depenses)
     for (const [key, montant] of recMap.entries()) {
       if (!depMap.has(key)) {
         const [service, activite] = key.split('|');
@@ -84,12 +81,11 @@ const CoherenceBudgetaireTab = () => {
     }
 
     return result.sort((a, b) => a.service.localeCompare(b.service) || b.ecart - a.ecart);
-  }, [sdeRows, sdrRows, hasData]);
+  }, [leafSde, leafSdr, hasData]);
 
   const titresNecessaires = lignesCoherence.filter(l => l.titreRecetteNecessaire);
   const totalTitres = titresNecessaires.reduce((s, l) => s + l.ecart, 0);
 
-  // Group by service
   const serviceGroups = useMemo(() => {
     const map = new Map<string, LigneCoherence[]>();
     for (const l of lignesCoherence) {
@@ -100,9 +96,17 @@ const CoherenceBudgetaireTab = () => {
     return Array.from(map.entries());
   }, [lignesCoherence]);
 
-  // Equilibre check (M9-6 §2.1.1)
-  const totalDepenses = lignesCoherence.reduce((s, l) => s + l.depensesEngagees, 0);
-  const totalRecettes = lignesCoherence.reduce((s, l) => s + l.recettesTitrees, 0);
+  // ══ TOTAUX : préférer ETS ══
+  const totalDepenses = useMemo(() => {
+    const ets = getEtsSdeRow(sdeRows || []);
+    return ets ? ets.engage : lignesCoherence.reduce((s, l) => s + l.depensesEngagees, 0);
+  }, [sdeRows, lignesCoherence]);
+  
+  const totalRecettes = useMemo(() => {
+    const ets = getEtsSdrRow(sdrRows || []);
+    return ets ? ets.aor : lignesCoherence.reduce((s, l) => s + l.recettesTitrees, 0);
+  }, [sdrRows, lignesCoherence]);
+
   const equilibreGlobal = Math.abs(totalDepenses - totalRecettes);
 
   const generatePDF = () => {
@@ -176,7 +180,6 @@ const CoherenceBudgetaireTab = () => {
 
   return (
     <div className="space-y-4 mt-4">
-      {/* Titres à émettre banner */}
       {titresNecessaires.length > 0 ? (
         <Card className="border-l-4 border-l-amber-500 bg-amber-50 dark:bg-amber-950/20">
           <CardContent className="pt-3 pb-3 flex items-center gap-3">
@@ -212,14 +215,12 @@ const CoherenceBudgetaireTab = () => {
         </Card>
       )}
 
-      {/* Equilibre global */}
       <Card className="bg-muted/30 border-dashed">
         <CardContent className="pt-3 pb-3">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground leading-relaxed">
               <strong>Principe d'équilibre (M9-6 Tome 2 — §2.1.1) :</strong> Les dépenses engagées et les recettes 
-              titrées doivent être rapprochées par service et par activité. Tout écart significatif 
-              appelle l'émission d'un titre de recettes par l'ordonnateur.
+              titrées doivent être rapprochées par service et par activité.
             </p>
             <div className="text-right ml-4 shrink-0">
               <p className="text-xs text-muted-foreground">Écart global</p>
@@ -231,7 +232,6 @@ const CoherenceBudgetaireTab = () => {
         </CardContent>
       </Card>
 
-      {/* Par service */}
       {serviceGroups.map(([svc, lines]) => {
         const svcTitres = lines.filter(l => l.titreRecetteNecessaire);
         const totalEcart = svcTitres.reduce((s, l) => s + l.ecart, 0);
@@ -269,9 +269,7 @@ const CoherenceBudgetaireTab = () => {
                       </TableCell>
                       <TableCell>
                         {l.titreRecetteNecessaire ? (
-                          <Badge variant="destructive" className="text-[9px]">
-                            Titre de recettes à émettre
-                          </Badge>
+                          <Badge variant="destructive" className="text-[9px]">Titre de recettes à émettre</Badge>
                         ) : (
                           <Badge variant="outline" className="text-[9px] text-emerald-600">Équilibré</Badge>
                         )}
@@ -298,7 +296,6 @@ const CoherenceBudgetaireTab = () => {
 
       <p className="text-[10px] text-muted-foreground italic text-center">
         Analyse strictement limitée aux dispositions explicites de la M9-6 — OP@LE (19 janvier 2026).
-        Aucun calcul prospectif, prévisionnel ou statistique n'est effectué car non prévu par l'instruction.
       </p>
     </div>
   );
