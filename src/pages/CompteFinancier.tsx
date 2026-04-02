@@ -210,7 +210,7 @@ const CompteFinancier = () => {
 
       {/* Périmètre Comptable Selector — visible dès qu'il y a des fichiers importés */}
       {(hasData || nbFichiers > 0) && (
-        <div className="mx-1 mt-2">
+        <div className="mx-1 mt-2 no-print">
           <PerimetreComptable />
         </div>
       )}
