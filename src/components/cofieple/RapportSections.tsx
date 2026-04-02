@@ -319,77 +319,10 @@ export function RapportOrdoSection() {
           {aiLoading ? 'Génération IA…' : 'Générer commentaires IA'}
         </Button>
         <Button variant="default" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => {
-          try {
-            const toCgrLabel = (code?: string, raw?: string) => {
-              const normalizedCode = (code || '').trim().toUpperCase();
-              const normalizedRaw = (raw || '').trim();
-              if (normalizedRaw.startsWith(`${normalizedCode} -`)) return normalizedRaw;
-
-              switch (normalizedCode) {
-                case 'ETS': return 'ETS - Etablissement';
-                case 'SG': return 'SG - SERVICES GENERAUX';
-                case 'AP': return 'AP - ACTIVITES PEDAGO.';
-                case 'VE': return "VE - VIE DE L'ELEVE";
-                case 'ALO': return 'ALO - ADMIN ET LOGISTIQUE';
-                case 'SS': return 'SS - SERVICES SPECIAUX';
-                case 'SRH': return 'SRH - RESTAU ET HEBERG';
-                default: return normalizedRaw || normalizedCode;
-              }
-            };
-
-            const sdeCgrRows: LigneCGR[] = (sdeRows || [])
-              .filter(row => row.aggregationLevel === 'global' || row.aggregationLevel === 'service')
-              .map(row => ({
-                cgr: toCgrLabel(row.serviceCode || row.service, row.rawLabel || row.service),
-                budget: row.budget ?? 0,
-                realise: row.realise ?? 0,
-                disponible: row.disponible ?? ((row.budget ?? 0) - (row.realise ?? 0)),
-              }));
-
-            const sdrCgrRows: LigneCGR[] = (sdrRows || [])
-              .filter(row => row.aggregationLevel === 'global' || row.aggregationLevel === 'service')
-              .map(row => ({
-                cgr: toCgrLabel(row.serviceCode || row.service, row.rawLabel || row.service),
-                budget: row.budget ?? 0,
-                realise: row.realise ?? 0,
-                ecart: (row.realise ?? 0) - (row.budget ?? 0),
-              }));
-
-            const sdeData = buildSectionsDepenses(sdeCgrRows);
-            const sdrData = buildSectionsRecettes(sdrCgrRows);
-
-            generateRapportPDF({
-              etablissement: {
-                nom: etab.nom || '',
-                uai: etab.uai || '',
-                adresse: etab.adresse || '',
-                commune: etab.commune || '',
-                academie: etab.academie || '',
-                annee: etab.exercice,
-                dateEdition: new Date().toLocaleDateString('fr-FR'),
-                ordonnateur: nomOrdonnateur || etab.ordonnateur || '',
-                agentComptable: etab.agentComptable || '',
-              },
-              sde: sdeData,
-              sdr: sdrData,
-              resultat: {
-                recettesRealisees: sdrData.totalRealise || R.totalProduitsSdr || 0,
-                depensesRealisees: sdeData.totalRealise || R.totalChargesSde || 0,
-                resultatComptable: R.resultatBudgetaire ?? 0,
-                creditDisponible: sdeData.totalDisponible || 0,
-                ecartRecettes: sdrData.totalEcart || 0,
-              },
-              commentaires: {
-                contexte: commentairePresentation || aiText1 || undefined,
-                executionDepenses: commentaireDomaines || commentaireResultat || undefined,
-                executionRecettes: commentaireSubventions || commentaireRepartition || undefined,
-                perspectivesFinancieres: commentairePerspectives || aiText3 || undefined,
-              },
-            });
-            toast.success('Rapport PDF généré dans un nouvel onglet');
-          } catch (e) { console.error(e); toast.error('Erreur lors de la génération du rapport'); }
+          window.scrollTo(0, 0);
+          setTimeout(() => window.print(), 150);
         }}>
-          <Download className="h-4 w-4 mr-2" /> 📄 Générer le rapport PDF
+          <Printer className="h-4 w-4 mr-2" /> 🖨️ Imprimer / Enregistrer en PDF
         </Button>
       </div>
 
