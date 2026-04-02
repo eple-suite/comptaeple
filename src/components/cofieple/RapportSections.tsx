@@ -970,7 +970,7 @@ export function RapportOrdoSection() {
               </tbody>
             </table>
           </div>
-          <CommentaireBox label="Commentaire sur le pilotage budgétaire" value={commentairePilotage} onChange={setCommentairePilotage} />
+          <CommentaireBox label="Commentaire sur le pilotage budgétaire" value={commentairePilotage} onChange={setCommentairePilotage} status={statusPil} lastSaved={lastSavedPil} />
 
           {/* §13 Points d'attention */}
           <SectionTitre numero="13" title="Points d'attention et perspectives" />
