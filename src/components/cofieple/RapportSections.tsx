@@ -7,7 +7,10 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useState, useEffect, useMemo } from 'react';
-import { usePersistedState } from '@/hooks/usePersistedState';
+import { usePersistedState, usePersistedText } from '@/hooks/usePersistedState';
+import { SaveIndicator } from '@/components/SaveIndicator';
+import { generateRapportPDF } from '@/utils/generateRapportPDF';
+import { getServiceSdeRows, getServiceSdrRows, getEtsSdeRow, getEtsSdrRow } from '@/lib/executionRowFilters';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -15,23 +18,22 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Bot, Printer, Loader2, Plus, Trash2, Download, MessageSquare,
-  Scale, PieChart as PieChartIcon, BarChart3, ArrowRight, TrendingUp,
-  TrendingDown, AlertTriangle, CheckCircle2, Info, Target, Utensils,
-  Building2, Users, GraduationCap, Wallet, ShieldCheck, Clock,
+  Bot, Loader2, Plus, Trash2, Download, MessageSquare,
+  Scale, PieChart as PieChartIcon, BarChart3, AlertTriangle, Target, Utensils,
+  Building2, Users, GraduationCap, Wallet,
 } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
 import { supabase } from '@/integrations/supabase/client';
 import { generateRapportACPdf } from '@/lib/pdfRapportAC';
-import { generateRapportExecution } from '@/lib/rapportExecutionPdf';
+
 import { toast } from 'sonner';
 import type { LigneSDE, LigneSDR } from '@/lib/cofieple_types';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell, Legend,
-  PieChart, Pie, LineChart, Line, AreaChart, Area,
+  PieChart, Pie,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
 
@@ -90,19 +92,19 @@ export function RapportOrdoSection() {
   const [nomOrdonnateur, setNomOrdonnateur] = usePersistedState(`${pKey}_nom_ordo`, etab.ordonnateur || '');
   const [nomSecretaireGeneral, setNomSecretaireGeneral] = usePersistedState(`${pKey}_nom_sg`, etab.secretaireGeneral || '');
   // Commentaires ordonnateur sur chaque rubrique (REPROFI-style "Faits caractéristiques")
-  const [commentairePresentation, setCommentairePresentation] = usePersistedState(`${pKey}_com_presentation`, '');
-  const [commentaireResultat, setCommentaireResultat] = usePersistedState(`${pKey}_com_resultat`, '');
-  const [commentaireRepartition, setCommentaireRepartition] = usePersistedState(`${pKey}_com_repartition`, '');
-  const [commentaireEvolution, setCommentaireEvolution] = usePersistedState(`${pKey}_com_evolution`, '');
-  const [commentaireDomaines, setCommentaireDomaines] = usePersistedState(`${pKey}_com_domaines`, '');
-  const [commentaireFDR, setCommentaireFDR] = usePersistedState(`${pKey}_com_fdr`, '');
-  const [commentaireTresorerie, setCommentaireTresorerie] = usePersistedState(`${pKey}_com_tresorerie`, '');
-  const [commentaireOO, setCommentaireOO] = usePersistedState(`${pKey}_com_oo`, '');
-  const [commentaireSRH, setCommentaireSRH] = usePersistedState(`${pKey}_com_srh`, '');
-  const [commentaireSubventions, setCommentaireSubventions] = usePersistedState(`${pKey}_com_subventions`, '');
-  const [commentairePatrimoine, setCommentairePatrimoine] = usePersistedState(`${pKey}_com_patrimoine`, '');
-  const [commentairePerspectives, setCommentairePerspectives] = usePersistedState(`${pKey}_com_perspectives`, '');
-  const [commentairePilotage, setCommentairePilotage] = usePersistedState(`${pKey}_com_pilotage`, '');
+  const [commentairePresentation, setCommentairePresentation, statusPres, lastSavedPres] = usePersistedText(`${pKey}_com_presentation`, '');
+  const [commentaireResultat, setCommentaireResultat, statusRes, lastSavedRes] = usePersistedText(`${pKey}_com_resultat`, '');
+  const [commentaireRepartition, setCommentaireRepartition, statusRep, lastSavedRep] = usePersistedText(`${pKey}_com_repartition`, '');
+  const [commentaireEvolution, setCommentaireEvolution, statusEvo, lastSavedEvo] = usePersistedText(`${pKey}_com_evolution`, '');
+  const [commentaireDomaines, setCommentaireDomaines, statusDom, lastSavedDom] = usePersistedText(`${pKey}_com_domaines`, '');
+  const [commentaireFDR, setCommentaireFDR, statusFDR, lastSavedFDR] = usePersistedText(`${pKey}_com_fdr`, '');
+  const [commentaireTresorerie, setCommentaireTresorerie, statusTreso, lastSavedTreso] = usePersistedText(`${pKey}_com_tresorerie`, '');
+  const [commentaireOO, setCommentaireOO, statusOO, lastSavedOO] = usePersistedText(`${pKey}_com_oo`, '');
+  const [commentaireSRH, setCommentaireSRH, statusSRH, lastSavedSRH] = usePersistedText(`${pKey}_com_srh`, '');
+  const [commentaireSubventions, setCommentaireSubventions, statusSub, lastSavedSub] = usePersistedText(`${pKey}_com_subventions`, '');
+  const [commentairePatrimoine, setCommentairePatrimoine, statusPat, lastSavedPat] = usePersistedText(`${pKey}_com_patrimoine`, '');
+  const [commentairePerspectives, setCommentairePerspectives, statusPersp, lastSavedPersp] = usePersistedText(`${pKey}_com_perspectives`, '');
+  const [commentairePilotage, setCommentairePilotage, statusPil, lastSavedPil] = usePersistedText(`${pKey}_com_pilotage`, '');
 
   const depNatureDataRaw = useMemo(() => {
     if (!R) return [];
@@ -318,17 +320,76 @@ export function RapportOrdoSection() {
         </Button>
         <Button variant="default" className="bg-[hsl(215,70%,45%)] hover:bg-[hsl(215,70%,40%)]" onClick={() => {
           try {
-            generateRapportExecution({
-              etab, sdeRows: sdeRows || [], sdrRows: sdrRows || [],
-              nomOrdonnateur, nomSecretaireGeneral,
+            const serviceRows = getServiceSdeRows(sdeRows || []);
+            const sdrServiceRows = getServiceSdrRows(sdrRows || []);
+            const etsSde = getEtsSdeRow(sdeRows || []);
+            const etsSdr = getEtsSdrRow(sdrRows || []);
+
+            const mapSdeSection = (code: string, label: string) => {
+              const row = serviceRows.find(r => r.serviceCode === code || r.service?.includes(label));
+              return row ? { code, libelle: label, budget: row.budget, realise: row.realise, disponible: row.budget - row.realise, taux: row.budget > 0 ? (row.realise / row.budget * 100) : 0 } : null;
+            };
+
+            const sg = mapSdeSection('SG', 'SERVICES GENERAUX');
+            const ap = mapSdeSection('AP', 'ACTIVITES');
+            const ve = mapSdeSection('VE', 'VIE');
+            const alo = mapSdeSection('ALO', 'ADMIN');
+            const ss = mapSdeSection('SS', 'SERVICES SPECIAUX');
+
+            const sdeData = {
+              totalBudget: etsSde?.budget ?? 0,
+              totalRealise: etsSde?.realise ?? 0,
+              totalDisponible: (etsSde?.budget ?? 0) - (etsSde?.realise ?? 0),
+              sections: [
+                sg ? { ...sg, sousLignes: [ap, ve, alo].filter(Boolean) as any[] } : null,
+                ss ? { ...ss, sousLignes: [] } : null,
+              ].filter(Boolean) as any[],
+            };
+
+            const mapSdrSection = (code: string, label: string) => {
+              const row = sdrServiceRows.find(r => r.serviceCode === code || r.service?.includes(label));
+              return row ? { code, libelle: label, budget: row.budget, realise: row.realise, ecart: row.realise - row.budget } : null;
+            };
+
+            const sdrData = {
+              totalBudget: etsSdr?.budget ?? 0,
+              totalRealise: etsSdr?.realise ?? 0,
+              totalEcart: (etsSdr?.realise ?? 0) - (etsSdr?.budget ?? 0),
+              sections: [mapSdrSection('SG', 'SERVICES GENERAUX'), mapSdrSection('AP', 'ACTIVITES'), mapSdrSection('VE', 'VIE'), mapSdrSection('ALO', 'ADMIN'), mapSdrSection('SS', 'SERVICES SPECIAUX')].filter(Boolean) as any[],
+            };
+
+            generateRapportPDF({
+              etablissement: {
+                nom: etab.nom || '',
+                uai: etab.uai || '',
+                adresse: etab.adresse || '',
+                commune: etab.commune || '',
+                academie: etab.academie || '',
+                annee: etab.exercice,
+                dateEdition: new Date().toLocaleDateString('fr-FR'),
+                ordonnateur: nomOrdonnateur || etab.ordonnateur || '',
+                agentComptable: etab.agentComptable || '',
+              },
+              sde: sdeData,
+              sdr: sdrData,
+              resultat: {
+                recettesRealisees: etsSdr?.realise ?? R.totalProduitsSdr ?? 0,
+                depensesRealisees: etsSde?.realise ?? R.totalChargesSde ?? 0,
+                resultatComptable: R.resultatBudgetaire ?? 0,
+                creditDisponible: (etsSde?.budget ?? 0) - (etsSde?.realise ?? 0),
+                ecartRecettes: (etsSdr?.realise ?? 0) - (etsSdr?.budget ?? 0),
+              },
+              commentaires: {
+                contexte: commentairePresentation || aiText1 || undefined,
+                executionDepenses: commentaireDomaines || undefined,
+                executionRecettes: commentaireSubventions || undefined,
+                perspectivesFinancieres: commentairePerspectives || aiText3 || undefined,
+              },
             });
-            toast.success('Rapport d\'exécution budgétaire généré');
-          } catch (e) { console.error(e); toast.error('Erreur lors de la génération'); }
+            toast.success('Rapport PDF généré dans un nouvel onglet');
+          } catch (e) { console.error(e); toast.error('Erreur lors de la génération du rapport'); }
         }}>
-          <Download className="h-4 w-4 mr-2" /> Rapport exécution budgétaire (PDF)
-        </Button>
-        <Button variant="outline" onClick={() => window.print()}>
-          <Printer className="h-4 w-4 mr-2" /> Imprimer / PDF
+          <Download className="h-4 w-4 mr-2" /> 📄 Générer le rapport PDF
         </Button>
       </div>
 
@@ -412,7 +473,7 @@ export function RapportOrdoSection() {
           <Textarea value={aiText1} onChange={e => setAiText1(e.target.value)}
             placeholder="Cliquez sur 'Générer commentaires IA' ou saisissez votre texte ici…" rows={4}
             className="mb-2 bg-muted/30 text-sm" />
-          <CommentaireBox label="Commentaire sur la présentation" value={commentairePresentation} onChange={setCommentairePresentation} />
+          <CommentaireBox label="Commentaire sur la présentation" value={commentairePresentation} onChange={setCommentairePresentation} status={statusPres} lastSaved={lastSavedPres} />
 
           {/* §2 Dashboard — KPI principaux */}
           <SectionTitre numero="2" title="Tableau de bord financier" />
@@ -471,7 +532,7 @@ export function RapportOrdoSection() {
               </div>
             </div>
           </div>
-          <CommentaireBox label="Commentaire sur le résultat et l'exécution" value={commentaireResultat} onChange={setCommentaireResultat} />
+          <CommentaireBox label="Commentaire sur le résultat et l'exécution" value={commentaireResultat} onChange={setCommentaireResultat} status={statusRes} lastSaved={lastSavedRes} />
 
           {/* §3 Répartition dépenses + recettes */}
           <SectionTitre numero="3" title="Répartition des dépenses et des recettes" />
@@ -511,7 +572,7 @@ export function RapportOrdoSection() {
               </div>
             )}
           </div>
-          <CommentaireBox label="Commentaire sur la répartition des dépenses et recettes" value={commentaireRepartition} onChange={setCommentaireRepartition} />
+          <CommentaireBox label="Commentaire sur la répartition des dépenses et recettes" value={commentaireRepartition} onChange={setCommentaireRepartition} status={statusRep} lastSaved={lastSavedRep} />
 
           {/* §4 Évolution par domaine */}
           {hasN1 && (
@@ -549,7 +610,7 @@ export function RapportOrdoSection() {
               </div>
             </>
           )}
-          <CommentaireBox label="Commentaire sur l'évolution N / N-1" value={commentaireEvolution} onChange={setCommentaireEvolution} />
+          <CommentaireBox label="Commentaire sur l'évolution N / N-1" value={commentaireEvolution} onChange={setCommentaireEvolution} status={statusEvo} lastSaved={lastSavedEvo} />
 
           {/* §5 Exécution par domaine D1-D9 */}
           {domainesList.length > 0 && (
@@ -642,7 +703,7 @@ export function RapportOrdoSection() {
               })()}
             </>
           )}
-          <CommentaireBox label="Commentaire sur l'exécution par domaine" value={commentaireDomaines} onChange={setCommentaireDomaines} />
+          <CommentaireBox label="Commentaire sur l'exécution par domaine" value={commentaireDomaines} onChange={setCommentaireDomaines} status={statusDom} lastSaved={lastSavedDom} />
 
           {/* §6 FDR — Jauge avec seuil 30 jours */}
           <SectionTitre numero="6" title="Fonds de roulement — autonomie financière" />
@@ -734,7 +795,7 @@ export function RapportOrdoSection() {
               </div>
             </div>
           </div>
-          <CommentaireBox label="Commentaire sur le fonds de roulement" value={commentaireFDR} onChange={setCommentaireFDR} />
+          <CommentaireBox label="Commentaire sur le fonds de roulement" value={commentaireFDR} onChange={setCommentaireFDR} status={statusFDR} lastSaved={lastSavedFDR} />
 
           {/* §7 Trésorerie annuelle */}
           <SectionTitre numero="7" title="Trésorerie" />
@@ -744,7 +805,7 @@ export function RapportOrdoSection() {
             <KPICard label="DGR" value={`${Math.round(safe.dgrJours)} jours`} color={safe.dgrJours > 60 ? 'red' : 'green'} icon="⏱️" sub="Délai global recouvrement" isText />
             <KPICard label="Réserves" value={formatEur(R.reserves)} color="blue" icon="🏛️" sub="Compte 1068" isText />
           </div>
-          <CommentaireBox label="Commentaire sur la trésorerie" value={commentaireTresorerie} onChange={setCommentaireTresorerie} />
+          <CommentaireBox label="Commentaire sur la trésorerie" value={commentaireTresorerie} onChange={setCommentaireTresorerie} status={statusTreso} lastSaved={lastSavedTreso} />
 
           {/* §8 Opérations d'ordre */}
           <SectionTitre numero="8" title="Opérations d'ordre" />
@@ -768,7 +829,7 @@ export function RapportOrdoSection() {
           <div className="text-xs text-muted-foreground mb-4 bg-muted/10 rounded p-3">
             💡 <strong>Pour le CA :</strong> Les opérations d'ordre sont des écritures purement comptables (amortissements, provisions). Elles n'ont aucun impact sur la trésorerie. Un solde d'OO négatif est normal et traduit la politique d'amortissement du patrimoine.
           </div>
-          <CommentaireBox label="Commentaire sur les opérations d'ordre" value={commentaireOO} onChange={setCommentaireOO} />
+          <CommentaireBox label="Commentaire sur les opérations d'ordre" value={commentaireOO} onChange={setCommentaireOO} status={statusOO} lastSaved={lastSavedOO} />
 
           {/* §9 Focus SRH */}
           {(srhDomaine || (ind && ind.nb_repas_servis > 0)) && (
@@ -825,7 +886,7 @@ export function RapportOrdoSection() {
               <div className="text-xs text-muted-foreground mb-2 bg-muted/10 rounded p-3">
                 💡 <strong>Pour le CA :</strong> Le SRH doit être équilibré (recettes = dépenses). Un excédent est affecté aux réserves SRH (c/106870). Un déficit chronique nécessite une révision des tarifs de restauration.
               </div>
-              <CommentaireBox label="Commentaire sur le SRH" value={commentaireSRH} onChange={setCommentaireSRH} />
+              <CommentaireBox label="Commentaire sur le SRH" value={commentaireSRH} onChange={setCommentaireSRH} status={statusSRH} lastSaved={lastSavedSRH} />
             </>
           )}
 
@@ -864,7 +925,7 @@ export function RapportOrdoSection() {
               </div>
             </div>
           </div>
-          <CommentaireBox label="Commentaire sur les subventions et financements" value={commentaireSubventions} onChange={setCommentaireSubventions} />
+          <CommentaireBox label="Commentaire sur les subventions et financements" value={commentaireSubventions} onChange={setCommentaireSubventions} status={statusSub} lastSaved={lastSavedSub} />
 
           {/* §11 Situation patrimoniale */}
 
@@ -875,7 +936,7 @@ export function RapportOrdoSection() {
             <KPICard label="Amortissements" value={formatEur(R.totalAmortissements)} color="amber" icon="📉" isText />
             <KPICard label="Valeur nette" value={formatEur(safe.valeurNette)} color={safe.valeurNette >= 0 ? 'green' : 'red'} icon="🏢" isText />
           </div>
-          <CommentaireBox label="Commentaire sur la situation patrimoniale" value={commentairePatrimoine} onChange={setCommentairePatrimoine} />
+          <CommentaireBox label="Commentaire sur la situation patrimoniale" value={commentairePatrimoine} onChange={setCommentairePatrimoine} status={statusPat} lastSaved={lastSavedPat} />
 
           {/* §12 Pilotage budgétaire (REPROFI) */}
           <SectionTitre numero="12" title="Pilotage budgétaire — Budget initial vs exécuté" />
@@ -909,7 +970,7 @@ export function RapportOrdoSection() {
               </tbody>
             </table>
           </div>
-          <CommentaireBox label="Commentaire sur le pilotage budgétaire" value={commentairePilotage} onChange={setCommentairePilotage} />
+          <CommentaireBox label="Commentaire sur le pilotage budgétaire" value={commentairePilotage} onChange={setCommentairePilotage} status={statusPil} lastSaved={lastSavedPil} />
 
           {/* §13 Points d'attention */}
           <SectionTitre numero="13" title="Points d'attention et perspectives" />
@@ -917,7 +978,7 @@ export function RapportOrdoSection() {
             placeholder="Cliquez sur 'Générer commentaires IA' ou saisissez votre texte ici…" rows={4}
             className="mb-4 bg-muted/30 text-sm" />
 
-          <CommentaireBox label="Perspectives pour l'exercice suivant" value={commentairePerspectives} onChange={setCommentairePerspectives} />
+          <CommentaireBox label="Perspectives pour l'exercice suivant" value={commentairePerspectives} onChange={setCommentairePerspectives} status={statusPersp} lastSaved={lastSavedPersp} />
 
           {ind && ind.montant_fonds_social > 0 && (
             <div className="mb-4 bg-muted/30 rounded-lg p-3 text-xs">
@@ -1863,7 +1924,7 @@ function IndicatorBadge({ icon, label, value }: { icon: React.ReactNode; label: 
   );
 }
 
-function CommentaireBox({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+function CommentaireBox({ label, value, onChange, placeholder, status, lastSaved }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; status?: 'saved' | 'saving'; lastSaved?: Date | null }) {
   const textareaRef = (el: HTMLTextAreaElement | null) => {
     if (el) {
       el.style.height = 'auto';
@@ -1875,6 +1936,7 @@ function CommentaireBox({ label, value, onChange, placeholder }: { label: string
       <div className="flex items-center gap-1 mb-1 no-print">
         <MessageSquare className="h-3 w-3 text-muted-foreground" />
         <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">{label}</span>
+        {status && <span className="ml-auto"><SaveIndicator status={status} lastSaved={lastSaved} /></span>}
       </div>
       <Textarea
         ref={textareaRef}
