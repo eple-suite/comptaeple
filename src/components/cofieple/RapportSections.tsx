@@ -886,7 +886,7 @@ export function RapportOrdoSection() {
               <div className="text-xs text-muted-foreground mb-2 bg-muted/10 rounded p-3">
                 💡 <strong>Pour le CA :</strong> Le SRH doit être équilibré (recettes = dépenses). Un excédent est affecté aux réserves SRH (c/106870). Un déficit chronique nécessite une révision des tarifs de restauration.
               </div>
-              <CommentaireBox label="Commentaire sur le SRH" value={commentaireSRH} onChange={setCommentaireSRH} />
+              <CommentaireBox label="Commentaire sur le SRH" value={commentaireSRH} onChange={setCommentaireSRH} status={statusSRH} lastSaved={lastSavedSRH} />
             </>
           )}
 
