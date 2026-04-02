@@ -3,7 +3,7 @@
    
    À l'écran : #rapport-impression-container est display:none
    À l'impression : seul #rapport-impression-container est visible,
-   tout le reste de l'app React est masqué.
+   tout le reste de l'app est masqué via .app-content-wrapper.
    
    RÈGLE D'OR : ne JAMAIS utiliser de sélecteur destructeur
    (button, main, *:empty, etc.)
@@ -24,8 +24,18 @@
     color-adjust: exact !important;
   }
 
-  /* ── 1. Masquer TOUT le contenu app ── */
-  body > #root > * {
+  /* ── Base reset ── */
+  body, html, #root {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
+    overflow: visible !important;
+  }
+
+  /* ── 1. Masquer tout le contenu app (wrapper .no-print-wrapper) ── */
+  .no-print-wrapper {
     display: none !important;
   }
 
@@ -38,19 +48,7 @@
     position: static !important;
   }
 
-  /* ── 3. S'assurer que le conteneur parent est visible ── */
-  body,
-  html,
-  #root {
-    display: block !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    background: white !important;
-    overflow: visible !important;
-  }
-
-  /* ── 4. Anti-coupures ── */
+  /* ── 3. Anti-coupures tableaux ── */
   table {
     page-break-inside: auto !important;
   }
