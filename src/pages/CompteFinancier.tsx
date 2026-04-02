@@ -163,7 +163,7 @@ const CompteFinancier = () => {
   return (
     <div className="space-y-0">
       {/* Header COFIEPLE */}
-      <div className="bg-gradient-to-r from-[hsl(222,30%,14%)] to-[hsl(222,25%,20%)] shadow-xl rounded-xl">
+      <div className="bg-gradient-to-r from-[hsl(222,30%,14%)] to-[hsl(222,25%,20%)] shadow-xl rounded-xl no-print">
         <div className="px-5 py-4 flex items-center gap-4">
           <div className="flex items-center gap-3 shrink-0">
             <div className="w-11 h-11 rounded-xl bg-warning flex items-center justify-center text-2xl font-black text-white shadow-lg">
