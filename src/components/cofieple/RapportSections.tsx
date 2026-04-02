@@ -829,7 +829,7 @@ export function RapportOrdoSection() {
           <div className="text-xs text-muted-foreground mb-4 bg-muted/10 rounded p-3">
             💡 <strong>Pour le CA :</strong> Les opérations d'ordre sont des écritures purement comptables (amortissements, provisions). Elles n'ont aucun impact sur la trésorerie. Un solde d'OO négatif est normal et traduit la politique d'amortissement du patrimoine.
           </div>
-          <CommentaireBox label="Commentaire sur les opérations d'ordre" value={commentaireOO} onChange={setCommentaireOO} />
+          <CommentaireBox label="Commentaire sur les opérations d'ordre" value={commentaireOO} onChange={setCommentaireOO} status={statusOO} lastSaved={lastSavedOO} />
 
           {/* §9 Focus SRH */}
           {(srhDomaine || (ind && ind.nb_repas_servis > 0)) && (
