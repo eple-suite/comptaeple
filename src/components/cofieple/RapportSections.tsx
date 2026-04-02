@@ -29,7 +29,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { generateRapportACPdf } from '@/lib/pdfRapportAC';
 
 import { toast } from 'sonner';
-import type { LigneSDE, LigneSDR } from '@/lib/cofieple_types';
+
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell, Legend,

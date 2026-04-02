@@ -247,7 +247,7 @@ const CompteFinancier = () => {
       })()}
 
       {/* Navigation */}
-      <nav className="bg-[hsl(222,25%,18%)] border-b border-[hsl(222,25%,24%)] sticky top-0 z-40 rounded-b-xl">
+      <nav className="bg-[hsl(222,25%,18%)] border-b border-[hsl(222,25%,24%)] sticky top-0 z-40 rounded-b-xl no-print">
         <div className="px-2">
           <div className="flex overflow-x-auto scrollbar-hide">
             {items.map(item => {
