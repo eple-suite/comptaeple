@@ -1,95 +1,58 @@
 /* ═══════════════════════════════════════════════════════════════
-   FEUILLE D'IMPRESSION — Rapport Ordonnateur & Agent Comptable
-   Imprime la page telle qu'elle est affichée dans le DOM React.
+   CSS IMPRESSION — Pattern dual-container
    
-   RÈGLE D'OR : ne JAMAIS masquer de sélecteur générique (button,
-   main, #root>div, *:empty, [class*="card"], etc.).
-   Seuls les éléments marqués .no-print sont masqués.
+   À l'écran : #rapport-impression-container est display:none
+   À l'impression : seul #rapport-impression-container est visible,
+   tout le reste de l'app React est masqué.
+   
+   RÈGLE D'OR : ne JAMAIS utiliser de sélecteur destructeur
+   (button, main, *:empty, etc.)
    ═══════════════════════════════════════════════════════════════ */
 
 @media print {
 
-  /* ── Forçage couleurs et format ── */
+  /* ── Format A4 ── */
+  @page {
+    size: A4 portrait;
+    margin: 12mm 10mm 12mm 10mm;
+  }
+
+  /* ── Couleurs de fond préservées ── */
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
   }
 
-  html, body {
-    background: white !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    font-size: 9pt !important;
-    font-family: Arial, Helvetica, sans-serif !important;
-    color: #000 !important;
-  }
-
-  @page {
-    size: A4 portrait;
-    margin: 12mm 10mm 12mm 10mm;
-  }
-
-  /* ── Éléments à MASQUER : .no-print + chrome UI structurel ── */
-  .no-print,
-  aside,
-  [data-sidebar],
-  [data-sonner-toaster],
-  [data-radix-popper-content-wrapper] {
+  /* ── 1. Masquer TOUT le contenu app ── */
+  body > #root > * {
     display: none !important;
   }
 
-  /* ── Contenu principal : pleine largeur ── */
-  #root,
-  #root > div,
-  main,
-  [class*="SidebarInset"] {
+  /* ── 2. Rendre le rapport visible ── */
+  #rapport-impression-container {
+    display: block !important;
     width: 100% !important;
-    max-width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
-    box-shadow: none !important;
-    border: none !important;
+    position: static !important;
+  }
+
+  /* ── 3. S'assurer que le conteneur parent est visible ── */
+  body,
+  html,
+  #root {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: white !important;
     overflow: visible !important;
   }
 
-  /* ── Compact padding ── */
-  .p-5, .p-4, .p-6, .p-8 {
-    padding: 4pt !important;
-  }
-
-  /* ── Sections du rapport ── */
-  .rapport-section {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-    margin-bottom: 10pt !important;
-  }
-
-  .rapport-section.nouvelle-page {
-    page-break-before: always !important;
-    break-before: page !important;
-  }
-
-  /* ── Titres solidaires du contenu ── */
-  h1, h2, h3, h4, h5 {
-    page-break-after: avoid !important;
-    break-after: avoid !important;
-  }
-
-  /* ── Tableaux ── */
+  /* ── 4. Anti-coupures ── */
   table {
-    width: 100% !important;
-    border-collapse: collapse !important;
-    font-size: 8pt !important;
     page-break-inside: auto !important;
-  }
-
-  thead {
-    display: table-header-group !important;
-  }
-
-  tfoot {
-    display: table-footer-group !important;
   }
 
   tr {
@@ -97,94 +60,7 @@
     break-inside: avoid !important;
   }
 
-  th, td {
-    padding: 2px 4px !important;
-    vertical-align: middle !important;
-  }
-
-  /* ── Zones de texte / commentaires ── */
-  textarea {
-    border: none !important;
-    box-shadow: none !important;
-    resize: none !important;
-    background: transparent !important;
-    font-size: 9pt !important;
-    line-height: 1.5 !important;
-    min-height: 0 !important;
-    height: auto !important;
-    overflow: visible !important;
-    padding: 2pt 0 !important;
-  }
-
-  /* Hide empty textareas */
-  textarea:placeholder-shown {
-    display: none !important;
-  }
-
-  /* ── Graphiques (SVG — Recharts) ── */
-  svg {
-    display: block !important;
-    visibility: visible !important;
-    max-width: 100% !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-    overflow: visible !important;
-  }
-
-  .recharts-wrapper,
-  .recharts-surface,
-  [class*="recharts"],
-  .recharts-responsive-container {
-    display: block !important;
-    visibility: visible !important;
-    overflow: visible !important;
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  .recharts-responsive-container {
-    width: 100% !important;
-    height: auto !important;
-    min-height: 150px !important;
-  }
-
-  /* ── Grilles : garder le layout ── */
-  .grid {
-    display: grid !important;
-  }
-
-  /* ── Liens ── */
-  a {
-    color: #000 !important;
-    text-decoration: none !important;
-  }
-
-  /* ── Pagination helpers ── */
-  .page-break-before {
-    page-break-before: always !important;
-    break-before: page !important;
-  }
-
-  .no-page-break {
-    page-break-inside: avoid !important;
-    break-inside: avoid !important;
-  }
-
-  /* ── Compact spacing ── */
-  .space-y-4 > * + * {
-    margin-top: 6pt !important;
-  }
-
-  .space-y-3 > * + * {
-    margin-top: 4pt !important;
-  }
-
-  /* ── Force print of background colors on key elements ── */
-  .bg-slate-800,
-  .bg-slate-700,
-  thead tr,
-  tfoot tr {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+  thead {
+    display: table-header-group !important;
   }
 }
