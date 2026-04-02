@@ -319,45 +319,45 @@ export function RapportOrdoSection() {
           {aiLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Bot className="h-4 w-4 mr-2" />}
           {aiLoading ? 'Génération IA…' : 'Générer commentaires IA'}
         </Button>
-        <Button variant="default" className="bg-[hsl(215,70%,45%)] hover:bg-[hsl(215,70%,40%)]" onClick={() => {
+        <Button variant="default" className="bg-primary text-primary-foreground hover:bg-primary/90" onClick={() => {
           try {
-            const serviceRows = getServiceSdeRows(sdeRows || []);
-            const sdrServiceRows = getServiceSdrRows(sdrRows || []);
-            const etsSde = getEtsSdeRow(sdeRows || []);
-            const etsSdr = getEtsSdrRow(sdrRows || []);
+            const toCgrLabel = (code?: string, raw?: string) => {
+              const normalizedCode = (code || '').trim().toUpperCase();
+              const normalizedRaw = (raw || '').trim();
+              if (normalizedRaw.startsWith(`${normalizedCode} -`)) return normalizedRaw;
 
-            const mapSdeSection = (code: string, label: string) => {
-              const row = serviceRows.find(r => r.serviceCode === code || r.service?.includes(label));
-              return row ? { code, libelle: label, budget: row.budget, realise: row.realise, disponible: row.budget - row.realise, taux: row.budget > 0 ? (row.realise / row.budget * 100) : 0 } : null;
+              switch (normalizedCode) {
+                case 'ETS': return 'ETS - Etablissement';
+                case 'SG': return 'SG - SERVICES GENERAUX';
+                case 'AP': return 'AP - ACTIVITES PEDAGO.';
+                case 'VE': return "VE - VIE DE L'ELEVE";
+                case 'ALO': return 'ALO - ADMIN ET LOGISTIQUE';
+                case 'SS': return 'SS - SERVICES SPECIAUX';
+                case 'SRH': return 'SRH - RESTAU ET HEBERG';
+                default: return normalizedRaw || normalizedCode;
+              }
             };
 
-            const sg = mapSdeSection('SG', 'SERVICES GENERAUX');
-            const ap = mapSdeSection('AP', 'ACTIVITES');
-            const ve = mapSdeSection('VE', 'VIE');
-            const alo = mapSdeSection('ALO', 'ADMIN');
-            const ss = mapSdeSection('SS', 'SERVICES SPECIAUX');
+            const sdeCgrRows: LigneCGR[] = (sdeRows || [])
+              .filter(row => row.aggregationLevel === 'global' || row.aggregationLevel === 'service')
+              .map(row => ({
+                cgr: toCgrLabel(row.serviceCode || row.service, row.rawLabel || row.service),
+                budget: row.budget ?? 0,
+                realise: row.realise ?? 0,
+                disponible: row.disponible ?? ((row.budget ?? 0) - (row.realise ?? 0)),
+              }));
 
-            const sdeData = {
-              totalBudget: etsSde?.budget ?? 0,
-              totalRealise: etsSde?.realise ?? 0,
-              totalDisponible: (etsSde?.budget ?? 0) - (etsSde?.realise ?? 0),
-              sections: [
-                sg ? { ...sg, sousLignes: [ap, ve, alo].filter(Boolean) as any[] } : null,
-                ss ? { ...ss, sousLignes: [] } : null,
-              ].filter(Boolean) as any[],
-            };
+            const sdrCgrRows: LigneCGR[] = (sdrRows || [])
+              .filter(row => row.aggregationLevel === 'global' || row.aggregationLevel === 'service')
+              .map(row => ({
+                cgr: toCgrLabel(row.serviceCode || row.service, row.rawLabel || row.service),
+                budget: row.budget ?? 0,
+                realise: row.realise ?? 0,
+                ecart: (row.realise ?? 0) - (row.budget ?? 0),
+              }));
 
-            const mapSdrSection = (code: string, label: string) => {
-              const row = sdrServiceRows.find(r => r.serviceCode === code || r.service?.includes(label));
-              return row ? { code, libelle: label, budget: row.budget, realise: row.realise, ecart: row.realise - row.budget } : null;
-            };
-
-            const sdrData = {
-              totalBudget: etsSdr?.budget ?? 0,
-              totalRealise: etsSdr?.realise ?? 0,
-              totalEcart: (etsSdr?.realise ?? 0) - (etsSdr?.budget ?? 0),
-              sections: [mapSdrSection('SG', 'SERVICES GENERAUX'), mapSdrSection('AP', 'ACTIVITES'), mapSdrSection('VE', 'VIE'), mapSdrSection('ALO', 'ADMIN'), mapSdrSection('SS', 'SERVICES SPECIAUX')].filter(Boolean) as any[],
-            };
+            const sdeData = buildSectionsDepenses(sdeCgrRows);
+            const sdrData = buildSectionsRecettes(sdrCgrRows);
 
             generateRapportPDF({
               etablissement: {
@@ -374,16 +374,16 @@ export function RapportOrdoSection() {
               sde: sdeData,
               sdr: sdrData,
               resultat: {
-                recettesRealisees: etsSdr?.realise ?? R.totalProduitsSdr ?? 0,
-                depensesRealisees: etsSde?.realise ?? R.totalChargesSde ?? 0,
+                recettesRealisees: sdrData.totalRealise || R.totalProduitsSdr || 0,
+                depensesRealisees: sdeData.totalRealise || R.totalChargesSde || 0,
                 resultatComptable: R.resultatBudgetaire ?? 0,
-                creditDisponible: (etsSde?.budget ?? 0) - (etsSde?.realise ?? 0),
-                ecartRecettes: (etsSdr?.realise ?? 0) - (etsSdr?.budget ?? 0),
+                creditDisponible: sdeData.totalDisponible || 0,
+                ecartRecettes: sdrData.totalEcart || 0,
               },
               commentaires: {
                 contexte: commentairePresentation || aiText1 || undefined,
-                executionDepenses: commentaireDomaines || undefined,
-                executionRecettes: commentaireSubventions || undefined,
+                executionDepenses: commentaireDomaines || commentaireResultat || undefined,
+                executionRecettes: commentaireSubventions || commentaireRepartition || undefined,
                 perspectivesFinancieres: commentairePerspectives || aiText3 || undefined,
               },
             });
