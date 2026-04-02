@@ -978,7 +978,7 @@ export function RapportOrdoSection() {
             placeholder="Cliquez sur 'Générer commentaires IA' ou saisissez votre texte ici…" rows={4}
             className="mb-4 bg-muted/30 text-sm" />
 
-          <CommentaireBox label="Perspectives pour l'exercice suivant" value={commentairePerspectives} onChange={setCommentairePerspectives} />
+          <CommentaireBox label="Perspectives pour l'exercice suivant" value={commentairePerspectives} onChange={setCommentairePerspectives} status={statusPersp} lastSaved={lastSavedPersp} />
 
           {ind && ind.montant_fonds_social > 0 && (
             <div className="mb-4 bg-muted/30 rounded-lg p-3 text-xs">
