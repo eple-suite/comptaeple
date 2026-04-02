@@ -30,8 +30,10 @@
     margin: 12mm 10mm 12mm 10mm;
   }
 
-  /* ── Éléments à MASQUER : uniquement .no-print + chrome UI ── */
+  /* ── Éléments à MASQUER : .no-print + chrome UI structurel ── */
   .no-print,
+  aside,
+  [data-sidebar],
   [data-sonner-toaster],
   [data-radix-popper-content-wrapper] {
     display: none !important;
