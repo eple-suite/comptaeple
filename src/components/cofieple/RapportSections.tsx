@@ -610,7 +610,7 @@ export function RapportOrdoSection() {
               </div>
             </>
           )}
-          <CommentaireBox label="Commentaire sur l'évolution N / N-1" value={commentaireEvolution} onChange={setCommentaireEvolution} />
+          <CommentaireBox label="Commentaire sur l'évolution N / N-1" value={commentaireEvolution} onChange={setCommentaireEvolution} status={statusEvo} lastSaved={lastSavedEvo} />
 
           {/* §5 Exécution par domaine D1-D9 */}
           {domainesList.length > 0 && (
