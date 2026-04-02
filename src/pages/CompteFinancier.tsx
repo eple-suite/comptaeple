@@ -33,6 +33,7 @@ import { IndicateursCfa } from '@/components/cofieple/IndicateursCfa';
 import { IndicateursSrh } from '@/components/cofieple/IndicateursSrh';
 import { PerimetreComptable } from '@/components/cofieple/PerimetreComptable';
 import { VueConsolidee } from '@/components/cofieple/VueConsolidee';
+import { RapportImpression } from '@/components/rapport/RapportImpression';
 import { detectBudgetType } from '@/lib/cofieple_csvParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import {
@@ -161,131 +162,137 @@ const CompteFinancier = () => {
   };
 
   return (
-    <div className="space-y-0">
-      {/* Header COFIEPLE */}
-      <div className="bg-gradient-to-r from-[hsl(222,30%,14%)] to-[hsl(222,25%,20%)] shadow-xl rounded-xl no-print">
-        <div className="px-5 py-4 flex items-center gap-4">
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="w-11 h-11 rounded-xl bg-warning flex items-center justify-center text-2xl font-black text-white shadow-lg">
-              ₣
-            </div>
-            <div>
-              <h1 className="text-xl font-black text-white tracking-wide">COFIEPLE</h1>
-              <p className="text-xs text-warning font-medium tracking-widest uppercase">
-                Compte Financier EPLE · M9-6 2026
-              </p>
-            </div>
-          </div>
-
-          <div className="flex-1 min-w-0 ml-4">
-            {etab.nom ? (
-              <div className="flex items-baseline gap-3 flex-wrap">
-                <span className="text-white font-semibold text-sm truncate">{etab.nom}</span>
-                <span className="text-[hsl(220,15%,55%)] text-xs">RNE {etab.uai}</span>
-                <span className="text-[hsl(220,15%,55%)] text-xs">{etab.commune}</span>
-                <Badge variant="outline" className="border-warning/50 text-warning text-xs">Ex. {etab.exercice}</Badge>
+    <>
+      {/* Wrapper app — masqué à l'impression */}
+      <div className="space-y-0 no-print-wrapper">
+        {/* Header COFIEPLE */}
+        <div className="bg-gradient-to-r from-[hsl(222,30%,14%)] to-[hsl(222,25%,20%)] shadow-xl rounded-xl no-print">
+          <div className="px-5 py-4 flex items-center gap-4">
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="w-11 h-11 rounded-xl bg-warning flex items-center justify-center text-2xl font-black text-white shadow-lg">
+                ₣
               </div>
-            ) : (
-              <span className="text-[hsl(220,15%,45%)] text-sm italic">Renseignez le code UAI pour identifier l'établissement</span>
-            )}
-            {etab.academie && <p className="text-xs text-[hsl(220,15%,45%)] mt-0.5">{etab.regionAcademique} · {etab.academie}</p>}
-          </div>
-
-          {hasData && (
-            <div className="flex items-center gap-2 shrink-0">
-              {nbBloq > 0 ? (
-                <Badge className="bg-destructive text-destructive-foreground">🚫 {nbBloq} bloquant{nbBloq > 1 ? 's' : ''}</Badge>
-              ) : nbAnom > 0 ? (
-                <Badge className="bg-warning text-warning-foreground">⚠️ {nbAnom} anomalie{nbAnom > 1 ? 's' : ''}</Badge>
-              ) : (
-                <Badge className="bg-success text-success-foreground">✅ Aucun bloquant</Badge>
-              )}
+              <div>
+                <h1 className="text-xl font-black text-white tracking-wide">COFIEPLE</h1>
+                <p className="text-xs text-warning font-medium tracking-widest uppercase">
+                  Compte Financier EPLE · M9-6 2026
+                </p>
+              </div>
             </div>
-          )}
+
+            <div className="flex-1 min-w-0 ml-4">
+              {etab.nom ? (
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <span className="text-white font-semibold text-sm truncate">{etab.nom}</span>
+                  <span className="text-[hsl(220,15%,55%)] text-xs">RNE {etab.uai}</span>
+                  <span className="text-[hsl(220,15%,55%)] text-xs">{etab.commune}</span>
+                  <Badge variant="outline" className="border-warning/50 text-warning text-xs">Ex. {etab.exercice}</Badge>
+                </div>
+              ) : (
+                <span className="text-[hsl(220,15%,45%)] text-sm italic">Renseignez le code UAI pour identifier l'établissement</span>
+              )}
+              {etab.academie && <p className="text-xs text-[hsl(220,15%,45%)] mt-0.5">{etab.regionAcademique} · {etab.academie}</p>}
+            </div>
+
+            {hasData && (
+              <div className="flex items-center gap-2 shrink-0">
+                {nbBloq > 0 ? (
+                  <Badge className="bg-destructive text-destructive-foreground">🚫 {nbBloq} bloquant{nbBloq > 1 ? 's' : ''}</Badge>
+                ) : nbAnom > 0 ? (
+                  <Badge className="bg-warning text-warning-foreground">⚠️ {nbAnom} anomalie{nbAnom > 1 ? 's' : ''}</Badge>
+                ) : (
+                  <Badge className="bg-success text-success-foreground">✅ Aucun bloquant</Badge>
+                )}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
 
-      {/* Progress Stepper */}
-      <div className="no-print"><ProgressStepper /></div>
+        {/* Progress Stepper */}
+        <div className="no-print"><ProgressStepper /></div>
 
-      {/* Périmètre Comptable Selector — visible dès qu'il y a des fichiers importés */}
-      {(hasData || nbFichiers > 0) && (
-        <div className="mx-1 mt-2 no-print">
-          <PerimetreComptable />
-        </div>
-      )}
-
-      {/* Banner Budget Annexe — Mode de calcul adapté */}
-      {hasData && activeBudget !== 'principal' && resultats[activeBudget] && (() => {
-        const bal = balance?.[activeBudget] || [];
-        const c185 = bal.find(l => l.compte.startsWith('185'));
-        const solde185 = c185 ? (c185.solDbt - c185.solCrd) : 0;
-        return (
+        {/* Périmètre Comptable Selector */}
+        {(hasData || nbFichiers > 0) && (
           <div className="mx-1 mt-2 no-print">
-            <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
-              <div className="flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-                <div className="space-y-1 text-sm">
-                  <p className="font-bold text-warning">
-                    ℹ️ BUDGET ANNEXE DÉTECTÉ — Mode de calcul adapté (M9-6 §2.1.2.3.2)
-                  </p>
-                  <p className="text-muted-foreground text-xs leading-relaxed">
-                    Ce budget n'ayant pas de personnalité juridique (M9-6 §2.1.2.3.1), il ne dispose pas
-                    de compte de dépôt des fonds au Trésor (C/515100). Sa trésorerie est matérialisée par
-                    le <span className="font-semibold text-foreground">compte 185000</span>{' '}
-                    (solde débiteur : <span className="font-semibold text-warning">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(solde185)}</span>),
-                    qui représente les fonds mis à disposition par le budget principal support.
-                  </p>
-                  <p className="text-muted-foreground text-[11px]">
-                    Tous les indicateurs (FDR, BFR, TN) ont été recalculés en conséquence.
-                  </p>
+            <PerimetreComptable />
+          </div>
+        )}
+
+        {/* Banner Budget Annexe */}
+        {hasData && activeBudget !== 'principal' && resultats[activeBudget] && (() => {
+          const bal = balance?.[activeBudget] || [];
+          const c185 = bal.find(l => l.compte.startsWith('185'));
+          const solde185 = c185 ? (c185.solDbt - c185.solCrd) : 0;
+          return (
+            <div className="mx-1 mt-2 no-print">
+              <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
+                  <div className="space-y-1 text-sm">
+                    <p className="font-bold text-warning">
+                      ℹ️ BUDGET ANNEXE DÉTECTÉ — Mode de calcul adapté (M9-6 §2.1.2.3.2)
+                    </p>
+                    <p className="text-muted-foreground text-xs leading-relaxed">
+                      Ce budget n'ayant pas de personnalité juridique (M9-6 §2.1.2.3.1), il ne dispose pas
+                      de compte de dépôt des fonds au Trésor (C/515100). Sa trésorerie est matérialisée par
+                      le <span className="font-semibold text-foreground">compte 185000</span>{' '}
+                      (solde débiteur : <span className="font-semibold text-warning">{new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(solde185)}</span>),
+                      qui représente les fonds mis à disposition par le budget principal support.
+                    </p>
+                    <p className="text-muted-foreground text-[11px]">
+                      Tous les indicateurs (FDR, BFR, TN) ont été recalculés en conséquence.
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        );
-      })()}
+          );
+        })()}
 
-      {/* Navigation */}
-      <nav className="bg-[hsl(222,25%,18%)] border-b border-[hsl(222,25%,24%)] sticky top-0 z-40 rounded-b-xl no-print">
-        <div className="px-2">
-          <div className="flex overflow-x-auto scrollbar-hide">
-            {items.map(item => {
-              const active = activeTab === item.id;
-              const disabled = item.requiresData && !hasData;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => !disabled && setActiveTab(item.id)}
-                  disabled={disabled}
-                  aria-current={active ? 'page' : undefined}
-                  className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all duration-200 shrink-0 rounded-t-lg ${
-                    active ? 'border-warning bg-warning text-warning-foreground ring-2 ring-warning/40 shadow-sm font-extrabold' :
-                    disabled ? 'border-transparent text-[hsl(222,15%,35%)] cursor-not-allowed' :
-                    'border-transparent text-[hsl(220,15%,55%)] hover:text-[hsl(220,15%,80%)] hover:bg-white/5'
-                  }`}
-                  title={disabled ? 'Importez d\'abord les données CSV' : item.label}
-                >
-                  {active && <span className="h-1.5 w-1.5 rounded-full bg-warning-foreground shrink-0" aria-hidden="true" />}
-                  {item.icon}
-                  <span className="tracking-wide">{item.label}</span>
-                  {item.badge && (
-                    <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${badgeColors[item.badgeType || 'info']}`}>
-                      {item.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
+        {/* Navigation */}
+        <nav className="bg-[hsl(222,25%,18%)] border-b border-[hsl(222,25%,24%)] sticky top-0 z-40 rounded-b-xl no-print">
+          <div className="px-2">
+            <div className="flex overflow-x-auto scrollbar-hide">
+              {items.map(item => {
+                const active = activeTab === item.id;
+                const disabled = item.requiresData && !hasData;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => !disabled && setActiveTab(item.id)}
+                    disabled={disabled}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-semibold whitespace-nowrap border-b-2 transition-all duration-200 shrink-0 rounded-t-lg ${
+                      active ? 'border-warning bg-warning text-warning-foreground ring-2 ring-warning/40 shadow-sm font-extrabold' :
+                      disabled ? 'border-transparent text-[hsl(222,15%,35%)] cursor-not-allowed' :
+                      'border-transparent text-[hsl(220,15%,55%)] hover:text-[hsl(220,15%,80%)] hover:bg-white/5'
+                    }`}
+                    title={disabled ? 'Importez d\'abord les données CSV' : item.label}
+                  >
+                    {active && <span className="h-1.5 w-1.5 rounded-full bg-warning-foreground shrink-0" aria-hidden="true" />}
+                    {item.icon}
+                    <span className="tracking-wide">{item.label}</span>
+                    {item.badge && (
+                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${badgeColors[item.badgeType || 'info']}`}>
+                        {item.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+        </nav>
+
+        {/* Content */}
+        <div className="p-5">
+          {renderSection()}
         </div>
-      </nav>
-
-      {/* Content */}
-      <div className="p-5">
-        {renderSection()}
       </div>
-    </div>
+
+      {/* Composant impression — invisible à l'écran, visible en @media print */}
+      <RapportImpression />
+    </>
   );
 };
 
