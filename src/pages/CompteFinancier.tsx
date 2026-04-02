@@ -221,7 +221,7 @@ const CompteFinancier = () => {
         const c185 = bal.find(l => l.compte.startsWith('185'));
         const solde185 = c185 ? (c185.solDbt - c185.solCrd) : 0;
         return (
-          <div className="mx-1 mt-2">
+          <div className="mx-1 mt-2 no-print">
             <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
