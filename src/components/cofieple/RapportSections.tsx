@@ -1926,7 +1926,7 @@ function IndicatorBadge({ icon, label, value }: { icon: React.ReactNode; label: 
   );
 }
 
-function CommentaireBox({ label, value, onChange, placeholder }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string }) {
+function CommentaireBox({ label, value, onChange, placeholder, status, lastSaved }: { label: string; value: string; onChange: (v: string) => void; placeholder?: string; status?: 'saved' | 'saving'; lastSaved?: Date | null }) {
   const textareaRef = (el: HTMLTextAreaElement | null) => {
     if (el) {
       el.style.height = 'auto';
@@ -1938,6 +1938,7 @@ function CommentaireBox({ label, value, onChange, placeholder }: { label: string
       <div className="flex items-center gap-1 mb-1 no-print">
         <MessageSquare className="h-3 w-3 text-muted-foreground" />
         <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">{label}</span>
+        {status && <span className="ml-auto"><SaveIndicator status={status} lastSaved={lastSaved} /></span>}
       </div>
       <Textarea
         ref={textareaRef}
