@@ -1,20 +1,17 @@
 /* ═══════════════════════════════════════════════════════════════
-   CSS IMPRESSION — Pattern dual-container
+   CSS IMPRESSION — Pattern dual-container (A4 PAYSAGE)
    
    À l'écran : #rapport-impression-container est display:none
    À l'impression : seul #rapport-impression-container est visible,
-   tout le reste de l'app est masqué via .app-content-wrapper.
-   
-   RÈGLE D'OR : ne JAMAIS utiliser de sélecteur destructeur
-   (button, main, *:empty, etc.)
+   tout le reste de l'app est masqué via .no-print-wrapper.
    ═══════════════════════════════════════════════════════════════ */
 
 @media print {
 
-  /* ── Format A4 ── */
+  /* ── Format A4 PAYSAGE ── */
   @page {
-    size: A4 portrait;
-    margin: 12mm 10mm 12mm 10mm;
+    size: A4 landscape;
+    margin: 10mm 12mm 10mm 12mm;
   }
 
   /* ── Couleurs de fond préservées ── */
@@ -34,7 +31,7 @@
     overflow: visible !important;
   }
 
-  /* ── 1. Masquer tout le contenu app (wrapper .no-print-wrapper) ── */
+  /* ── 1. Masquer tout le contenu app ── */
   .no-print-wrapper {
     display: none !important;
   }
@@ -48,9 +45,37 @@
     position: static !important;
   }
 
-  /* ── 3. Anti-coupures tableaux ── */
+  /* ── 3. Titres toujours solidaires du contenu suivant ── */
+  .section-titre,
+  h2, h3, h4 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  .section-titre + * {
+    page-break-before: avoid !important;
+    break-before: avoid !important;
+  }
+
+  /* ── 4. Blocs solidaires (titre + contenu) ── */
+  .bloc-solidaire {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    orphans: 4 !important;
+    widows: 4 !important;
+  }
+
+  /* ── 5. Anti-coupures tableaux ── */
   table {
     page-break-inside: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
   }
 
   tr {
@@ -58,7 +83,24 @@
     break-inside: avoid !important;
   }
 
-  thead {
-    display: table-header-group !important;
+  /* ── 6. KPI cards et graphiques : blocs indivisibles ── */
+  .kpi-card,
+  .graphique-bloc,
+  [style*="pageBreakInside: avoid"],
+  [style*="page-break-inside: avoid"] {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* ── 7. Forcer les sauts entre grandes sections ── */
+  .saut-de-page {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* ── 8. Propriétés orphelins/veuves globales ── */
+  p, div, li {
+    orphans: 3;
+    widows: 3;
   }
 }
