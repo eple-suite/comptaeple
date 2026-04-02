@@ -371,6 +371,7 @@ const SettingsPage = () => {
                     className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                     onClick={() => {
                       clearAllCofiepleData();
+                      store.clearAll();
                       toast.success("Toutes les données locales ont été supprimées.");
                       window.location.reload();
                     }}
