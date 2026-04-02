@@ -925,7 +925,7 @@ export function RapportOrdoSection() {
               </div>
             </div>
           </div>
-          <CommentaireBox label="Commentaire sur les subventions et financements" value={commentaireSubventions} onChange={setCommentaireSubventions} />
+          <CommentaireBox label="Commentaire sur les subventions et financements" value={commentaireSubventions} onChange={setCommentaireSubventions} status={statusSub} lastSaved={lastSavedSub} />
 
           {/* §11 Situation patrimoniale */}
 
