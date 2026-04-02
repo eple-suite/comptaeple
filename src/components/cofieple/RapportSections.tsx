@@ -65,11 +65,6 @@ function useExtraIndicators() {
   return ind;
 }
 
-// ── Smart commentary helper ─────────────────────────────────
-function genAutoComment(label: string, value: number, seuil: number, unit: string, bienSi: 'sup' | 'inf', contextHaut: string, contextBas: string): string {
-  const ok = bienSi === 'sup' ? value >= seuil : value <= seuil;
-  return ok ? `✅ ${label} : ${contextHaut}` : `⚠️ ${label} : ${contextBas}`;
-}
 
 // ═══════════════════════════════════════════════════════════════
 // RAPPORT DE L'ORDONNATEUR — M9-6 § V.1
