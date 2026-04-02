@@ -1,6 +1,10 @@
 /* ═══════════════════════════════════════════════════════════════
    FEUILLE D'IMPRESSION — Rapport Ordonnateur & Agent Comptable
-   Imprime la page telle qu'elle est affichée dans le DOM React
+   Imprime la page telle qu'elle est affichée dans le DOM React.
+   
+   RÈGLE D'OR : ne JAMAIS masquer de sélecteur générique (button,
+   main, #root>div, *:empty, [class*="card"], etc.).
+   Seuls les éléments marqués .no-print sont masqués.
    ═══════════════════════════════════════════════════════════════ */
 
 @media print {
@@ -26,31 +30,9 @@
     margin: 12mm 10mm 12mm 10mm;
   }
 
-  /* ── Éléments à MASQUER à l'impression ── */
+  /* ── Éléments à MASQUER : uniquement .no-print + chrome UI ── */
   .no-print,
-  nav,
-  header:not(.print-keep),
-  aside,
-  footer,
-  /* Sidebar */
-  [data-sidebar],
-  [class*="sidebar"],
-  [class*="Sidebar"],
-  /* Toasts et notifications */
   [data-sonner-toaster],
-  [class*="toast"],
-  [class*="Toaster"],
-  /* Tablist navigation du CompteFinancier */
-  [role="tablist"],
-  /* Progress stepper */
-  .progress-stepper-container,
-  /* Save indicators */
-  [class*="SaveIndicator"],
-  [class*="save-indicator"],
-  /* OfflineBanner */
-  [class*="OfflineBanner"],
-  [class*="offline-banner"],
-  /* Dropdowns / Popovers */
   [data-radix-popper-content-wrapper] {
     display: none !important;
   }
@@ -59,7 +41,6 @@
   #root,
   #root > div,
   main,
-  [class*="main-content"],
   [class*="SidebarInset"] {
     width: 100% !important;
     max-width: 100% !important;
@@ -70,24 +51,9 @@
     overflow: visible !important;
   }
 
-  /* Remove padding from the content area */
+  /* ── Compact padding ── */
   .p-5, .p-4, .p-6, .p-8 {
     padding: 4pt !important;
-  }
-
-  /* ── Cards ── */
-  [class*="card"],
-  [class*="Card"] {
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    background: white !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-
-  [class*="CardContent"] {
-    padding: 0 !important;
   }
 
   /* ── Sections du rapport ── */
@@ -148,7 +114,7 @@
     padding: 2pt 0 !important;
   }
 
-  /* Hide empty textareas (no content) */
+  /* Hide empty textareas */
   textarea:placeholder-shown {
     display: none !important;
   }
@@ -163,11 +129,10 @@
     overflow: visible !important;
   }
 
-  /* Recharts containers */
   .recharts-wrapper,
   .recharts-surface,
   [class*="recharts"],
-  [class*="ResponsiveContainer"] {
+  .recharts-responsive-container {
     display: block !important;
     visibility: visible !important;
     overflow: visible !important;
@@ -175,12 +140,10 @@
     break-inside: avoid !important;
   }
 
-  /* Force responsive containers to show */
   .recharts-responsive-container {
     width: 100% !important;
     height: auto !important;
     min-height: 150px !important;
-    overflow: visible !important;
   }
 
   /* ── Grilles : garder le layout ── */
@@ -194,11 +157,6 @@
     text-decoration: none !important;
   }
 
-  /* ── Badges — keep visible in rapport ── */
-  .print-badge {
-    display: inline-flex !important;
-  }
-
   /* ── Pagination helpers ── */
   .page-break-before {
     page-break-before: always !important;
@@ -210,18 +168,6 @@
     break-inside: avoid !important;
   }
 
-  /* ── Section commentaire: hide label row, show only text ── */
-  .section-rapport .no-print {
-    display: none !important;
-  }
-
-  /* ── KPI cards in print ── */
-  .grid.grid-cols-2,
-  .grid.grid-cols-3 {
-    display: grid !important;
-    gap: 4pt !important;
-  }
-
   /* ── Compact spacing ── */
   .space-y-4 > * + * {
     margin-top: 6pt !important;
@@ -231,25 +177,11 @@
     margin-top: 4pt !important;
   }
 
-  .mb-4, .mb-5, .mb-6 {
-    margin-bottom: 6pt !important;
-  }
-
-  .mt-5, .mt-8 {
-    margin-top: 8pt !important;
-  }
-
   /* ── Force print of background colors on key elements ── */
   .bg-slate-800,
   .bg-slate-700,
   thead tr,
-  tfoot tr,
-  .bg-muted\/20,
-  .bg-muted\/30,
-  .bg-muted\/10,
-  .bg-warning\/5,
-  .bg-warning\/10,
-  .bg-primary\/5 {
+  tfoot tr {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
