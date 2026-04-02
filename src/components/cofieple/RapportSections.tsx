@@ -795,7 +795,7 @@ export function RapportOrdoSection() {
               </div>
             </div>
           </div>
-          <CommentaireBox label="Commentaire sur le fonds de roulement" value={commentaireFDR} onChange={setCommentaireFDR} />
+          <CommentaireBox label="Commentaire sur le fonds de roulement" value={commentaireFDR} onChange={setCommentaireFDR} status={statusFDR} lastSaved={lastSavedFDR} />
 
           {/* §7 Trésorerie annuelle */}
           <SectionTitre numero="7" title="Trésorerie" />
