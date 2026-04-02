@@ -33,6 +33,7 @@ import { IndicateursCfa } from '@/components/cofieple/IndicateursCfa';
 import { IndicateursSrh } from '@/components/cofieple/IndicateursSrh';
 import { PerimetreComptable } from '@/components/cofieple/PerimetreComptable';
 import { VueConsolidee } from '@/components/cofieple/VueConsolidee';
+import { RapportImpression } from '@/components/rapport/RapportImpression';
 import { detectBudgetType } from '@/lib/cofieple_csvParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import {
