@@ -695,7 +695,7 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
       tfoot { display: table-footer-group !important; }
       tr { page-break-inside: avoid !important; break-inside: avoid !important; }
 
-      *:empty {
+      *:empty:not(.bar-chart-bar):not(.pie-chart-segment-bar):not(.pie-chart-legend-color) {
         display: none !important;
         height: 0 !important;
         margin: 0 !important;
