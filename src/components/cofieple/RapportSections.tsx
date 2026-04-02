@@ -936,7 +936,7 @@ export function RapportOrdoSection() {
             <KPICard label="Amortissements" value={formatEur(R.totalAmortissements)} color="amber" icon="📉" isText />
             <KPICard label="Valeur nette" value={formatEur(safe.valeurNette)} color={safe.valeurNette >= 0 ? 'green' : 'red'} icon="🏢" isText />
           </div>
-          <CommentaireBox label="Commentaire sur la situation patrimoniale" value={commentairePatrimoine} onChange={setCommentairePatrimoine} />
+          <CommentaireBox label="Commentaire sur la situation patrimoniale" value={commentairePatrimoine} onChange={setCommentairePatrimoine} status={statusPat} lastSaved={lastSavedPat} />
 
           {/* §12 Pilotage budgétaire (REPROFI) */}
           <SectionTitre numero="12" title="Pilotage budgétaire — Budget initial vs exécuté" />
