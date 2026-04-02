@@ -7,15 +7,34 @@ import { buildRapportHtml, type DonneesRapport } from './rapportPdfTemplate';
 export type { DonneesRapport } from './rapportPdfTemplate';
 
 export function generateRapportPDF(donnees: DonneesRapport): void {
-  const printWindow = window.open('', '_blank');
+  const html = buildRapportHtml(donnees);
+  const printWindow = window.open('', '_blank', 'width=900,height=700,scrollbars=yes');
 
   if (!printWindow) {
-    alert('Veuillez autoriser les popups pour générer le rapport.');
+    alert(
+      'Les popups sont bloquées.\n\n' +
+      'Pour générer le rapport :\n' +
+      '→ Cliquez sur l\'icône de blocage de popup dans la barre d\'adresse\n' +
+      '→ Autorisez les popups pour ce site\n' +
+      '→ Réessayez',
+    );
     return;
   }
 
   printWindow.document.open();
-  printWindow.document.write(buildRapportHtml(donnees));
+  printWindow.document.write(html);
   printWindow.document.close();
-  printWindow.focus();
+
+  function waitForPrint() {
+    if (printWindow.document.readyState === 'complete') {
+      printWindow.setTimeout(() => {
+        printWindow.focus();
+        printWindow.print();
+      }, 500);
+    } else {
+      printWindow.setTimeout(waitForPrint, 100);
+    }
+  }
+
+  printWindow.setTimeout(waitForPrint, 200);
 }

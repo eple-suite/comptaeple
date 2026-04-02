@@ -1,3 +1,5 @@
+import { buildBarChart, buildPieChart } from './rapportPdfCharts';
+
 export interface DonneesRapport {
   etablissement: {
     nom: string;
@@ -174,6 +176,17 @@ function renderRecettesRows(sections: DonneesRapport['sdr']['sections']): string
 
 export function buildRapportHtml(donnees: DonneesRapport): string {
   const { etablissement, sde, sdr, resultat, commentaires } = donnees;
+  const graphiqueBarres = buildBarChart(sde.sections.map((section) => ({
+    libelle: section.libelle,
+    budget: section.budget,
+    realise: section.realise,
+    taux: section.taux,
+  })));
+  const graphiqueRepartition = buildPieChart(sde.sections.map((section) => ({
+    libelle: section.libelle,
+    budget: section.budget,
+    totalBudget: sde.totalBudget,
+  })));
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -183,25 +196,25 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
   <title>Rapport Ordonnateur — ${escapeHtml(etablissement.nom)} — ${escapeHtml(String(etablissement.annee))}</title>
   <style>
     :root {
-      --ink: #132238;
-      --muted: #5f6f85;
-      --line: #cfd7e3;
-      --surface: #ffffff;
-      --surface-alt: #f4f7fb;
-      --brand: #163a63;
-      --brand-soft: #eaf0f8;
-      --success: #1d7f5f;
-      --warning: #aa6c00;
-      --danger: #a43a32;
-      --shadow: 0 18px 40px rgba(19, 34, 56, 0.12);
+      --ink: 214 47% 15%;
+      --muted: 214 17% 45%;
+      --line: 216 26% 84%;
+      --surface: 0 0% 100%;
+      --surface-alt: 214 38% 97%;
+      --brand: 212 63% 24%;
+      --brand-soft: 214 45% 94%;
+      --success: 158 63% 31%;
+      --warning: 35 100% 38%;
+      --danger: 6 53% 42%;
+      --shadow: 0 18px 40px hsl(214 47% 15% / 0.12);
     }
 
     * { box-sizing: border-box; }
     html, body { margin: 0; padding: 0; }
     body {
       font-family: Arial, Helvetica, sans-serif;
-      color: var(--ink);
-      background: #eef2f7;
+      color: hsl(var(--ink));
+      background: hsl(214 25% 94%);
       font-size: 10.5pt;
       line-height: 1.45;
     }
@@ -223,8 +236,8 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
       border: 0;
       border-radius: 999px;
       padding: 11px 18px;
-      background: var(--brand);
-      color: #fff;
+      background: hsl(var(--brand));
+      color: hsl(var(--surface));
       font-size: 13px;
       font-weight: 700;
       cursor: pointer;
@@ -232,26 +245,30 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
     }
 
     .screen-toolbar button:last-child {
-      background: #44556d;
+      background: hsl(var(--muted));
     }
 
     .document {
       padding: 20px 0 28px;
     }
 
-    .sheet {
+    .page {
       width: 186mm;
       min-height: 268mm;
       margin: 0 auto 18px;
-      background: var(--surface);
+      background: hsl(var(--surface));
       padding: 14mm 12mm;
       box-shadow: var(--shadow);
       position: relative;
       break-after: page;
       page-break-after: always;
+      break-inside: avoid;
+      page-break-inside: avoid;
+      orphans: 3;
+      widows: 3;
     }
 
-    .sheet:last-of-type {
+    .page:last-of-type {
       break-after: auto;
       page-break-after: auto;
     }
@@ -262,7 +279,7 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
       gap: 14mm;
       align-items: flex-start;
       padding-bottom: 8mm;
-      border-bottom: 2px solid var(--brand);
+      border-bottom: 2px solid hsl(var(--brand));
       margin-bottom: 7mm;
     }
 
@@ -274,7 +291,7 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
     .ministere {
       text-transform: uppercase;
       letter-spacing: 0.08em;
-      color: var(--muted);
+      color: hsl(var(--muted));
       font-size: 7.8pt;
     }
 
@@ -282,12 +299,12 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
       margin-top: 2mm;
       font-size: 14pt;
       font-weight: 700;
-      color: var(--brand);
+      color: hsl(var(--brand));
     }
 
     .etablissement-meta,
     .report-date {
-      color: var(--muted);
+      color: hsl(var(--muted));
       font-size: 8.4pt;
     }
 
@@ -300,7 +317,7 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
       text-transform: uppercase;
       letter-spacing: 0.08em;
       font-weight: 700;
-      color: var(--brand);
+      color: hsl(var(--brand));
       font-size: 8.4pt;
     }
 
@@ -310,9 +327,9 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
       font-weight: 700;
     }
 
-    .band-title {
-      background: var(--brand);
-      color: #fff;
+    .section-titre {
+      background: hsl(var(--brand));
+      color: hsl(var(--surface));
       padding: 3mm 4mm;
       text-transform: uppercase;
       letter-spacing: 0.06em;
@@ -326,19 +343,19 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
     .intro-note {
       margin: 0 0 5mm;
       font-size: 9pt;
-      color: var(--muted);
+      color: hsl(var(--muted));
     }
 
     .metrics-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(3, minmax(0, 1fr));
       gap: 4mm;
       margin-bottom: 5mm;
     }
 
     .metric-card {
-      border: 1px solid var(--line);
-      background: var(--surface-alt);
+      border: 1px solid hsl(var(--line));
+      background: hsl(var(--surface-alt));
       padding: 4mm;
       border-radius: 3mm;
       break-inside: avoid;
@@ -346,27 +363,171 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
     }
 
     .metric-card--alert {
-      border-color: rgba(164, 58, 50, 0.35);
-      background: #fcf2f1;
+      border-color: hsl(var(--danger) / 0.35);
+      background: hsl(6 60% 97%);
     }
 
     .metric-label {
       font-size: 7.8pt;
       text-transform: uppercase;
       letter-spacing: 0.06em;
-      color: var(--muted);
+      color: hsl(var(--muted));
       margin-bottom: 1mm;
     }
 
     .metric-value {
       font-size: 15pt;
       font-weight: 700;
-      color: var(--brand);
+      color: hsl(var(--brand));
       font-family: 'Courier New', Courier, monospace;
     }
 
-    .metric-value.is-success { color: var(--success); }
-    .metric-value.is-danger { color: var(--danger); }
+    .metric-value.is-success { color: hsl(var(--success)); }
+    .metric-value.is-danger { color: hsl(var(--danger)); }
+
+    .chart-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+      gap: 4mm;
+      margin-bottom: 5mm;
+    }
+
+    .chart-panel {
+      border: 1px solid hsl(var(--line));
+      background: hsl(var(--surface-alt));
+      border-radius: 3mm;
+      padding: 4mm;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+
+    .sous-titre {
+      margin: 0 0 3mm;
+      color: hsl(var(--brand));
+      font-size: 8.8pt;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      break-after: avoid;
+      page-break-after: avoid;
+    }
+
+    .bar-chart-wrapper,
+    .pie-chart-wrapper {
+      display: flex;
+      flex-direction: column;
+      gap: 2.4mm;
+    }
+
+    .bar-chart-title,
+    .pie-chart-title {
+      font-size: 8pt;
+      font-weight: 700;
+      color: hsl(var(--muted));
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .bar-chart-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 16mm;
+      gap: 1.6mm 2.2mm;
+      align-items: center;
+    }
+
+    .bar-chart-label,
+    .bar-chart-value,
+    .bar-chart-details,
+    .pie-chart-legend-item {
+      font-size: 7.8pt;
+    }
+
+    .bar-chart-label {
+      font-weight: 700;
+    }
+
+    .bar-chart-value {
+      text-align: right;
+      font-weight: 700;
+      color: hsl(var(--brand));
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .bar-chart-container {
+      grid-column: 1 / -1;
+      height: 6mm;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid hsl(var(--line));
+      background: hsl(var(--brand-soft));
+      box-shadow: inset 0 1px 1px hsl(var(--ink) / 0.08);
+    }
+
+    .bar-chart-bar {
+      height: 100%;
+      min-width: 4px;
+      border-radius: 999px;
+    }
+
+    .bar-chart-details {
+      grid-column: 1 / -1;
+      display: flex;
+      justify-content: space-between;
+      gap: 3mm;
+      color: hsl(var(--muted));
+    }
+
+    .pie-chart-bar-container {
+      display: flex;
+      width: 100%;
+      height: 11mm;
+      border-radius: 999px;
+      overflow: hidden;
+      border: 1px solid hsl(var(--line));
+      background: hsl(var(--brand-soft));
+    }
+
+    .pie-chart-segment-bar {
+      height: 100%;
+    }
+
+    .pie-chart-legend {
+      display: grid;
+      gap: 1.8mm;
+    }
+
+    .pie-chart-legend-item {
+      display: grid;
+      grid-template-columns: 4mm minmax(0, 1fr) auto;
+      gap: 2mm;
+      align-items: center;
+    }
+
+    .pie-chart-legend-color {
+      width: 3.5mm;
+      height: 3.5mm;
+      border-radius: 999px;
+      display: inline-block;
+    }
+
+    .pie-chart-legend-label {
+      color: hsl(var(--ink));
+    }
+
+    .pie-chart-legend-pct {
+      color: hsl(var(--brand));
+      font-weight: 700;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .chart-empty {
+      padding: 3mm;
+      border: 1px dashed hsl(var(--line));
+      border-radius: 2.5mm;
+      color: hsl(var(--muted));
+      font-size: 8pt;
+      background: hsl(var(--surface));
+    }
 
     table {
       width: 100%;
@@ -379,10 +540,10 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
     tfoot { display: table-footer-group; }
 
     thead th {
-      background: var(--brand);
-      color: #fff;
+      background: hsl(var(--brand));
+      color: hsl(var(--surface));
       padding: 2.4mm 2.8mm;
-      border: 1px solid #0f2b49;
+      border: 1px solid hsl(212 64% 18%);
       text-align: right;
       white-space: nowrap;
       font-size: 8.1pt;
@@ -397,27 +558,27 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
     tbody td,
     tfoot td {
       padding: 2.3mm 2.8mm;
-      border: 1px solid var(--line);
+      border: 1px solid hsl(var(--line));
       vertical-align: top;
       break-inside: avoid;
       page-break-inside: avoid;
     }
 
     tbody tr:nth-child(even) {
-      background: #fafbfd;
+      background: hsl(214 40% 99%);
     }
 
     tbody tr.is-warning {
-      background: #fff8e8;
+      background: hsl(44 100% 96%);
     }
 
     tbody tr.is-danger {
-      background: #fdf0ef;
+      background: hsl(8 60% 96%);
     }
 
     .sub-row td:first-child {
       padding-left: 7mm;
-      color: #42546d;
+      color: hsl(215 25% 35%);
       font-style: italic;
     }
 
@@ -427,19 +588,19 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
       white-space: nowrap;
     }
 
-    .text-success { color: var(--success); font-weight: 700; }
-    .text-warning { color: var(--warning); font-weight: 700; }
-    .text-danger { color: var(--danger); font-weight: 700; }
+    .text-success { color: hsl(var(--success)); font-weight: 700; }
+    .text-warning { color: hsl(var(--warning)); font-weight: 700; }
+    .text-danger { color: hsl(var(--danger)); font-weight: 700; }
 
     tfoot td {
-      background: var(--brand-soft);
+      background: hsl(var(--brand-soft));
       font-weight: 700;
     }
 
     .comment-panel {
-      border: 1px solid var(--line);
-      border-left: 4px solid var(--brand);
-      background: var(--surface-alt);
+      border: 1px solid hsl(var(--line));
+      border-left: 4px solid hsl(var(--brand));
+      background: hsl(var(--surface-alt));
       border-radius: 3mm;
       padding: 4mm 4.5mm;
       margin-top: 4mm;
@@ -452,7 +613,7 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
     .comment-panel h3 {
       margin: 0 0 2mm;
       font-size: 9.2pt;
-      color: var(--brand);
+      color: hsl(var(--brand));
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
@@ -472,7 +633,7 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
     }
 
     .signature-box {
-      border-top: 1px solid var(--ink);
+      border-top: 1px solid hsl(var(--ink));
       padding-top: 3mm;
       text-align: center;
       break-inside: avoid;
@@ -496,23 +657,64 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
     .footer-note {
       margin-top: 8mm;
       padding-top: 3mm;
-      border-top: 1px solid var(--line);
+      border-top: 1px solid hsl(var(--line));
       text-align: center;
       font-size: 7.6pt;
-      color: var(--muted);
+      color: hsl(var(--muted));
     }
 
     .page-marker {
       position: absolute;
       bottom: 8mm;
       right: 12mm;
-      color: var(--muted);
+      color: hsl(var(--muted));
       font-size: 7.6pt;
     }
 
     @media print {
+      .page {
+        page-break-after: always !important;
+        page-break-inside: avoid !important;
+        break-after: page !important;
+        break-inside: avoid !important;
+        orphans: 3;
+        widows: 3;
+      }
+
+      .page:last-of-type {
+        page-break-after: auto !important;
+        break-after: auto !important;
+      }
+
+      h2.section-titre, h3.sous-titre {
+        page-break-after: avoid !important;
+        break-after: avoid !important;
+      }
+
+      thead { display: table-header-group !important; }
+      tfoot { display: table-footer-group !important; }
+      tr { page-break-inside: avoid !important; break-inside: avoid !important; }
+
+      *:empty {
+        display: none !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .btn-imprimer,
+      button,
+      .no-print {
+        display: none !important;
+      }
+
       body {
-        background: #fff;
+        background: white !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
       }
 
       .screen-toolbar {
@@ -523,12 +725,22 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
         padding: 0;
       }
 
-      .sheet {
+      .page {
         width: auto;
         min-height: auto;
         margin: 0;
         padding: 0;
         box-shadow: none;
+      }
+
+      .metric-card,
+      .comment-panel,
+      thead tr,
+      tfoot tr,
+      h2.section-titre {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        color-adjust: exact !important;
       }
     }
   </style>
@@ -540,9 +752,9 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
   </div>
 
   <main class="document">
-    <section class="sheet">
+    <section class="page">
       ${renderHeader(etablissement)}
-      <div class="band-title">Synthèse financière — Exercice ${escapeHtml(String(etablissement.annee))}</div>
+      <h2 class="section-titre">Synthèse financière — Exercice ${escapeHtml(String(etablissement.annee))}</h2>
       <p class="intro-note">Document de synthèse destiné à la présentation du compte financier devant les instances de gouvernance de l'établissement.</p>
 
       <div class="metrics-grid">
@@ -572,13 +784,24 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
         </article>
       </div>
 
+      <div class="chart-grid">
+        <section class="chart-panel">
+          <h3 class="sous-titre">Exécution budgétaire — Vue graphique</h3>
+          ${graphiqueBarres}
+        </section>
+        <section class="chart-panel">
+          <h3 class="sous-titre">Répartition du budget</h3>
+          ${graphiqueRepartition}
+        </section>
+      </div>
+
       ${renderCommentBlock("Présentation de l'exercice", commentaires?.contexte)}
       <div class="page-marker">Page 1 / 4</div>
     </section>
 
-    <section class="sheet">
+    <section class="page">
       ${renderHeader(etablissement, true)}
-      <div class="band-title">Exécution budgétaire — Dépenses</div>
+      <h2 class="section-titre">Exécution budgétaire — Dépenses</h2>
       <table>
         <thead>
           <tr>
@@ -607,9 +830,9 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
       <div class="page-marker">Page 2 / 4</div>
     </section>
 
-    <section class="sheet">
+    <section class="page">
       ${renderHeader(etablissement, true)}
-      <div class="band-title">Exécution budgétaire — Recettes</div>
+      <h2 class="section-titre">Exécution budgétaire — Recettes</h2>
       <table>
         <thead>
           <tr>
@@ -638,9 +861,9 @@ export function buildRapportHtml(donnees: DonneesRapport): string {
       <div class="page-marker">Page 3 / 4</div>
     </section>
 
-    <section class="sheet">
+    <section class="page">
       ${renderHeader(etablissement, true)}
-      <div class="band-title">Perspectives financières et signatures</div>
+      <h2 class="section-titre">Perspectives financières et signatures</h2>
       ${renderCommentBlock('Perspectives financières', commentaires?.perspectivesFinancieres)}
 
       <div class="signature-grid">
