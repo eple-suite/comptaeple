@@ -322,17 +322,76 @@ export function RapportOrdoSection() {
         </Button>
         <Button variant="default" className="bg-[hsl(215,70%,45%)] hover:bg-[hsl(215,70%,40%)]" onClick={() => {
           try {
-            generateRapportExecution({
-              etab, sdeRows: sdeRows || [], sdrRows: sdrRows || [],
-              nomOrdonnateur, nomSecretaireGeneral,
+            const serviceRows = getServiceSdeRows(sdeRows || []);
+            const sdrServiceRows = getServiceSdrRows(sdrRows || []);
+            const etsSde = getEtsSdeRow(sdeRows || []);
+            const etsSdr = getEtsSdrRow(sdrRows || []);
+
+            const mapSdeSection = (code: string, label: string) => {
+              const row = serviceRows.find(r => r.serviceCode === code || r.service?.includes(label));
+              return row ? { code, libelle: label, budget: row.budget, realise: row.realise, disponible: row.budget - row.realise, taux: row.budget > 0 ? (row.realise / row.budget * 100) : 0 } : null;
+            };
+
+            const sg = mapSdeSection('SG', 'SERVICES GENERAUX');
+            const ap = mapSdeSection('AP', 'ACTIVITES');
+            const ve = mapSdeSection('VE', 'VIE');
+            const alo = mapSdeSection('ALO', 'ADMIN');
+            const ss = mapSdeSection('SS', 'SERVICES SPECIAUX');
+
+            const sdeData = {
+              totalBudget: etsSde?.budget ?? 0,
+              totalRealise: etsSde?.realise ?? 0,
+              totalDisponible: (etsSde?.budget ?? 0) - (etsSde?.realise ?? 0),
+              sections: [
+                sg ? { ...sg, sousLignes: [ap, ve, alo].filter(Boolean) as any[] } : null,
+                ss ? { ...ss, sousLignes: [] } : null,
+              ].filter(Boolean) as any[],
+            };
+
+            const mapSdrSection = (code: string, label: string) => {
+              const row = sdrServiceRows.find(r => r.serviceCode === code || r.service?.includes(label));
+              return row ? { code, libelle: label, budget: row.budget, realise: row.realise, ecart: row.realise - row.budget } : null;
+            };
+
+            const sdrData = {
+              totalBudget: etsSdr?.budget ?? 0,
+              totalRealise: etsSdr?.realise ?? 0,
+              totalEcart: (etsSdr?.realise ?? 0) - (etsSdr?.budget ?? 0),
+              sections: [mapSdrSection('SG', 'SERVICES GENERAUX'), mapSdrSection('AP', 'ACTIVITES'), mapSdrSection('VE', 'VIE'), mapSdrSection('ALO', 'ADMIN'), mapSdrSection('SS', 'SERVICES SPECIAUX')].filter(Boolean) as any[],
+            };
+
+            generateRapportPDF({
+              etablissement: {
+                nom: etab.nom || '',
+                uai: etab.uai || '',
+                adresse: etab.adresse || '',
+                commune: etab.commune || '',
+                academie: etab.academie || '',
+                annee: etab.exercice,
+                dateEdition: new Date().toLocaleDateString('fr-FR'),
+                ordonnateur: nomOrdonnateur || etab.ordonnateur || '',
+                agentComptable: etab.agentComptable || '',
+              },
+              sde: sdeData,
+              sdr: sdrData,
+              resultat: {
+                recettesRealisees: etsSdr?.realise ?? R.totalProduitsSdr ?? 0,
+                depensesRealisees: etsSde?.realise ?? R.totalChargesSde ?? 0,
+                resultatComptable: R.resultatBudgetaire ?? 0,
+                creditDisponible: (etsSde?.budget ?? 0) - (etsSde?.realise ?? 0),
+                ecartRecettes: (etsSdr?.realise ?? 0) - (etsSdr?.budget ?? 0),
+              },
+              commentaires: {
+                contexte: commentairePresentation || aiText1 || undefined,
+                executionDepenses: commentaireDomaines || undefined,
+                executionRecettes: commentaireSubventions || undefined,
+                perspectivesFinancieres: commentairePerspectives || aiText3 || undefined,
+              },
             });
-            toast.success('Rapport d\'exécution budgétaire généré');
-          } catch (e) { console.error(e); toast.error('Erreur lors de la génération'); }
+            toast.success('Rapport PDF généré dans un nouvel onglet');
+          } catch (e) { console.error(e); toast.error('Erreur lors de la génération du rapport'); }
         }}>
-          <Download className="h-4 w-4 mr-2" /> Rapport exécution budgétaire (PDF)
-        </Button>
-        <Button variant="outline" onClick={() => window.print()}>
-          <Printer className="h-4 w-4 mr-2" /> Imprimer / PDF
+          <Download className="h-4 w-4 mr-2" /> 📄 Générer le rapport PDF
         </Button>
       </div>
 
