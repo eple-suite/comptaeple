@@ -206,7 +206,7 @@ const CompteFinancier = () => {
       </div>
 
       {/* Progress Stepper */}
-      <ProgressStepper />
+      <div className="no-print"><ProgressStepper /></div>
 
       {/* Périmètre Comptable Selector — visible dès qu'il y a des fichiers importés */}
       {(hasData || nbFichiers > 0) && (
