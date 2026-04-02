@@ -532,7 +532,7 @@ export function RapportOrdoSection() {
               </div>
             </div>
           </div>
-          <CommentaireBox label="Commentaire sur le résultat et l'exécution" value={commentaireResultat} onChange={setCommentaireResultat} />
+          <CommentaireBox label="Commentaire sur le résultat et l'exécution" value={commentaireResultat} onChange={setCommentaireResultat} status={statusRes} lastSaved={lastSavedRes} />
 
           {/* §3 Répartition dépenses + recettes */}
           <SectionTitre numero="3" title="Répartition des dépenses et des recettes" />
