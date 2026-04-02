@@ -703,7 +703,7 @@ export function RapportOrdoSection() {
               })()}
             </>
           )}
-          <CommentaireBox label="Commentaire sur l'exécution par domaine" value={commentaireDomaines} onChange={setCommentaireDomaines} />
+          <CommentaireBox label="Commentaire sur l'exécution par domaine" value={commentaireDomaines} onChange={setCommentaireDomaines} status={statusDom} lastSaved={lastSavedDom} />
 
           {/* §6 FDR — Jauge avec seuil 30 jours */}
           <SectionTitre numero="6" title="Fonds de roulement — autonomie financière" />
