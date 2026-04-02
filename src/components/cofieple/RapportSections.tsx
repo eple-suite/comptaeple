@@ -425,7 +425,7 @@ export function RapportOrdoSection() {
                   <XAxis type="number" tickFormatter={v => `${(v / 1000).toFixed(0)}k`} fontSize={10} />
                   <YAxis type="category" dataKey="name" width={80} fontSize={11} />
                   <Tooltip formatter={(v: number) => [formatEur(v), '']} />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  <Bar isAnimationActive={false} dataKey="value" radius={[0, 4, 4, 0]}>
                     <Cell fill="hsl(0,70%,55%)" />
                     <Cell fill="hsl(160,45%,45%)" />
                   </Bar>
@@ -448,8 +448,8 @@ export function RapportOrdoSection() {
                   <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
                   <Tooltip formatter={(v: number) => [formatEur(v), '']} />
                   <Legend wrapperStyle={{ fontSize: 10 }} />
-                  <Bar dataKey="Prévu" fill="hsl(215,70%,50%)" opacity={0.4} radius={[2, 2, 0, 0]} />
-                  <Bar dataKey="Réalisé" fill="hsl(215,70%,50%)" radius={[2, 2, 0, 0]} />
+                  <Bar isAnimationActive={false} dataKey="Prévu" fill="hsl(215,70%,50%)" opacity={0.4} radius={[2, 2, 0, 0]} />
+                  <Bar isAnimationActive={false} dataKey="Réalisé" fill="hsl(215,70%,50%)" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
               <div className="flex justify-around text-xs mt-2">
@@ -470,7 +470,7 @@ export function RapportOrdoSection() {
                 </p>
                 <ResponsiveContainer width="100%" height={260}>
                   <PieChart>
-                    <Pie data={depNatureData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
+                    <Pie isAnimationActive={false} data={depNatureData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
                       label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                       labelLine={true} fontSize={9}>
                       {depNatureData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
@@ -487,7 +487,7 @@ export function RapportOrdoSection() {
                 </p>
                 <ResponsiveContainer width="100%" height={260}>
                   <PieChart>
-                    <Pie data={recettesOrigineData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
+                    <Pie isAnimationActive={false} data={recettesOrigineData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={90}
                       label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                       labelLine={true} fontSize={9}>
                       {recettesOrigineData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
@@ -595,8 +595,8 @@ export function RapportOrdoSection() {
                       <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
                       <Tooltip formatter={(v: number) => [formatEur(v), '']} />
                       <Legend wrapperStyle={{ fontSize: 10 }} />
-                      <Bar dataKey="Dépenses" fill="hsl(38,92%,50%)" radius={[2, 2, 0, 0]} />
-                      <Bar dataKey="Recettes" fill="hsl(160,45%,45%)" radius={[2, 2, 0, 0]} />
+                      <Bar isAnimationActive={false} dataKey="Dépenses" fill="hsl(38,92%,50%)" radius={[2, 2, 0, 0]} />
+                      <Bar isAnimationActive={false} dataKey="Recettes" fill="hsl(160,45%,45%)" radius={[2, 2, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -694,7 +694,7 @@ export function RapportOrdoSection() {
                   <XAxis type="number" tickFormatter={v => `${(v / 1000).toFixed(0)}k`} fontSize={10} />
                   <YAxis type="category" dataKey="name" width={90} fontSize={10} />
                   <Tooltip formatter={(v: number) => [formatEur(v), '']} />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  <Bar isAnimationActive={false} dataKey="value" radius={[0, 4, 4, 0]}>
                     <Cell fill="hsl(160,45%,45%)" />
                     <Cell fill="hsl(38,92%,50%)" />
                   </Bar>
@@ -800,7 +800,7 @@ export function RapportOrdoSection() {
                       <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
                       <Tooltip formatter={(v: number) => [formatEur(v), '']} />
                       <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-                      <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                      <Bar isAnimationActive={false} dataKey="value" radius={[3, 3, 0, 0]}>
                         <Cell fill="hsl(38,92%,50%)" />
                         <Cell fill="hsl(160,45%,45%)" />
                         <Cell fill={srhSolde >= 0 ? 'hsl(160,45%,45%)' : 'hsl(0,72%,55%)'} />
@@ -826,7 +826,7 @@ export function RapportOrdoSection() {
                 </p>
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
-                    <Pie data={subventionsData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75}
+                    <Pie isAnimationActive={false} data={subventionsData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={75}
                       label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                       labelLine={true} fontSize={9}>
                       {subventionsData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
@@ -1454,7 +1454,7 @@ export function RapportACSection() {
                   <XAxis type="number" tickFormatter={v => `${(v / 1000).toFixed(0)}k`} fontSize={10} />
                   <YAxis type="category" dataKey="name" width={80} fontSize={11} />
                   <Tooltip formatter={(v: number) => [formatEur(v), '']} />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  <Bar isAnimationActive={false} dataKey="value" radius={[0, 4, 4, 0]}>
                     {balanceData.map((entry, idx) => (
                       <Cell key={idx} fill={entry.fill} />
                     ))}
@@ -1502,7 +1502,7 @@ export function RapportACSection() {
                   <XAxis type="number" tickFormatter={v => `${(v / 1000).toFixed(0)}k`} fontSize={10} />
                   <YAxis type="category" dataKey="name" width={100} fontSize={10} />
                   <Tooltip formatter={(v: number) => [formatEur(v), '']} />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  <Bar isAnimationActive={false} dataKey="value" radius={[0, 4, 4, 0]}>
                     {fdrComposData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
                   </Bar>
                 </BarChart>
@@ -1547,7 +1547,7 @@ export function RapportACSection() {
                 <p className="text-xs text-muted-foreground font-semibold mb-2 flex items-center gap-1"><PieChartIcon className="h-3 w-3" /> Répartition de la trésorerie</p>
                 <ResponsiveContainer width="100%" height={220}>
                   <PieChart>
-                    <Pie data={tresoData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85}
+                    <Pie isAnimationActive={false} data={tresoData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={85}
                       label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                       labelLine={true} fontSize={9}>
                       {tresoData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
@@ -1609,7 +1609,7 @@ export function RapportACSection() {
                   <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
                   <Tooltip formatter={(v: number) => [formatEur(Math.abs(v)), '']} />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-                  <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+                  <Bar isAnimationActive={false} dataKey="value" radius={[3, 3, 0, 0]}>
                     {patrimoineData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
                   </Bar>
                 </BarChart>
@@ -1634,7 +1634,7 @@ export function RapportACSection() {
               {creancesPieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
-                    <Pie data={creancesPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70}
+                    <Pie isAnimationActive={false} data={creancesPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70}
                       label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                       labelLine={true} fontSize={9}>
                       {creancesPieData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
@@ -1658,7 +1658,7 @@ export function RapportACSection() {
               {dettesPieData.length > 0 ? (
                 <ResponsiveContainer width="100%" height={200}>
                   <PieChart>
-                    <Pie data={dettesPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70}
+                    <Pie isAnimationActive={false} data={dettesPieData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70}
                       label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
                       labelLine={true} fontSize={9}>
                       {dettesPieData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
@@ -1706,7 +1706,7 @@ export function RapportACSection() {
                   <PolarGrid stroke="hsl(var(--border))" />
                   <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }} />
                   <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} />
-                  <Radar name="Ratios" dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.25} strokeWidth={2} />
+                  <Radar isAnimationActive={false} name="Ratios" dataKey="value" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.25} strokeWidth={2} />
                 </RadarChart>
               </ResponsiveContainer>
             </div>
@@ -1752,9 +1752,9 @@ export function RapportACSection() {
                   <Tooltip formatter={(v: number) => [formatEur(v), '']} />
                   <Legend wrapperStyle={{ fontSize: 10 }} />
                   <ReferenceLine y={0} stroke="hsl(var(--muted-foreground))" strokeDasharray="3 3" />
-                  <Bar dataKey="FDR" fill="hsl(215, 70%, 50%)" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="BFR" fill="hsl(38, 92%, 50%)" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="Trésorerie" fill="hsl(160, 45%, 45%)" radius={[3, 3, 0, 0]} />
+                  <Bar isAnimationActive={false} dataKey="FDR" fill="hsl(215, 70%, 50%)" radius={[3, 3, 0, 0]} />
+                  <Bar isAnimationActive={false} dataKey="BFR" fill="hsl(38, 92%, 50%)" radius={[3, 3, 0, 0]} />
+                  <Bar isAnimationActive={false} dataKey="Trésorerie" fill="hsl(160, 45%, 45%)" radius={[3, 3, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </>
