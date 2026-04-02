@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { clearAllCofiepleData } from "@/hooks/usePersistedState";
+import { store } from "@/store/persistentStore";
 
 const SettingsPage = () => {
   const { selectedEstablishment, refetch } = useEstablishment();

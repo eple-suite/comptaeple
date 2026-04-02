@@ -33,7 +33,7 @@ import type { LigneSDE, LigneSDR } from '@/lib/cofieple_types';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, ReferenceLine, Cell, Legend,
-  PieChart, Pie, LineChart, Line, AreaChart, Area,
+  PieChart, Pie,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
 
