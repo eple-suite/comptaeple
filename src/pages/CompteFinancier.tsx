@@ -163,7 +163,7 @@ const CompteFinancier = () => {
   return (
     <div className="space-y-0">
       {/* Header COFIEPLE */}
-      <div className="bg-gradient-to-r from-[hsl(222,30%,14%)] to-[hsl(222,25%,20%)] shadow-xl rounded-xl">
+      <div className="bg-gradient-to-r from-[hsl(222,30%,14%)] to-[hsl(222,25%,20%)] shadow-xl rounded-xl no-print">
         <div className="px-5 py-4 flex items-center gap-4">
           <div className="flex items-center gap-3 shrink-0">
             <div className="w-11 h-11 rounded-xl bg-warning flex items-center justify-center text-2xl font-black text-white shadow-lg">
@@ -206,11 +206,11 @@ const CompteFinancier = () => {
       </div>
 
       {/* Progress Stepper */}
-      <ProgressStepper />
+      <div className="no-print"><ProgressStepper /></div>
 
       {/* Périmètre Comptable Selector — visible dès qu'il y a des fichiers importés */}
       {(hasData || nbFichiers > 0) && (
-        <div className="mx-1 mt-2">
+        <div className="mx-1 mt-2 no-print">
           <PerimetreComptable />
         </div>
       )}
@@ -221,7 +221,7 @@ const CompteFinancier = () => {
         const c185 = bal.find(l => l.compte.startsWith('185'));
         const solde185 = c185 ? (c185.solDbt - c185.solCrd) : 0;
         return (
-          <div className="mx-1 mt-2">
+          <div className="mx-1 mt-2 no-print">
             <div className="rounded-xl border border-warning/30 bg-warning/5 px-4 py-3">
               <div className="flex items-start gap-3">
                 <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
@@ -247,7 +247,7 @@ const CompteFinancier = () => {
       })()}
 
       {/* Navigation */}
-      <nav className="bg-[hsl(222,25%,18%)] border-b border-[hsl(222,25%,24%)] sticky top-0 z-40 rounded-b-xl">
+      <nav className="bg-[hsl(222,25%,18%)] border-b border-[hsl(222,25%,24%)] sticky top-0 z-40 rounded-b-xl no-print">
         <div className="px-2">
           <div className="flex overflow-x-auto scrollbar-hide">
             {items.map(item => {
