@@ -475,7 +475,7 @@ export function RapportOrdoSection() {
           <Textarea value={aiText1} onChange={e => setAiText1(e.target.value)}
             placeholder="Cliquez sur 'Générer commentaires IA' ou saisissez votre texte ici…" rows={4}
             className="mb-2 bg-muted/30 text-sm" />
-          <CommentaireBox label="Commentaire sur la présentation" value={commentairePresentation} onChange={setCommentairePresentation} />
+          <CommentaireBox label="Commentaire sur la présentation" value={commentairePresentation} onChange={setCommentairePresentation} status={statusPres} lastSaved={lastSavedPres} />
 
           {/* §2 Dashboard — KPI principaux */}
           <SectionTitre numero="2" title="Tableau de bord financier" />
