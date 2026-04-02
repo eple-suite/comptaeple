@@ -18,10 +18,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Bot, Printer, Loader2, Plus, Trash2, Download, MessageSquare,
-  Scale, PieChart as PieChartIcon, BarChart3, ArrowRight, TrendingUp,
-  TrendingDown, AlertTriangle, CheckCircle2, Info, Target, Utensils,
-  Building2, Users, GraduationCap, Wallet, ShieldCheck, Clock,
+  Bot, Loader2, Plus, Trash2, Download, MessageSquare,
+  Scale, PieChart as PieChartIcon, BarChart3, AlertTriangle, Target, Utensils,
+  Building2, Users, GraduationCap, Wallet,
 } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
