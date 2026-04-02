@@ -805,7 +805,7 @@ export function RapportOrdoSection() {
             <KPICard label="DGR" value={`${Math.round(safe.dgrJours)} jours`} color={safe.dgrJours > 60 ? 'red' : 'green'} icon="⏱️" sub="Délai global recouvrement" isText />
             <KPICard label="Réserves" value={formatEur(R.reserves)} color="blue" icon="🏛️" sub="Compte 1068" isText />
           </div>
-          <CommentaireBox label="Commentaire sur la trésorerie" value={commentaireTresorerie} onChange={setCommentaireTresorerie} />
+          <CommentaireBox label="Commentaire sur la trésorerie" value={commentaireTresorerie} onChange={setCommentaireTresorerie} status={statusTreso} lastSaved={lastSavedTreso} />
 
           {/* §8 Opérations d'ordre */}
           <SectionTitre numero="8" title="Opérations d'ordre" />
