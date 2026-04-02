@@ -18,7 +18,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Bot, Loader2, Plus, Trash2, Download, MessageSquare,
+  Bot, Loader2, Plus, Trash2, Download, MessageSquare, Printer,
   Scale, PieChart as PieChartIcon, BarChart3, AlertTriangle, Target, Utensils,
   Building2, Users, GraduationCap, Wallet,
 } from 'lucide-react';
