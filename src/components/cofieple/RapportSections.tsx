@@ -9,7 +9,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { usePersistedState, usePersistedText } from '@/hooks/usePersistedState';
 import { SaveIndicator } from '@/components/SaveIndicator';
-import { generateRapportPDF } from '@/utils/generateRapportPDF';
+
 import { buildSectionsDepenses, buildSectionsRecettes, type LigneCGR } from '@/utils/calcsBudgetaires';
 import { getServiceSdeRows, getServiceSdrRows, getEtsSdeRow, getEtsSdrRow } from '@/lib/executionRowFilters';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
