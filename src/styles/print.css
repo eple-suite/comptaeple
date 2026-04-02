@@ -1,0 +1,256 @@
+/* ═══════════════════════════════════════════════════════════════
+   FEUILLE D'IMPRESSION — Rapport Ordonnateur & Agent Comptable
+   Imprime la page telle qu'elle est affichée dans le DOM React
+   ═══════════════════════════════════════════════════════════════ */
+
+@media print {
+
+  /* ── Forçage couleurs et format ── */
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  html, body {
+    background: white !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 9pt !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+    color: #000 !important;
+  }
+
+  @page {
+    size: A4 portrait;
+    margin: 12mm 10mm 12mm 10mm;
+  }
+
+  /* ── Éléments à MASQUER à l'impression ── */
+  .no-print,
+  nav,
+  header:not(.print-keep),
+  aside,
+  footer,
+  /* Sidebar */
+  [data-sidebar],
+  [class*="sidebar"],
+  [class*="Sidebar"],
+  /* Toasts et notifications */
+  [data-sonner-toaster],
+  [class*="toast"],
+  [class*="Toaster"],
+  /* Tablist navigation du CompteFinancier */
+  [role="tablist"],
+  /* Progress stepper */
+  .progress-stepper-container,
+  /* Save indicators */
+  [class*="SaveIndicator"],
+  [class*="save-indicator"],
+  /* OfflineBanner */
+  [class*="OfflineBanner"],
+  [class*="offline-banner"],
+  /* Dropdowns / Popovers */
+  [data-radix-popper-content-wrapper] {
+    display: none !important;
+  }
+
+  /* ── Contenu principal : pleine largeur ── */
+  #root,
+  #root > div,
+  main,
+  [class*="main-content"],
+  [class*="SidebarInset"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    overflow: visible !important;
+  }
+
+  /* Remove padding from the content area */
+  .p-5, .p-4, .p-6, .p-8 {
+    padding: 4pt !important;
+  }
+
+  /* ── Cards ── */
+  [class*="card"],
+  [class*="Card"] {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: white !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  [class*="CardContent"] {
+    padding: 0 !important;
+  }
+
+  /* ── Sections du rapport ── */
+  .rapport-section {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    margin-bottom: 10pt !important;
+  }
+
+  .rapport-section.nouvelle-page {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  /* ── Titres solidaires du contenu ── */
+  h1, h2, h3, h4, h5 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* ── Tableaux ── */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    font-size: 8pt !important;
+    page-break-inside: auto !important;
+  }
+
+  thead {
+    display: table-header-group !important;
+  }
+
+  tfoot {
+    display: table-footer-group !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  th, td {
+    padding: 2px 4px !important;
+    vertical-align: middle !important;
+  }
+
+  /* ── Zones de texte / commentaires ── */
+  textarea {
+    border: none !important;
+    box-shadow: none !important;
+    resize: none !important;
+    background: transparent !important;
+    font-size: 9pt !important;
+    line-height: 1.5 !important;
+    min-height: 0 !important;
+    height: auto !important;
+    overflow: visible !important;
+    padding: 2pt 0 !important;
+  }
+
+  /* Hide empty textareas (no content) */
+  textarea:placeholder-shown {
+    display: none !important;
+  }
+
+  /* ── Graphiques (SVG — Recharts) ── */
+  svg {
+    display: block !important;
+    visibility: visible !important;
+    max-width: 100% !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    overflow: visible !important;
+  }
+
+  /* Recharts containers */
+  .recharts-wrapper,
+  .recharts-surface,
+  [class*="recharts"],
+  [class*="ResponsiveContainer"] {
+    display: block !important;
+    visibility: visible !important;
+    overflow: visible !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Force responsive containers to show */
+  .recharts-responsive-container {
+    width: 100% !important;
+    height: auto !important;
+    min-height: 150px !important;
+    overflow: visible !important;
+  }
+
+  /* ── Grilles : garder le layout ── */
+  .grid {
+    display: grid !important;
+  }
+
+  /* ── Liens ── */
+  a {
+    color: #000 !important;
+    text-decoration: none !important;
+  }
+
+  /* ── Badges — keep visible in rapport ── */
+  .print-badge {
+    display: inline-flex !important;
+  }
+
+  /* ── Pagination helpers ── */
+  .page-break-before {
+    page-break-before: always !important;
+    break-before: page !important;
+  }
+
+  .no-page-break {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* ── Section commentaire: hide label row, show only text ── */
+  .section-rapport .no-print {
+    display: none !important;
+  }
+
+  /* ── KPI cards in print ── */
+  .grid.grid-cols-2,
+  .grid.grid-cols-3 {
+    display: grid !important;
+    gap: 4pt !important;
+  }
+
+  /* ── Compact spacing ── */
+  .space-y-4 > * + * {
+    margin-top: 6pt !important;
+  }
+
+  .space-y-3 > * + * {
+    margin-top: 4pt !important;
+  }
+
+  .mb-4, .mb-5, .mb-6 {
+    margin-bottom: 6pt !important;
+  }
+
+  .mt-5, .mt-8 {
+    margin-top: 8pt !important;
+  }
+
+  /* ── Force print of background colors on key elements ── */
+  .bg-slate-800,
+  .bg-slate-700,
+  thead tr,
+  tfoot tr,
+  .bg-muted\/20,
+  .bg-muted\/30,
+  .bg-muted\/10,
+  .bg-warning\/5,
+  .bg-warning\/10,
+  .bg-primary\/5 {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
