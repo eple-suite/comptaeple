@@ -2,14 +2,13 @@ import { usePersistedText, usePersistedState } from '@/hooks/usePersistedState';
 import { Card, CardContent } from '@/components/ui/card';
 import { useOrdoData } from './useOrdoData';
 import { CommentaireBox, SectionTitre } from './OrdoCommentaireBox';
-import { KPICard, EmptyState } from '../SharedComponents';
+import { KPICard } from '../SharedComponents';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import {
   ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip, Cell, ReferenceLine, PieChart, Pie, LineChart, Line, Legend,
+  Tooltip, Cell, ReferenceLine, LineChart, Line, Legend,
 } from 'recharts';
 import type { LigneSDE, LigneSDR } from '@/lib/cofieple_types';
 
