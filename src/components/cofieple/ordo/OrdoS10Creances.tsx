@@ -7,7 +7,7 @@ import { formatEur } from '@/lib/cofieple_calculations';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip } from 'recharts';
 
 export function OrdoS10Creances() {
-  const { etab, R, safe, pKey } = useOrdoData();
+  const { R, safe, pKey } = useOrdoData();
   const [commentaire, setCommentaire, status, lastSaved] = usePersistedText(`${pKey}_com_creances`, '');
 
   if (!R || !safe) return <EmptyState msg="Importez la balance pour analyser les créances." />;
@@ -48,7 +48,7 @@ export function OrdoS10Creances() {
 
             <div>
               <table className="w-full text-xs border">
-                <thead><tr className="bg-slate-700 text-white">
+                <thead><tr className="bg-muted/50">
                   <th className="p-2 text-left">Catégorie</th>
                   <th className="p-2 text-right">Montant</th>
                   <th className="p-2 text-right">% total</th>
@@ -61,7 +61,7 @@ export function OrdoS10Creances() {
                       <td className="p-2 text-right font-mono">{safe.totalCreances > 0 ? ((d.value / safe.totalCreances) * 100).toFixed(1) : 0} %</td>
                     </tr>
                   ))}
-                  <tr className="bg-slate-800 text-white font-bold">
+                  <tr className="font-bold bg-muted/20">
                     <td className="p-2">TOTAL</td>
                     <td className="p-2 text-right font-mono">{formatEur(safe.totalCreances)}</td>
                     <td className="p-2 text-right">100 %</td>

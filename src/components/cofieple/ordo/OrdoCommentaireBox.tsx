@@ -6,14 +6,14 @@ export function CommentaireBox({
 }: {
   label: string; value: string;
   onChange: (v: string) => void;
-  status?: 'idle' | 'saving' | 'saved';
+  status?: 'saving' | 'saved' | 'idle';
   lastSaved?: Date | null;
 }) {
   return (
     <div className="mb-6">
       <div className="flex items-center gap-2 mb-1">
         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">💬 {label}</span>
-        {status && <SaveIndicator status={status} lastSaved={lastSaved ?? null} />}
+        {status && status !== 'idle' && <SaveIndicator status={status as 'saving' | 'saved'} lastSaved={lastSaved ?? null} />}
       </div>
       <Textarea value={value} onChange={e => onChange(e.target.value)}
         placeholder="Saisissez votre commentaire…" rows={3}

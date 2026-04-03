@@ -4,16 +4,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useOrdoData } from './useOrdoData';
 import { CommentaireBox, SectionTitre } from './OrdoCommentaireBox';
-import { EmptyState } from '../SharedComponents';
 import { formatEur } from '@/lib/cofieple_calculations';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from 'recharts';
+import { EmptyState } from '../SharedComponents';
 
 interface ViabilisationData {
   eau: number; electricite: number; gaz: number; fuel: number; bois: number; autres: number;
 }
 
 export function OrdoS8Viabilisation() {
-  const { etab, R, ind, pKey } = useOrdoData();
+  const { pKey, ind } = useOrdoData();
   const [commentaire, setCommentaire, status, lastSaved] = usePersistedText(`${pKey}_com_viabilisation`, '');
   const [viab, setViab] = usePersistedState<ViabilisationData>(`${pKey}_viabilisation`, {
     eau: ind?.conso_eau ?? 0, electricite: ind?.conso_electricite ?? 0,
@@ -27,7 +27,7 @@ export function OrdoS8Viabilisation() {
     { name: 'Gaz', value: viab.gaz, fill: 'hsl(0,70%,55%)' },
     { name: 'Fuel', value: viab.fuel, fill: 'hsl(30,60%,40%)' },
     { name: 'Bois', value: viab.bois, fill: 'hsl(120,40%,40%)' },
-    { name: 'Autres', value: viab.autres, fill: 'hsl(var(--muted))' },
+    { name: 'Autres', value: viab.autres, fill: 'hsl(220,10%,60%)' },
   ].filter(d => d.value > 0);
 
   const updateField = (field: keyof ViabilisationData, val: string) => {
@@ -60,9 +60,7 @@ export function OrdoS8Viabilisation() {
                 <YAxis tickFormatter={v => `${(v / 1000).toFixed(0)}k`} tick={{ fontSize: 10 }} />
                 <Tooltip formatter={(v: number) => [formatEur(v), '']} />
                 <Bar isAnimationActive={false} dataKey="value" radius={[3, 3, 0, 0]}>
-                  {chartData.map((entry, i) => (
-                    <BarChart key={i}>{/* Cell handled by fill in data */}</BarChart>
-                  ))}
+                  {chartData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>

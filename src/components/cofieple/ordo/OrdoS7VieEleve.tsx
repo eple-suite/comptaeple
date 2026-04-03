@@ -6,7 +6,7 @@ import { KPICard, EmptyState } from '../SharedComponents';
 import { formatEur } from '@/lib/cofieple_calculations';
 
 export function OrdoS7VieEleve() {
-  const { etab, R, ind, pKey } = useOrdoData();
+  const { R, ind, pKey } = useOrdoData();
   const [commentaire, setCommentaire, status, lastSaved] = usePersistedText(`${pKey}_com_vie_eleve`, '');
 
   if (!R) return <EmptyState msg="Données requises." />;

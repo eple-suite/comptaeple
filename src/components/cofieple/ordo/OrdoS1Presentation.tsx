@@ -1,10 +1,7 @@
 import { usePersistedText } from '@/hooks/usePersistedState';
 import { Card, CardContent } from '@/components/ui/card';
-import { Textarea } from '@/components/ui/textarea';
-import { useOrdoData, useExtraIndicators } from './useOrdoData';
+import { useOrdoData } from './useOrdoData';
 import { CommentaireBox, SectionTitre } from './OrdoCommentaireBox';
-import { KPICard, EmptyState } from '../SharedComponents';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
 import { GraduationCap, Utensils, Building2, Users, Wallet } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 
@@ -18,22 +15,18 @@ function IndicatorBadge({ icon, label, value }: { icon: React.ReactNode; label: 
 }
 
 export function OrdoS1Presentation() {
-  const { etab, R, ind, pKey } = useOrdoData();
+  const { etab, ind, pKey } = useOrdoData();
   const [commentaire, setCommentaire, status, lastSaved] = usePersistedText(`${pKey}_com_presentation`, '');
   
   const dateArrete = etab.dateArrete ? new Date(etab.dateArrete).toLocaleDateString('fr-FR') : '—';
   const tauxBoursiers = ind && ind.effectif_eleves > 0 ? ((ind.effectif_boursiers / ind.effectif_eleves) * 100).toFixed(1) : null;
   const tauxInternes = ind && ind.effectif_eleves > 0 ? ((ind.effectif_internes / ind.effectif_eleves) * 100).toFixed(1) : null;
 
-  // Pluriannual effectifs data (from cofieple_exercises or manual)
-  const pluriannuelStore = useCofiepleStore(s => s.resultats);
-
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
         <SectionTitre numero="S1" title="Présentation de l'établissement" />
         
-        {/* Identification */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           <div><span className="text-muted-foreground">Établissement</span><p className="font-bold">{etab.nom || '—'}</p></div>
           <div><span className="text-muted-foreground">UAI (RNE)</span><p className="font-bold font-mono">{etab.uai || '—'}</p></div>
@@ -46,7 +39,6 @@ export function OrdoS1Presentation() {
           <div><span className="text-muted-foreground">Exercice</span><p className="font-bold">{etab.exercice}</p></div>
         </div>
 
-        {/* Effectifs */}
         {ind && ind.effectif_eleves > 0 && (
           <>
             <h3 className="text-xs font-bold uppercase text-muted-foreground mt-4">Effectifs</h3>

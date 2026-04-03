@@ -7,7 +7,7 @@ import { formatEur } from '@/lib/cofieple_calculations';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, ReferenceLine } from 'recharts';
 
 export function OrdoS11Resultat() {
-  const { etab, R, safe, pKey } = useOrdoData();
+  const { R, safe, pKey } = useOrdoData();
   const [commentaire, setCommentaire, status, lastSaved] = usePersistedText(`${pKey}_com_resultat_affectation`, '');
 
   if (!R || !safe) return <EmptyState msg="Données requises." />;
@@ -32,7 +32,6 @@ export function OrdoS11Resultat() {
           <KPICard label="Réserves SRH" value={formatEur(R.reservesSRH)} color="blue" icon="🍽️" />
         </div>
 
-        {/* Résultat par domaine */}
         {resultatsParService.length > 1 && (
           <div>
             <p className="text-xs text-muted-foreground font-semibold mb-2">📊 Résultat par domaine</p>
@@ -51,7 +50,6 @@ export function OrdoS11Resultat() {
           </div>
         )}
 
-        {/* Prélèvements sur réserves */}
         {safe.prelevementsReserves.totalPrelevements > 0 && (
           <div className="bg-warning/10 border border-warning/30 rounded-lg p-4 text-xs">
             <p className="font-bold text-warning mb-1">💰 Prélèvements sur fonds de roulement</p>
