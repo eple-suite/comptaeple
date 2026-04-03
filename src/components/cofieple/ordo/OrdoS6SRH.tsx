@@ -82,7 +82,7 @@ const pct = (v: number) => `${v.toFixed(1)} %`;
 const fmt = formatEur;
 
 export function OrdoS6SRH() {
-  const { etab, R, safe, pKey, ind } = useOrdoData();
+  const { etab, pKey, ind } = useOrdoData();
   const activeBudget = useCofiepleStore(s => s.activeBudget);
   const sdeData = useCofiepleStore(s => s.sde[activeBudget] ?? []);
   const sdrData = useCofiepleStore(s => s.sdr[activeBudget] ?? []);
