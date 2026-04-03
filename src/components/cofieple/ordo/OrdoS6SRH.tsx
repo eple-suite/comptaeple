@@ -144,9 +144,9 @@ export function OrdoS6SRH() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <KPICard label="Résultat SRH" value={fmt(resultat)} color={resultat >= 0 ? 'green' : 'red'} icon={resultat >= 0 ? '✅' : '⚠️'} />
           <KPICard label="Recettes SRH" value={fmt(totalRec)} color="blue" icon="📈"
-            subtitle={srh ? `Réalisation : ${pct(srh.tauxRealRecettes)}` : undefined} />
+            sub={srh ? `Réalisation : ${pct(srh.tauxRealRecettes)}` : undefined} />
           <KPICard label="Dépenses SRH" value={fmt(totalDep)} color="amber" icon="📉"
-            subtitle={srh && srh.disponible < 0 ? `⚠️ Dépassement : ${fmt(Math.abs(srh.disponible))}` : srh ? `Disponible : ${fmt(srh.disponible)}` : undefined} />
+            sub={srh && srh.disponible < 0 ? `⚠️ Dépassement : ${fmt(Math.abs(srh.disponible))}` : srh ? `Disponible : ${fmt(srh.disponible)}` : undefined} />
           <KPICard label="Taux exécution" value={srh ? pct(srh.tauxExecDepenses) : '—'} color={srh && srh.tauxExecDepenses > 100 ? 'red' : srh && srh.tauxExecDepenses >= 90 ? 'amber' : 'green'} icon="📊" />
         </div>
 
