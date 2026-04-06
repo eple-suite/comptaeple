@@ -44,7 +44,7 @@ import {
   Home, Upload, ScrollText, Eye, ShieldCheck, AlertTriangle,
   History, PenTool, Bot, Gauge, Link2, GraduationCap, UtensilsCrossed,
   Layers, Landmark, BookOpen, Monitor, Building2, FileText, Shield,
-  Search, ClipboardList, BarChart3,
+  Search, ClipboardList, BarChart3, Printer,
 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────
