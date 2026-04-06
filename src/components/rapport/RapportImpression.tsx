@@ -292,29 +292,13 @@ export function RapportImpression() {
       </div>
       <BlocCommentaire texte={comments.resultat} />
 
-      {/* Section 4 — Répartition des dépenses et recettes */}
-      <div className="bloc-solidaire">
-        <TitreSection texte="4. Répartition des dépenses et des recettes" />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '8px' }}>
-          {depParNature.length > 0 && (
-            <GraphiqueRepartition
-              titre="Dépenses par nature de compte"
-              items={depParNature.slice(0, 8).map((d, i) => ({
-                label: `Cpt ${d.compte} — ${d.libelle || ''}`.substring(0, 35),
-                value: d.montant,
-                color: depColors[i % depColors.length],
-              }))}
-            />
-          )}
-          {recOrigines.length > 0 && (
-            <GraphiqueRepartition
-              titre="Recettes par origine"
-              items={recOrigines}
-            />
-          )}
+      {/* Section 4 — Répartition */}
+      {comments.repartition.trim() && (
+        <div className="bloc-solidaire">
+          <TitreSection texte="4. Répartition des dépenses et des recettes" />
+          <BlocCommentaire texte={comments.repartition} />
         </div>
-      </div>
-      <BlocCommentaire texte={comments.repartition} />
+      )}
 
       {/* Section 5 — Évolution N/N-1 */}
       {hasN1 && (
