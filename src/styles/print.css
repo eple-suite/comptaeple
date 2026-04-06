@@ -2,8 +2,9 @@
    CSS IMPRESSION — Rapport Ordonnateur (A4 PAYSAGE)
    
    Stratégie :
-   1. TOUT masquer via display:none (plus fiable que visibility:hidden)
-   2. Rendre visible UNIQUEMENT #rapport-impression-container
+   1. Masquer sidebar, header, nav, le wrapper interactif
+   2. Rendre toute la chaîne d'ancêtres de #rapport-impression-container
+      visible et sans contrainte de layout
    3. Anti-coupures ciblées pour titres et commentaires élastiques
    ═══════════════════════════════════════════════════════════════ */
 
@@ -34,38 +35,63 @@
     height: auto !important;
   }
 
-  /* ══ STRATÉGIE : display:none sur tout sauf le rapport ══ */
+  /* ══ 1. MASQUER tout ce qui n'est pas le rapport ══ */
 
-  /* 1. Masquer tout le wrapper interactif (sidebar, nav, contenu écran) */
-  .no-print-wrapper,
-  .no-print,
+  /* Sidebar, header, nav, popovers */
   aside,
   header,
   nav,
   [data-sidebar],
-  [data-radix-popper-content-wrapper],
-  .recharts-wrapper,
-  .recharts-surface,
-  .recharts-tooltip-wrapper {
+  [data-radix-popper-content-wrapper] {
     display: none !important;
   }
 
-  /* 2. #root reste visible comme conteneur */
-  #root {
+  /* Wrapper interactif du compte financier */
+  .no-print-wrapper,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Recharts SVGs qui pourraient fuir */
+  svg.recharts-surface,
+  .recharts-responsive-container,
+  .recharts-wrapper,
+  .recharts-tooltip-wrapper,
+  .recharts-active-dot {
+    display: none !important;
+    height: 0 !important;
+    width: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* OfflineBanner */
+  .offline-banner {
+    display: none !important;
+  }
+
+  /* ══ 2. LIBÉRER la chaîne d'ancêtres du rapport ══ */
+
+  /* #root et tous ses conteneurs intermédiaires :
+     enlever flex, overflow, min-height, padding pour que le rapport
+     s'affiche en pleine largeur comme un document normal */
+  #root,
+  #root > *,
+  #root > * > *,
+  #root > * > * > *,
+  #root > * > * > * > * {
     display: block !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
+    min-height: auto !important;
+    height: auto !important;
     position: static !important;
+    flex: none !important;
   }
 
-  /* 3. Masquer TOUS les enfants directs de #root sauf le rapport */
-  #root > *:not(:has(#rapport-impression-container)) {
-    display: none !important;
-  }
+  /* ══ 3. RAPPORT : visible et sans contrainte ══ */
 
-  /* 4. Rendre le rapport et tous ses enfants visibles */
   #rapport-impression-container {
     display: block !important;
     position: static !important;
@@ -74,20 +100,11 @@
     padding: 0 !important;
     overflow: visible !important;
     z-index: 999999 !important;
+    visibility: visible !important;
   }
 
   #rapport-impression-container * {
     visibility: visible !important;
-  }
-
-  /* 5. Fallback : masquer tout SVG Recharts qui pourrait fuir */
-  svg.recharts-surface,
-  .recharts-responsive-container,
-  .recharts-wrapper {
-    display: none !important;
-    height: 0 !important;
-    width: 0 !important;
-    overflow: hidden !important;
   }
 
   /* ── TITRE SOLIDAIRE — titre + premier élément restent ensemble ── */
@@ -141,9 +158,9 @@
     break-inside: avoid !important;
   }
 
-  /* ── KPI cards et graphiques CSS ── */
-  .kpi-card,
-  .graphique-bloc {
+  /* ── KPI cards et graphiques CSS du rapport ── */
+  #rapport-impression-container .kpi-card,
+  #rapport-impression-container .graphique-bloc {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
