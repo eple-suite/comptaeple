@@ -4,7 +4,7 @@
 //
 // Stratégie anti-coupures :
 // • TitreSolidaire : titre + premier contenu (tableau/KPI) solidaires
-// • BlocCommentaire : élastique, peut s'étendre sur plusieurs pages
+// • BlocCommentaire : élastique, minHeight 8 lignes, overflow multi-pages
 // • bloc-compact : petits blocs indivisibles (KPI, mini tableaux)
 // ═══════════════════════════════════════════════════════════════
 
@@ -53,11 +53,25 @@ function TitreSection({ texte }: { texte: string }) {
   );
 }
 
-// ── Bloc commentaire — ÉLASTIQUE (peut s'étendre sur plusieurs pages) ──
+// ── Bloc commentaire — ÉLASTIQUE (s'étend sur plusieurs pages) ──
+// minHeight garantit un espace pour au moins 8-10 lignes
 function BlocCommentaire({ texte }: { texte: string }) {
   if (!texte || !texte.trim()) return null;
   return (
-    <div className="commentaire-flow" style={{ borderLeft: '3px solid #003366', padding: '6px 12px', background: '#f7f9fc', fontSize: '9pt', lineHeight: '1.6', whiteSpace: 'pre-wrap', marginTop: '6px', marginBottom: '10px' }}>
+    <div className="commentaire-flow" style={{
+      borderLeft: '3px solid #003366',
+      padding: '8px 12px',
+      background: '#f7f9fc',
+      fontSize: '9pt',
+      lineHeight: '1.65',
+      whiteSpace: 'pre-wrap',
+      wordWrap: 'break-word',
+      overflowWrap: 'break-word',
+      marginTop: '6px',
+      marginBottom: '12px',
+      /* NO max-height, NO overflow hidden — fully elastic */
+      minHeight: '80px', /* ~8 lines minimum */
+    }}>
       {texte}
     </div>
   );
@@ -274,17 +288,11 @@ export function RapportImpression() {
       </p>
 
       {/* ══ S1 — PRÉSENTATION ═════════════════════════════════ */}
-      {comments.presentation.trim() && (
-        <>
-          {/* titre-solidaire : titre + début du commentaire restent ensemble */}
-          <div className="titre-solidaire">
-            <TitreSection texte="1. Présentation de l'établissement" />
-            {/* Amorce invisible pour ancrer le titre au contenu */}
-            <div style={{ minHeight: '1px' }} />
-          </div>
-          <BlocCommentaire texte={comments.presentation} />
-        </>
-      )}
+      <div className="titre-solidaire">
+        <TitreSection texte="1. Présentation de l'établissement" />
+        <div style={{ minHeight: '1px' }} />
+      </div>
+      <BlocCommentaire texte={comments.presentation} />
 
       {/* ══ S2 — TABLEAU DE BORD ══════════════════════════════ */}
       <div className="titre-solidaire">
@@ -306,6 +314,8 @@ export function RapportImpression() {
         ]} />
       </div>
 
+      <BlocCommentaire texte={comments.resultat} />
+
       {/* ══ S3 — RÉSULTAT ET EXÉCUTION ════════════════════════ */}
       <div className="titre-solidaire">
         <TitreSection texte="3. Résultat et exécution budgétaire" />
@@ -318,18 +328,13 @@ export function RapportImpression() {
           totalRow={['RÉSULTAT', fmt(R.totalProduitsPrev - R.totalChargesPrev), fmt(R.resultatBudgetaire), '—']}
         />
       </div>
-      <BlocCommentaire texte={comments.resultat} />
 
       {/* ══ S4 — RÉPARTITION ══════════════════════════════════ */}
-      {comments.repartition.trim() && (
-        <>
-          <div className="titre-solidaire">
-            <TitreSection texte="4. Répartition des dépenses et des recettes" />
-            <div style={{ minHeight: '1px' }} />
-          </div>
-          <BlocCommentaire texte={comments.repartition} />
-        </>
-      )}
+      <div className="titre-solidaire">
+        <TitreSection texte="4. Répartition des dépenses et des recettes" />
+        <div style={{ minHeight: '1px' }} />
+      </div>
+      <BlocCommentaire texte={comments.repartition} />
 
       {/* ══ S5 — ÉVOLUTION N/N-1 ══════════════════════════════ */}
       {hasN1 && (
@@ -484,15 +489,11 @@ export function RapportImpression() {
       <BlocCommentaire texte={comments.pilotage} />
 
       {/* ══ S13 — PERSPECTIVES ════════════════════════════════ */}
-      {comments.perspectives.trim() && (
-        <>
-          <div className="titre-solidaire">
-            <TitreSection texte="13. Points d'attention et perspectives" />
-            <div style={{ minHeight: '1px' }} />
-          </div>
-          <BlocCommentaire texte={comments.perspectives} />
-        </>
-      )}
+      <div className="titre-solidaire">
+        <TitreSection texte="13. Points d'attention et perspectives" />
+        <div style={{ minHeight: '1px' }} />
+      </div>
+      <BlocCommentaire texte={comments.perspectives} />
 
       {/* ══ SIGNATURES ════════════════════════════════════════ */}
       <div className="bloc-compact" style={{ marginTop: '20px' }}>

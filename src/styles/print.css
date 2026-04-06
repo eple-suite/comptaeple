@@ -1,15 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════
    CSS IMPRESSION — Rapport Ordonnateur (A4 PAYSAGE)
    
-   Stratégie anti-coupures :
-   • .titre-solidaire  → titre + premier élément solidaires (jamais séparés)
-   • .commentaire-flow  → s'étend naturellement sur plusieurs pages
-   • .bloc-compact      → petit bloc indivisible (KPI, mini-tableau)
+   Stratégie :
+   1. TOUT masquer dans le DOM
+   2. Rendre visible UNIQUEMENT #rapport-impression-container
+   3. Anti-coupures ciblées pour titres et commentaires élastiques
    ═══════════════════════════════════════════════════════════════ */
 
 @media print {
 
-  /* ── Format A4 PAYSAGE — marges serrées, SANS en-têtes navigateur ── */
+  /* ── Format A4 PAYSAGE ── */
   @page {
     size: A4 landscape;
     margin: 8mm 10mm 8mm 10mm;
@@ -22,8 +22,8 @@
     color-adjust: exact !important;
   }
 
-  /* ── Base reset ── */
-  body, html, #root {
+  /* ── Reset body/html ── */
+  body, html {
     display: block !important;
     width: 100% !important;
     margin: 0 !important;
@@ -34,69 +34,83 @@
     height: auto !important;
   }
 
-  /* ── 1. MASQUER TOUT l'app UI ── */
-  .no-print-wrapper,
-  .no-print,
-  #root > * > * > aside,
+  /* ══ STRATÉGIE NUCLÉAIRE : tout masquer, puis remonter le rapport ══ */
+
+  /* 1. Masquer TOUT dans #root */
+  #root * {
+    visibility: hidden !important;
+  }
+
+  /* 2. #root lui-même reste visible (container) mais sans padding/margin */
+  #root {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+
+  /* 3. Rendre le rapport et tous ses enfants visibles */
+  #rapport-impression-container,
+  #rapport-impression-container * {
+    visibility: visible !important;
+  }
+
+  #rapport-impression-container {
+    display: block !important;
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    z-index: 999999 !important;
+  }
+
+  /* 4. Supprimer sidebar, header, nav, popovers de l'espace */
+  aside,
   header,
   nav,
   [data-sidebar],
   [data-radix-popper-content-wrapper] {
     display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    overflow: hidden !important;
   }
 
-  /* Supprimer les bordures et padding du conteneur app */
-  #root > *,
-  #root > * > *,
-  main {
-    display: block !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    border: none !important;
-    overflow: visible !important;
-    min-height: auto !important;
-    max-width: none !important;
-  }
-
-  /* ── 2. Rendre le rapport visible ── */
-  #rapport-impression-container {
-    display: block !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    position: static !important;
-    overflow: visible !important;
-  }
-
-  /* ── 3. TITRE SOLIDAIRE — le titre ne sera JAMAIS seul en bas de page ── */
-  /* Un .titre-solidaire contient exactement : titre + premier élément */
+  /* ── TITRE SOLIDAIRE — titre + premier élément restent ensemble ── */
   .titre-solidaire {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* Fallback : tout .section-titre individuel refuse d'être le dernier de la page */
+  /* Fallback : un .section-titre isolé refuse d'être le dernier de la page */
   .section-titre {
     break-after: avoid !important;
     page-break-after: avoid !important;
   }
 
-  /* ── 4. COMMENTAIRE FLOW — élastique, peut s'étendre sur plusieurs pages ── */
+  /* ── COMMENTAIRE FLOW — élastique, s'étend sur plusieurs pages ── */
   .commentaire-flow {
     break-inside: auto !important;
     page-break-inside: auto !important;
     orphans: 3 !important;
     widows: 3 !important;
+    overflow: visible !important;
+    max-height: none !important;
+    height: auto !important;
   }
 
-  /* ── 5. BLOC COMPACT — petit bloc indivisible (KPI cards, mini graphiques) ── */
+  /* ── BLOC COMPACT — petit bloc indivisible (KPI, mini graphiques) ── */
   .bloc-compact {
     break-inside: avoid !important;
     page-break-inside: avoid !important;
   }
 
-  /* ── 6. Anti-coupures tableaux ── */
+  /* ── Anti-coupures tableaux ── */
   table {
     page-break-inside: auto !important;
   }
@@ -105,35 +119,31 @@
     display: table-header-group !important;
   }
 
-  tfoot {
-    display: table-footer-group !important;
-  }
-
   tr {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
-  /* ── 7. KPI cards et graphiques ── */
+  /* ── KPI cards et graphiques CSS ── */
   .kpi-card,
   .graphique-bloc {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
-  /* ── 8. Forcer un saut de page ── */
+  /* ── Saut de page explicite ── */
   .saut-de-page {
     page-break-before: always !important;
     break-before: page !important;
   }
 
-  /* ── 9. Orphelins/veuves globales ── */
+  /* ── Orphelins/veuves globales ── */
   p, div, li {
     orphans: 3;
     widows: 3;
   }
 
-  /* ── 10. Masquer les éléments Recharts tooltips/animations ── */
+  /* ── Masquer éléments Recharts interactifs ── */
   .recharts-tooltip-wrapper,
   .recharts-active-dot {
     display: none !important;
