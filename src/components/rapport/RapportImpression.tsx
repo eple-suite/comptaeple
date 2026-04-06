@@ -1,10 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
 // RAPPORT ORDONNATEUR — Composant dédié impression (A4 PAYSAGE)
 // Invisible à l'écran (display:none), visible en @media print
-// Lit les 13 commentaires depuis localStorage (persistentStore)
-// Graphiques CSS purs (pas de Recharts) pour impression fiable
-// Flux continu : pas de saut de page forcé entre les sections,
-// seuls les blocs solidaires empêchent les coupures incohérentes.
+//
+// Stratégie anti-coupures :
+// • TitreSolidaire : titre + premier contenu (tableau/KPI) solidaires
+// • BlocCommentaire : élastique, peut s'étendre sur plusieurs pages
+// • bloc-compact : petits blocs indivisibles (KPI, mini tableaux)
 // ═══════════════════════════════════════════════════════════════
 
 import React from 'react';
@@ -27,7 +28,7 @@ function EnteteRapport({ nom, uai, annee, academie, commune }: {
   nom: string; uai: string; annee: number; academie?: string; commune?: string;
 }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #003366', paddingBottom: '6px', marginBottom: '10px' }}>
+    <div className="bloc-compact" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #003366', paddingBottom: '6px', marginBottom: '10px' }}>
       <div>
         <div style={{ fontSize: '7pt', color: '#666', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Ministère de l'Éducation Nationale</div>
         {academie && <div style={{ fontSize: '7pt', color: '#666' }}>Académie de {academie}</div>}
@@ -52,11 +53,11 @@ function TitreSection({ texte }: { texte: string }) {
   );
 }
 
-// ── Bloc commentaire ────────────────────────────────────────
+// ── Bloc commentaire — ÉLASTIQUE (peut s'étendre sur plusieurs pages) ──
 function BlocCommentaire({ texte }: { texte: string }) {
   if (!texte || !texte.trim()) return null;
   return (
-    <div style={{ borderLeft: '3px solid #003366', padding: '6px 12px', background: '#f7f9fc', fontSize: '9pt', lineHeight: '1.5', whiteSpace: 'pre-wrap', marginTop: '6px', marginBottom: '8px', orphans: 4, widows: 4 }}>
+    <div className="commentaire-flow" style={{ borderLeft: '3px solid #003366', padding: '6px 12px', background: '#f7f9fc', fontSize: '9pt', lineHeight: '1.6', whiteSpace: 'pre-wrap', marginTop: '6px', marginBottom: '10px' }}>
       {texte}
     </div>
   );
@@ -68,7 +69,7 @@ function GraphiqueBalance({ depenses, recettes }: { depenses: number; recettes: 
   const pctDep = Math.min((depenses / maxVal) * 100, 100);
   const pctRec = Math.min((recettes / maxVal) * 100, 100);
   return (
-    <div className="graphique-bloc" style={{ border: '1px solid #e0e0e0', borderRadius: '6px', padding: '12px 14px', background: 'white', pageBreakInside: 'avoid' }}>
+    <div className="graphique-bloc" style={{ border: '1px solid #e0e0e0', borderRadius: '6px', padding: '12px 14px', background: 'white' }}>
       <div style={{ fontSize: '8.5pt', fontWeight: 'bold', color: '#003366', marginBottom: '10px' }}>Balance dépenses / recettes</div>
       {[
         { label: 'Dépenses', pctW: pctDep, val: depenses, color: '#e74c3c' },
@@ -96,7 +97,7 @@ function GraphiqueTauxExecution({ sections }: { sections: Array<{ libelle: strin
   const maxVal = Math.max(...sections.map(s => s.budget), 1);
   const hauteurMax = 100;
   return (
-    <div className="graphique-bloc" style={{ border: '1px solid #e0e0e0', borderRadius: '6px', padding: '12px 14px', background: 'white', pageBreakInside: 'avoid' }}>
+    <div className="graphique-bloc" style={{ border: '1px solid #e0e0e0', borderRadius: '6px', padding: '12px 14px', background: 'white' }}>
       <div style={{ fontSize: '8.5pt', fontWeight: 'bold', color: '#003366', marginBottom: '10px' }}>Taux d'exécution budgétaire</div>
       <div style={{ display: 'flex', alignItems: 'flex-end', gap: '20px', height: `${hauteurMax + 25}px`, borderBottom: '1px solid #ddd', borderLeft: '1px solid #ddd', padding: '0 20px 0 4px', marginBottom: '6px', justifyContent: 'center' }}>
         {sections.map((s, i) => {
@@ -129,7 +130,7 @@ function GraphiqueTauxExecution({ sections }: { sections: Array<{ libelle: strin
 function GraphiqueRepartition({ items, titre }: { items: Array<{ label: string; value: number; color: string }>; titre: string }) {
   const total = items.reduce((s, it) => s + it.value, 0) || 1;
   return (
-    <div className="graphique-bloc" style={{ border: '1px solid #e0e0e0', borderRadius: '6px', padding: '10px 14px', background: 'white', pageBreakInside: 'avoid' }}>
+    <div className="graphique-bloc" style={{ border: '1px solid #e0e0e0', borderRadius: '6px', padding: '10px 14px', background: 'white' }}>
       <div style={{ fontSize: '8.5pt', fontWeight: 'bold', color: '#003366', marginBottom: '8px' }}>{titre}</div>
       {items.slice(0, 8).map((item, i) => {
         const p = (item.value / total) * 100;
@@ -149,7 +150,58 @@ function GraphiqueRepartition({ items, titre }: { items: Array<{ label: string; 
   );
 }
 
-// ── Composant principal ─────────────────────────────────────
+// ── KPI Grid ────────────────────────────────────────────────
+function KpiGrid({ items, cols = 4 }: { items: Array<{ label: string; val: string; color: string }>; cols?: number }) {
+  return (
+    <div className="bloc-compact" style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: '6px', marginBottom: '8px' }}>
+      {items.map((kpi, i) => (
+        <div key={i} className="kpi-card" style={{ border: `1px solid ${kpi.color}`, borderRadius: '6px', padding: '6px 8px', background: 'white' }}>
+          <div style={{ fontSize: '6.5pt', color: '#555', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 'bold', marginBottom: '3px' }}>{kpi.label}</div>
+          <div style={{ fontSize: '10pt', fontWeight: 'bold', color: kpi.color, fontFamily: "'Courier New', monospace" }}>{kpi.val}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Tableau générique ───────────────────────────────────────
+function Tableau({ headers, rows, totalRow }: {
+  headers: string[];
+  rows: Array<{ cells: string[]; bold?: boolean }>;
+  totalRow?: string[];
+}) {
+  return (
+    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt', marginBottom: '8px' }}>
+      <thead>
+        <tr style={{ background: '#003366', color: 'white' }}>
+          {headers.map((h, i) => (
+            <th key={i} style={{ padding: '4px 6px', textAlign: i === 0 ? 'left' : 'right', border: '1px solid #ccc', fontSize: '7.5pt' }}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row, i) => (
+          <tr key={i} style={{ background: i % 2 === 0 ? 'white' : '#f7f9fc' }}>
+            {row.cells.map((cell, j) => (
+              <td key={j} style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: j === 0 ? 'left' : 'right', fontFamily: j > 0 ? 'monospace' : 'inherit', fontWeight: row.bold || j === 0 ? 'bold' : 'normal' }}>{cell}</td>
+            ))}
+          </tr>
+        ))}
+        {totalRow && (
+          <tr style={{ background: '#003366', color: 'white', fontWeight: 'bold' }}>
+            {totalRow.map((cell, j) => (
+              <td key={j} style={{ padding: '3px 6px', border: '1px solid #ccc', textAlign: j === 0 ? 'left' : 'right', fontFamily: j > 0 ? 'monospace' : 'inherit' }}>{cell}</td>
+            ))}
+          </tr>
+        )}
+      </tbody>
+    </table>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COMPOSANT PRINCIPAL
+// ═══════════════════════════════════════════════════════════════
 export function RapportImpression() {
   const etab = useCofiepleStore(s => s.etablissement);
   const resultats = useCofiepleStore(s => s.resultats);
@@ -204,52 +256,49 @@ export function RapportImpression() {
 
   const entete = { nom: etab.nom, uai: etab.uai, annee: etab.exercice, academie: etab.academie, commune: etab.commune };
 
-  // ── SRH — from parService if available ───────────────────────
+  // ── SRH ───────────────────────────────────────────────────
   const srhService = R.parService?.['SRH'] as any;
   const hasSRH = srhService && (srhService.chargesReel > 0 || srhService.produitsReel > 0);
 
   return (
     <div id="rapport-impression-container" style={{ display: 'none', fontFamily: 'Arial, Helvetica, sans-serif', fontSize: '9pt', color: '#000', background: 'white', width: '100%' }}>
 
-      {/* ══ SECTION 1 — COUVERTURE + SYNTHÈSE ════════════════ */}
+      {/* ══ EN-TÊTE + COUVERTURE ══════════════════════════════ */}
       <EnteteRapport {...entete} />
 
-      <div style={{ background: '#003366', color: 'white', textAlign: 'center', padding: '8px', fontSize: '10pt', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '6px' }}>
+      <div className="bloc-compact" style={{ background: '#003366', color: 'white', textAlign: 'center', padding: '8px', fontSize: '10pt', fontWeight: 'bold', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '6px' }}>
         Présentation du Compte Financier — Exercice {etab.exercice}
       </div>
       <p style={{ textAlign: 'center', fontSize: '8pt', color: '#555', marginBottom: '12px' }}>
         Présenté par l'ordonnateur : <strong>{nomOrdo || '—'}</strong> · Arrêté au : {dateArrete}
       </p>
 
-      {/* Section 1 — Présentation */}
+      {/* ══ S1 — PRÉSENTATION ═════════════════════════════════ */}
       {comments.presentation.trim() && (
-        <div className="bloc-solidaire">
-          <TitreSection texte="1. Présentation de l'établissement" />
+        <>
+          {/* titre-solidaire : titre + début du commentaire restent ensemble */}
+          <div className="titre-solidaire">
+            <TitreSection texte="1. Présentation de l'établissement" />
+            {/* Amorce invisible pour ancrer le titre au contenu */}
+            <div style={{ minHeight: '1px' }} />
+          </div>
           <BlocCommentaire texte={comments.presentation} />
-        </div>
+        </>
       )}
 
-      {/* Section 2 — Tableau de bord */}
-      <div className="bloc-solidaire">
+      {/* ══ S2 — TABLEAU DE BORD ══════════════════════════════ */}
+      <div className="titre-solidaire">
         <TitreSection texte="2. Tableau de Bord Financier" />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '6px', marginBottom: '8px' }}>
-          {[
-            { label: 'RÉSULTAT BUDGÉTAIRE', valeur: R.resultatBudgetaire, sousTitre: R.resultatBudgetaire >= 0 ? 'Excédent' : 'Déficit', couleur: R.resultatBudgetaire >= 0 ? '#27ae60' : '#c0392b' },
-            { label: 'CAF / IAF', valeur: R.cafBudgetaire, sousTitre: R.cafBudgetaire >= 0 ? 'Capacité' : 'Insuffisance', couleur: R.cafBudgetaire >= 0 ? '#27ae60' : '#c0392b' },
-            { label: 'FDR', valeur: R.fdrComptable, sousTitre: `${Math.round(safe.joursFdr)} jours`, couleur: '#003366' },
-            { label: 'TRÉSORERIE', valeur: R.tresorerie, sousTitre: `${Math.round(safe.joursTresorerie)} jours`, couleur: '#003366' },
-          ].map((kpi, i) => (
-            <div key={i} className="kpi-card" style={{ border: `1px solid ${kpi.couleur}`, borderRadius: '6px', padding: '6px 8px', background: 'white', pageBreakInside: 'avoid' }}>
-              <div style={{ fontSize: '6.5pt', color: '#555', textTransform: 'uppercase', letterSpacing: '0.3px', fontWeight: 'bold', marginBottom: '3px' }}>{kpi.label}</div>
-              <div style={{ fontSize: '10pt', fontWeight: 'bold', color: kpi.couleur, fontFamily: "'Courier New', monospace" }}>{fmt(kpi.valeur)}</div>
-              <div style={{ fontSize: '7pt', color: '#777', marginTop: '1px' }}>{kpi.sousTitre}</div>
-            </div>
-          ))}
-        </div>
+        <KpiGrid items={[
+          { label: 'RÉSULTAT BUDGÉTAIRE', val: fmt(R.resultatBudgetaire), color: R.resultatBudgetaire >= 0 ? '#27ae60' : '#c0392b' },
+          { label: 'CAF / IAF', val: fmt(R.cafBudgetaire), color: R.cafBudgetaire >= 0 ? '#27ae60' : '#c0392b' },
+          { label: 'FDR', val: fmt(R.fdrComptable), color: '#003366' },
+          { label: 'TRÉSORERIE', val: fmt(R.tresorerie), color: '#003366' },
+        ]} />
       </div>
 
       {/* Graphiques côte à côte */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
+      <div className="bloc-compact" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px' }}>
         <GraphiqueBalance depenses={R.totalChargesSde} recettes={R.totalProduitsSdr} />
         <GraphiqueTauxExecution sections={[
           { libelle: 'Dépenses', budget: R.totalChargesPrev, realise: R.totalChargesSde },
@@ -257,229 +306,141 @@ export function RapportImpression() {
         ]} />
       </div>
 
-      {/* Section 3 — Résultat et exécution budgétaire */}
-      <div className="bloc-solidaire">
+      {/* ══ S3 — RÉSULTAT ET EXÉCUTION ════════════════════════ */}
+      <div className="titre-solidaire">
         <TitreSection texte="3. Résultat et exécution budgétaire" />
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt', marginBottom: '8px' }}>
-          <thead>
-            <tr style={{ background: '#003366', color: 'white' }}>
-              <th style={{ padding: '4px 6px', textAlign: 'left', border: '1px solid #ccc' }}>Agrégat</th>
-              <th style={{ padding: '4px 6px', textAlign: 'right', border: '1px solid #ccc' }}>Prévu</th>
-              <th style={{ padding: '4px 6px', textAlign: 'right', border: '1px solid #ccc' }}>Réalisé</th>
-              <th style={{ padding: '4px 6px', textAlign: 'right', border: '1px solid #ccc' }}>Taux</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              { label: 'Charges totales', prev: R.totalChargesPrev, real: R.totalChargesSde },
-              { label: 'Produits totaux', prev: R.totalProduitsPrev, real: R.totalProduitsSdr },
-            ].map((row, i) => (
-              <tr key={i} style={{ background: i % 2 === 0 ? 'white' : '#f7f9fc' }}>
-                <td style={{ padding: '3px 6px', border: '1px solid #ddd', fontWeight: 'bold' }}>{row.label}</td>
-                <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(row.prev)}</td>
-                <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>{fmt(row.real)}</td>
-                <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right' }}>{row.prev > 0 ? pct((row.real / row.prev) * 100) : '—'}</td>
-              </tr>
-            ))}
-            <tr style={{ background: '#003366', color: 'white', fontWeight: 'bold' }}>
-              <td style={{ padding: '3px 6px', border: '1px solid #ccc' }}>RÉSULTAT</td>
-              <td style={{ padding: '3px 6px', border: '1px solid #ccc', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(R.totalProduitsPrev - R.totalChargesPrev)}</td>
-              <td style={{ padding: '3px 6px', border: '1px solid #ccc', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(R.resultatBudgetaire)}</td>
-              <td style={{ padding: '3px 6px', border: '1px solid #ccc', textAlign: 'right' }}>—</td>
-            </tr>
-          </tbody>
-        </table>
+        <Tableau
+          headers={['Agrégat', 'Prévu', 'Réalisé', 'Taux']}
+          rows={[
+            { cells: ['Charges totales', fmt(R.totalChargesPrev), fmt(R.totalChargesSde), R.totalChargesPrev > 0 ? pct((R.totalChargesSde / R.totalChargesPrev) * 100) : '—'] },
+            { cells: ['Produits totaux', fmt(R.totalProduitsPrev), fmt(R.totalProduitsSdr), R.totalProduitsPrev > 0 ? pct((R.totalProduitsSdr / R.totalProduitsPrev) * 100) : '—'] },
+          ]}
+          totalRow={['RÉSULTAT', fmt(R.totalProduitsPrev - R.totalChargesPrev), fmt(R.resultatBudgetaire), '—']}
+        />
       </div>
       <BlocCommentaire texte={comments.resultat} />
 
-      {/* Section 4 — Répartition */}
+      {/* ══ S4 — RÉPARTITION ══════════════════════════════════ */}
       {comments.repartition.trim() && (
-        <div className="bloc-solidaire">
-          <TitreSection texte="4. Répartition des dépenses et des recettes" />
+        <>
+          <div className="titre-solidaire">
+            <TitreSection texte="4. Répartition des dépenses et des recettes" />
+            <div style={{ minHeight: '1px' }} />
+          </div>
           <BlocCommentaire texte={comments.repartition} />
-        </div>
+        </>
       )}
 
-      {/* Section 5 — Évolution N/N-1 */}
+      {/* ══ S5 — ÉVOLUTION N/N-1 ══════════════════════════════ */}
       {hasN1 && (
-        <div className="bloc-solidaire">
-          <TitreSection texte={`5. Évolution N / N-1`} />
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt', marginBottom: '8px' }}>
-            <thead>
-              <tr style={{ background: '#003366', color: 'white' }}>
-                <th style={{ padding: '4px 6px', textAlign: 'left', border: '1px solid #ccc' }}>Agrégat</th>
-                <th style={{ padding: '4px 6px', textAlign: 'right', border: '1px solid #ccc' }}>N ({etab.exercice})</th>
-                <th style={{ padding: '4px 6px', textAlign: 'right', border: '1px solid #ccc' }}>N-1</th>
-                <th style={{ padding: '4px 6px', textAlign: 'right', border: '1px solid #ccc' }}>Variation</th>
-                <th style={{ padding: '4px 6px', textAlign: 'right', border: '1px solid #ccc' }}>%</th>
-              </tr>
-            </thead>
-            <tbody>
-              {[
+        <>
+          <div className="titre-solidaire">
+            <TitreSection texte={`5. Évolution N / N-1`} />
+            <Tableau
+              headers={['Agrégat', `N (${etab.exercice})`, 'N-1', 'Variation', '%']}
+              rows={[
                 { label: 'Dépenses réalisées', vN: R.totalChargesSde, vN1: R.totalChargesSdeN1 ?? 0 },
                 { label: 'Recettes réalisées', vN: R.totalProduitsSdr, vN1: R.totalProduitsSdrN1 ?? 0 },
                 { label: 'Résultat budgétaire', vN: R.resultatBudgetaire, vN1: R.resultatBudgetaireN1 ?? 0 },
-              ].map((row, i) => {
+              ].map(row => {
                 const v = row.vN - row.vN1;
                 const p = row.vN1 > 0 ? (v / row.vN1) * 100 : 0;
-                return (
-                  <tr key={i} style={{ background: i % 2 === 0 ? 'white' : '#f7f9fc' }}>
-                    <td style={{ padding: '3px 6px', border: '1px solid #ddd', fontWeight: 'bold' }}>{row.label}</td>
-                    <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(row.vN)}</td>
-                    <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace', color: '#777' }}>{fmt(row.vN1)}</td>
-                    <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace', color: v >= 0 ? '#27ae60' : '#c0392b' }}>{v >= 0 ? '+' : ''}{fmt(v)}</td>
-                    <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', color: v >= 0 ? '#27ae60' : '#c0392b' }}>{p >= 0 ? '+' : ''}{p.toFixed(1)} %</td>
-                  </tr>
-                );
+                return { cells: [row.label, fmt(row.vN), fmt(row.vN1), `${v >= 0 ? '+' : ''}${fmt(v)}`, `${p >= 0 ? '+' : ''}${p.toFixed(1)} %`] };
               })}
-            </tbody>
-          </table>
+            />
+          </div>
           <BlocCommentaire texte={comments.evolution} />
-        </div>
+        </>
       )}
 
-      {/* Section 6 — Exécution par domaine */}
+      {/* ══ S6 — EXÉCUTION PAR DOMAINE ════════════════════════ */}
       {domainesList.length > 0 && (
-        <div className="bloc-solidaire">
-          <TitreSection texte={`6. Exécution par domaine — Exercice ${etab.exercice}`} />
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8pt', marginBottom: '8px' }}>
-            <thead>
-              <tr style={{ background: '#003366', color: 'white' }}>
-                {['Domaine', 'Crédits ouverts', 'Dépenses', 'Taux', 'Prév. recettes', 'Recettes', 'Solde'].map((h, i) => (
-                  <th key={i} style={{ padding: '3px 5px', textAlign: i === 0 ? 'left' : 'right', border: '1px solid #ccc', fontSize: '7.5pt' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {domainesList.map((d: any, i: number) => (
-                <tr key={d.code} style={{ background: i % 2 === 0 ? 'white' : '#f7f9fc' }}>
-                  <td style={{ padding: '2px 5px', border: '1px solid #ddd', fontWeight: 'bold', fontSize: '7.5pt' }}>{d.libelle}</td>
-                  <td style={{ padding: '2px 5px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(d.chargesPrev)}</td>
-                  <td style={{ padding: '2px 5px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>{fmt(d.chargesReel)}</td>
-                  <td style={{ padding: '2px 5px', border: '1px solid #ddd', textAlign: 'right', color: d.tauxExecCharges >= 0.9 ? '#27ae60' : d.tauxExecCharges >= 0.7 ? '#e67e22' : '#c0392b' }}>{pct(d.tauxExecCharges * 100)}</td>
-                  <td style={{ padding: '2px 5px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(d.produitsPrev)}</td>
-                  <td style={{ padding: '2px 5px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>{fmt(d.produitsReel)}</td>
-                  <td style={{ padding: '2px 5px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold', color: d.solde >= 0 ? '#27ae60' : '#c0392b' }}>{fmt(d.solde)}</td>
-                </tr>
-              ))}
-              <tr style={{ background: '#003366', color: 'white', fontWeight: 'bold' }}>
-                <td style={{ padding: '3px 5px', border: '1px solid #ccc' }}>TOTAL</td>
-                <td style={{ padding: '3px 5px', border: '1px solid #ccc', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(R.totalChargesPrev)}</td>
-                <td style={{ padding: '3px 5px', border: '1px solid #ccc', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(R.totalChargesSde)}</td>
-                <td style={{ padding: '3px 5px', border: '1px solid #ccc', textAlign: 'right' }}>{pct(R.tauxExecCharges * 100)}</td>
-                <td style={{ padding: '3px 5px', border: '1px solid #ccc', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(R.totalProduitsPrev)}</td>
-                <td style={{ padding: '3px 5px', border: '1px solid #ccc', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(R.totalProduitsSdr)}</td>
-                <td style={{ padding: '3px 5px', border: '1px solid #ccc', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(R.resultatBudgetaire)}</td>
-              </tr>
-            </tbody>
-          </table>
+        <>
+          <div className="titre-solidaire">
+            <TitreSection texte={`6. Exécution par domaine — Exercice ${etab.exercice}`} />
+            <Tableau
+              headers={['Domaine', 'Crédits ouverts', 'Dépenses', 'Taux exéc.', 'Prév. recettes', 'Recettes', 'Solde']}
+              rows={domainesList.map((d: any) => ({
+                cells: [
+                  d.libelle,
+                  fmt(d.chargesPrev), fmt(d.chargesReel), pct(d.tauxExecCharges * 100),
+                  fmt(d.produitsPrev), fmt(d.produitsReel), fmt(d.solde),
+                ],
+              }))}
+              totalRow={['TOTAL', fmt(R.totalChargesPrev), fmt(R.totalChargesSde), pct(R.tauxExecCharges * 100), fmt(R.totalProduitsPrev), fmt(R.totalProduitsSdr), fmt(R.resultatBudgetaire)]}
+            />
+          </div>
           <BlocCommentaire texte={comments.domaines} />
-        </div>
+        </>
       )}
 
-      {/* Section 7 — FDR */}
-      <div className="bloc-solidaire">
+      {/* ══ S7 — FONDS DE ROULEMENT ═══════════════════════════ */}
+      <div className="titre-solidaire">
         <TitreSection texte="7. Fonds de roulement — Autonomie financière" />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '6px' }}>
-          {[
-            { label: 'FDR comptable', val: fmt(R.fdrComptable), color: R.fdrComptable >= 0 ? '#27ae60' : '#c0392b' },
-            { label: 'FDR en jours', val: `${Math.round(safe.joursFdr)} jours`, color: safe.joursFdr >= 30 ? '#27ae60' : '#c0392b' },
-            { label: 'FDR mobilisable', val: fmt(safe.fdrMobilisable), color: '#003366' },
-          ].map((kpi, i) => (
-            <div key={i} className="kpi-card" style={{ border: '1px solid #ddd', borderRadius: '4px', padding: '5px 8px' }}>
-              <div style={{ fontSize: '7pt', color: '#777', fontWeight: 'bold', textTransform: 'uppercase' }}>{kpi.label}</div>
-              <div style={{ fontSize: '10pt', fontWeight: 'bold', color: kpi.color, fontFamily: 'monospace' }}>{kpi.val}</div>
-            </div>
-          ))}
-        </div>
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt', marginBottom: '6px' }}>
-          <tbody>
-            <tr style={{ background: '#f0f4f8' }}><td style={{ padding: '3px 6px', border: '1px solid #ddd', fontWeight: 'bold' }}>FDR</td><td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>{fmt(R.fdrComptable)}</td></tr>
-            <tr><td style={{ padding: '3px 6px', border: '1px solid #ddd' }}>= BFR</td><td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(R.bfr)}</td></tr>
-            <tr><td style={{ padding: '3px 6px', border: '1px solid #ddd' }}>+ Trésorerie</td><td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(R.tresorerie)}</td></tr>
-          </tbody>
-        </table>
-        <BlocCommentaire texte={comments.fdr} />
+        <KpiGrid cols={3} items={[
+          { label: 'FDR comptable', val: fmt(R.fdrComptable), color: R.fdrComptable >= 0 ? '#27ae60' : '#c0392b' },
+          { label: 'FDR en jours', val: `${Math.round(safe.joursFdr)} jours`, color: safe.joursFdr >= 30 ? '#27ae60' : '#c0392b' },
+          { label: 'FDR mobilisable', val: fmt(safe.fdrMobilisable), color: '#003366' },
+        ]} />
       </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt', marginBottom: '6px' }}>
+        <tbody>
+          <tr style={{ background: '#f0f4f8' }}><td style={{ padding: '3px 6px', border: '1px solid #ddd', fontWeight: 'bold' }}>FDR</td><td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>{fmt(R.fdrComptable)}</td></tr>
+          <tr><td style={{ padding: '3px 6px', border: '1px solid #ddd' }}>= BFR</td><td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(R.bfr)}</td></tr>
+          <tr><td style={{ padding: '3px 6px', border: '1px solid #ddd' }}>+ Trésorerie</td><td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(R.tresorerie)}</td></tr>
+          <tr style={{ background: '#f0f4f8' }}><td style={{ padding: '3px 6px', border: '1px solid #ddd', fontStyle: 'italic', fontSize: '7.5pt' }}>Vérification : FDR = BFR + Trésorerie</td><td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace', color: '#27ae60', fontSize: '7.5pt' }}>✓</td></tr>
+        </tbody>
+      </table>
+      <BlocCommentaire texte={comments.fdr} />
 
-      {/* Section 8 — Trésorerie */}
-      <div className="bloc-solidaire">
+      {/* ══ S8 — TRÉSORERIE ═══════════════════════════════════ */}
+      <div className="titre-solidaire">
         <TitreSection texte="8. Trésorerie" />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '6px', marginBottom: '6px' }}>
-          {[
-            { label: 'Trésorerie nette', val: fmt(R.tresorerie), color: R.tresorerie >= 0 ? '#27ae60' : '#c0392b' },
-            { label: 'DGP', val: `${Math.round(safe.dgpJours)} jours`, color: safe.dgpJours > 30 ? '#c0392b' : '#27ae60' },
-            { label: 'DGR', val: `${Math.round(safe.dgrJours)} jours`, color: safe.dgrJours > 60 ? '#c0392b' : '#27ae60' },
-            { label: 'Réserves (1068)', val: fmt(R.reserves), color: '#003366' },
-          ].map((kpi, i) => (
-            <div key={i} className="kpi-card" style={{ border: '1px solid #ddd', borderRadius: '4px', padding: '5px 8px' }}>
-              <div style={{ fontSize: '7pt', color: '#777', fontWeight: 'bold', textTransform: 'uppercase' }}>{kpi.label}</div>
-              <div style={{ fontSize: '10pt', fontWeight: 'bold', color: kpi.color, fontFamily: 'monospace' }}>{kpi.val}</div>
-            </div>
-          ))}
-        </div>
-        <BlocCommentaire texte={comments.tresorerie} />
+        <KpiGrid items={[
+          { label: 'Trésorerie nette', val: fmt(R.tresorerie), color: R.tresorerie >= 0 ? '#27ae60' : '#c0392b' },
+          { label: 'DGP', val: `${Math.round(safe.dgpJours)} jours`, color: safe.dgpJours > 30 ? '#c0392b' : '#27ae60' },
+          { label: 'DGR', val: `${Math.round(safe.dgrJours)} jours`, color: safe.dgrJours > 60 ? '#c0392b' : '#27ae60' },
+          { label: 'Réserves (1068)', val: fmt(R.reserves), color: '#003366' },
+        ]} />
       </div>
+      <BlocCommentaire texte={comments.tresorerie} />
 
-      {/* Section 9 — Opérations d'ordre */}
-      <div className="bloc-solidaire">
+      {/* ══ S9 — OPÉRATIONS D'ORDRE ═══════════════════════════ */}
+      <div className="titre-solidaire">
         <TitreSection texte="9. Opérations d'ordre" />
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt', marginBottom: '6px' }}>
-          <thead>
-            <tr style={{ background: '#f0f4f8' }}>
-              <th style={{ padding: '3px 6px', textAlign: 'left', border: '1px solid #ddd' }}>Opération</th>
-              <th style={{ padding: '3px 6px', textAlign: 'right', border: '1px solid #ddd' }}>Charges (OO)</th>
-              <th style={{ padding: '3px 6px', textAlign: 'right', border: '1px solid #ddd' }}>Produits (OO)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              { label: 'Dotations aux amortissements (68)', c: oo.dotationsAmort, p: 0 },
-              { label: 'Reprises sur amort./provisions (78)', c: 0, p: oo.reprisesAmort },
-              { label: 'VNC cessions (675)', c: oo.vncCessions, p: 0 },
-              { label: 'Produits cessions (775/776/777)', c: 0, p: oo.produitsCessions },
-              { label: 'Neutralisation subv. invest.', c: 0, p: oo.neutralisationSubInv },
-            ].map((row, i) => (
-              <tr key={i} style={{ borderTop: '1px solid #ddd' }}>
-                <td style={{ padding: '2px 6px', border: '1px solid #ddd' }}>{row.label}</td>
-                <td style={{ padding: '2px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{row.c > 0 ? fmt(row.c) : '—'}</td>
-                <td style={{ padding: '2px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{row.p > 0 ? fmt(row.p) : '—'}</td>
-              </tr>
-            ))}
-            <tr style={{ background: '#f0f4f8', fontWeight: 'bold' }}>
-              <td style={{ padding: '3px 6px', border: '1px solid #ddd' }}>TOTAL OO</td>
-              <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(oo.totalChargesOO)}</td>
-              <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(oo.totalProduitsOO)}</td>
-            </tr>
-          </tbody>
-        </table>
-        <BlocCommentaire texte={comments.oo} />
+        <Tableau
+          headers={['Opération', 'Charges (OO)', 'Produits (OO)']}
+          rows={[
+            { cells: ['Dotations aux amortissements (68)', oo.dotationsAmort > 0 ? fmt(oo.dotationsAmort) : '—', '—'] },
+            { cells: ['Reprises sur amort./provisions (78)', '—', oo.reprisesAmort > 0 ? fmt(oo.reprisesAmort) : '—'] },
+            { cells: ['VNC cessions (675)', oo.vncCessions > 0 ? fmt(oo.vncCessions) : '—', '—'] },
+            { cells: ['Produits cessions (775/776/777)', '—', oo.produitsCessions > 0 ? fmt(oo.produitsCessions) : '—'] },
+            { cells: ['Neutralisation subv. invest.', '—', oo.neutralisationSubInv > 0 ? fmt(oo.neutralisationSubInv) : '—'] },
+          ]}
+          totalRow={['TOTAL OO', fmt(oo.totalChargesOO), fmt(oo.totalProduitsOO)]}
+        />
       </div>
+      <BlocCommentaire texte={comments.oo} />
 
-      {/* Section SRH (conditionnelle) */}
+      {/* ══ SRH (conditionnel) ════════════════════════════════ */}
       {(hasSRH || comments.srh.trim()) && (
-        <div className="bloc-solidaire">
-          <TitreSection texte="Service de Restauration et d'Hébergement (SRH)" />
-          {hasSRH && srhService && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '6px' }}>
-              {[
+        <>
+          <div className="titre-solidaire">
+            <TitreSection texte="Service de Restauration et d'Hébergement (SRH)" />
+            {hasSRH && srhService && (
+              <KpiGrid cols={3} items={[
                 { label: 'Résultat SRH', val: fmt((srhService.produitsReel ?? 0) - (srhService.chargesReel ?? 0)), color: (srhService.produitsReel ?? 0) - (srhService.chargesReel ?? 0) >= 0 ? '#27ae60' : '#c0392b' },
                 { label: 'Recettes SRH', val: fmt(srhService.produitsReel ?? 0), color: '#003366' },
                 { label: 'Dépenses SRH', val: fmt(srhService.chargesReel ?? 0), color: '#003366' },
-              ].map((kpi, i) => (
-                <div key={i} className="kpi-card" style={{ border: '1px solid #ddd', borderRadius: '4px', padding: '5px 8px' }}>
-                  <div style={{ fontSize: '7pt', color: '#777', fontWeight: 'bold', textTransform: 'uppercase' }}>{kpi.label}</div>
-                  <div style={{ fontSize: '10pt', fontWeight: 'bold', color: kpi.color, fontFamily: 'monospace' }}>{kpi.val}</div>
-                </div>
-              ))}
-            </div>
-          )}
+              ]} />
+            )}
+          </div>
           <BlocCommentaire texte={comments.srh} />
-        </div>
+        </>
       )}
 
-      {/* Section 10 — Subventions et financements */}
-      <div className="bloc-solidaire">
+      {/* ══ S10 — SUBVENTIONS ═════════════════════════════════ */}
+      <div className="titre-solidaire">
         <TitreSection texte="10. Suivi des subventions et financements" />
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt', marginBottom: '6px' }}>
           <tbody>
@@ -490,77 +451,55 @@ export function RapportImpression() {
             <tr style={{ background: '#f0f4f8', fontWeight: 'bold' }}><td style={{ padding: '3px 6px', border: '1px solid #ddd' }}>Total créances</td><td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace' }}>{fmt(safe.totalCreances)}</td></tr>
           </tbody>
         </table>
-        <BlocCommentaire texte={comments.subventions} />
       </div>
+      <BlocCommentaire texte={comments.subventions} />
 
-      {/* Section 11 — Situation patrimoniale */}
-      <div className="bloc-solidaire">
+      {/* ══ S11 — PATRIMOINE ══════════════════════════════════ */}
+      <div className="titre-solidaire">
         <TitreSection texte="11. Situation patrimoniale" />
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '6px' }}>
-          {[
-            { label: 'Immobilisations', val: fmt(R.totalImmo), color: '#003366' },
-            { label: 'Amortissements', val: fmt(R.totalAmortissements), color: '#e67e22' },
-            { label: 'Valeur nette', val: fmt(safe.valeurNette), color: safe.valeurNette >= 0 ? '#27ae60' : '#c0392b' },
-          ].map((kpi, i) => (
-            <div key={i} className="kpi-card" style={{ border: '1px solid #ddd', borderRadius: '4px', padding: '5px 8px' }}>
-              <div style={{ fontSize: '7pt', color: '#777', fontWeight: 'bold', textTransform: 'uppercase' }}>{kpi.label}</div>
-              <div style={{ fontSize: '10pt', fontWeight: 'bold', color: kpi.color, fontFamily: 'monospace' }}>{kpi.val}</div>
-            </div>
-          ))}
-        </div>
-        <BlocCommentaire texte={comments.patrimoine} />
+        <KpiGrid cols={3} items={[
+          { label: 'Immobilisations', val: fmt(R.totalImmo), color: '#003366' },
+          { label: 'Amortissements', val: fmt(R.totalAmortissements), color: '#e67e22' },
+          { label: 'Valeur nette', val: fmt(safe.valeurNette), color: safe.valeurNette >= 0 ? '#27ae60' : '#c0392b' },
+        ]} />
       </div>
+      <BlocCommentaire texte={comments.patrimoine} />
 
-      {/* Section 12 — Pilotage budgétaire */}
-      <div className="bloc-solidaire">
+      {/* ══ S12 — PILOTAGE ════════════════════════════════════ */}
+      <div className="titre-solidaire">
         <TitreSection texte="12. Pilotage budgétaire — Budget initial vs exécuté" />
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '8.5pt', marginBottom: '6px' }}>
-          <thead>
-            <tr style={{ background: '#003366', color: 'white' }}>
-              {['Agrégat', 'Budget initial', 'Budget exécuté', 'Écart', 'Écart %'].map((h, i) => (
-                <th key={i} style={{ padding: '3px 6px', textAlign: i === 0 ? 'left' : 'right', border: '1px solid #ccc' }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              { label: 'Charges totales', bi: R.totalChargesPrev, be: R.totalChargesSde },
-              { label: 'Produits totaux', bi: R.totalProduitsPrev, be: R.totalProduitsSdr },
-              { label: 'Résultat', bi: R.totalProduitsPrev - R.totalChargesPrev, be: R.resultatBudgetaire },
-            ].map((row, i) => {
-              const ecart = row.be - row.bi;
-              const pctE = row.bi !== 0 ? (ecart / Math.abs(row.bi)) * 100 : 0;
-              return (
-                <tr key={i} style={{ background: i % 2 === 0 ? 'white' : '#f7f9fc' }}>
-                  <td style={{ padding: '3px 6px', border: '1px solid #ddd', fontWeight: 'bold' }}>{row.label}</td>
-                  <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace', color: '#777' }}>{fmt(row.bi)}</td>
-                  <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold' }}>{fmt(row.be)}</td>
-                  <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', fontFamily: 'monospace', color: ecart >= 0 ? '#27ae60' : '#c0392b' }}>{ecart >= 0 ? '+' : ''}{fmt(ecart)}</td>
-                  <td style={{ padding: '3px 6px', border: '1px solid #ddd', textAlign: 'right', color: ecart >= 0 ? '#27ae60' : '#c0392b' }}>{pctE >= 0 ? '+' : ''}{pctE.toFixed(1)} %</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-        <BlocCommentaire texte={comments.pilotage} />
+        <Tableau
+          headers={['Agrégat', 'Budget initial', 'Budget exécuté', 'Écart', 'Écart %']}
+          rows={[
+            { label: 'Charges totales', bi: R.totalChargesPrev, be: R.totalChargesSde },
+            { label: 'Produits totaux', bi: R.totalProduitsPrev, be: R.totalProduitsSdr },
+            { label: 'Résultat', bi: R.totalProduitsPrev - R.totalChargesPrev, be: R.resultatBudgetaire },
+          ].map(row => {
+            const ecart = row.be - row.bi;
+            const pctE = row.bi !== 0 ? (ecart / Math.abs(row.bi)) * 100 : 0;
+            return { cells: [row.label, fmt(row.bi), fmt(row.be), `${ecart >= 0 ? '+' : ''}${fmt(ecart)}`, `${pctE >= 0 ? '+' : ''}${pctE.toFixed(1)} %`] };
+          })}
+        />
       </div>
+      <BlocCommentaire texte={comments.pilotage} />
 
-      {/* Section 13 — Perspectives */}
+      {/* ══ S13 — PERSPECTIVES ════════════════════════════════ */}
       {comments.perspectives.trim() && (
-        <div className="bloc-solidaire">
-          <TitreSection texte="13. Points d'attention et perspectives" />
+        <>
+          <div className="titre-solidaire">
+            <TitreSection texte="13. Points d'attention et perspectives" />
+            <div style={{ minHeight: '1px' }} />
+          </div>
           <BlocCommentaire texte={comments.perspectives} />
-        </div>
+        </>
       )}
 
-      {/* ══ SIGNATURES ═════════════════════════════════════════ */}
-      <div className="bloc-solidaire" style={{ marginTop: '20px' }}>
+      {/* ══ SIGNATURES ════════════════════════════════════════ */}
+      <div className="bloc-compact" style={{ marginTop: '20px' }}>
         <TitreSection texte="Signatures" />
-
         <p style={{ textAlign: 'center', fontSize: '8pt', color: '#555', marginBottom: '4px' }}>
           Arrêté le présent compte financier au 31 décembre {etab.exercice}.
         </p>
-
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '40px', marginTop: '16px' }}>
           {[
             { titre: "L'Ordonnateur", nom: nomOrdo },
@@ -576,7 +515,7 @@ export function RapportImpression() {
         </div>
       </div>
 
-      {/* ══ PIED DE PAGE FINAL ═════════════════════════════════ */}
+      {/* ══ PIED FINAL ════════════════════════════════════════ */}
       <div style={{ marginTop: '20px', textAlign: 'center', fontSize: '7pt', color: '#999', borderTop: '1px solid #ddd', paddingTop: '6px' }}>
         Document généré le {dateEdition} — {etab.nom} ({etab.uai}) — Compte Financier {etab.exercice}
         {etab.academie && ` — Académie de ${etab.academie}`}
