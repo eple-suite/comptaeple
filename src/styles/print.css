@@ -46,10 +46,13 @@
     display: none !important;
   }
 
-  /* Wrapper interactif du compte financier */
+  /* Wrapper interactif du compte financier — spécificité renforcée */
   .no-print-wrapper,
-  .no-print {
+  .no-print,
+  div.no-print-wrapper,
+  div.no-print {
     display: none !important;
+    visibility: hidden !important;
   }
 
   /* Recharts SVGs qui pourraient fuir */
@@ -71,28 +74,15 @@
 
   /* ══ 2. LIBÉRER la chaîne d'ancêtres du rapport ══ */
 
-  /* On cible chaque niveau de la hiérarchie DOM pour
-     enlever flex, overflow, min-height, padding.
-     Le rapport #rapport-impression-container se trouve dans :
-     #root > [SidebarProvider] > div > div > main > [fragment children]
-     
-     On NE touche PAS .no-print-wrapper (déjà masqué ci-dessus). */
-  #root {
-    display: block !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow: visible !important;
-    min-height: auto !important;
-    height: auto !important;
-  }
-
-  /* SidebarProvider wrapper et conteneurs intermédiaires
-     SAUF les éléments déjà masqués */
-  .min-h-screen,
-  .flex-1.flex.flex-col,
-  main.overflow-auto,
-  main.flex-1 {
+  /* Débloquer tous les conteneurs intermédiaires entre #root
+     et #rapport-impression-container.
+     On utilise la chaîne descendante MAIS on re-masque ensuite
+     .no-print-wrapper avec une spécificité encore plus haute. */
+  #root,
+  #root > *,
+  #root > * > *,
+  #root > * > * > *,
+  #root > * > * > * > * {
     display: block !important;
     width: 100% !important;
     margin: 0 !important;
@@ -102,6 +92,18 @@
     height: auto !important;
     position: static !important;
     flex: none !important;
+  }
+
+  /* RE-MASQUER .no-print-wrapper avec spécificité maximale
+     (écrase la règle #root > * > * ci-dessus) */
+  #root .no-print-wrapper,
+  #root .no-print,
+  #root > * .no-print-wrapper,
+  #root > * .no-print {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
   }
 
   /* ══ 3. RAPPORT : visible et sans contrainte ══ */
