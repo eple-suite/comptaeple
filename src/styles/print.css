@@ -71,10 +71,12 @@
 
   /* ══ 2. LIBÉRER la chaîne d'ancêtres du rapport ══ */
 
-  /* #root : enlever flex, overflow pour que le rapport
-     s'affiche en pleine largeur comme un document normal.
-     ATTENTION : on ne force PAS display:block sur les descendants
-     génériques car cela écraserait display:none sur .no-print-wrapper */
+  /* On cible chaque niveau de la hiérarchie DOM pour
+     enlever flex, overflow, min-height, padding.
+     Le rapport #rapport-impression-container se trouve dans :
+     #root > [SidebarProvider] > div > div > main > [fragment children]
+     
+     On NE touche PAS .no-print-wrapper (déjà masqué ci-dessus). */
   #root {
     display: block !important;
     width: 100% !important;
@@ -83,13 +85,14 @@
     overflow: visible !important;
     min-height: auto !important;
     height: auto !important;
-    position: static !important;
-    flex: none !important;
   }
 
-  /* Ancêtres intermédiaires du rapport : on cible via :has()
-     pour ne débloquer QUE la branche qui contient le rapport */
-  :has(> #rapport-impression-container) {
+  /* SidebarProvider wrapper et conteneurs intermédiaires
+     SAUF les éléments déjà masqués */
+  .min-h-screen,
+  .flex-1.flex.flex-col,
+  main.overflow-auto,
+  main.flex-1 {
     display: block !important;
     width: 100% !important;
     margin: 0 !important;
