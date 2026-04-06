@@ -2,7 +2,7 @@
    CSS IMPRESSION — Rapport Ordonnateur (A4 PAYSAGE)
    
    Stratégie :
-   1. TOUT masquer dans le DOM
+   1. TOUT masquer via display:none (plus fiable que visibility:hidden)
    2. Rendre visible UNIQUEMENT #rapport-impression-container
    3. Anti-coupures ciblées pour titres et commentaires élastiques
    ═══════════════════════════════════════════════════════════════ */
@@ -34,33 +34,41 @@
     height: auto !important;
   }
 
-  /* ══ STRATÉGIE NUCLÉAIRE : tout masquer, puis remonter le rapport ══ */
+  /* ══ STRATÉGIE : display:none sur tout sauf le rapport ══ */
 
-  /* 1. Masquer TOUT dans #root */
-  #root * {
-    visibility: hidden !important;
+  /* 1. Masquer tout le wrapper interactif (sidebar, nav, contenu écran) */
+  .no-print-wrapper,
+  .no-print,
+  aside,
+  header,
+  nav,
+  [data-sidebar],
+  [data-radix-popper-content-wrapper],
+  .recharts-wrapper,
+  .recharts-surface,
+  .recharts-tooltip-wrapper {
+    display: none !important;
   }
 
-  /* 2. #root lui-même reste visible (container) mais sans padding/margin */
+  /* 2. #root reste visible comme conteneur */
   #root {
     display: block !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
+    position: static !important;
   }
 
-  /* 3. Rendre le rapport et tous ses enfants visibles */
-  #rapport-impression-container,
-  #rapport-impression-container * {
-    visibility: visible !important;
+  /* 3. Masquer TOUS les enfants directs de #root sauf le rapport */
+  #root > *:not(:has(#rapport-impression-container)) {
+    display: none !important;
   }
 
+  /* 4. Rendre le rapport et tous ses enfants visibles */
   #rapport-impression-container {
     display: block !important;
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
+    position: static !important;
     width: 100% !important;
     margin: 0 !important;
     padding: 0 !important;
@@ -68,16 +76,17 @@
     z-index: 999999 !important;
   }
 
-  /* 4. Supprimer sidebar, header, nav, popovers de l'espace */
-  aside,
-  header,
-  nav,
-  [data-sidebar],
-  [data-radix-popper-content-wrapper] {
+  #rapport-impression-container * {
+    visibility: visible !important;
+  }
+
+  /* 5. Fallback : masquer tout SVG Recharts qui pourrait fuir */
+  svg.recharts-surface,
+  .recharts-responsive-container,
+  .recharts-wrapper {
     display: none !important;
-    visibility: hidden !important;
-    width: 0 !important;
     height: 0 !important;
+    width: 0 !important;
     overflow: hidden !important;
   }
 
@@ -149,12 +158,6 @@
   p, div, li {
     orphans: 3;
     widows: 3;
-  }
-
-  /* ── Masquer éléments Recharts interactifs ── */
-  .recharts-tooltip-wrapper,
-  .recharts-active-dot {
-    display: none !important;
   }
 
   /* ══════════════════════════════════════════════════════════════
