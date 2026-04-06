@@ -204,18 +204,9 @@ export function RapportImpression() {
 
   const entete = { nom: etab.nom, uai: etab.uai, annee: etab.exercice, academie: etab.academie, commune: etab.commune };
 
-  // ── Données répartition dépenses par nature (comptes) ──────
-  const depParNature = (R.repartitionDepenses ?? []) as Array<{ compte: string; libelle: string; montant: number }>;
-  const depColors = ['#003366', '#27ae60', '#e67e22', '#c0392b', '#8e44ad', '#2980b9', '#16a085', '#d35400'];
-  const recOrigines = [
-    { label: 'État', value: R.recettesEtat ?? 0, color: '#003366' },
-    { label: 'Collectivité', value: R.recettesCollectivite ?? 0, color: '#e67e22' },
-    { label: 'Ress. propres', value: R.recettesPropres ?? 0, color: '#27ae60' },
-  ].filter(r => r.value > 0);
-
-  // ── SRH ────────────────────────────────────────────────────
-  const srh = R.srh as any;
-  const hasSRH = srh && srh.detected;
+  // ── SRH — from parService if available ───────────────────────
+  const srhService = R.parService?.['SRH'] as any;
+  const hasSRH = srhService && (srhService.chargesReel > 0 || srhService.produitsReel > 0);
 
   return (
     <div id="rapport-impression-container" style={{ display: 'none', fontFamily: 'Arial, Helvetica, sans-serif', fontSize: '9pt', color: '#000', background: 'white', width: '100%' }}>
