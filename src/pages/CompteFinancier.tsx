@@ -340,6 +340,19 @@ const CompteFinancier = () => {
           </div>
         </nav>
 
+        {/* Print button for Rapport Ordonnateur */}
+        {mainTab === 'ordo' && hasData && (
+          <div className="flex justify-end px-5 pt-4 pb-0">
+            <button
+              onClick={() => window.print()}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-warning text-warning-foreground hover:bg-warning/90 shadow-md transition-all duration-200"
+            >
+              <Printer className="h-4 w-4" />
+              Imprimer le rapport
+            </button>
+          </div>
+        )}
+
         {/* Content */}
         <div className="p-5">
           {renderSection()}
