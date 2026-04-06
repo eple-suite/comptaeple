@@ -3,15 +3,15 @@
    
    À l'écran : #rapport-impression-container est display:none
    À l'impression : seul #rapport-impression-container est visible,
-   tout le reste de l'app est masqué via .no-print-wrapper.
+   tout le reste de l'app est masqué.
    ═══════════════════════════════════════════════════════════════ */
 
 @media print {
 
-  /* ── Format A4 PAYSAGE ── */
+  /* ── Format A4 PAYSAGE — marges serrées, pas d'en-têtes navigateur ── */
   @page {
     size: A4 landscape;
-    margin: 10mm 12mm 10mm 12mm;
+    margin: 8mm 10mm 8mm 10mm;
   }
 
   /* ── Couleurs de fond préservées ── */
@@ -29,11 +29,34 @@
     padding: 0 !important;
     background: white !important;
     overflow: visible !important;
+    min-height: auto !important;
+    height: auto !important;
   }
 
-  /* ── 1. Masquer tout le contenu app ── */
-  .no-print-wrapper {
+  /* ── 1. MASQUER TOUT — approche agressive ── */
+  /* Masquer l'app entière : sidebar, header, tout le contenu écran */
+  .no-print-wrapper,
+  .no-print,
+  #root > * > * > aside,
+  header,
+  nav,
+  [data-sidebar],
+  [data-radix-popper-content-wrapper] {
     display: none !important;
+  }
+
+  /* Supprimer les bordures et padding du conteneur app */
+  #root > *,
+  #root > * > *,
+  main {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+    overflow: visible !important;
+    min-height: auto !important;
+    max-width: none !important;
   }
 
   /* ── 2. Rendre le rapport visible ── */
@@ -43,6 +66,7 @@
     margin: 0 !important;
     padding: 0 !important;
     position: static !important;
+    overflow: visible !important;
   }
 
   /* ── 3. Titres toujours solidaires du contenu suivant ── */
@@ -102,5 +126,11 @@
   p, div, li {
     orphans: 3;
     widows: 3;
+  }
+
+  /* ── 9. Masquer les éléments Recharts tooltips/animations ── */
+  .recharts-tooltip-wrapper,
+  .recharts-active-dot {
+    display: none !important;
   }
 }
