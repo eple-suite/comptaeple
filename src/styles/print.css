@@ -46,10 +46,13 @@
     display: none !important;
   }
 
-  /* Wrapper interactif du compte financier */
+  /* Wrapper interactif du compte financier — spécificité renforcée */
   .no-print-wrapper,
-  .no-print {
+  .no-print,
+  div.no-print-wrapper,
+  div.no-print {
     display: none !important;
+    visibility: hidden !important;
   }
 
   /* Recharts SVGs qui pourraient fuir */
@@ -71,9 +74,10 @@
 
   /* ══ 2. LIBÉRER la chaîne d'ancêtres du rapport ══ */
 
-  /* #root et tous ses conteneurs intermédiaires :
-     enlever flex, overflow, min-height, padding pour que le rapport
-     s'affiche en pleine largeur comme un document normal */
+  /* Débloquer tous les conteneurs intermédiaires entre #root
+     et #rapport-impression-container.
+     On utilise la chaîne descendante MAIS on re-masque ensuite
+     .no-print-wrapper avec une spécificité encore plus haute. */
   #root,
   #root > *,
   #root > * > *,
@@ -88,6 +92,18 @@
     height: auto !important;
     position: static !important;
     flex: none !important;
+  }
+
+  /* RE-MASQUER .no-print-wrapper avec spécificité maximale
+     (écrase la règle #root > * > * ci-dessus) */
+  #root .no-print-wrapper,
+  #root .no-print,
+  #root > * .no-print-wrapper,
+  #root > * .no-print {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    overflow: hidden !important;
   }
 
   /* ══ 3. RAPPORT : visible et sans contrainte ══ */
