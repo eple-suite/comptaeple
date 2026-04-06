@@ -1,14 +1,15 @@
 /* ═══════════════════════════════════════════════════════════════
-   CSS IMPRESSION — Pattern dual-container (A4 PAYSAGE)
+   CSS IMPRESSION — Rapport Ordonnateur (A4 PAYSAGE)
    
-   À l'écran : #rapport-impression-container est display:none
-   À l'impression : seul #rapport-impression-container est visible,
-   tout le reste de l'app est masqué.
+   Stratégie anti-coupures :
+   • .titre-solidaire  → titre + premier élément solidaires (jamais séparés)
+   • .commentaire-flow  → s'étend naturellement sur plusieurs pages
+   • .bloc-compact      → petit bloc indivisible (KPI, mini-tableau)
    ═══════════════════════════════════════════════════════════════ */
 
 @media print {
 
-  /* ── Format A4 PAYSAGE — marges serrées, pas d'en-têtes navigateur ── */
+  /* ── Format A4 PAYSAGE — marges serrées, SANS en-têtes navigateur ── */
   @page {
     size: A4 landscape;
     margin: 8mm 10mm 8mm 10mm;
@@ -33,8 +34,7 @@
     height: auto !important;
   }
 
-  /* ── 1. MASQUER TOUT — approche agressive ── */
-  /* Masquer l'app entière : sidebar, header, tout le contenu écran */
+  /* ── 1. MASQUER TOUT l'app UI ── */
   .no-print-wrapper,
   .no-print,
   #root > * > * > aside,
@@ -69,27 +69,34 @@
     overflow: visible !important;
   }
 
-  /* ── 3. Titres toujours solidaires du contenu suivant ── */
-  .section-titre,
-  h2, h3, h4 {
-    page-break-after: avoid !important;
-    break-after: avoid !important;
-  }
-
-  .section-titre + * {
-    page-break-before: avoid !important;
-    break-before: avoid !important;
-  }
-
-  /* ── 4. Blocs solidaires (titre + contenu) ── */
-  .bloc-solidaire {
-    page-break-inside: avoid !important;
+  /* ── 3. TITRE SOLIDAIRE — le titre ne sera JAMAIS seul en bas de page ── */
+  /* Un .titre-solidaire contient exactement : titre + premier élément */
+  .titre-solidaire {
     break-inside: avoid !important;
-    orphans: 4 !important;
-    widows: 4 !important;
+    page-break-inside: avoid !important;
   }
 
-  /* ── 5. Anti-coupures tableaux ── */
+  /* Fallback : tout .section-titre individuel refuse d'être le dernier de la page */
+  .section-titre {
+    break-after: avoid !important;
+    page-break-after: avoid !important;
+  }
+
+  /* ── 4. COMMENTAIRE FLOW — élastique, peut s'étendre sur plusieurs pages ── */
+  .commentaire-flow {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
+    orphans: 3 !important;
+    widows: 3 !important;
+  }
+
+  /* ── 5. BLOC COMPACT — petit bloc indivisible (KPI cards, mini graphiques) ── */
+  .bloc-compact {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* ── 6. Anti-coupures tableaux ── */
   table {
     page-break-inside: auto !important;
   }
@@ -107,28 +114,26 @@
     break-inside: avoid !important;
   }
 
-  /* ── 6. KPI cards et graphiques : blocs indivisibles ── */
+  /* ── 7. KPI cards et graphiques ── */
   .kpi-card,
-  .graphique-bloc,
-  [style*="pageBreakInside: avoid"],
-  [style*="page-break-inside: avoid"] {
+  .graphique-bloc {
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
-  /* ── 7. Forcer les sauts entre grandes sections ── */
+  /* ── 8. Forcer un saut de page ── */
   .saut-de-page {
     page-break-before: always !important;
     break-before: page !important;
   }
 
-  /* ── 8. Propriétés orphelins/veuves globales ── */
+  /* ── 9. Orphelins/veuves globales ── */
   p, div, li {
     orphans: 3;
     widows: 3;
   }
 
-  /* ── 9. Masquer les éléments Recharts tooltips/animations ── */
+  /* ── 10. Masquer les éléments Recharts tooltips/animations ── */
   .recharts-tooltip-wrapper,
   .recharts-active-dot {
     display: none !important;
