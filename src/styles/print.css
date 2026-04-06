@@ -110,6 +110,14 @@
     page-break-inside: avoid !important;
   }
 
+  /* ── BLOC SOLIDAIRE — titre + début commentaire restent ensemble ── */
+  .bloc-solidaire {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    orphans: 4 !important;
+    widows: 4 !important;
+  }
+
   /* ── Anti-coupures tableaux ── */
   table {
     page-break-inside: auto !important;
@@ -147,5 +155,62 @@
   .recharts-tooltip-wrapper,
   .recharts-active-dot {
     display: none !important;
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     COMMENTAIRES ÉLASTIQUES — Hauteur naturelle à l'impression
+     ══════════════════════════════════════════════════════════════ */
+
+  /* Libère toutes les contraintes de hauteur sur les zones de texte */
+  textarea,
+  [class*="textarea"],
+  [class*="TextareaElastique"],
+  .commentaire-zone,
+  .rapport-commentaire {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    resize: none !important;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    font-size: 9pt !important;
+    line-height: 1.6 !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    width: 100% !important;
+    display: block !important;
+  }
+
+  /* Conteneurs des commentaires : s'adaptent au contenu */
+  .bloc-commentaire,
+  [class*="commentaire-bloc"],
+  [class*="section-commentaire"] {
+    height: auto !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    overflow: visible !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
+  }
+
+  /* Supprimer les scroll internes */
+  .overflow-hidden,
+  .overflow-auto,
+  .overflow-scroll,
+  .overflow-y-auto,
+  .overflow-y-scroll {
+    overflow: visible !important;
+  }
+
+  /* Supprimer les hauteurs fixes Tailwind sur les commentaires */
+  .h-24, .h-28, .h-32, .h-36, .h-40,
+  .h-48, .h-56, .h-64, .h-72, .h-80,
+  .max-h-24, .max-h-32, .max-h-48,
+  .max-h-64, .max-h-96 {
+    height: auto !important;
+    max-height: none !important;
   }
 }

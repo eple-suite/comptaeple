@@ -1,4 +1,4 @@
-import { Textarea } from '@/components/ui/textarea';
+import { TextareaElastique } from '@/components/rapport/TextareaElastique';
 import { SaveIndicator } from '@/components/SaveIndicator';
 
 export function CommentaireBox({
@@ -15,9 +15,12 @@ export function CommentaireBox({
         <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">💬 {label}</span>
         {status && status !== 'idle' && <SaveIndicator status={status as 'saving' | 'saved'} lastSaved={lastSaved ?? null} />}
       </div>
-      <Textarea value={value} onChange={e => onChange(e.target.value)}
-        placeholder="Saisissez votre commentaire…" rows={3}
-        className="bg-muted/30 text-sm" />
+      <TextareaElastique
+        value={value}
+        onChange={onChange}
+        placeholder="Saisissez votre commentaire…"
+        minRows={3}
+      />
     </div>
   );
 }
