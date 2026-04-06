@@ -53,24 +53,21 @@ function TitreSection({ texte }: { texte: string }) {
   );
 }
 
-// ── Bloc commentaire — ÉLASTIQUE (s'étend sur plusieurs pages) ──
-// minHeight garantit un espace pour au moins 8-10 lignes
+// ── Bloc commentaire — DIV ÉLASTIQUE (pas de textarea, pas de contrainte) ──
+// Le div s'étale naturellement sur autant de pages que nécessaire
 function BlocCommentaire({ texte }: { texte: string }) {
   if (!texte || !texte.trim()) return null;
   return (
     <div className="commentaire-flow" style={{
       borderLeft: '3px solid #003366',
       padding: '8px 12px',
+      margin: '6px 0 10px 0',
       background: '#f7f9fc',
       fontSize: '9pt',
-      lineHeight: '1.65',
+      lineHeight: 1.6,
       whiteSpace: 'pre-wrap',
-      wordWrap: 'break-word',
-      overflowWrap: 'break-word',
-      marginTop: '6px',
-      marginBottom: '12px',
-      /* NO max-height, NO overflow hidden — fully elastic */
-      minHeight: '80px', /* ~8 lines minimum */
+      wordBreak: 'break-word' as const,
+      /* PAS de height, PAS de maxHeight, PAS d'overflow — élastique pur */
     }}>
       {texte}
     </div>
