@@ -460,12 +460,12 @@ export function RapportImpression() {
       {(hasSRH || comments.srh.trim()) && (
         <div className="bloc-solidaire">
           <TitreSection texte="Service de Restauration et d'Hébergement (SRH)" />
-          {hasSRH && (
+          {hasSRH && srhService && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '6px', marginBottom: '6px' }}>
               {[
-                { label: 'Résultat SRH', val: fmt(srh.resultatSRH), color: srh.resultatSRH >= 0 ? '#27ae60' : '#c0392b' },
-                { label: 'Recettes SRH', val: fmt(srh.totalRecettes), color: '#003366' },
-                { label: 'Dépenses SRH', val: fmt(srh.totalDepenses), color: '#003366' },
+                { label: 'Résultat SRH', val: fmt((srhService.produitsReel ?? 0) - (srhService.chargesReel ?? 0)), color: (srhService.produitsReel ?? 0) - (srhService.chargesReel ?? 0) >= 0 ? '#27ae60' : '#c0392b' },
+                { label: 'Recettes SRH', val: fmt(srhService.produitsReel ?? 0), color: '#003366' },
+                { label: 'Dépenses SRH', val: fmt(srhService.chargesReel ?? 0), color: '#003366' },
               ].map((kpi, i) => (
                 <div key={i} className="kpi-card" style={{ border: '1px solid #ddd', borderRadius: '4px', padding: '5px 8px' }}>
                   <div style={{ fontSize: '7pt', color: '#777', fontWeight: 'bold', textTransform: 'uppercase' }}>{kpi.label}</div>
