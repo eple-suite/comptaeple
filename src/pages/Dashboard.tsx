@@ -1,11 +1,16 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { Wallet, TrendingUp, Landmark, CalendarDays, BarChart3, PieChart, Receipt, Users, Download, AlertTriangle, CheckCircle2, ShieldAlert, Info, Activity, ArrowRight } from "lucide-react";
+import { Wallet, TrendingUp, Landmark, CalendarDays, BarChart3, PieChart, Receipt, Users, Download, AlertTriangle, CheckCircle2, ShieldAlert, Info, Activity, ArrowRight, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateFinancialReport } from "@/lib/pdfGenerator";
-import { KpiCard } from "@/components/KpiCard";
 import {
   mockIndicators,
+  mockEvolutionData,
+  mockRepartitionCharges,
+  mockTresorerieDetail,
+  formatCurrency,
+  formatPercent,
+} from "@/lib/mockData";
   mockEvolutionData,
   mockRepartitionCharges,
   mockTresorerieDetail,
