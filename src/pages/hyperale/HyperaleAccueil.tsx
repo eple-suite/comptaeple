@@ -35,7 +35,7 @@ export default function HyperaleAccueil() {
   const data = useHyperaleData(exercice);
 
   const getValue = (key: string): number | null => {
-    const v = (data as Record<string, unknown>)[key];
+    const v = (data as unknown as Record<string, unknown>)[key];
     return typeof v === 'number' ? v : null;
   };
 
