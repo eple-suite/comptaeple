@@ -5,7 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { useHyperaleData } from './useHyperaleData';
-import { supabase } from '@/integrations/supabase/client';
+
 import { Bot, Send, User, Loader2, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';

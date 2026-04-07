@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   Wallet, TrendingUp, Landmark, ShieldAlert, ArrowRight,
-  AlertTriangle, CheckCircle2, Info, ChevronRight,
+  AlertTriangle, CheckCircle2, Info,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useHyperaleData } from './useHyperaleData';

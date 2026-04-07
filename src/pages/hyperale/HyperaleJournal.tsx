@@ -1,9 +1,8 @@
 import { useState, useCallback } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import { useHyperaleData } from './useHyperaleData';

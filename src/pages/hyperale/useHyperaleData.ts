@@ -37,15 +37,15 @@ export function useHyperaleData(exercice: number): HyperaleIndicators {
       return makeEmpty(exercice);
     }
 
-    const fdr = r.fondsRoulement ?? 0;
-    const caf = r.caf ?? 0;
+    const fdr = r.fdrBas ?? r.fdrHaut ?? 0;
+    const caf = r.varFdrCaf ?? 0;
     const tresorerie = r.tresorerie ?? 0;
     const reserves = r.reserves ?? 0;
     const drfn = r.drfn ?? (r.totalChargesReel ?? 100000);
     const drfnJour = drfn / 365;
     const fdrJours = drfnJour > 0 ? fdr / drfnJour : 0;
     const tresorerieJours = drfnJour > 0 ? tresorerie / drfnJour : 0;
-    const tnr = r.tnr ?? 0;
+    const tnr = r.tmnr ?? 0;
     const resultatComptable = r.resultatComptable ?? 0;
     const tauxExecCharges = r.tauxExecCharges ?? 0;
     const tauxExecProduits = r.tauxExecProduits ?? 0;

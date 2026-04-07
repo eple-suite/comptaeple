@@ -4,11 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+
 import { useHyperaleData } from './useHyperaleData';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid,
-  ResponsiveContainer, Legend, ReferenceLine,
+  ResponsiveContainer,
 } from 'recharts';
 import {
   Wallet, TrendingUp, Landmark, ShieldAlert, Copy, Check,
