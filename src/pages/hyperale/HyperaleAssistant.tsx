@@ -236,5 +236,3 @@ function generateFallback(question: string, data: any, nom: string, exercice: nu
 
   return `## Synthèse financière — ${nom} (${exercice})\n\n| Indicateur | Valeur |\n|---|---|\n| FDR | ${fmt(data.fdr)} (${data.fdrJours.toFixed(1)} j) |\n| CAF | ${fmt(data.caf)} |\n| Trésorerie | ${fmt(data.tresorerie)} (${data.tresorerieJours.toFixed(1)} j) |\n| Réserves | ${fmt(data.reserves)} |\n\n*Mode de secours : l'IA n'est pas disponible actuellement.*`;
 }
-
-let assistantSoFar = '';
