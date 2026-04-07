@@ -1,18 +1,17 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Wallet, TrendingUp, Landmark, CalendarDays, BarChart3, PieChart, Receipt, Users, Download, AlertTriangle, CheckCircle2, ShieldAlert, Info, Activity, ArrowRight } from "lucide-react";
+import { TrendingUp, Landmark, PieChart, Download, AlertTriangle, CheckCircle2, ShieldAlert, Info, Activity, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateFinancialReport } from "@/lib/pdfGenerator";
-import { KpiCard } from "@/components/KpiCard";
 import {
   mockIndicators,
   mockEvolutionData,
   mockRepartitionCharges,
   mockTresorerieDetail,
   formatCurrency,
-  formatPercent,
 } from "@/lib/mockData";
-import { validerBalance, REGLES_VALIDATION, ENQUETES_RECTORALES, OUTILS_AC } from "@/lib/regulatoryKnowledge";
+import { validerBalance, ENQUETES_RECTORALES, OUTILS_AC } from "@/lib/regulatoryKnowledge";
+import { useNavigate } from "react-router-dom";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -33,18 +32,9 @@ import {
 } from "recharts";
 import { useCofiepleStore } from "@/store/useCofiepleStore";
 
-const staggerContainer = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.06 } },
-};
-
-const staggerItem = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
-};
 
 const Dashboard = () => {
-  // Utiliser les données réelles de la balance importée (cofieple store)
+  const navigate = useNavigate();
   const balance = useCofiepleStore(s => s.balance);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
   const balanceData = balance[activeBudget] || [];
@@ -186,43 +176,28 @@ const Dashboard = () => {
         )}
       </motion.div>
 
-      {/* KPIs — Primary row */}
+      {/* Résumé rapide + CTA HYPER@LE */}
       <motion.div
-        variants={staggerContainer}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.4 }}
       >
-        <motion.div variants={staggerItem}>
-          <KpiCard title="Fonds de roulement" value={formatCurrency(liveIndicators.fdr)} icon={Wallet} variant="primary" />
-        </motion.div>
-        <motion.div variants={staggerItem}>
-          <KpiCard title="Trésorerie nette" value={formatCurrency(liveIndicators.tresorerie)} icon={Landmark} variant="success" />
-        </motion.div>
-        <motion.div variants={staggerItem}>
-          <KpiCard title="Jours de fonctionnement" value={`${liveIndicators.joursFonctionnement} j`} subtitle="Seuil recommandé : 30j" icon={CalendarDays} variant={liveIndicators.joursFonctionnement >= 30 ? "success" : "warning"} />
-        </motion.div>
-        <motion.div variants={staggerItem}>
-          <KpiCard title="Taux de recouvrement" value={formatPercent(liveIndicators.tauxRecouvrement)} icon={TrendingUp} variant="success" />
-        </motion.div>
-      </motion.div>
-
-      {/* KPIs — Secondary row */}
-      <motion.div
-        variants={staggerContainer}
-        initial="hidden"
-        animate="show"
-        className="grid grid-cols-1 lg:grid-cols-3 gap-4"
-      >
-        <motion.div variants={staggerItem}>
-          <KpiCard title="Résultat de l'exercice" value={formatCurrency(liveIndicators.resultatExercice)} icon={Receipt} variant={liveIndicators.resultatExercice >= 0 ? "primary" : "warning"} />
-        </motion.div>
-        <motion.div variants={staggerItem}>
-          <KpiCard title="Poids des charges" value={formatPercent(liveIndicators.poidsCharges)} icon={BarChart3} variant="default" />
-        </motion.div>
-        <motion.div variants={staggerItem}>
-          <KpiCard title="Part du SRH" value={formatPercent(liveIndicators.poidsSRH)} subtitle="Service Restauration & Hébergement" icon={Users} variant="warning" />
-        </motion.div>
+        <Card className="bg-gradient-to-r from-[hsl(250,40%,18%)] to-[hsl(220,50%,22%)] border-0 shadow-xl overflow-hidden">
+          <CardContent className="py-5 px-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(270,60%,55%)] to-[hsl(220,70%,50%)] flex items-center justify-center text-2xl font-black text-white shadow-lg">⚡</div>
+                <div>
+                  <h2 className="text-lg font-black text-white">HYPER@LE — Analyse financière</h2>
+                  <p className="text-sm text-white/60">FDR {formatCurrency(liveIndicators.fdr)} · Trésorerie {formatCurrency(liveIndicators.tresorerie)} · {liveIndicators.joursFonctionnement} jours</p>
+                </div>
+              </div>
+              <Button size="lg" onClick={() => navigate('/hyperale')} className="gap-2 font-bold shadow-lg bg-white text-[hsl(250,40%,18%)] hover:bg-white/90">
+                <Zap className="h-4 w-4" /> Analyse complète
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </motion.div>
 
       {/* Charts */}

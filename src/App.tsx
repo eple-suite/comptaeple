@@ -10,8 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import DataImport from "./pages/DataImport";
 import Establishments from "./pages/Establishments";
 import BalanceAnalysis from "./pages/BalanceAnalysis";
-import WorkingCapital from "./pages/WorkingCapital";
-import Indicators from "./pages/Indicators";
+// WorkingCapital & Indicators merged into HYPER@LE
 import CompteFinancier from "./pages/CompteFinancier";
 import Voyages from "./pages/Voyages";
 import FondsSociaux from "./pages/FondsSociaux";
@@ -69,8 +68,8 @@ const App = () => (
               <Route path="/import" element={<DataImport />} />
               <Route path="/etablissements" element={<Establishments />} />
               <Route path="/balance" element={<BalanceAnalysis />} />
-              <Route path="/fonds-roulement" element={<WorkingCapital />} />
-              <Route path="/indicateurs" element={<Indicators />} />
+              <Route path="/fonds-roulement" element={<Navigate to="/hyperale/analyse" replace />} />
+              <Route path="/indicateurs" element={<Navigate to="/hyperale/analyse" replace />} />
               <Route path="/compte-financier" element={<CompteFinancier />} />
               <Route path="/voyages" element={<Voyages />} />
               <Route path="/fonds-sociaux" element={<FondsSociaux />} />
