@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useHyperaleData } from './useHyperaleData';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import { analyser } from '@/lib/hyperaleAnalyseEngine';
-import { comparerBatch, couleurToClass, messageComparateur, type ComparateurResult } from '@/lib/hyperaleComparateur';
+import { comparerBatch, couleurToClass, type ComparateurResult } from '@/lib/hyperaleComparateur';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
   ResponsiveContainer, Tooltip, ReferenceLine, Cell,
