@@ -2,18 +2,20 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import {
-  Home, BarChart3, CalendarDays, Settings, Bot,
+  Home, BarChart3, CalendarDays, Settings, Bot, FileSpreadsheet,
 } from 'lucide-react';
 import HyperaleAccueil from './HyperaleAccueil';
 import HyperaleAnalyse from './HyperaleAnalyse';
 import HyperaleJournal from './HyperaleJournal';
 import HyperaleParametres from './HyperaleParametres';
 import HyperaleAssistant from './HyperaleAssistant';
+import HyperaleImport from './HyperaleImport';
 
 const NAV_ITEMS = [
   { path: '/hyperale', label: 'Accueil', icon: Home, end: true },
   { path: '/hyperale/analyse', label: 'Analyse', icon: BarChart3 },
   { path: '/hyperale/journal', label: 'Journal', icon: CalendarDays },
+  { path: '/hyperale/import', label: 'Import Op@le', icon: FileSpreadsheet },
   { path: '/hyperale/parametres', label: 'Paramètres', icon: Settings },
   { path: '/hyperale/assistant', label: 'Assistant IA', icon: Bot },
 ];
@@ -68,6 +70,7 @@ export default function HyperalePage() {
           <Route index element={<HyperaleAccueil />} />
           <Route path="analyse" element={<HyperaleAnalyse />} />
           <Route path="journal" element={<HyperaleJournal />} />
+          <Route path="import" element={<HyperaleImport />} />
           <Route path="parametres" element={<HyperaleParametres />} />
           <Route path="assistant" element={<HyperaleAssistant />} />
         </Routes>
