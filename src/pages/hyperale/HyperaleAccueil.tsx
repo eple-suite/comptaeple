@@ -1,6 +1,5 @@
-import { useState } from 'react';
 import { useEstablishment } from '@/contexts/EstablishmentContext';
-import { useCofiepleStore } from '@/store/useCofiepleStore';
+import { useHyperaleStore } from '@/store/useHyperaleStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,9 +10,6 @@ import {
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useHyperaleData } from './useHyperaleData';
-
-const CURRENT_YEAR = new Date().getFullYear();
-const YEARS = Array.from({ length: CURRENT_YEAR - 2019 + 1 }, (_, i) => CURRENT_YEAR - i);
 
 const fmtEur = (v: number | null | undefined) => {
   if (v == null) return '—';
@@ -30,13 +26,42 @@ const CARDS = [
 export default function HyperaleAccueil() {
   const navigate = useNavigate();
   const { establishments, selectedEstablishment, selectEstablishment } = useEstablishment();
-  const etab = useCofiepleStore(s => s.etablissement);
-  const [exercice, setExercice] = useState(etab.exercice || CURRENT_YEAR - 1);
-  const data = useHyperaleData(exercice);
+
+  // HYPER@LE store
+  const hyperaleEtabs = useHyperaleStore(s => s.etablissements);
+  const selection = useHyperaleStore(s => s.selection);
+  const setSelection = useHyperaleStore(s => s.setSelection);
+  const getAnneesDisponibles = useHyperaleStore(s => s.getAnneesDisponibles);
+
+  const anneesDisponibles = getAnneesDisponibles();
+  const data = useHyperaleData(selection.annee);
+
+  // Merge establishment lists: Supabase establishments + HYPER@LE store
+  const allEtabs = [
+    ...establishments.map(e => ({ id: e.id, uai: e.uai, nom: e.name, source: 'supabase' as const })),
+    ...hyperaleEtabs
+      .filter(he => !establishments.some(e => e.uai === he.uai))
+      .map(he => ({ id: he.uai, uai: he.uai, nom: he.nom, source: 'local' as const })),
+  ];
+
+  const handleSelectEtab = (id: string) => {
+    // Try Supabase establishment first
+    const supEtab = establishments.find(x => x.id === id);
+    if (supEtab) {
+      selectEstablishment(supEtab);
+      setSelection({ uai: supEtab.uai });
+      return;
+    }
+    // Local HYPER@LE establishment
+    setSelection({ uai: id });
+  };
+
+  const selectedUai = selection.uai || selectedEstablishment?.uai || '';
+  const selectedEtab = allEtabs.find(e => e.uai === selectedUai);
 
   // Points d'attention
   const points: { severity: 'critical' | 'warning' | 'info'; text: string }[] = [];
-  if (!data.hasData) points.push({ severity: 'info', text: 'Données de démonstration affichées. Importez vos fichiers pour une analyse réelle.' });
+  if (!data.hasData) points.push({ severity: 'info', text: 'Données de démonstration affichées. Sélectionnez un établissement pour une analyse réelle.' });
   if (data.fdr < 0) points.push({ severity: 'critical', text: `Le Fonds de roulement est négatif (${fmtEur(data.fdr)}).` });
   else if (data.fdrJours < 30) points.push({ severity: 'warning', text: `Le FDR ne couvre que ${data.fdrJours.toFixed(1)} jours (seuil : 30 j).` });
   if (data.tresorerie < 0) points.push({ severity: 'critical', text: `La trésorerie est négative (${fmtEur(data.tresorerie)}).` });
@@ -61,22 +86,19 @@ export default function HyperaleAccueil() {
                 <Building2 className="h-3.5 w-3.5" /> Établissement
               </label>
               <Select
-                value={selectedEstablishment?.id || 'none'}
-                onValueChange={id => {
-                  const e = establishments.find(x => x.id === id);
-                  if (e) selectEstablishment(e);
-                }}
+                value={selectedUai || 'none'}
+                onValueChange={handleSelectEtab}
               >
                 <SelectTrigger className="w-full text-sm">
                   <SelectValue placeholder="Choisir un établissement" />
                 </SelectTrigger>
                 <SelectContent>
-                  {establishments.length === 0 && (
+                  {allEtabs.length === 0 && (
                     <SelectItem value="none" disabled>Aucun établissement</SelectItem>
                   )}
-                  {establishments.map(e => (
-                    <SelectItem key={e.id} value={e.id}>
-                      {e.name} — {e.uai}
+                  {allEtabs.map(e => (
+                    <SelectItem key={e.uai} value={e.source === 'supabase' ? e.id : e.uai}>
+                      {e.nom} — {e.uai}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -84,30 +106,29 @@ export default function HyperaleAccueil() {
             </div>
             <div className="w-full sm:w-[160px] space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground">Exercice</label>
-              <Select value={String(exercice)} onValueChange={v => setExercice(Number(v))}>
+              <Select value={String(selection.annee)} onValueChange={v => setSelection({ annee: Number(v) })}>
                 <SelectTrigger className="w-full text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {YEARS.map(y => (
+                  {anneesDisponibles.map(y => (
                     <SelectItem key={y} value={String(y)}>{y}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
-          {selectedEstablishment && (
+          {selectedEtab && (
             <div className="mt-3 pt-3 border-t flex flex-wrap items-center gap-2 text-sm">
-              <Badge variant="outline" className="border-primary/40 text-primary font-bold">{selectedEstablishment.uai}</Badge>
-              <span className="font-medium text-foreground">{selectedEstablishment.name}</span>
-              {selectedEstablishment.city && <span className="text-muted-foreground">— {selectedEstablishment.city}</span>}
-              <Badge className="ml-auto bg-muted text-muted-foreground" variant="outline">Exercice {exercice}</Badge>
+              <Badge variant="outline" className="border-primary/40 text-primary font-bold">{selectedEtab.uai}</Badge>
+              <span className="font-medium text-foreground">{selectedEtab.nom}</span>
+              <Badge className="ml-auto bg-muted text-muted-foreground" variant="outline">Exercice {selection.annee}</Badge>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Indicateurs clés — grille 2×2 mobile, 4×1 desktop */}
+      {/* Indicateurs clés */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {CARDS.map(card => {
           const value = data[card.key];
@@ -156,12 +177,8 @@ export default function HyperaleAccueil() {
         </CardContent>
       </Card>
 
-      {/* Bouton d'action */}
-      <Button
-        size="lg"
-        onClick={() => navigate('/hyperale/analyse')}
-        className="w-full gap-2 font-bold text-base py-6 shadow-md"
-      >
+      {/* Bouton */}
+      <Button size="lg" onClick={() => navigate('/hyperale/analyse')} className="w-full gap-2 font-bold text-base py-6 shadow-md">
         Afficher l'analyse complète
         <ArrowRight className="h-5 w-5" />
       </Button>
