@@ -17,6 +17,7 @@ import {
   BookOpen,
   Landmark,
   TrendingUp,
+  Zap,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -44,6 +45,7 @@ const analysisItems = [
   { title: "Balance comptable", url: "/balance", icon: BarChart3 },
   { title: "Fonds de roulement", url: "/fonds-roulement", icon: Wallet },
   { title: "Indicateurs M9-6", url: "/indicateurs", icon: FileBarChart },
+  { title: "HYPER@LE", url: "/hyperale", icon: Zap },
 ];
 
 const toolItems = [
