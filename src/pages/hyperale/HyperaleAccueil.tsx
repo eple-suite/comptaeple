@@ -7,27 +7,40 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import {
   Wallet, TrendingUp, Landmark, ShieldCheck, ArrowRight,
   AlertTriangle, CheckCircle2, Info, Building2,
+  ArrowUpRight, ArrowDownRight, Minus,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useHyperaleData } from './useHyperaleData';
+import { usePersistedState } from '@/hooks/usePersistedState';
+import { useCofiepleStore } from '@/store/useCofiepleStore';
+import { comparerBatch, couleurToClass, type ComparateurResult } from '@/lib/hyperaleComparateur';
+import { useMemo } from 'react';
 
 const fmtEur = (v: number | null | undefined) => {
   if (v == null) return '—';
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
 };
 
+const fmtPct = (v: number) => `${v >= 0 ? '+' : ''}${(v * 100).toFixed(1)} %`;
+
 const CARDS = [
-  { key: 'fdr' as const, label: 'FDR', subtitle: 'Capacité à financer le cycle d\'exploitation', icon: Wallet, color: 'text-primary', bg: 'bg-primary/10', daysKey: 'fdrJours' as const },
-  { key: 'caf' as const, label: 'CAF', subtitle: 'Capacité d\'autofinancement', icon: TrendingUp, color: 'text-secondary', bg: 'bg-secondary/10', daysKey: null },
-  { key: 'tresorerie' as const, label: 'Trésorerie', subtitle: 'Liquidités disponibles', icon: Landmark, color: 'text-warning', bg: 'bg-warning/10', daysKey: 'tresorerieJours' as const },
-  { key: 'reserves' as const, label: 'Réserves', subtitle: 'Marges de sécurité', icon: ShieldCheck, color: 'text-accent-foreground', bg: 'bg-accent/30', daysKey: null },
+  { key: 'fdr' as const, label: 'FDR', subtitle: 'Capacité à financer le cycle d\'exploitation', icon: Wallet, daysKey: 'fdrJours' as const },
+  { key: 'caf' as const, label: 'CAF', subtitle: 'Capacité d\'autofinancement', icon: TrendingUp, daysKey: null },
+  { key: 'tresorerie' as const, label: 'Trésorerie', subtitle: 'Liquidités disponibles', icon: Landmark, daysKey: 'tresorerieJours' as const },
+  { key: 'reserves' as const, label: 'Réserves', subtitle: 'Marges de sécurité', icon: ShieldCheck, daysKey: null },
 ] as const;
+
+function TendanceIcon({ comp }: { comp: ComparateurResult }) {
+  const cls = `h-3.5 w-3.5 ${couleurToClass(comp.couleur, 'text')}`;
+  if (comp.tendance === 'hausse') return <ArrowUpRight className={cls} />;
+  if (comp.tendance === 'baisse') return <ArrowDownRight className={cls} />;
+  return <Minus className={cls} />;
+}
 
 export default function HyperaleAccueil() {
   const navigate = useNavigate();
   const { establishments, selectedEstablishment, selectEstablishment } = useEstablishment();
 
-  // HYPER@LE store
   const hyperaleEtabs = useHyperaleStore(s => s.etablissements);
   const selection = useHyperaleStore(s => s.selection);
   const setSelection = useHyperaleStore(s => s.setSelection);
@@ -36,7 +49,34 @@ export default function HyperaleAccueil() {
   const anneesDisponibles = getAnneesDisponibles();
   const data = useHyperaleData(selection.annee);
 
-  // Merge establishment lists: Supabase establishments + HYPER@LE store
+  // Read settings for seuils
+  const etab = useCofiepleStore(s => s.etablissement);
+  const settingsKey = `hyperale_settings_${etab.uai || 'global'}`;
+  const [settings] = usePersistedState(settingsKey, { seuilFdr: 30, seuilTresorerie: 15 });
+
+  // Previous year data
+  const prevYear = data.historique.find(h => h.exercice === selection.annee - 1);
+
+  // Compute thresholds in EUR from days
+  const drfnJour = data.drfn / 365;
+  const batch = useMemo(() => comparerBatch({
+    fdr: data.fdr,
+    caf: data.caf,
+    tresorerie: data.tresorerie,
+    reserves: data.reserves,
+    fdrPrev: prevYear?.fdr ?? null,
+    cafPrev: prevYear?.caf ?? null,
+    tresPrev: prevYear?.tresorerie ?? null,
+    resPrev: prevYear?.reserves ?? null,
+    seuils: {
+      fdrCritique: settings.seuilFdr * drfnJour * 0.5,
+      fdrSatisfaisant: settings.seuilFdr * drfnJour,
+      tresCritique: settings.seuilTresorerie * drfnJour * 0.5,
+      tresSatisfaisant: settings.seuilTresorerie * drfnJour,
+    },
+  }), [data, prevYear, settings, drfnJour]);
+
+  // Merge establishment lists
   const allEtabs = [
     ...establishments.map(e => ({ id: e.id, uai: e.uai, nom: e.name, source: 'supabase' as const })),
     ...hyperaleEtabs
@@ -45,14 +85,12 @@ export default function HyperaleAccueil() {
   ];
 
   const handleSelectEtab = (id: string) => {
-    // Try Supabase establishment first
     const supEtab = establishments.find(x => x.id === id);
     if (supEtab) {
       selectEstablishment(supEtab);
       setSelection({ uai: supEtab.uai });
       return;
     }
-    // Local HYPER@LE establishment
     setSelection({ uai: id });
   };
 
@@ -62,16 +100,17 @@ export default function HyperaleAccueil() {
   // Points d'attention
   const points: { severity: 'critical' | 'warning' | 'info'; text: string }[] = [];
   if (!data.hasData) points.push({ severity: 'info', text: 'Données de démonstration affichées. Sélectionnez un établissement pour une analyse réelle.' });
-  if (data.fdr < 0) points.push({ severity: 'critical', text: `Le Fonds de roulement est négatif (${fmtEur(data.fdr)}).` });
-  else if (data.fdrJours < 30) points.push({ severity: 'warning', text: `Le FDR ne couvre que ${data.fdrJours.toFixed(1)} jours (seuil : 30 j).` });
-  if (data.tresorerie < 0) points.push({ severity: 'critical', text: `La trésorerie est négative (${fmtEur(data.tresorerie)}).` });
-  else if (data.tresorerieJours < 15) points.push({ severity: 'warning', text: `La trésorerie ne couvre que ${data.tresorerieJours.toFixed(1)} jours (seuil : 15 j).` });
-  if (data.caf < 0) points.push({ severity: 'warning', text: 'La CAF est négative : l\'exploitation ne génère pas assez de ressources.' });
+  if (batch.fdr.niveau === 'critique') points.push({ severity: 'critical', text: batch.messages.fdr });
+  else if (batch.fdr.niveau === 'surveiller') points.push({ severity: 'warning', text: batch.messages.fdr });
+  if (batch.tresorerie.niveau === 'critique') points.push({ severity: 'critical', text: batch.messages.tresorerie });
+  else if (batch.tresorerie.niveau === 'surveiller') points.push({ severity: 'warning', text: batch.messages.tresorerie });
+  if (batch.caf.niveau === 'critique') points.push({ severity: 'warning', text: batch.messages.caf });
   if (points.length === 0) points.push({ severity: 'info', text: 'Aucun point d\'attention particulier. Les indicateurs sont dans les normes.' });
+
+  const compResults = { fdr: batch.fdr, caf: batch.caf, tresorerie: batch.tresorerie, reserves: batch.reserves };
 
   return (
     <div className="space-y-6">
-      {/* En-tête */}
       <div>
         <h2 className="text-lg font-bold text-foreground">Tableau de bord</h2>
         <p className="text-sm text-muted-foreground">Sélectionnez un établissement et une année pour afficher les indicateurs clés.</p>
@@ -85,17 +124,10 @@ export default function HyperaleAccueil() {
               <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
                 <Building2 className="h-3.5 w-3.5" /> Établissement
               </label>
-              <Select
-                value={selectedUai || 'none'}
-                onValueChange={handleSelectEtab}
-              >
-                <SelectTrigger className="w-full text-sm">
-                  <SelectValue placeholder="Choisir un établissement" />
-                </SelectTrigger>
+              <Select value={selectedUai || 'none'} onValueChange={handleSelectEtab}>
+                <SelectTrigger className="w-full text-sm"><SelectValue placeholder="Choisir un établissement" /></SelectTrigger>
                 <SelectContent>
-                  {allEtabs.length === 0 && (
-                    <SelectItem value="none" disabled>Aucun établissement</SelectItem>
-                  )}
+                  {allEtabs.length === 0 && <SelectItem value="none" disabled>Aucun établissement</SelectItem>}
                   {allEtabs.map(e => (
                     <SelectItem key={e.uai} value={e.source === 'supabase' ? e.id : e.uai}>
                       {e.nom} — {e.uai}
@@ -107,13 +139,9 @@ export default function HyperaleAccueil() {
             <div className="w-full sm:w-[160px] space-y-1.5">
               <label className="text-xs font-semibold text-muted-foreground">Exercice</label>
               <Select value={String(selection.annee)} onValueChange={v => setSelection({ annee: Number(v) })}>
-                <SelectTrigger className="w-full text-sm">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="w-full text-sm"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {anneesDisponibles.map(y => (
-                    <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-                  ))}
+                  {anneesDisponibles.map(y => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -128,24 +156,33 @@ export default function HyperaleAccueil() {
         </CardContent>
       </Card>
 
-      {/* Indicateurs clés */}
+      {/* Indicateurs clés avec comparateur */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         {CARDS.map(card => {
           const value = data[card.key];
           const days = card.daysKey ? data[card.daysKey] : null;
-          const isNeg = typeof value === 'number' && value < 0;
+          const comp = compResults[card.key];
           return (
-            <Card key={card.key} className={`transition-shadow hover:shadow-md ${isNeg ? 'border-destructive/40' : ''}`}>
+            <Card key={card.key} className={`transition-shadow hover:shadow-md ${couleurToClass(comp.couleur, 'border')}`}>
               <CardContent className="p-4 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <div className={`inline-flex p-2 rounded-lg ${card.bg}`}>
-                    <card.icon className={`h-4 w-4 ${card.color}`} />
+                  <div className={`inline-flex p-2 rounded-lg ${couleurToClass(comp.couleur, 'bg')}`}>
+                    <card.icon className={`h-4 w-4 ${couleurToClass(comp.couleur, 'text')}`} />
                   </div>
-                  {isNeg && <Badge variant="destructive" className="text-[9px] px-1.5">Négatif</Badge>}
+                  <Badge variant="outline" className={`text-[9px] px-1.5 ${couleurToClass(comp.couleur, 'text')}`}>
+                    {comp.niveau === 'critique' ? 'Critique' : comp.niveau === 'surveiller' ? 'À surveiller' : 'Satisfaisant'}
+                  </Badge>
                 </div>
                 <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">{card.label}</p>
                 <p className="text-xl font-black text-foreground leading-tight">{fmtEur(value)}</p>
                 {days != null && <p className="text-xs text-muted-foreground">≈ {days.toFixed(1)} jours</p>}
+                <div className="flex items-center gap-1.5">
+                  <TendanceIcon comp={comp} />
+                  <span className={`text-xs font-medium ${couleurToClass(comp.couleur, 'text')}`}>
+                    {comp.variationPourcentage != null ? fmtPct(comp.variationPourcentage) : '—'}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">{comp.variationTexte}</span>
+                </div>
                 <p className="text-[10px] text-muted-foreground/70 leading-snug">{card.subtitle}</p>
               </CardContent>
             </Card>
@@ -177,7 +214,6 @@ export default function HyperaleAccueil() {
         </CardContent>
       </Card>
 
-      {/* Bouton */}
       <Button size="lg" onClick={() => navigate('/hyperale/analyse')} className="w-full gap-2 font-bold text-base py-6 shadow-md">
         Afficher l'analyse complète
         <ArrowRight className="h-5 w-5" />
