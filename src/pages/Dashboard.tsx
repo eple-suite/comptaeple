@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Wallet, TrendingUp, Landmark, CalendarDays, PieChart, Download, AlertTriangle, CheckCircle2, ShieldAlert, Info, Activity, Zap } from "lucide-react";
+import { TrendingUp, Landmark, PieChart, Download, AlertTriangle, CheckCircle2, ShieldAlert, Info, Activity, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateFinancialReport } from "@/lib/pdfGenerator";
 import {
@@ -9,7 +9,6 @@ import {
   mockRepartitionCharges,
   mockTresorerieDetail,
   formatCurrency,
-  formatPercent,
 } from "@/lib/mockData";
 import { validerBalance, ENQUETES_RECTORALES, OUTILS_AC } from "@/lib/regulatoryKnowledge";
 import { useNavigate } from "react-router-dom";
@@ -33,15 +32,6 @@ import {
 } from "recharts";
 import { useCofiepleStore } from "@/store/useCofiepleStore";
 
-const staggerContainer = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.06 } },
-};
-
-const staggerItem = {
-  hidden: { opacity: 0, y: 16 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.4, ease: "easeOut" as const } },
-};
 
 const Dashboard = () => {
   const navigate = useNavigate();
