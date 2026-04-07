@@ -1,49 +1,49 @@
 
-## Phase 1 : Structure bi-onglet + 13 sections Ordonnateur
 
-### Étape 1 — Restructuration navigation (`CompteFinancier.tsx`)
-- Remplacer la barre de navigation plate par **2 onglets principaux** : `📋 Rapport Ordonnateur` / `📊 Rapport Agent Comptable`
-- Chaque onglet affiche une **sous-navigation numérotée** (S1-S13 pour Ordo, A-J pour AC)
-- L'onglet AC conserve les sections existantes (pas de refonte pour l'instant)
-- Conserver les onglets utilitaires hors rapport : Accueil, Imports, Journal, Contrôles, Analyse IA
+## Diagnostic : écran blanc sur auditac.lovable.app
 
-### Étape 2 — 13 composants Ordonnateur (`src/components/cofieple/ordo/`)
-Chaque section = 1 fichier composant avec :
-- KPI cards (données calculées depuis le store)
-- Graphiques Recharts (`isAnimationActive={false}`)
-- Zone de commentaire persistée (`usePersistedText`)
-- Formulaire de saisie manuelle pour les données extra-comptables
+### Constat
 
-| Section | Composant | Source données |
-|---------|-----------|---------------|
-| S1 Présentation | `OrdoS1Presentation.tsx` | Saisie manuelle + store etab |
-| S2 Tableau de bord | `OrdoS2TableauBord.tsx` | Résultats calculés |
-| S3 Exec Fonctionnement | `OrdoS3ExecFonctionnement.tsx` | SDE importé |
-| S4 Exec Recettes | `OrdoS4ExecRecettes.tsx` | SDR importé |
-| S5 Pilotage | `OrdoS5Pilotage.tsx` | Résultats + pluriannuel |
-| S6 SRH | `OrdoS6SRH.tsx` | Balance + saisie |
-| S7 Vie Élève | `OrdoS7VieEleve.tsx` | Saisie manuelle |
-| S8 Viabilisation | `OrdoS8Viabilisation.tsx` | Saisie manuelle |
-| S9 Activités Péda | `OrdoS9ActivitesPeda.tsx` | SDE importé |
-| S10 Créances | `OrdoS10Creances.tsx` | Balance importée |
-| S11 Résultat | `OrdoS11Resultat.tsx` | Résultats calculés |
-| S12 Perspectives | `OrdoS12Perspectives.tsx` | Saisie manuelle |
-| S13 Signatures | `OrdoS13Signatures.tsx` | Saisie manuelle |
+| Élément | comptaeple (fonctionne) | auditac (écran blanc) |
+|---|---|---|
+| `index.html` source | ✅ `<script>` présent | ✅ `<script>` présent |
+| HTML servi en production | ✅ complet avec JS/CSS | ❌ **`<script>` et `<link>` absents** — page vide |
+| `vite.config.ts` | Inclut `lovable-tagger` (mode dev) | **Pas de `lovable-tagger`** (normal, pas bloquant) |
+| `src/index.css` | `@import` après `@tailwind` (warning) | `@import` **avant** `@tailwind` ✅ |
+| `src/main.tsx` | Simple render | Render + domain check + error handlers ✅ |
+| `package.json` | Standard | Standard |
+| Build | ✅ réussit | Probablement réussit aussi (code sain) |
 
-### Étape 3 — Formules M9-6 (`calcsBudgetaires.ts`)
-- DRFN, SIG, seuil rentabilité SRH, EBE/IBE par service
-- Rotation stocks, taux de vétusté, solvabilité
+### Cause identifiée
 
-### Étape 4 — Persistance
-- Clés de commentaires : `rapport_ordo_s{N}_{champ}_{UAI}_{exercice}`
-- Données saisies manuellement stockées via `usePersistedState`
+Le HTML déployé sur `auditac.lovable.app` ne contient **ni balise `<script>` ni balise `<link>`**. Cela signifie que la **dernière publication n'a pas été finalisée** ou que le build déployé est corrompu/incomplet.
 
-### Fichiers modifiés
-- `src/pages/CompteFinancier.tsx` (restructuration nav)
-- `src/components/cofieple/ordo/*.tsx` (13 nouveaux fichiers)
-- `src/utils/calcsBudgetaires.ts` (nouvelles formules)
+Le code source lui-même est correct — ce n'est pas un bug de code.
 
-### Ce qui ne change PAS (Phase 2 ultérieure)
-- Les 10 sections Agent Comptable (conservent l'existant)
-- La refonte de RapportImpression.tsx
-- Les graphiques avancés AC (radar, point mort SRH)
+### Solution
+
+**Ce problème se résout côté auditac, pas côté comptaeple.**
+
+1. **Ouvrir le projet [Audit Des Agents Comptables](/projects/9766a9f2-c3fc-4b61-84bc-9c2612641735)** dans Lovable
+2. **Cliquer sur "Publish" → "Update"** pour relancer un déploiement complet
+3. Vérifier que `auditac.lovable.app` charge correctement après quelques secondes
+
+### Si le problème persiste après re-publication
+
+Il faudra intervenir directement dans le projet auditac pour :
+- Vérifier que le build de production réussit sans erreur
+- S'assurer que le `lovable-tagger` est bien installé (il manque dans les devDependencies d'auditac)
+- Ajouter `lovable-tagger` si nécessaire :
+  ```
+  devDependencies: "lovable-tagger": "^1.1.13"
+  ```
+  et dans `vite.config.ts` :
+  ```ts
+  import { componentTagger } from "lovable-tagger";
+  plugins: [react(), mode === "development" && componentTagger()].filter(Boolean)
+  ```
+
+### Important
+
+Aucune modification n'est nécessaire dans le projet actuel (comptaeple). La correction doit être faite dans le projet auditac directement.
+
