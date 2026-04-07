@@ -199,16 +199,16 @@ export default function HyperaleAssistant() {
 function generateFallback(question: string, analyse: ReturnType<typeof analyser>, nom: string, exercice: number): string {
   const q = question.toLowerCase();
   if (q.includes('fdr') || q.includes('fonds de roulement')) {
-    return `## Analyse du FDR\n\n${analyse.synthetique.phrases.filter(p => p.toLowerCase().includes('fdr')).join('\n\n')}\n\n**Points de vigilance :**\n${analyse.detaillee.vigilance.filter(v => v.toLowerCase().includes('fdr')).map(v => `- ${v}`).join('\n') || '- Aucun point de vigilance spécifique.'}`;
+    return `## Analyse du FDR\n\n${analyse.engine.analyseDetaillee.filter(p => p.toLowerCase().includes('fdr')).join('\n\n')}\n\n**Points de vigilance :**\n${analyse.vigilance.filter(v => v.toLowerCase().includes('fdr')).map(v => `- ${v}`).join('\n') || '- Aucun point de vigilance spécifique.'}`;
   }
   if (q.includes('risque')) {
-    return `## Risques financiers — ${nom}\n\n**Causes identifiées :**\n${analyse.detaillee.causes.map(c => `- ${c}`).join('\n')}\n\n**Conséquences possibles :**\n${analyse.detaillee.consequences.map(c => `- ${c}`).join('\n')}`;
+    return `## Risques financiers — ${nom}\n\n**Causes identifiées :**\n${analyse.causes.map(c => `- ${c}`).join('\n')}\n\n**Conséquences possibles :**\n${analyse.consequences.map(c => `- ${c}`).join('\n')}`;
   }
   if (q.includes('cofi') || q.includes('annexe')) {
-    return `## Annexe COFI — ${nom} (${exercice})\n\n${analyse.textes.cofi}`;
+    return `## Annexe COFI — ${nom} (${exercice})\n\n${analyse.engine.texteCOFI}`;
   }
   if (q.includes('ca') || q.includes('conseil')) {
-    return `## Présentation CA\n\n${analyse.textes.ca}`;
+    return `## Présentation CA\n\n${analyse.engine.texteCA}`;
   }
-  return `## Synthèse — ${nom} (${exercice})\n\n${analyse.synthetique.phrases.join('\n\n')}\n\n**Recommandations :**\n${analyse.recommandations.map((r, i) => `${i + 1}. ${r.texte}`).join('\n')}\n\n*Mode de secours — l'IA n'est pas disponible actuellement.*`;
+  return `## Synthèse — ${nom} (${exercice})\n\n${analyse.engine.resume}\n\n**Recommandations :**\n${analyse.recommandationsAvecPriorite.map((r, i) => `${i + 1}. ${r.texte}`).join('\n')}\n\n*Mode de secours — l'IA n'est pas disponible actuellement.*`;
 }
