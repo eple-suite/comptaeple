@@ -132,7 +132,7 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
           } catch {}
         }
       }
-    } catch (err) {
+    } catch {
       const fallback = generateFallback(text, data, etab.nom || 'l\'établissement', exercice);
       setMessages(prev => [...prev, { role: 'assistant', content: fallback }]);
     }
