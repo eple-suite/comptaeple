@@ -233,7 +233,7 @@ export default function HyperaleAnalyse() {
         <Card className="mb-4 border-primary/20">
           <CardContent className="p-4">
             <ul className="space-y-1.5">
-              {analyse.synthetique.phrases.map((p, i) => (
+              {analyse.engine.analyseDetaillee.map((p, i) => (
                 <li key={i} className="text-sm flex items-start gap-2"><span className="text-primary mt-0.5">▸</span>{p}</li>
               ))}
             </ul>
@@ -249,7 +249,7 @@ export default function HyperaleAnalyse() {
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <ul className="space-y-1.5">
-                {analyse.detaillee.causes.map((c, i) => <li key={i} className="text-sm flex items-start gap-2"><span className="text-destructive mt-0.5">•</span>{c}</li>)}
+                {analyse.causes.map((c, i) => <li key={i} className="text-sm flex items-start gap-2"><span className="text-destructive mt-0.5">•</span>{c}</li>)}
               </ul>
             </CardContent>
           </Card>
@@ -262,7 +262,7 @@ export default function HyperaleAnalyse() {
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <ul className="space-y-1.5">
-                {analyse.detaillee.consequences.map((c, i) => <li key={i} className="text-sm flex items-start gap-2"><span className="text-warning mt-0.5">•</span>{c}</li>)}
+                {analyse.consequences.map((c, i) => <li key={i} className="text-sm flex items-start gap-2"><span className="text-warning mt-0.5">•</span>{c}</li>)}
               </ul>
             </CardContent>
           </Card>
@@ -275,7 +275,7 @@ export default function HyperaleAnalyse() {
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <ul className="space-y-1.5">
-                {analyse.detaillee.vigilance.map((v, i) => <li key={i} className="text-sm flex items-start gap-2"><span className="text-orange-500 mt-0.5">•</span>{v}</li>)}
+                {analyse.vigilance.map((v, i) => <li key={i} className="text-sm flex items-start gap-2"><span className="text-orange-500 mt-0.5">•</span>{v}</li>)}
               </ul>
             </CardContent>
           </Card>
@@ -288,7 +288,7 @@ export default function HyperaleAnalyse() {
             </CardHeader>
             <CardContent className="px-4 pb-4">
               <ul className="space-y-1.5">
-                {analyse.detaillee.positifs.map((p, i) => <li key={i} className="text-sm flex items-start gap-2"><span className="text-green-600 mt-0.5">•</span>{p}</li>)}
+                {analyse.positifs.map((p, i) => <li key={i} className="text-sm flex items-start gap-2"><span className="text-green-600 mt-0.5">•</span>{p}</li>)}
               </ul>
             </CardContent>
           </Card>
@@ -337,7 +337,7 @@ export default function HyperaleAnalyse() {
         <Card>
           <CardContent className="p-4">
             <ul className="space-y-2.5">
-              {analyse.recommandations.map((r, i) => (
+              {analyse.recommandationsAvecPriorite.map((r, i) => (
                 <li key={i} className="flex items-start gap-3 text-sm">
                   <span className="flex items-center justify-center h-5 w-5 rounded-full bg-primary/10 text-primary text-xs font-bold shrink-0 mt-0.5">{i + 1}</span>
                   <span className="flex-1">{r.texte}</span>
@@ -353,10 +353,10 @@ export default function HyperaleAnalyse() {
       <section>
         <SectionTitle icon={FileText}>Texte prêt à copier</SectionTitle>
         <div className="space-y-3">
-          <CopyBlock label="Résumé exécutif" icon={Info} text={analyse.textes.resumeExecutif} />
-          <CopyBlock label="Annexe du COFI" icon={BookOpen} text={analyse.textes.cofi} />
-          <CopyBlock label="Présentation en Conseil d'Administration" icon={Users} text={analyse.textes.ca} />
-          <CopyBlock label="Note au chef d'établissement" icon={FileText} text={analyse.textes.noteInterne} />
+          <CopyBlock label="Résumé exécutif" icon={Info} text={analyse.engine.resume} />
+          <CopyBlock label="Annexe du COFI" icon={BookOpen} text={analyse.engine.texteCOFI} />
+          <CopyBlock label="Présentation en Conseil d'Administration" icon={Users} text={analyse.engine.texteCA} />
+          <CopyBlock label="Note au chef d'établissement" icon={FileText} text={analyse.engine.texteNote} />
         </div>
       </section>
     </div>
