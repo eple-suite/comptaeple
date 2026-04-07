@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { useHyperaleData } from './useHyperaleData';
 import {
   BarChart, Bar, LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  ResponsiveContainer, Tooltip, ReferenceLine, Cell, Legend,
+  ResponsiveContainer, Tooltip, ReferenceLine, Cell,
 } from 'recharts';
 import {
   Wallet, TrendingUp, TrendingDown, Landmark, ShieldCheck, Copy, Check,
