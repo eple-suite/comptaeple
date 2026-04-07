@@ -171,23 +171,35 @@ export interface AnalyseInput {
   nom: string;
   exercice: number;
   data: HyperaleIndicators;
-  seuils?: { seuilFdr: number; seuilTresorerie: number };
+  seuils?: { fdr: { satisfaisant: number; critique: number }; tresorerie: { satisfaisant: number; critique: number }; caf: { satisfaisant: number; critique: number }; reserves: { satisfaisant: number; critique: number } }
+    | { seuilFdr: number; seuilTresorerie: number };
 }
 
 export function analyser(input: AnalyseInput): AnalyseComplete {
-  const { nom, exercice, data, seuils } = input;
-  const seuilFdr = seuils?.seuilFdr ?? 30;
-  const seuilTreso = seuils?.seuilTresorerie ?? 15;
+  const { nom, exercice, data, seuils: rawSeuils } = input;
+
+  // Normalize seuils: support both old format (jours) and new format (euros)
+  let fdrCritique: number, fdrSatisfaisant: number, tresCritique: number, tresSatisfaisant: number;
+  const drfnJour = data.drfn / 365;
+
+  if (rawSeuils && 'fdr' in rawSeuils) {
+    // New HyperaleSeuils format (euros)
+    fdrCritique = rawSeuils.fdr.critique;
+    fdrSatisfaisant = rawSeuils.fdr.satisfaisant;
+    tresCritique = rawSeuils.tresorerie.critique;
+    tresSatisfaisant = rawSeuils.tresorerie.satisfaisant;
+  } else {
+    // Legacy format (jours)
+    const seuilFdr = rawSeuils?.seuilFdr ?? 30;
+    const seuilTreso = rawSeuils?.seuilTresorerie ?? 15;
+    fdrCritique = seuilFdr * drfnJour * 0.5;
+    fdrSatisfaisant = seuilFdr * drfnJour;
+    tresCritique = seuilTreso * drfnJour * 0.5;
+    tresSatisfaisant = seuilTreso * drfnJour;
+  }
 
   // Données N-1
   const prevYear = data.historique.find(h => h.exercice === exercice - 1);
-
-  // Map to AIEngineInput
-  const drfnJour = data.drfn / 365;
-  const fdrCritique = seuilFdr * drfnJour * 0.5; // half of threshold in euros
-  const fdrSatisfaisant = seuilFdr * drfnJour;
-  const tresCritique = seuilTreso * drfnJour * 0.5;
-  const tresSatisfaisant = seuilTreso * drfnJour;
 
   const engineInput: AIEngineInput = {
     fdr: data.fdr,
