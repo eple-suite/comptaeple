@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Wallet, TrendingUp, Landmark, CalendarDays, BarChart3, PieChart, Receipt, Users, Download, AlertTriangle, CheckCircle2, ShieldAlert, Info, Activity, ArrowRight, Zap } from "lucide-react";
+import { Wallet, TrendingUp, Landmark, CalendarDays, PieChart, Download, AlertTriangle, CheckCircle2, ShieldAlert, Info, Activity, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateFinancialReport } from "@/lib/pdfGenerator";
 import {
@@ -11,7 +11,8 @@ import {
   formatCurrency,
   formatPercent,
 } from "@/lib/mockData";
-import { validerBalance, REGLES_VALIDATION, ENQUETES_RECTORALES, OUTILS_AC } from "@/lib/regulatoryKnowledge";
+import { validerBalance, ENQUETES_RECTORALES, OUTILS_AC } from "@/lib/regulatoryKnowledge";
+import { useNavigate } from "react-router-dom";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
