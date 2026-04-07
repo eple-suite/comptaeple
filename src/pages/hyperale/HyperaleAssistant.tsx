@@ -1,11 +1,12 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { useHyperaleData } from './useHyperaleData';
-import { Bot, Send, User, Loader2, Lightbulb, Database } from 'lucide-react';
+import { analyser, buildAssistantContext } from '@/lib/hyperaleAnalyseEngine';
+import { Bot, Send, User, Loader2, Lightbulb, Database, BarChart3 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 
@@ -26,6 +27,9 @@ export default function HyperaleAssistant() {
   const etab = useCofiepleStore(s => s.etablissement);
   const exercice = etab.exercice || new Date().getFullYear() - 1;
   const data = useHyperaleData(exercice);
+  const nom = etab.nom || 'l\'établissement';
+  const analyse = useMemo(() => analyser({ nom, exercice, data }), [nom, exercice, data]);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,21 +39,7 @@ export default function HyperaleAssistant() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
-  const fmt = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
-
-  const buildContext = () => `Données financières de ${etab.nom || 'l\'établissement'} (UAI: ${etab.uai || 'N/A'}, exercice ${exercice}) :
-- Fonds de roulement : ${fmt(data.fdr)} (${data.fdrJours.toFixed(1)} jours)
-- CAF : ${fmt(data.caf)}
-- Trésorerie : ${fmt(data.tresorerie)} (${data.tresorerieJours.toFixed(1)} jours)
-- Réserves : ${fmt(data.reserves)}
-- DRFN : ${fmt(data.drfn)}
-- Résultat comptable : ${fmt(data.resultatComptable)}
-- Taux d'exécution charges : ${data.tauxExecCharges.toFixed(1)} %
-- Taux d'exécution produits : ${data.tauxExecProduits.toFixed(1)} %
-- TNR : ${data.tnr.toFixed(1)} %
-- Moyenne nationale FDR : ${data.moyenneNationale.fdrJours} j, trésorerie : ${data.moyenneNationale.tresorerieJours} j
-- Historique FDR : ${data.historique.map(h => `${h.exercice}: ${fmt(h.fdr)}`).join(', ')}
-${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préciser que l\'analyse est indicative.' : ''}`;
+  const contextStr = useMemo(() => buildAssistantContext(nom, exercice, data, analyse), [nom, exercice, data, analyse]);
 
   const send = async (text: string) => {
     if (!text.trim() || loading) return;
@@ -70,26 +60,17 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
         },
         body: JSON.stringify({
           messages: [
-            { role: 'system', content: `Tu es HYPER@LE, un assistant IA spécialisé dans l'analyse financière des EPLE. Tu réponds toujours en français, de manière pédagogique, claire et précise. Tu utilises les données financières ci-dessous. Tu ne fais JAMAIS référence à IDÉ@LE. Tu cites les normes M9-6 quand pertinent. Tes réponses sont adaptées à un assistant comptable débutant.\n\n${buildContext()}` },
+            { role: 'system', content: `Tu es HYPER@LE, un assistant IA spécialisé dans l'analyse financière des EPLE. Tu réponds toujours en français, de manière pédagogique, claire et précise. Tu utilises les données financières ci-dessous. Tu ne fais JAMAIS référence à IDÉ@LE. Tu cites les normes M9-6 quand pertinent. Tes réponses sont adaptées à un assistant comptable débutant.\n\n${contextStr}` },
             ...allMessages.map(m => ({ role: m.role, content: m.content })),
           ],
         }),
       });
 
-      if (resp.status === 429) {
-        toast.error('Limite de requêtes atteinte. Réessayez dans quelques instants.');
-        setLoading(false);
-        return;
-      }
-      if (resp.status === 402) {
-        toast.error('Crédits IA épuisés.');
-        setLoading(false);
-        return;
-      }
+      if (resp.status === 429) { toast.error('Limite de requêtes atteinte. Réessayez dans quelques instants.'); setLoading(false); return; }
+      if (resp.status === 402) { toast.error('Crédits IA épuisés.'); setLoading(false); return; }
 
       if (!resp.ok || !resp.body) {
-        const fallback = generateFallback(text, data, etab.nom || 'l\'établissement', exercice);
-        setMessages(prev => [...prev, { role: 'assistant', content: fallback }]);
+        setMessages(prev => [...prev, { role: 'assistant', content: generateFallback(text, analyse, nom, exercice) }]);
         setLoading(false);
         return;
       }
@@ -102,9 +83,7 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
         assistantSoFar += chunk;
         setMessages(prev => {
           const last = prev[prev.length - 1];
-          if (last?.role === 'assistant') {
-            return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
-          }
+          if (last?.role === 'assistant') return prev.map((m, i) => i === prev.length - 1 ? { ...m, content: assistantSoFar } : m);
           return [...prev, { role: 'assistant', content: assistantSoFar }];
         });
       };
@@ -125,14 +104,17 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
             const parsed = JSON.parse(json);
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) upsert(content);
-          } catch { /* skip non-JSON lines */ }
+          } catch { /* skip */ }
         }
       }
     } catch {
-      const fallback = generateFallback(text, data, etab.nom || 'l\'établissement', exercice);
-      setMessages(prev => [...prev, { role: 'assistant', content: fallback }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: generateFallback(text, analyse, nom, exercice) }]);
     }
     setLoading(false);
+  };
+
+  const analyzeData = () => {
+    send('Analyse les indicateurs financiers de l\'établissement sélectionné et donne des recommandations.');
   };
 
   return (
@@ -144,13 +126,11 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
         </div>
         <div className="flex-1">
           <h2 className="text-lg font-bold text-foreground">Assistant IA</h2>
-          <p className="text-xs text-muted-foreground">Posez vos questions sur l'analyse financière de {etab.nom || 'votre établissement'}</p>
+          <p className="text-xs text-muted-foreground">Posez vos questions sur l'analyse financière de {nom}</p>
         </div>
         <div className="flex items-center gap-2">
           {!data.hasData && <Badge className="bg-warning/15 text-warning border-warning/30" variant="outline">Données démo</Badge>}
-          <Badge variant="outline" className="text-[10px] gap-1">
-            <Database className="h-3 w-3" /> Données {exercice}
-          </Badge>
+          <Badge variant="outline" className="text-[10px] gap-1"><Database className="h-3 w-3" /> {exercice}</Badge>
         </div>
       </div>
 
@@ -158,22 +138,18 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
         {messages.length === 0 && (
           <div className="space-y-4 pt-6">
-            <p className="text-center text-sm text-muted-foreground">
-              <Lightbulb className="h-4 w-4 inline mr-1" />
-              Questions suggérées
-            </p>
+            <p className="text-center text-sm text-muted-foreground"><Lightbulb className="h-4 w-4 inline mr-1" />Questions suggérées</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-xl mx-auto">
               {SUGGESTIONS.map(s => (
-                <Button
-                  key={s}
-                  variant="outline"
-                  size="sm"
-                  className="text-xs text-left h-auto py-2.5 px-3 justify-start whitespace-normal leading-snug"
-                  onClick={() => send(s)}
-                >
+                <Button key={s} variant="outline" size="sm" className="text-xs text-left h-auto py-2.5 px-3 justify-start whitespace-normal leading-snug" onClick={() => send(s)}>
                   {s}
                 </Button>
               ))}
+            </div>
+            <div className="flex justify-center mt-3">
+              <Button variant="default" size="sm" className="gap-1.5" onClick={analyzeData}>
+                <BarChart3 className="h-3.5 w-3.5" /> Analyser les données affichées
+              </Button>
             </div>
             <p className="text-center text-[11px] text-muted-foreground/60 mt-4">
               L'assistant utilise les données financières affichées dans le module.
@@ -183,32 +159,22 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
         {messages.map((m, i) => (
           <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {m.role === 'assistant' && (
-              <div className="p-1.5 rounded-lg bg-primary/10 h-fit shrink-0 mt-1">
-                <Bot className="h-3.5 w-3.5 text-primary" />
-              </div>
+              <div className="p-1.5 rounded-lg bg-primary/10 h-fit shrink-0 mt-1"><Bot className="h-3.5 w-3.5 text-primary" /></div>
             )}
             <Card className={`max-w-[85%] ${m.role === 'user' ? 'bg-primary text-primary-foreground' : ''}`}>
               <CardContent className="p-3 text-sm">
                 {m.role === 'assistant' ? (
-                  <div className="prose prose-sm max-w-none dark:prose-invert">
-                    <ReactMarkdown>{m.content}</ReactMarkdown>
-                  </div>
-                ) : (
-                  <p>{m.content}</p>
-                )}
+                  <div className="prose prose-sm max-w-none dark:prose-invert"><ReactMarkdown>{m.content}</ReactMarkdown></div>
+                ) : (<p>{m.content}</p>)}
               </CardContent>
             </Card>
             {m.role === 'user' && (
-              <div className="p-1.5 rounded-lg bg-muted h-fit shrink-0 mt-1">
-                <User className="h-3.5 w-3.5 text-muted-foreground" />
-              </div>
+              <div className="p-1.5 rounded-lg bg-muted h-fit shrink-0 mt-1"><User className="h-3.5 w-3.5 text-muted-foreground" /></div>
             )}
           </div>
         ))}
         {loading && messages[messages.length - 1]?.role !== 'assistant' && (
-          <div className="flex items-center gap-2 text-muted-foreground text-sm pl-8">
-            <Loader2 className="h-4 w-4 animate-spin" /> Analyse en cours…
-          </div>
+          <div className="flex items-center gap-2 text-muted-foreground text-sm pl-8"><Loader2 className="h-4 w-4 animate-spin" /> Analyse en cours…</div>
         )}
       </div>
 
@@ -230,22 +196,19 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
   );
 }
 
-function generateFallback(question: string, data: ReturnType<typeof import('./useHyperaleData').useHyperaleData>, nom: string, exercice: number): string {
-  const fmt = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
+function generateFallback(question: string, analyse: ReturnType<typeof analyser>, nom: string, exercice: number): string {
   const q = question.toLowerCase();
-
   if (q.includes('fdr') || q.includes('fonds de roulement')) {
-    return `## Analyse du Fonds de Roulement\n\nLe FDR de ${nom} s'établit à **${fmt(data.fdr)}** soit **${data.fdrJours.toFixed(1)} jours** de fonctionnement (exercice ${exercice}).\n\n${data.fdrJours >= 30 ? '✅ Ce niveau est supérieur au seuil recommandé de 30 jours.' : '⚠️ Ce niveau est inférieur au seuil recommandé de 30 jours.'}\n\nLa moyenne nationale est de ${data.moyenneNationale.fdrJours} jours.`;
-  }
-  if (q.includes('trésorerie')) {
-    return `## Analyse de la Trésorerie\n\nLa trésorerie disponible est de **${fmt(data.tresorerie)}** soit **${data.tresorerieJours.toFixed(1)} jours**.\n\n${data.tresorerieJours >= 15 ? '✅ Niveau satisfaisant.' : '⚠️ Niveau insuffisant (seuil : 15 jours).'}`;
+    return `## Analyse du FDR\n\n${analyse.synthetique.phrases.filter(p => p.toLowerCase().includes('fdr')).join('\n\n')}\n\n**Points de vigilance :**\n${analyse.detaillee.vigilance.filter(v => v.toLowerCase().includes('fdr')).map(v => `- ${v}`).join('\n') || '- Aucun point de vigilance spécifique.'}`;
   }
   if (q.includes('risque')) {
-    return `## Analyse des risques financiers\n\n${data.fdr < 0 ? '🔴 **FDR négatif** : risque majeur de rupture de trésorerie.\n' : ''}${data.tresorerieJours < 15 ? '🟠 **Trésorerie insuffisante** : risque d\'incident de paiement.\n' : ''}${data.caf < 0 ? '🟠 **CAF négative** : l\'exploitation n\'est pas viable à terme.\n' : ''}${data.fdr >= 0 && data.tresorerieJours >= 15 && data.caf >= 0 ? '✅ Aucun risque majeur identifié.' : ''}`;
+    return `## Risques financiers — ${nom}\n\n**Causes identifiées :**\n${analyse.detaillee.causes.map(c => `- ${c}`).join('\n')}\n\n**Conséquences possibles :**\n${analyse.detaillee.consequences.map(c => `- ${c}`).join('\n')}`;
   }
   if (q.includes('cofi') || q.includes('annexe')) {
-    return `## Annexe du Compte Financier — ${nom} (${exercice})\n\n**Fonds de roulement** : Le FDR s'établit à ${fmt(data.fdr)} soit ${data.fdrJours.toFixed(1)} jours de fonctionnement.\n\n**Trésorerie** : La trésorerie disponible est de ${fmt(data.tresorerie)} soit ${data.tresorerieJours.toFixed(1)} jours.\n\n**CAF** : ${fmt(data.caf)}. ${data.caf >= 0 ? 'L\'établissement dégage des ressources suffisantes.' : 'L\'autofinancement n\'est pas assuré.'}\n\n**Réserves** : ${fmt(data.reserves)}.`;
+    return `## Annexe COFI — ${nom} (${exercice})\n\n${analyse.textes.cofi}`;
   }
-
-  return `## Synthèse financière — ${nom} (${exercice})\n\n| Indicateur | Valeur |\n|---|---|\n| FDR | ${fmt(data.fdr)} (${data.fdrJours.toFixed(1)} j) |\n| CAF | ${fmt(data.caf)} |\n| Trésorerie | ${fmt(data.tresorerie)} (${data.tresorerieJours.toFixed(1)} j) |\n| Réserves | ${fmt(data.reserves)} |\n\n*Mode de secours : l'IA n'est pas disponible actuellement.*`;
+  if (q.includes('ca') || q.includes('conseil')) {
+    return `## Présentation CA\n\n${analyse.textes.ca}`;
+  }
+  return `## Synthèse — ${nom} (${exercice})\n\n${analyse.synthetique.phrases.join('\n\n')}\n\n**Recommandations :**\n${analyse.recommandations.map((r, i) => `${i + 1}. ${r.texte}`).join('\n')}\n\n*Mode de secours — l'IA n'est pas disponible actuellement.*`;
 }
