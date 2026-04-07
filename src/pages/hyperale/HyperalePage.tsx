@@ -28,14 +28,14 @@ export default function HyperalePage() {
   return (
     <div className="space-y-0">
       {/* Module header */}
-      <div className="bg-gradient-to-r from-[hsl(250,40%,18%)] to-[hsl(220,50%,22%)] rounded-xl shadow-xl mb-4">
+      <div className="bg-gradient-to-r from-primary/15 to-accent/10 border border-primary/20 rounded-xl mb-4">
         <div className="px-5 py-4 flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-[hsl(270,60%,55%)] to-[hsl(220,70%,50%)] flex items-center justify-center text-2xl font-black text-white shadow-lg">
+          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-2xl font-black text-primary-foreground shadow-lg">
             ⚡
           </div>
           <div>
-            <h1 className="text-xl font-black text-white tracking-wide">HYPER@LE</h1>
-            <p className="text-xs text-[hsl(270,40%,70%)] font-medium tracking-widest uppercase">Analyse Financière Augmentée · EPLE</p>
+            <h1 className="text-xl font-black text-foreground tracking-wide">HYPER@LE</h1>
+            <p className="text-xs text-muted-foreground font-medium tracking-widest uppercase">Analyse Financière Augmentée · EPLE</p>
           </div>
         </div>
       </div>
