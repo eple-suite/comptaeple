@@ -171,23 +171,38 @@ export interface AnalyseInput {
   nom: string;
   exercice: number;
   data: HyperaleIndicators;
-  seuils?: { seuilFdr: number; seuilTresorerie: number };
+  seuils?: { fdr: { satisfaisant: number; critique: number }; tresorerie: { satisfaisant: number; critique: number }; caf: { satisfaisant: number; critique: number }; reserves: { satisfaisant: number; critique: number } }
+    | { seuilFdr: number; seuilTresorerie: number };
 }
 
 export function analyser(input: AnalyseInput): AnalyseComplete {
-  const { nom, exercice, data, seuils } = input;
-  const seuilFdr = seuils?.seuilFdr ?? 30;
-  const seuilTreso = seuils?.seuilTresorerie ?? 15;
+  const { nom: _nom, exercice, data, seuils: rawSeuils } = input;
+
+  // Normalize seuils: support both old format (jours) and new format (euros)
+  let fdrCritique: number, fdrSatisfaisant: number, tresCritique: number, tresSatisfaisant: number;
+  const drfnJour = data.drfn / 365;
+
+  if (rawSeuils && 'fdr' in rawSeuils) {
+    // New HyperaleSeuils format (euros)
+    fdrCritique = rawSeuils.fdr.critique;
+    fdrSatisfaisant = rawSeuils.fdr.satisfaisant;
+    tresCritique = rawSeuils.tresorerie.critique;
+    tresSatisfaisant = rawSeuils.tresorerie.satisfaisant;
+  } else if (rawSeuils && 'seuilFdr' in rawSeuils) {
+    // Legacy format (jours)
+    fdrCritique = rawSeuils.seuilFdr * drfnJour * 0.5;
+    fdrSatisfaisant = rawSeuils.seuilFdr * drfnJour;
+    tresCritique = rawSeuils.seuilTresorerie * drfnJour * 0.5;
+    tresSatisfaisant = rawSeuils.seuilTresorerie * drfnJour;
+  } else {
+    fdrCritique = 30 * drfnJour * 0.5;
+    fdrSatisfaisant = 30 * drfnJour;
+    tresCritique = 15 * drfnJour * 0.5;
+    tresSatisfaisant = 15 * drfnJour;
+  }
 
   // Données N-1
   const prevYear = data.historique.find(h => h.exercice === exercice - 1);
-
-  // Map to AIEngineInput
-  const drfnJour = data.drfn / 365;
-  const fdrCritique = seuilFdr * drfnJour * 0.5; // half of threshold in euros
-  const fdrSatisfaisant = seuilFdr * drfnJour;
-  const tresCritique = seuilTreso * drfnJour * 0.5;
-  const tresSatisfaisant = seuilTreso * drfnJour;
 
   const engineInput: AIEngineInput = {
     fdr: data.fdr,
@@ -214,12 +229,12 @@ export function analyser(input: AnalyseInput): AnalyseComplete {
   const positifs: string[] = [];
 
   if (data.fdr < 0) { causes.push('Emplois stables supérieurs aux ressources stables'); consequences.push('Risque d\'incident de paiement à court terme'); }
-  if (data.fdrJours < seuilFdr) vigilance.push(`Le FDR ne couvre que ${data.fdrJours.toFixed(1)} jours — seuil recommandé : ${seuilFdr} jours.`);
+  if (data.fdr < fdrSatisfaisant) vigilance.push(`Le FDR (${fmt(data.fdr)}) est en dessous du seuil satisfaisant (${fmt(fdrSatisfaisant)}).`);
   if (data.fdrJours >= 45) positifs.push(`Le FDR couvre ${data.fdrJours.toFixed(1)} jours, supérieur à la moyenne nationale.`);
   if (data.caf < 0) { causes.push('Charges réelles supérieures aux produits réels'); consequences.push('Érosion progressive du fonds de roulement'); }
   if (data.caf > 0) positifs.push('La CAF est positive : l\'établissement dégage des ressources pour investir.');
   if (data.tresorerie < 0) { causes.push('Décalage entre encaissements et décaissements'); consequences.push('Impossibilité de payer les fournisseurs à bonne date'); vigilance.push('Trésorerie négative — risque de rejet de virements.'); }
-  if (data.tresorerieJours < seuilTreso && data.tresorerie > 0) vigilance.push(`Trésorerie faible : seulement ${data.tresorerieJours.toFixed(1)} jours de couverture.`);
+  if (data.tresorerie < tresSatisfaisant && data.tresorerie > 0) vigilance.push(`Trésorerie (${fmt(data.tresorerie)}) en dessous du seuil satisfaisant (${fmt(tresSatisfaisant)}).`);
   if (data.tresorerieJours >= 30) positifs.push('La trésorerie couvre plus de 30 jours, situation confortable.');
   if (data.tauxExecCharges > 0 && data.tauxExecCharges < 85) vigilance.push(`Taux d'exécution des charges à ${data.tauxExecCharges.toFixed(1)} % — inférieur à 85 %.`);
   if (data.tauxExecCharges >= 90) positifs.push(`Taux d'exécution des charges satisfaisant (${data.tauxExecCharges.toFixed(1)} %).`);
@@ -246,8 +261,8 @@ export function analyser(input: AnalyseInput): AnalyseComplete {
   if (Math.abs(deltaTreso) > 15) evenements.push({ texte: `Variation de la trésorerie de ${deltaTreso > 0 ? '+' : ''}${deltaTreso.toFixed(1)} %`, category: 'tresorerie', severity: 'warning' });
   if (data.caf < 0) evenements.push({ texte: `CAF négative : ${fmt(data.caf)}`, category: 'caf', severity: 'warning' });
   if (Math.abs(deltaCaf) > 20) evenements.push({ texte: `Variation de la CAF de ${deltaCaf > 0 ? '+' : ''}${deltaCaf.toFixed(1)} %`, category: 'caf', severity: 'warning' });
-  if (data.fdrJours < seuilFdr) evenements.push({ texte: `FDR sous le seuil : ${data.fdrJours.toFixed(1)} jours (seuil : ${seuilFdr} j)`, category: 'fdr', severity: 'warning' });
-  if (data.tresorerieJours < seuilTreso && data.tresorerie > 0) evenements.push({ texte: `Trésorerie sous le seuil : ${data.tresorerieJours.toFixed(1)} jours (seuil : ${seuilTreso} j)`, category: 'tresorerie', severity: 'warning' });
+  if (data.fdr < fdrCritique) evenements.push({ texte: `FDR sous le seuil critique : ${fmt(data.fdr)} (seuil : ${fmt(fdrCritique)})`, category: 'fdr', severity: 'warning' });
+  if (data.tresorerie < tresCritique && data.tresorerie > 0) evenements.push({ texte: `Trésorerie sous le seuil critique : ${fmt(data.tresorerie)} (seuil : ${fmt(tresCritique)})`, category: 'tresorerie', severity: 'warning' });
   if (data.resultatComptable < -5000) evenements.push({ texte: `Résultat comptable fortement déficitaire : ${fmt(data.resultatComptable)}`, category: 'general', severity: 'critical' });
   if (evenements.length === 0) evenements.push({ texte: 'Aucune anomalie détectée. Les indicateurs sont dans les normes.', category: 'general', severity: 'info' });
 

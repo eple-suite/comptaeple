@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
+import { useHyperaleStore } from '@/store/useHyperaleStore';
+import { useHyperaleSeuilsStore } from '@/store/useHyperaleSeuilsStore';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useHyperaleData } from './useHyperaleData';
-import { usePersistedState } from '@/hooks/usePersistedState';
 import { analyser } from '@/lib/hyperaleAnalyseEngine';
 import { comparerBatch, couleurToClass, type ComparateurResult } from '@/lib/hyperaleComparateur';
 import {
@@ -110,14 +111,15 @@ export default function HyperaleAnalyse() {
   const nom = etab.nom || 'l\'établissement';
   const [refreshKey, setRefreshKey] = useState(0);
 
-  // Read seuils from settings
-  const settingsKey = `hyperale_settings_${etab.uai || 'global'}`;
-  const [settings] = usePersistedState(settingsKey, { seuilFdr: 30, seuilTresorerie: 15 });
+  // Smart seuils
+  const hyperaleEtabs = useHyperaleStore(s => s.etablissements);
+  const getSeuils = useHyperaleSeuilsStore(s => s.getSeuils);
+  const currentEtab = hyperaleEtabs.find(e => e.uai === etab.uai) || null;
+  const seuils = getSeuils(currentEtab);
 
   const prevYear = data.historique.find(h => h.exercice === exercice - 1);
-  const drfnJour = data.drfn / 365;
 
-  // Comparateur batch
+  // Comparateur batch using smart seuils
   const batch = useMemo(() => comparerBatch({
     fdr: data.fdr,
     caf: data.caf,
@@ -128,14 +130,18 @@ export default function HyperaleAnalyse() {
     tresPrev: prevYear?.tresorerie ?? null,
     resPrev: prevYear?.reserves ?? null,
     seuils: {
-      fdrCritique: settings.seuilFdr * drfnJour * 0.5,
-      fdrSatisfaisant: settings.seuilFdr * drfnJour,
-      tresCritique: settings.seuilTresorerie * drfnJour * 0.5,
-      tresSatisfaisant: settings.seuilTresorerie * drfnJour,
+      fdrCritique: seuils.fdr.critique,
+      fdrSatisfaisant: seuils.fdr.satisfaisant,
+      tresCritique: seuils.tresorerie.critique,
+      tresSatisfaisant: seuils.tresorerie.satisfaisant,
+      cafCritique: seuils.caf.critique,
+      cafSatisfaisant: seuils.caf.satisfaisant,
+      resCritique: seuils.reserves.critique,
+      resSatisfaisant: seuils.reserves.satisfaisant,
     },
-  }), [data, prevYear, settings, drfnJour]);
+  }), [data, prevYear, seuils]);
 
-  const analyse = useMemo(() => analyser({ nom, exercice, data, seuils: { seuilFdr: settings.seuilFdr, seuilTresorerie: settings.seuilTresorerie } }), [nom, exercice, data, settings, refreshKey]);
+  const analyse = useMemo(() => analyser({ nom, exercice, data, seuils }), [nom, exercice, data, seuils, refreshKey]);
 
   const kpis: KpiDef[] = [
     { label: 'FDR', value: data.fdr, days: data.fdrJours, icon: Wallet, comp: batch.fdr },

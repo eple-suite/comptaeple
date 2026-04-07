@@ -5,9 +5,12 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
+import { useHyperaleStore } from '@/store/useHyperaleStore';
+import { useHyperaleSeuilsStore } from '@/store/useHyperaleSeuilsStore';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import { useHyperaleData } from './useHyperaleData';
 import { analyser } from '@/lib/hyperaleAnalyseEngine';
+
 import { Plus, Trash2, Copy, Check, Bot, CalendarDays, FileText, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -32,7 +35,32 @@ export default function HyperaleJournal() {
   const exercice = etab.exercice || new Date().getFullYear() - 1;
   const data = useHyperaleData(exercice);
   const nom = etab.nom || 'l\'établissement';
-  const analyse = useMemo(() => analyser({ nom, exercice, data }), [nom, exercice, data]);
+
+  // Smart seuils
+  const hyperaleEtabs = useHyperaleStore(s => s.etablissements);
+  const getSeuils = useHyperaleSeuilsStore(s => s.getSeuils);
+  const currentEtab = hyperaleEtabs.find(e => e.uai === etab.uai) || null;
+  const seuils = getSeuils(currentEtab);
+
+  const analyse = useMemo(() => analyser({ nom, exercice, data, seuils }), [nom, exercice, data, seuils]);
+
+  // Detect level transitions for auto-events
+  const prevYear = data.historique.find(h => h.exercice === exercice - 1);
+  const levelTransitions = useMemo(() => {
+    if (!prevYear) return [];
+    const transitions: { texte: string; category: 'fdr' | 'tresorerie' | 'caf' | 'general' }[] = [];
+    const check = (label: string, cat: 'fdr' | 'tresorerie' | 'caf', val: number, prev: number, sat: number, crit: number) => {
+      const niveauActuel = val < crit ? 'critique' : val < sat ? 'surveiller' : 'satisfaisant';
+      const niveauPrec = prev < crit ? 'critique' : prev < sat ? 'surveiller' : 'satisfaisant';
+      if (niveauActuel !== niveauPrec) {
+        transitions.push({ texte: `Passage du ${label} en zone ${niveauActuel} en ${exercice} (était ${niveauPrec} en ${exercice - 1}).`, category: cat });
+      }
+    };
+    check('FDR', 'fdr', data.fdr, prevYear.fdr, seuils.fdr.satisfaisant, seuils.fdr.critique);
+    check('Trésorerie', 'tresorerie', data.tresorerie, prevYear.tresorerie, seuils.tresorerie.satisfaisant, seuils.tresorerie.critique);
+    check('CAF', 'caf', data.caf, prevYear.caf, seuils.caf.satisfaisant, seuils.caf.critique);
+    return transitions;
+  }, [data, prevYear, seuils, exercice]);
 
   const storageKey = `hyperale_journal_${etab.uai || 'demo'}_${exercice}`;
   const [entries, setEntries] = usePersistedState<JournalEntry[]>(storageKey, []);
@@ -42,16 +70,25 @@ export default function HyperaleJournal() {
 
   const addAutoEvents = useCallback(() => {
     const now = new Date().toISOString().slice(0, 10);
-    const auto: JournalEntry[] = analyse.evenements.map((ev, i) => ({
-      id: `auto_${Date.now()}_${i}`,
-      date: now,
-      text: ev.texte,
-      source: 'auto' as const,
-      category: ev.category,
-    }));
+    const auto: JournalEntry[] = [
+      ...analyse.evenements.map((ev, i) => ({
+        id: `auto_${Date.now()}_${i}`,
+        date: now,
+        text: ev.texte,
+        source: 'auto' as const,
+        category: ev.category,
+      })),
+      ...levelTransitions.map((tr, i) => ({
+        id: `trans_${Date.now()}_${i}`,
+        date: now,
+        text: tr.texte,
+        source: 'auto' as const,
+        category: tr.category,
+      })),
+    ];
     setEntries(prev => [...auto, ...prev]);
     toast.success(`${auto.length} événement(s) détecté(s) par le moteur d'analyse`);
-  }, [analyse, setEntries]);
+  }, [analyse, levelTransitions, setEntries]);
 
   const addEntry = () => {
     if (!newText.trim()) return;
