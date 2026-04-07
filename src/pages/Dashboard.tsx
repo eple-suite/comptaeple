@@ -44,7 +44,7 @@ const staggerItem = {
 };
 
 const Dashboard = () => {
-  // Utiliser les données réelles de la balance importée (cofieple store)
+  const navigate = useNavigate();
   const balance = useCofiepleStore(s => s.balance);
   const activeBudget = useCofiepleStore(s => s.activeBudget);
   const balanceData = balance[activeBudget] || [];
