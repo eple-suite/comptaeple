@@ -5,8 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { useHyperaleData } from './useHyperaleData';
-
-import { Bot, Send, User, Loader2, Lightbulb } from 'lucide-react';
+import { Bot, Send, User, Loader2, Lightbulb, Database } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
 
@@ -38,8 +37,7 @@ export default function HyperaleAssistant() {
 
   const fmt = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
 
-  const buildContext = () => {
-    return `Données financières de ${etab.nom || 'l\'établissement'} (UAI: ${etab.uai || 'N/A'}, exercice ${exercice}) :
+  const buildContext = () => `Données financières de ${etab.nom || 'l\'établissement'} (UAI: ${etab.uai || 'N/A'}, exercice ${exercice}) :
 - Fonds de roulement : ${fmt(data.fdr)} (${data.fdrJours.toFixed(1)} jours)
 - CAF : ${fmt(data.caf)}
 - Trésorerie : ${fmt(data.tresorerie)} (${data.tresorerieJours.toFixed(1)} jours)
@@ -52,7 +50,6 @@ export default function HyperaleAssistant() {
 - Moyenne nationale FDR : ${data.moyenneNationale.fdrJours} j, trésorerie : ${data.moyenneNationale.tresorerieJours} j
 - Historique FDR : ${data.historique.map(h => `${h.exercice}: ${fmt(h.fdr)}`).join(', ')}
 ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préciser que l\'analyse est indicative.' : ''}`;
-  };
 
   const send = async (text: string) => {
     if (!text.trim() || loading) return;
@@ -73,7 +70,7 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
         },
         body: JSON.stringify({
           messages: [
-            { role: 'system', content: `Tu es HYPER@LE, un assistant IA spécialisé dans l'analyse financière des EPLE. Tu réponds toujours en français, de manière pédagogique et précise. Tu utilises les données financières fournies ci-dessous pour tes analyses. Tu ne fais JAMAIS référence à IDÉ@LE. Tu cites les normes M9-6 quand pertinent.\n\n${buildContext()}` },
+            { role: 'system', content: `Tu es HYPER@LE, un assistant IA spécialisé dans l'analyse financière des EPLE. Tu réponds toujours en français, de manière pédagogique, claire et précise. Tu utilises les données financières ci-dessous. Tu ne fais JAMAIS référence à IDÉ@LE. Tu cites les normes M9-6 quand pertinent. Tes réponses sont adaptées à un assistant comptable débutant.\n\n${buildContext()}` },
             ...allMessages.map(m => ({ role: m.role, content: m.content })),
           ],
         }),
@@ -85,13 +82,12 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
         return;
       }
       if (resp.status === 402) {
-        toast.error('Crédits IA épuisés. Ajoutez des crédits dans Settings > Workspace > Usage.');
+        toast.error('Crédits IA épuisés.');
         setLoading(false);
         return;
       }
 
       if (!resp.ok || !resp.body) {
-        // Fallback deterministic
         const fallback = generateFallback(text, data, etab.nom || 'l\'établissement', exercice);
         setMessages(prev => [...prev, { role: 'assistant', content: fallback }]);
         setLoading(false);
@@ -129,7 +125,7 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
             const parsed = JSON.parse(json);
             const content = parsed.choices?.[0]?.delta?.content;
             if (content) upsert(content);
-          } catch {}
+          } catch { /* skip non-JSON lines */ }
         }
       }
     } catch {
@@ -140,43 +136,58 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-200px)] max-h-[700px]">
+    <div className="flex flex-col h-[calc(100vh-220px)] max-h-[700px]">
+      {/* Header */}
       <div className="flex items-center gap-3 mb-4">
         <div className="p-2 rounded-xl bg-primary/10">
           <Bot className="h-5 w-5 text-primary" />
         </div>
-        <div>
-          <h1 className="text-xl font-black text-foreground">Assistant IA HYPER@LE</h1>
+        <div className="flex-1">
+          <h2 className="text-lg font-bold text-foreground">Assistant IA</h2>
           <p className="text-xs text-muted-foreground">Posez vos questions sur l'analyse financière de {etab.nom || 'votre établissement'}</p>
         </div>
-        {!data.hasData && <Badge className="bg-warning/15 text-warning border-warning/30 ml-auto" variant="outline">Données démo</Badge>}
+        <div className="flex items-center gap-2">
+          {!data.hasData && <Badge className="bg-warning/15 text-warning border-warning/30" variant="outline">Données démo</Badge>}
+          <Badge variant="outline" className="text-[10px] gap-1">
+            <Database className="h-3 w-3" /> Données {exercice}
+          </Badge>
+        </div>
       </div>
 
       {/* Messages */}
       <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 mb-4 pr-1">
         {messages.length === 0 && (
-          <div className="space-y-3 pt-8">
-            <p className="text-center text-sm text-muted-foreground mb-4">
+          <div className="space-y-4 pt-6">
+            <p className="text-center text-sm text-muted-foreground">
               <Lightbulb className="h-4 w-4 inline mr-1" />
               Questions suggérées
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-w-xl mx-auto">
               {SUGGESTIONS.map(s => (
-                <Button key={s} variant="outline" size="sm" className="text-xs text-left h-auto py-2 px-3 justify-start whitespace-normal" onClick={() => send(s)}>
+                <Button
+                  key={s}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs text-left h-auto py-2.5 px-3 justify-start whitespace-normal leading-snug"
+                  onClick={() => send(s)}
+                >
                   {s}
                 </Button>
               ))}
             </div>
+            <p className="text-center text-[11px] text-muted-foreground/60 mt-4">
+              L'assistant utilise les données financières affichées dans le module.
+            </p>
           </div>
         )}
         {messages.map((m, i) => (
           <div key={i} className={`flex gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {m.role === 'assistant' && (
-              <div className="p-1.5 rounded-lg bg-primary/10 h-fit shrink-0">
+              <div className="p-1.5 rounded-lg bg-primary/10 h-fit shrink-0 mt-1">
                 <Bot className="h-3.5 w-3.5 text-primary" />
               </div>
             )}
-            <Card className={`max-w-[80%] ${m.role === 'user' ? 'bg-primary text-primary-foreground' : ''}`}>
+            <Card className={`max-w-[85%] ${m.role === 'user' ? 'bg-primary text-primary-foreground' : ''}`}>
               <CardContent className="p-3 text-sm">
                 {m.role === 'assistant' ? (
                   <div className="prose prose-sm max-w-none dark:prose-invert">
@@ -188,21 +199,21 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
               </CardContent>
             </Card>
             {m.role === 'user' && (
-              <div className="p-1.5 rounded-lg bg-muted h-fit shrink-0">
+              <div className="p-1.5 rounded-lg bg-muted h-fit shrink-0 mt-1">
                 <User className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             )}
           </div>
         ))}
         {loading && messages[messages.length - 1]?.role !== 'assistant' && (
-          <div className="flex items-center gap-2 text-muted-foreground text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm pl-8">
             <Loader2 className="h-4 w-4 animate-spin" /> Analyse en cours…
           </div>
         )}
       </div>
 
       {/* Input */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 pt-2 border-t">
         <Textarea
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -219,8 +230,7 @@ ${!data.hasData ? '\n⚠️ Ces données sont simulées (démonstration). Préci
   );
 }
 
-// Deterministic fallback when AI is unavailable
-function generateFallback(question: string, data: any, nom: string, exercice: number): string {
+function generateFallback(question: string, data: ReturnType<typeof import('./useHyperaleData').useHyperaleData>, nom: string, exercice: number): string {
   const fmt = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
   const q = question.toLowerCase();
 
@@ -232,6 +242,9 @@ function generateFallback(question: string, data: any, nom: string, exercice: nu
   }
   if (q.includes('risque')) {
     return `## Analyse des risques financiers\n\n${data.fdr < 0 ? '🔴 **FDR négatif** : risque majeur de rupture de trésorerie.\n' : ''}${data.tresorerieJours < 15 ? '🟠 **Trésorerie insuffisante** : risque d\'incident de paiement.\n' : ''}${data.caf < 0 ? '🟠 **CAF négative** : l\'exploitation n\'est pas viable à terme.\n' : ''}${data.fdr >= 0 && data.tresorerieJours >= 15 && data.caf >= 0 ? '✅ Aucun risque majeur identifié.' : ''}`;
+  }
+  if (q.includes('cofi') || q.includes('annexe')) {
+    return `## Annexe du Compte Financier — ${nom} (${exercice})\n\n**Fonds de roulement** : Le FDR s'établit à ${fmt(data.fdr)} soit ${data.fdrJours.toFixed(1)} jours de fonctionnement.\n\n**Trésorerie** : La trésorerie disponible est de ${fmt(data.tresorerie)} soit ${data.tresorerieJours.toFixed(1)} jours.\n\n**CAF** : ${fmt(data.caf)}. ${data.caf >= 0 ? 'L\'établissement dégage des ressources suffisantes.' : 'L\'autofinancement n\'est pas assuré.'}\n\n**Réserves** : ${fmt(data.reserves)}.`;
   }
 
   return `## Synthèse financière — ${nom} (${exercice})\n\n| Indicateur | Valeur |\n|---|---|\n| FDR | ${fmt(data.fdr)} (${data.fdrJours.toFixed(1)} j) |\n| CAF | ${fmt(data.caf)} |\n| Trésorerie | ${fmt(data.tresorerie)} (${data.tresorerieJours.toFixed(1)} j) |\n| Réserves | ${fmt(data.reserves)} |\n\n*Mode de secours : l'IA n'est pas disponible actuellement.*`;
