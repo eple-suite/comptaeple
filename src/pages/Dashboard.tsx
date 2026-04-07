@@ -11,12 +11,6 @@ import {
   formatCurrency,
   formatPercent,
 } from "@/lib/mockData";
-  mockEvolutionData,
-  mockRepartitionCharges,
-  mockTresorerieDetail,
-  formatCurrency,
-  formatPercent,
-} from "@/lib/mockData";
 import { validerBalance, REGLES_VALIDATION, ENQUETES_RECTORALES, OUTILS_AC } from "@/lib/regulatoryKnowledge";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
