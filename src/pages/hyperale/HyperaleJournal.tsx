@@ -10,7 +10,7 @@ import { useHyperaleSeuilsStore } from '@/store/useHyperaleSeuilsStore';
 import { usePersistedState } from '@/hooks/usePersistedState';
 import { useHyperaleData } from './useHyperaleData';
 import { analyser } from '@/lib/hyperaleAnalyseEngine';
-import { comparerBatch, type BatchResult } from '@/lib/hyperaleComparateur';
+
 import { Plus, Trash2, Copy, Check, Bot, CalendarDays, FileText, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
