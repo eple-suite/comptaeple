@@ -22,6 +22,7 @@ import SettingsPage from "./pages/SettingsPage";
 import RegiesCaisse from "./pages/RegiesCaisse";
 import ExecutionBudgetaire from "./pages/ExecutionBudgetaire";
 import HyperalePage from "./pages/hyperale/HyperalePage";
+import AgencePage from "./pages/agence/AgencePage";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { ChatEple } from "@/components/ChatEple";
@@ -81,6 +82,7 @@ const App = () => (
               <Route path="/execution-budgetaire" element={<ExecutionBudgetaire />} />
               <Route path="/parametres" element={<SettingsPage />} />
               <Route path="/hyperale/*" element={<HyperalePage />} />
+              <Route path="/agence" element={<AgencePage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -37,6 +37,7 @@ import {
 
 const mainItems = [
   { title: "Tableau de bord", url: "/", icon: LayoutDashboard },
+  { title: "🏛️ Vue Agence", url: "/agence", icon: Building2 },
   { title: "Import données", url: "/import", icon: Upload },
   { title: "Établissements", url: "/etablissements", icon: Building2 },
 ];
