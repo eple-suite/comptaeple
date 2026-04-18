@@ -453,6 +453,8 @@ const CreditNourriture = () => {
           <p>• <strong className="text-foreground">DBM :</strong> En cas d'insuffisance du crédit nourriture, une décision budgétaire modificative (DBM) peut être soumise au CA pour compléter les crédits SRH.</p>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
