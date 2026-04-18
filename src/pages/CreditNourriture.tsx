@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { UtensilsCrossed, Fuel, Target, AlertTriangle, CheckCircle, TrendingDown, Calendar, Download, Printer, Users, Info, BarChart3 } from "lucide-react";
+import { UtensilsCrossed, Fuel, Target, AlertTriangle, CheckCircle, TrendingDown, Calendar, Download, Printer, Users, Info, BarChart3, FileSpreadsheet, CalendarDays } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/mockData";
 import { KpiCard } from "@/components/KpiCard";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Legend } from "recharts";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
+import CreditNourritureImport from "./credit-nourriture/CreditNourritureImport";
 
 // ═══════ EFFESCO-aligned data structure ═══════
 interface EffectifsSRH {
