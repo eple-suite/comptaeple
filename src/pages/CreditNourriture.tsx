@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
-import { UtensilsCrossed, Fuel, Target, AlertTriangle, CheckCircle, TrendingDown, Calendar, Download, Printer, Users, Info, BarChart3 } from "lucide-react";
+import { UtensilsCrossed, Fuel, Target, AlertTriangle, CheckCircle, TrendingDown, Calendar, Download, Printer, Users, Info, BarChart3, FileSpreadsheet, CalendarDays } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,11 +9,13 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { formatCurrency } from "@/lib/mockData";
 import { KpiCard } from "@/components/KpiCard";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Legend } from "recharts";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
+import CreditNourritureImport from "./credit-nourriture/CreditNourritureImport";
 
 // ═══════ EFFESCO-aligned data structure ═══════
 interface EffectifsSRH {
@@ -150,20 +152,36 @@ const CreditNourriture = () => {
             <div>
               <h1 className="text-2xl font-bold font-display tracking-tight">Crédit nourriture — Service A2 (SRH)</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Projection trimestrielle • Référence EFFESCO • Distinction denrées / charges indirectes
+                Import auto Op@le • Calendrier scolaire Guadeloupe • Référence EFFESCO
               </p>
             </div>
           </div>
         </div>
-        <div className="flex gap-2 shrink-0">
-          <Button size="sm" variant="outline" className="rounded-lg" onClick={() => exportPDF(true)}>
-            <Printer className="h-4 w-4 mr-1" /> Imprimer
-          </Button>
-          <Button size="sm" className="gradient-primary border-0 shadow-primary rounded-lg" onClick={() => exportPDF(false)}>
-            <Download className="h-4 w-4 mr-1" /> PDF
-          </Button>
-        </div>
       </div>
+
+      <Tabs defaultValue="annuel">
+        <TabsList className="flex-wrap h-auto gap-1">
+          <TabsTrigger value="annuel">
+            <CalendarDays className="h-3.5 w-3.5 mr-1.5" /> Projection annuelle (import Op@le)
+          </TabsTrigger>
+          <TabsTrigger value="trimestre">
+            <Calendar className="h-3.5 w-3.5 mr-1.5" /> Saisie trimestrielle EFFESCO
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="annuel" className="mt-6">
+          <CreditNourritureImport />
+        </TabsContent>
+
+        <TabsContent value="trimestre" className="mt-6 space-y-6">
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="outline" className="rounded-lg" onClick={() => exportPDF(true)}>
+              <Printer className="h-4 w-4 mr-1" /> Imprimer
+            </Button>
+            <Button size="sm" className="gradient-primary border-0 shadow-primary rounded-lg" onClick={() => exportPDF(false)}>
+              <Download className="h-4 w-4 mr-1" /> PDF
+            </Button>
+          </div>
 
       {/* === VERDICT PRINCIPAL === */}
       <Card className={`shadow-card border-l-4 ${peutFinirTrimestre ? "border-l-secondary" : "border-l-destructive"}`}>
@@ -435,6 +453,8 @@ const CreditNourriture = () => {
           <p>• <strong className="text-foreground">DBM :</strong> En cas d'insuffisance du crédit nourriture, une décision budgétaire modificative (DBM) peut être soumise au CA pour compléter les crédits SRH.</p>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
