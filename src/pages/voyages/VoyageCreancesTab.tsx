@@ -1,6 +1,5 @@
 /**
  * Onglet Créances — Suivi des impayés et liaison SATD
- * Inspiré MobiliSCO T1034_creances + interconnexion SATD
  */
 import { useMemo, useState } from "react";
 import { AlertTriangle, ArrowRight, FileText, Download, Mail, Clock, Gavel, ShieldAlert } from "lucide-react";

@@ -1,5 +1,5 @@
 /**
- * Onglet Encaissements — Campagnes de collecte (inspiré MobiliSCO)
+ * Onglet Encaissements — Campagnes de collecte
  * Gestion des campagnes d'encaissement par voyage, suivi des versements,
  * état par élève, génération de bordereaux de remise.
  */

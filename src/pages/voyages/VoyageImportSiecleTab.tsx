@@ -1,5 +1,5 @@
 /**
- * Import SIECLE / CSV pour les élèves — inspiré MobiliSCO T01_BASE ELEVE
+ * Import SIECLE / CSV pour les élèves
  * Permet d'importer la base élèves depuis un export SIECLE CSV
  */
 import { useState, useRef } from "react";

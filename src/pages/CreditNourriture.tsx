@@ -14,10 +14,11 @@ import { formatCurrency } from "@/lib/mockData";
 import { KpiCard } from "@/components/KpiCard";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Legend } from "recharts";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
+import { WordExportButton } from "@/components/WordExportButton";
 import autoTable from "jspdf-autotable";
 import CreditNourritureImport from "./credit-nourriture/CreditNourritureImport";
 
-// ═══════ EFFESCO-aligned data structure ═══════
+// ═══════ Structure SRH ═══════
 interface EffectifsSRH {
   dp: number;       // Demi-pensionnaires
   internes: number;  // Internes
@@ -38,7 +39,7 @@ const CreditNourriture = () => {
   const [budgetInitial, setBudgetInitial] = useState(142000);
   const [depensesRealisees, setDepensesRealisees] = useState(89500);
 
-  // --- Effectifs EFFESCO ---
+  // --- Effectifs SRH ---
   const [effectifsDP, setEffectifsDP] = useState(420);
   const [effectifsInternes, setEffectifsInternes] = useState(85);
   const [effectifsCommensaux, setEffectifsCommensaux] = useState(35);
@@ -86,7 +87,7 @@ const CreditNourriture = () => {
     const doc = createStyledPDF({
       orientation: "portrait",
       title: "Crédit nourriture — Service A2 (SRH)",
-      subtitle: `EPLE — ${new Date().toLocaleDateString("fr-FR")} — Référence EFFESCO`,
+      subtitle: `EPLE — ${new Date().toLocaleDateString("fr-FR")}`,
     });
     let y = 48;
     const margin = 14;
@@ -152,7 +153,7 @@ const CreditNourriture = () => {
             <div>
               <h1 className="text-2xl font-bold font-display tracking-tight">Crédit nourriture — Service A2 (SRH)</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Import auto Op@le • Calendrier scolaire Guadeloupe • Référence EFFESCO
+                Import auto Op@le • Calendrier scolaire Guadeloupe • Conforme M9-6
               </p>
             </div>
           </div>
@@ -165,7 +166,7 @@ const CreditNourriture = () => {
             <CalendarDays className="h-3.5 w-3.5 mr-1.5" /> Projection annuelle (import Op@le)
           </TabsTrigger>
           <TabsTrigger value="trimestre">
-            <Calendar className="h-3.5 w-3.5 mr-1.5" /> Saisie trimestrielle EFFESCO
+            <Calendar className="h-3.5 w-3.5 mr-1.5" /> Saisie trimestrielle
           </TabsTrigger>
         </TabsList>
 
@@ -181,6 +182,48 @@ const CreditNourriture = () => {
             <Button size="sm" className="gradient-primary border-0 shadow-primary rounded-lg" onClick={() => exportPDF(false)}>
               <Download className="h-4 w-4 mr-1" /> PDF
             </Button>
+            <WordExportButton
+              title="Crédit nourriture — Service A2 (SRH)"
+              subtitle={`Trimestre — ${new Date().toLocaleDateString("fr-FR")}`}
+              filename={`credit_nourriture_${new Date().toISOString().split("T")[0]}`}
+              sections={[
+                { kind: "callout", tone: peutFinirTrimestre ? "success" : "danger", title: peutFinirTrimestre ? "Budget suffisant" : "Budget insuffisant", text: peutFinirTrimestre
+                  ? `Au rythme actuel de ${coutParRepas.toFixed(2)} €/repas, le budget couvre les ${repasRestants.toLocaleString("fr-FR")} repas restants. Marge prévisionnelle : ${formatCurrency(ecart)}.`
+                  : `Au rythme actuel de ${coutParRepas.toFixed(2)} €/repas, il manque ${formatCurrency(Math.abs(ecart))} pour terminer le trimestre.` },
+                { kind: "heading", text: "Indicateurs clés", level: 1 },
+                { kind: "kpis", items: [
+                  { label: "Budget restant", value: formatCurrency(budgetRestant) },
+                  { label: "Coût denrées / repas", value: `${coutDenreesParRepas.toFixed(2)} €`, sub: `Barème acad. : ${baremeAcademique.dp.toFixed(2)} €` },
+                  { label: "Coût de revient complet", value: `${coutRevientComplet.toFixed(2)} €` },
+                  { label: "Effectif SRH", value: `${effectifsTotal}`, sub: `${effectifsDP} DP / ${effectifsInternes} Int. / ${effectifsCommensaux} Com.` },
+                ] },
+                { kind: "heading", text: "Synthèse budgétaire", level: 2 },
+                { kind: "table", head: ["Indicateur", "Valeur"], columnWidthsPct: [60, 40], rows: [
+                  ["Budget ouvert (SRH — Service A2)", formatCurrency(budgetInitial)],
+                  ["Dépenses réalisées", formatCurrency(depensesRealisees)],
+                  ["Budget restant", formatCurrency(budgetRestant)],
+                  ["Repas prévus (trimestre)", repasPrevisionnels.toLocaleString("fr-FR")],
+                  ["Repas déjà servis", repasServis.toLocaleString("fr-FR")],
+                  ["Coût denrées / repas", `${coutDenreesParRepas.toFixed(2)} €`],
+                  ["Coût de revient complet / repas", `${coutRevientComplet.toFixed(2)} €`],
+                  ["Barème académique DP", `${baremeAcademique.dp.toFixed(2)} €`],
+                  ["Écart / barème", `${ecartBaremeDP >= 0 ? "+" : ""}${ecartBaremeDP.toFixed(2)} €`],
+                  [peutFinirTrimestre ? "Marge prévisionnelle" : "Insuffisance prévisionnelle", formatCurrency(ecart)],
+                ] },
+                { kind: "heading", text: "Prix de revient différencié", level: 2 },
+                { kind: "table", head: ["Catégorie", "Effectif", "Coeff.", "Coût denrées/j", "Coût complet/j", "Barème acad."], columnWidthsPct: [25, 15, 10, 17, 17, 16], rows: prixRevientData.map(p => [
+                  p.categorie, String(p.effectif), `×${p.coefficient}`, `${p.coutDenrees.toFixed(2)} €`, `${p.coutComplet.toFixed(2)} €`, `${p.bareme.toFixed(2)} €`,
+                ]) },
+                { kind: "heading", text: "Analyse réglementaire", level: 2 },
+                { kind: "bullets", items: [
+                  "Service A2 : crédits non fongibles avec les autres services",
+                  "Coût denrées (cpt 60) ≠ coût de revient complet (denrées + charges indirectes SRH)",
+                  "Coefficient internat : un interne consomme ~3 repas/jour",
+                  "Tarif commensaux : doit couvrir au minimum le coût de revient complet",
+                  "DBM possible en cas d'insuffisance — soumettre au CA",
+                ] },
+              ]}
+            />
           </div>
 
       {/* === VERDICT PRINCIPAL === */}
@@ -226,7 +269,7 @@ const CreditNourriture = () => {
             <Users className="h-4 w-4 text-primary" /> Prix de revient différencié — DP / Internes / Commensaux
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            Comparaison avec le barème académique EFFESCO — Coeff. interne = 3 repas/jour
+            Comparaison avec le barème académique — Coeff. interne = 3 repas/jour
           </p>
         </CardHeader>
         <CardContent>
@@ -322,7 +365,7 @@ const CreditNourriture = () => {
         {/* === PARAMÈTRES ENRICHIS === */}
         <Card className="shadow-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">Paramètres du trimestre — EFFESCO</CardTitle>
+            <CardTitle className="text-sm font-semibold">Paramètres du trimestre</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -356,7 +399,7 @@ const CreditNourriture = () => {
               </div>
             </div>
             <Separator />
-            <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">Effectifs (EFFESCO)</p>
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide font-semibold">Effectifs SRH</p>
             <div className="grid grid-cols-3 gap-3">
               <div>
                 <Label className="text-xs">DP</Label>
@@ -416,7 +459,7 @@ const CreditNourriture = () => {
       {/* === ANALYSE ENRICHIE === */}
       <Card className={`shadow-card border-l-4 ${peutFinirTrimestre ? "border-l-secondary" : "border-l-destructive"}`}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">Analyse prévisionnelle — Référence EFFESCO</CardTitle>
+          <CardTitle className="text-sm font-semibold">Analyse prévisionnelle</CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p>🍽️ <strong className="text-foreground">Coût denrées :</strong> Le coût denrées constaté est de <strong className="text-foreground">{coutDenreesParRepas.toFixed(2)} €/repas</strong> (barème académique : {baremeAcademique.dp.toFixed(2)} €). 
@@ -447,7 +490,7 @@ const CreditNourriture = () => {
         <CardContent className="text-xs text-muted-foreground space-y-2">
           <p>• <strong className="text-foreground">Service A2 :</strong> Le crédit nourriture est une recette affectée au service de restauration et d'hébergement (SRH). Les crédits sont non fongibles avec les autres services.</p>
           <p>• <strong className="text-foreground">Coût denrées vs coût de revient :</strong> Le coût denrées (compte 60) ne comprend que les achats alimentaires. Le coût de revient complet inclut les charges de personnel SRH, l'énergie et l'entretien.</p>
-          <p>• <strong className="text-foreground">Enquête EFFESCO :</strong> L'enquête effectifs/restauration est transmise à la collectivité et au rectorat en octobre et mars. Elle sert à calculer les dotations et ajuster les tarifs.</p>
+          <p>• <strong className="text-foreground">Enquête effectifs SRH :</strong> L'enquête effectifs/restauration est transmise à la collectivité et au rectorat en octobre et mars. Elle sert à calculer les dotations et ajuster les tarifs.</p>
           <p>• <strong className="text-foreground">Coefficient internat :</strong> Un interne consomme 3 repas par jour (petit-déjeuner, déjeuner, dîner). Le barème académique interne est environ 3× le barème DP.</p>
           <p>• <strong className="text-foreground">Commensaux :</strong> Le tarif des commensaux doit couvrir au minimum le coût de revient complet du repas (denrées + charges). Un tarif inférieur constitue une subvention déguisée.</p>
           <p>• <strong className="text-foreground">DBM :</strong> En cas d'insuffisance du crédit nourriture, une décision budgétaire modificative (DBM) peut être soumise au CA pour compléter les crédits SRH.</p>
