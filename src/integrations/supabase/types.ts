@@ -427,6 +427,68 @@ export type Database = {
           },
         ]
       }
+      establishment_branding: {
+        Row: {
+          address: string
+          city: string
+          created_at: string
+          email: string
+          establishment_id: string
+          footer_text: string
+          full_name: string
+          id: string
+          logo_url: string | null
+          phone: string
+          postal_code: string
+          primary_color: string
+          signataire_agent_comptable: string
+          signataire_ordonnateur: string
+          updated_at: string
+        }
+        Insert: {
+          address?: string
+          city?: string
+          created_at?: string
+          email?: string
+          establishment_id: string
+          footer_text?: string
+          full_name?: string
+          id?: string
+          logo_url?: string | null
+          phone?: string
+          postal_code?: string
+          primary_color?: string
+          signataire_agent_comptable?: string
+          signataire_ordonnateur?: string
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          city?: string
+          created_at?: string
+          email?: string
+          establishment_id?: string
+          footer_text?: string
+          full_name?: string
+          id?: string
+          logo_url?: string | null
+          phone?: string
+          postal_code?: string
+          primary_color?: string
+          signataire_agent_comptable?: string
+          signataire_ordonnateur?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "establishment_branding_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       establishments: {
         Row: {
           academy: string
