@@ -207,19 +207,6 @@ export const OUTILS_AC = [
     ],
   },
   {
-    nom: "Mobilisco",
-    description: "Outil de suivi de la mobilité des agents comptables et des fondés de pouvoir",
-    usage: "Gestion des affectations, suivi des passations de service",
-    source: "DAF A3",
-    lien: "Portail DAF A3",
-    fonctionnalites: [
-      "Suivi des affectations AC/FDP",
-      "Planning des passations de service",
-      "Documents de passation standardisés",
-      "Historique des affectations",
-    ],
-  },
-  {
     nom: "ESSATEDÉ (Essatédé)",
     description: "Outil de suivi des Saisies Administratives à Tiers Détenteur (SATD) pour les EPLE",
     usage: "Suivi du recouvrement forcé, prescription, gestion des SATD",
@@ -231,20 +218,6 @@ export const OUTILS_AC = [
       "Émission dématérialisée des SATD via PEPS",
       "Suivi des retours bancaires et employeurs",
       "Statistiques de recouvrement",
-    ],
-  },
-  {
-    nom: "EFFESCO",
-    description: "Outil de suivi des effectifs scolaires et de la restauration",
-    usage: "Suivi des effectifs DP/internes, calcul du crédit nourriture, prix de revient",
-    source: "Académie",
-    lien: "Portail académique",
-    fonctionnalites: [
-      "Suivi quotidien des effectifs restauration",
-      "Calcul du coût denrées par repas",
-      "Suivi du crédit nourriture (service A2)",
-      "Prix de revient différencié DP/internes/commensaux",
-      "Comparaison avec le barème académique",
     ],
   },
   {
