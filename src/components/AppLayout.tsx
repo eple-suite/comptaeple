@@ -112,7 +112,7 @@ export function AppLayout() {
             {/* Center — Command Palette trigger (signature element) */}
             <button
               onClick={openPalette}
-              className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-2.5 h-9 w-72 px-3 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted/70 hover:border-border transition-all group shadow-xs"
+              className="hidden md:flex flex-1 max-w-md mx-auto items-center gap-2.5 h-9 px-3 rounded-lg border border-border/60 bg-muted/40 hover:bg-muted/70 hover:border-border transition-all group shadow-xs"
             >
               <Search className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground transition-colors" />
               <span className="flex-1 text-left text-xs text-muted-foreground group-hover:text-foreground/70 transition-colors">
@@ -121,7 +121,7 @@ export function AppLayout() {
               <kbd className="kbd">⌘K</kbd>
             </button>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {role && (
                 <Badge variant="outline" className="text-[10px] capitalize rounded-md font-medium hidden sm:inline-flex">
                   {role}
