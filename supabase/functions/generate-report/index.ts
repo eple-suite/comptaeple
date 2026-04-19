@@ -212,7 +212,7 @@ Contrainte : termine avec un bloc "Actions prioritaires" en 5 points maximum.`;
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: resolvedSystemPrompt }, { role: "user", content: userPrompt }],
+        messages: [{ role: "system", content: withExpertPersona(resolvedSystemPrompt) }, { role: "user", content: userPrompt }],
       }),
     });
 

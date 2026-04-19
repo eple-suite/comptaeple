@@ -697,9 +697,9 @@ serve(async (req) => {
       });
     }
 
-    // Build conversation with system prompt + full history
+    // Build conversation with system prompt + full history (with global expert persona prefix)
     const aiMessages: ChatMessage[] = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: withExpertPersona(SYSTEM_PROMPT) },
       ...messages.filter(m => m.role === "user" || m.role === "assistant"),
     ];
 

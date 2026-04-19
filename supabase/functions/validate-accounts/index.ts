@@ -140,7 +140,7 @@ Vérifie les points spécifiques demandés et donne un avis.`;
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: withExpertPersona(systemPrompt) },
           { role: "user", content: userPrompt },
         ],
         stream: true,
