@@ -79,18 +79,18 @@ export function SectionTitre({
 /** Slot de narration IA contextualisée à la section courante */
 function SectionTitreNarration({ numero, title }: { numero: string; title: string }) {
   const { etab, R, ind } = useOrdoData();
-  if (!R) return null;
+  // Affiche toujours la narration : si pas de résultats, l'IA pourra travailler sur l'étab + indicateurs.
   return (
     <div className="mb-6">
       <NarrationIA
-        sectionId={`ordo_${numero.toLowerCase()}_${etab.uai}_${etab.exercice}`}
+        sectionId={`ordo_${numero.toLowerCase()}_${etab.uai || 'na'}_${etab.exercice}`}
         title={`Lecture experte — ${title}`}
         variant="compact"
         context={{
           section: numero,
           etablissement: { nom: etab.nom, uai: etab.uai, exercice: etab.exercice, type: etab.type },
-          resultats: R,
-          indicateurs: ind,
+          resultats: R ?? null,
+          indicateurs: ind ?? null,
         }}
       />
     </div>
