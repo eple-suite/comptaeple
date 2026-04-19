@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 export function BrandingCard() {
   const { selectedEstablishment } = useEstablishment();
-  const { branding, save, saving, uploadLogo } = useEstablishmentBranding();
+  const { branding, logoUrl, save, saving, uploadLogo } = useEstablishmentBranding();
   const [form, setForm] = useState({
     full_name: "",
     address: "",
