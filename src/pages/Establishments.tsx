@@ -283,6 +283,10 @@ const Establishments = () => {
     setAnnexeType("CFA");
     setAnnexeName("");
     setAnnexeOpale("");
+    setAnnexeUaiInput("");
+    setAnnexeLookupFound(null);
+    setAnnexeLookupError("");
+    setAnnexeLookupDone(false);
     setTab("principal");
     setOpen(false);
   };
