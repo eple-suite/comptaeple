@@ -25,7 +25,7 @@ export function OrdoS1Presentation() {
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <SectionTitre numero="S1" title="Présentation de l'établissement" />
+        <SectionTitre numero="S1" title="Présentation de l'établissement" withNarration />
         
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
           <div><span className="text-muted-foreground">Établissement</span><p className="font-bold">{etab.nom || '—'}</p></div>

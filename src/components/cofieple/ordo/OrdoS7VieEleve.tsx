@@ -19,7 +19,7 @@ export function OrdoS7VieEleve() {
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <SectionTitre numero="S7" title="Vie de l'élève et action sociale" />
+        <SectionTitre numero="S7" title="Vie de l'élève et action sociale" withNarration />
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <KPICard label="Fonds sociaux" value={fonds > 0 ? formatEur(fonds) : '—'} color="blue" icon="🤝" sub="Volume global" />
