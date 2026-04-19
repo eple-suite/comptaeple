@@ -321,16 +321,28 @@ const CompteFinancier = () => {
           </div>
         </nav>
 
-        {/* Print button for Rapport Ordonnateur */}
+        {/* Export bar — Rapport Ordonnateur */}
         {mainTab === 'ordo' && hasData && (
-          <div className="flex justify-end px-5 pt-4 pb-0">
+          <div className="flex justify-end gap-2 px-5 pt-4 pb-0">
             <button
               onClick={() => window.print()}
-              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-warning text-warning-foreground hover:bg-warning/90 shadow-md transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-muted hover:bg-muted/70 text-foreground transition-all duration-200"
             >
               <Printer className="h-4 w-4" />
-              Imprimer le rapport
+              Impression directe
             </button>
+            <MagazineExportButton
+              etabNom={etab.nom}
+              exercice={etab.exercice}
+              uai={etab.uai}
+              commune={etab.commune}
+              academie={etab.academie}
+              resultatComptable={resultats[activeBudget]?.resultatComptable}
+              fdr={resultats[activeBudget]?.fdrComptable}
+              treso={resultats[activeBudget]?.tresorerie}
+              signataireOrdo={etab.ordonnateur}
+              signataireAC={etab.agentComptable}
+            />
           </div>
         )}
 
