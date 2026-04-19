@@ -337,178 +337,208 @@ const Establishments = () => {
             <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
               <div className="px-6 pt-3 shrink-0">
                 <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="principal" className="gap-2">
-                  <Building2 className="h-4 w-4" /> Établissement principal
-                </TabsTrigger>
-                <TabsTrigger value="annexe" className="gap-2">
-                  <Layers className="h-4 w-4" /> Budget annexe
-                </TabsTrigger>
-              </TabsList>
+                  <TabsTrigger value="principal" className="gap-2">
+                    <Building2 className="h-4 w-4" /> Établissement principal
+                  </TabsTrigger>
+                  <TabsTrigger value="annexe" className="gap-2">
+                    <Layers className="h-4 w-4" /> Budget annexe
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-              {/* ============ ONGLET PRINCIPAL ============ */}
-              <TabsContent value="principal" className="space-y-4 py-2">
-                <div className="space-y-2">
-                  <Label>Code UAI <span className="text-muted-foreground text-xs">(7 chiffres + 1 lettre)</span></Label>
-                  <div className="flex gap-2">
-                    <Input
-                      ref={uaiInputRef}
-                      placeholder="Ex: 0910620T"
-                      value={uaiInput}
-                      onChange={handleUaiChange}
-                      maxLength={8}
-                      className="font-mono"
-                    />
-                    {lookupLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mt-2" />}
-                  </div>
-                  {lookupError && <p className="text-sm text-destructive">{lookupError}</p>}
-                </div>
-
-                {lookupResult && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3"
-                  >
-                    <div className="flex items-center gap-2 text-primary">
-                      <CheckCircle2 className="h-5 w-5" />
-                      <span className="font-semibold text-sm">Établissement trouvé</span>
-                    </div>
-                    {existingLocal && (
-                      <div className="rounded-md bg-warning/10 border border-warning/30 p-2 text-xs text-warning">
-                        ⚠️ Cet UAI est déjà dans votre liste. La fiche sera mise à jour.
-                      </div>
-                    )}
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <span className="text-muted-foreground text-xs">Nom</span>
-                        <p className="font-medium">{lookupResult.nom_etablissement}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground text-xs">Type</span>
-                        <p className="font-medium">{lookupResult.type_etablissement || "—"}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground text-xs">Académie</span>
-                        <p className="font-medium">{lookupResult.libelle_academie || "—"}</p>
-                      </div>
-                      <div>
-                        <span className="text-muted-foreground text-xs">Ville</span>
-                        <p className="font-medium flex items-center gap-1">
-                          <MapPin className="h-3 w-3" />
-                          {lookupResult.nom_commune || "—"}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {lookupResult && (
-                  <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
-                    <Label>Identifiant Op@le *</Label>
-                    <Input
-                      placeholder="Ex: P00804"
-                      value={opaleNumber}
-                      onChange={(e) => setOpaleNumber(e.target.value.toUpperCase())}
-                      maxLength={6}
-                      className="font-mono"
-                    />
-                    <p className="text-xs text-destructive/80 font-medium">
-                      ⚠️ Obligatoire — Verrou de sécurité pour l'import des fichiers Op@le.
-                    </p>
-                  </motion.div>
-                )}
-              </TabsContent>
-
-              {/* ============ ONGLET ANNEXE ============ */}
-              <TabsContent value="annexe" className="space-y-4 py-2">
-                {supportCandidates.length === 0 ? (
-                  <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm">
-                    <p className="font-medium text-warning">Aucun établissement support disponible.</p>
-                    <p className="text-muted-foreground text-xs mt-1">
-                      Ajoutez d'abord un établissement principal (onglet précédent) avant de créer un budget annexe rattaché.
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    <div className="space-y-2">
-                      <Label>Établissement support * <span className="text-muted-foreground text-xs">(lycée principal de rattachement)</span></Label>
-                      <Select value={annexeSupportId} onValueChange={setAnnexeSupportId}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner le lycée support…" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {supportCandidates.map(e => (
-                            <SelectItem key={e.id} value={e.id}>
-                              <span className="font-mono text-xs mr-2">{e.uai}</span>
-                              {e.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Type de budget annexe *</Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        {(Object.keys(ANNEXE_META) as AnnexeType[]).map(t => (
-                          <button
-                            key={t}
-                            type="button"
-                            onClick={() => setAnnexeType(t)}
-                            className={`flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-all ${
-                              annexeType === t
-                                ? "border-primary bg-primary/10 text-primary font-medium"
-                                : "border-border hover:bg-muted/50"
-                            }`}
-                          >
-                            {ANNEXE_META[t].icon}
-                            <div className="flex-1 min-w-0">
-                              <div className="font-medium">{ANNEXE_META[t].label}</div>
-                              <div className="text-[10px] text-muted-foreground truncate">{ANNEXE_META[t].full}</div>
-                            </div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label>Nom du budget annexe *</Label>
+              <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
+                {/* ============ ONGLET PRINCIPAL ============ */}
+                <TabsContent value="principal" className="space-y-4 mt-0">
+                  <div className="space-y-2">
+                    <Label>Code UAI <span className="text-muted-foreground text-xs">(7 chiffres + 1 lettre)</span></Label>
+                    <div className="flex gap-2">
                       <Input
-                        placeholder={`Ex: ${ANNEXE_META[annexeType].full} — ${supportCandidates.find(e => e.id === annexeSupportId)?.name?.split(" ").slice(0, 3).join(" ") || "Lycée X"}`}
-                        value={annexeName}
-                        onChange={(e) => setAnnexeName(e.target.value)}
+                        ref={uaiInputRef}
+                        placeholder="Ex: 0910620T"
+                        value={uaiInput}
+                        onChange={handleUaiChange}
+                        maxLength={8}
+                        className="font-mono"
                       />
+                      {lookupLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mt-2" />}
                     </div>
+                    {lookupError && <p className="text-sm text-destructive">{lookupError}</p>}
+                  </div>
 
-                    <div className="space-y-2">
-                      <Label>Identifiant Op@le du budget annexe *</Label>
+                  {lookupResult && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3"
+                    >
+                      <div className="flex items-center gap-2 text-primary">
+                        <CheckCircle2 className="h-5 w-5" />
+                        <span className="font-semibold text-sm">Établissement trouvé</span>
+                      </div>
+                      {existingLocal && (
+                        <div className="rounded-md bg-warning/10 border border-warning/30 p-2 text-xs text-warning">
+                          ⚠️ Cet UAI est déjà dans votre liste. La fiche sera mise à jour.
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div>
+                          <span className="text-muted-foreground text-xs">Nom</span>
+                          <p className="font-medium">{lookupResult.nom_etablissement}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground text-xs">Type</span>
+                          <p className="font-medium">{lookupResult.type_etablissement || "—"}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground text-xs">Académie</span>
+                          <p className="font-medium">{lookupResult.libelle_academie || "—"}</p>
+                        </div>
+                        <div>
+                          <span className="text-muted-foreground text-xs">Ville</span>
+                          <p className="font-medium flex items-center gap-1">
+                            <MapPin className="h-3 w-3" />
+                            {lookupResult.nom_commune || "—"}
+                          </p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {lookupResult && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-2">
+                      <Label>Identifiant Op@le *</Label>
                       <Input
-                        placeholder="Ex: P00805"
-                        value={annexeOpale}
-                        onChange={(e) => setAnnexeOpale(e.target.value.toUpperCase())}
+                        placeholder="Ex: P00804"
+                        value={opaleNumber}
+                        onChange={(e) => setOpaleNumber(e.target.value.toUpperCase())}
                         maxLength={6}
                         className="font-mono"
                       />
-                      <p className="text-xs text-muted-foreground">
-                        Chaque budget annexe possède son propre code Op@le (différent du support).
+                      <p className="text-xs text-destructive/80 font-medium">
+                        ⚠️ Obligatoire — Verrou de sécurité pour l'import des fichiers Op@le.
+                      </p>
+                    </motion.div>
+                  )}
+                </TabsContent>
+
+                {/* ============ ONGLET ANNEXE ============ */}
+                <TabsContent value="annexe" className="space-y-4 mt-0">
+                  {supportCandidates.length === 0 ? (
+                    <div className="rounded-lg border border-warning/30 bg-warning/5 p-4 text-sm">
+                      <p className="font-medium text-warning">Aucun établissement support disponible.</p>
+                      <p className="text-muted-foreground text-xs mt-1">
+                        Ajoutez d'abord un établissement principal avant de créer un budget annexe rattaché.
                       </p>
                     </div>
+                  ) : (
+                    <>
+                      <div className="space-y-2">
+                        <Label>Code UAI du budget annexe * <span className="text-muted-foreground text-xs">(7 chiffres + 1 lettre)</span></Label>
+                        <div className="flex gap-2">
+                          <Input
+                            placeholder="Ex: 9710746J"
+                            value={annexeUaiInput}
+                            onChange={handleAnnexeUaiChange}
+                            maxLength={8}
+                            className="font-mono"
+                          />
+                          {annexeLookupLoading && <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mt-2" />}
+                        </div>
+                        {annexeUaiAlreadyExists && (
+                          <p className="text-xs text-destructive">⚠️ Cet UAI est déjà enregistré dans votre liste.</p>
+                        )}
+                        {annexeLookupFound && (
+                          <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-xs space-y-1">
+                            <div className="flex items-center gap-2 text-primary font-semibold">
+                              <CheckCircle2 className="h-4 w-4" />
+                              Trouvé dans l'annuaire — informations préremplies
+                            </div>
+                            <p className="text-foreground">{annexeLookupFound.nom_etablissement}</p>
+                            <p className="text-muted-foreground">
+                              {annexeLookupFound.libelle_academie} · {annexeLookupFound.nom_commune}
+                            </p>
+                          </div>
+                        )}
+                        {annexeLookupDone && !annexeLookupFound && annexeUaiValid && (
+                          <div className="rounded-md border border-warning/30 bg-warning/5 p-3 text-xs">
+                            <p className="font-medium text-warning">ℹ️ UAI non référencé dans l'annuaire</p>
+                            <p className="text-muted-foreground mt-1">
+                              C'est normal pour la plupart des budgets annexes (CFA, GRETA, SRH). Complétez les champs ci-dessous manuellement.
+                            </p>
+                          </div>
+                        )}
+                      </div>
 
-                    <div className="rounded-md bg-muted/50 p-3 text-xs space-y-1">
-                      <p className="font-medium">ℹ️ Que va-t-il se passer ?</p>
-                      <ul className="list-disc list-inside text-muted-foreground space-y-0.5">
-                        <li>Création d'une fiche établissement de type « {ANNEXE_META[annexeType].typeLabel} »</li>
-                        <li>UAI dérivé du support (suffixe « {ANNEXE_META[annexeType].suffix} »)</li>
-                        <li>Rattachement comptable au lycée support (compte 185)</li>
-                        <li>Vous y serez automatiquement lié</li>
-                      </ul>
-                    </div>
-                  </>
-                )}
-              </TabsContent>
+                      <div className="space-y-2">
+                        <Label>Établissement support * <span className="text-muted-foreground text-xs">(lycée principal de rattachement comptable)</span></Label>
+                        <Select value={annexeSupportId} onValueChange={setAnnexeSupportId}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionner le lycée support…" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {supportCandidates.map(e => (
+                              <SelectItem key={e.id} value={e.id}>
+                                <span className="font-mono text-xs mr-2">{e.uai}</span>
+                                {e.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Type de budget annexe *</Label>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(Object.keys(ANNEXE_META) as AnnexeType[]).map(t => (
+                            <button
+                              key={t}
+                              type="button"
+                              onClick={() => setAnnexeType(t)}
+                              className={`flex items-center gap-2 rounded-md border p-3 text-left text-sm transition-all ${
+                                annexeType === t
+                                  ? "border-primary bg-primary/10 text-primary font-medium"
+                                  : "border-border hover:bg-muted/50"
+                              }`}
+                            >
+                              {ANNEXE_META[t].icon}
+                              <div className="flex-1 min-w-0">
+                                <div className="font-medium">{ANNEXE_META[t].label}</div>
+                                <div className="text-[10px] text-muted-foreground truncate">{ANNEXE_META[t].full}</div>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Nom du budget annexe *</Label>
+                        <Input
+                          placeholder={`Ex: ${ANNEXE_META[annexeType].full}`}
+                          value={annexeName}
+                          onChange={(e) => setAnnexeName(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label>Identifiant Op@le du budget annexe *</Label>
+                        <Input
+                          placeholder="Ex: P00805"
+                          value={annexeOpale}
+                          onChange={(e) => setAnnexeOpale(e.target.value.toUpperCase())}
+                          maxLength={6}
+                          className="font-mono"
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Chaque budget annexe possède son propre code Op@le (différent du support).
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </TabsContent>
+              </div>
             </Tabs>
 
-            <DialogFooter>
+            <DialogFooter className="px-6 py-4 border-t bg-background shrink-0">
               <DialogClose asChild>
                 <Button variant="outline">Annuler</Button>
               </DialogClose>
@@ -523,7 +553,15 @@ const Establishments = () => {
               ) : (
                 <Button
                   className="gradient-primary border-0"
-                  disabled={annexeMutation.isPending || supportCandidates.length === 0}
+                  disabled={
+                    annexeMutation.isPending ||
+                    supportCandidates.length === 0 ||
+                    !annexeUaiValid ||
+                    annexeUaiAlreadyExists ||
+                    !annexeSupportId ||
+                    !annexeName.trim() ||
+                    !annexeOpale.trim()
+                  }
                   onClick={() => annexeMutation.mutate()}
                 >
                   {annexeMutation.isPending ? "Création…" : "Créer le budget annexe"}
