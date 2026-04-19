@@ -9,6 +9,7 @@ import { analyser, buildAssistantContext } from '@/lib/hyperaleAnalyseEngine';
 import { Bot, Send, User, Loader2, Lightbulb, Database, BarChart3 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   role: 'user' | 'assistant';
