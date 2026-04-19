@@ -18,6 +18,8 @@ import {
   ArrowUpRight, ArrowDownRight, Minus, ChevronRight, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SuggestionsPanel } from '@/components/hyperale/SuggestionsPanel';
+import { useHyperaleScore } from '@/components/hyperale/useHyperaleScore';
 
 const fmt = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
 const fmtK = (v: number) => `${(v / 1000).toFixed(0)}k`;
