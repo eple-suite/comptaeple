@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { TrendingUp, Landmark, PieChart, Download, AlertTriangle, CheckCircle2, ShieldAlert, Info, Activity, Zap } from "lucide-react";
+import { TrendingUp, Landmark, PieChart, Download, AlertTriangle, CheckCircle2, ShieldAlert, Info, Activity, Zap, Wallet, Upload, BookOpen, Bus, Gavel, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { generateFinancialReport } from "@/lib/pdfGenerator";
 import {
@@ -15,6 +15,11 @@ import { useNavigate } from "react-router-dom";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { DashboardHero } from "@/components/dashboard/DashboardHero";
+import { KpiHero } from "@/components/dashboard/KpiHero";
+import { QuickAction } from "@/components/dashboard/QuickAction";
+import { useAuth } from "@/contexts/AuthContext";
+import { useEstablishment } from "@/contexts/EstablishmentContext";
 import {
   BarChart,
   Bar,
@@ -103,40 +108,72 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8 max-w-[1400px] mx-auto">
-      {/* Hero header */}
+      {/* HERO premium éditorial */}
+      <DashboardHeroWrap liveIndicators={liveIndicators} hasData={balanceData.length > 0} />
+
+      {/* KPI Hero — 4 cards premium */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiHero
+          label="Fonds de roulement"
+          value={formatCurrency(liveIndicators.fdr)}
+          sublabel={`${liveIndicators.joursFonctionnement} jours d'autonomie`}
+          icon={Wallet}
+          tone={liveIndicators.fdr > 0 ? "success" : "destructive"}
+          delay={0.05}
+          onClick={() => navigate("/hyperale/analyse")}
+        />
+        <KpiHero
+          label="Trésorerie"
+          value={formatCurrency(liveIndicators.tresorerie)}
+          sublabel="Disponible au Trésor"
+          icon={Landmark}
+          tone="primary"
+          delay={0.1}
+          onClick={() => navigate("/hyperale/analyse")}
+        />
+        <KpiHero
+          label="Résultat exercice"
+          value={formatCurrency(liveIndicators.resultatExercice)}
+          sublabel={liveIndicators.resultatExercice >= 0 ? "Excédent" : "Déficit"}
+          icon={TrendingUp}
+          tone={liveIndicators.resultatExercice >= 0 ? "success" : "warning"}
+          delay={0.15}
+          onClick={() => navigate("/compte-financier")}
+        />
+        <KpiHero
+          label="Taux de recouvrement"
+          value={`${liveIndicators.tauxRecouvrement.toFixed(1)}%`}
+          sublabel="Créances titres de recettes"
+          icon={Activity}
+          tone={liveIndicators.tauxRecouvrement >= 95 ? "success" : "warning"}
+          delay={0.2}
+          onClick={() => navigate("/satd")}
+        />
+      </div>
+
+      {/* Quick actions — accès rapide aux modules clés */}
       <motion.div
-        initial={{ opacity: 0, y: -8 }}
+        initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-center justify-between"
+        transition={{ delay: 0.25, duration: 0.4 }}
       >
-        <div className="space-y-1">
-          <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-primary">
-              <Activity className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold font-display">Tableau de bord</h1>
-              <p className="text-sm text-muted-foreground">
-                Exercice {new Date().getFullYear() - 1} — Vue d'ensemble financière
-              </p>
-            </div>
-          </div>
+        <div className="flex items-center gap-2 mb-3">
+          <Sparkles className="h-3.5 w-3.5 text-primary" />
+          <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Accès rapide</h2>
         </div>
-        <Button
-          size="sm"
-          onClick={() => generateFinancialReport()}
-          className="gradient-primary border-0 shadow-primary hover:shadow-lg transition-shadow"
-        >
-          <Download className="h-4 w-4 mr-1.5" /> Rapport PDF
-        </Button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <QuickAction label="Importer une balance" description="Charger Op@le ECBU / SDE / SDR" icon={Upload} to="/import" tone="primary" delay={0.3} />
+          <QuickAction label="Compte financier" description="Rapports Ordo + AC, export PDF" icon={BookOpen} to="/compte-financier" tone="secondary" delay={0.35} />
+          <QuickAction label="Voyages scolaires" description="Workflow M9-6, SIECLE, marchés" icon={Bus} to="/voyages" tone="accent" delay={0.4} />
+          <QuickAction label="SATD & Créances" description="Saisies à tiers détenteur" icon={Gavel} to="/satd" tone="accent" delay={0.45} />
+        </div>
       </motion.div>
 
       {/* Alertes comptables automatiques */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 0.1, duration: 0.4 }}
+        transition={{ delay: 0.3, duration: 0.4 }}
         className="space-y-3"
       >
         {alertesBloquantes.length > 0 && (
@@ -145,9 +182,7 @@ const Dashboard = () => {
             <AlertTitle>{alertesBloquantes.length} alerte{alertesBloquantes.length > 1 ? "s" : ""} bloquante{alertesBloquantes.length > 1 ? "s" : ""}</AlertTitle>
             <AlertDescription>
               <ul className="list-disc pl-4 mt-1 space-y-0.5 text-xs">
-                {alertesBloquantes.map(a => (
-                  <li key={a.id}><strong>{a.titre}</strong> — {a.message}</li>
-                ))}
+                {alertesBloquantes.map(a => <li key={a.id}><strong>{a.titre}</strong> — {a.message}</li>)}
               </ul>
             </AlertDescription>
           </Alert>
@@ -159,45 +194,19 @@ const Dashboard = () => {
             <AlertTitle className="text-warning">{alertesMajeures.length} point{alertesMajeures.length > 1 ? "s" : ""} d'attention</AlertTitle>
             <AlertDescription>
               <ul className="list-disc pl-4 mt-1 space-y-0.5 text-xs">
-                {alertesMajeures.map(a => (
-                  <li key={a.id}><strong>{a.titre}</strong> — {a.action}</li>
-                ))}
+                {alertesMajeures.map(a => <li key={a.id}><strong>{a.titre}</strong> — {a.action}</li>)}
               </ul>
             </AlertDescription>
           </Alert>
         )}
 
-        {alertes.length === 0 && (
+        {alertes.length === 0 && balanceData.length > 0 && (
           <Alert className="rounded-xl border-success/30 bg-success/5">
             <CheckCircle2 className="h-4 w-4 text-success" />
             <AlertTitle className="text-success">Validation comptable OK</AlertTitle>
             <AlertDescription className="text-xs">Aucune anomalie détectée sur la balance — le compte financier est conforme.</AlertDescription>
           </Alert>
         )}
-      </motion.div>
-
-      {/* Résumé rapide + CTA HYPER@LE */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2, duration: 0.4 }}
-      >
-        <Card className="bg-gradient-to-r from-[hsl(250,40%,18%)] to-[hsl(220,50%,22%)] border-0 shadow-xl overflow-hidden">
-          <CardContent className="py-5 px-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[hsl(270,60%,55%)] to-[hsl(220,70%,50%)] flex items-center justify-center text-2xl font-black text-white shadow-lg">⚡</div>
-                <div>
-                  <h2 className="text-lg font-black text-white">HYPER@LE — Analyse financière</h2>
-                  <p className="text-sm text-white/60">FDR {formatCurrency(liveIndicators.fdr)} · Trésorerie {formatCurrency(liveIndicators.tresorerie)} · {liveIndicators.joursFonctionnement} jours</p>
-                </div>
-              </div>
-              <Button size="lg" onClick={() => navigate('/hyperale')} className="gap-2 font-bold shadow-lg bg-white text-[hsl(250,40%,18%)] hover:bg-white/90">
-                <Zap className="h-4 w-4" /> Analyse complète
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
       </motion.div>
 
       {/* Charts */}
