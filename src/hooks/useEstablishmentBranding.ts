@@ -1,11 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
+
+const LOGO_BUCKET = "establishment-logos";
+const SIGNED_URL_TTL = 60 * 60; // 1h
 
 export interface EstablishmentBranding {
   id?: string;
   establishment_id: string;
+  /** Stored value: either a storage path (e.g. "<estId>/logo-...png") or a legacy public URL */
   logo_url: string | null;
   full_name: string;
   address: string;
@@ -34,10 +38,23 @@ const EMPTY_BRANDING = (estId: string): EstablishmentBranding => ({
   primary_color: "#254478",
 });
 
+/** Extract a storage path from either a raw path or a legacy public URL */
+function extractStoragePath(stored: string | null | undefined): string | null {
+  if (!stored) return null;
+  // Legacy: full public URL .../object/public/establishment-logos/<path>
+  const marker = `/object/public/${LOGO_BUCKET}/`;
+  const idx = stored.indexOf(marker);
+  if (idx !== -1) return stored.substring(idx + marker.length);
+  // If it already looks like a path (no protocol), return as-is
+  if (!/^https?:\/\//i.test(stored)) return stored;
+  return null;
+}
+
 export function useEstablishmentBranding() {
   const { selectedEstablishment } = useEstablishment();
   const queryClient = useQueryClient();
   const estId = selectedEstablishment?.id || null;
+  const [logoSignedUrl, setLogoSignedUrl] = useState<string | null>(null);
 
   const { data: branding, isLoading } = useQuery({
     queryKey: ["establishment-branding", estId],
@@ -50,7 +67,6 @@ export function useEstablishmentBranding() {
         .maybeSingle();
       if (error) throw error;
       if (!data) {
-        // fallback: use establishment fields if no branding row yet
         return {
           ...EMPTY_BRANDING(estId),
           full_name: selectedEstablishment?.name || "",
@@ -63,6 +79,31 @@ export function useEstablishmentBranding() {
     },
     enabled: !!estId,
   });
+
+  // Generate a signed URL whenever the stored logo path changes
+  useEffect(() => {
+    let cancelled = false;
+    async function sign() {
+      const path = extractStoragePath(branding?.logo_url);
+      if (!path) {
+        setLogoSignedUrl(null);
+        return;
+      }
+      const { data, error } = await supabase.storage
+        .from(LOGO_BUCKET)
+        .createSignedUrl(path, SIGNED_URL_TTL);
+      if (cancelled) return;
+      if (error) {
+        setLogoSignedUrl(null);
+        return;
+      }
+      setLogoSignedUrl(data?.signedUrl || null);
+    }
+    sign();
+    return () => {
+      cancelled = true;
+    };
+  }, [branding?.logo_url]);
 
   const saveMutation = useMutation({
     mutationFn: async (payload: Partial<EstablishmentBranding>) => {
@@ -97,18 +138,20 @@ export function useEstablishmentBranding() {
       const ext = file.name.split(".").pop()?.toLowerCase() || "png";
       const path = `${estId}/logo-${Date.now()}.${ext}`;
       const { error: upErr } = await supabase.storage
-        .from("establishment-logos")
+        .from(LOGO_BUCKET)
         .upload(path, file, { upsert: true, contentType: file.type });
       if (upErr) throw upErr;
-      const { data } = supabase.storage.from("establishment-logos").getPublicUrl(path);
-      await saveMutation.mutateAsync({ logo_url: data.publicUrl });
-      return data.publicUrl;
+      // Store the storage path (private bucket); display uses signed URLs.
+      await saveMutation.mutateAsync({ logo_url: path });
+      return path;
     },
     [estId, saveMutation]
   );
 
   return {
     branding: branding || (estId ? EMPTY_BRANDING(estId) : null),
+    /** Temporary signed URL for displaying the logo (null if no logo) */
+    logoUrl: logoSignedUrl,
     isLoading,
     save: saveMutation.mutateAsync,
     saving: saveMutation.isPending,

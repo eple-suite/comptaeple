@@ -10,6 +10,9 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 import type { EstablishmentBranding } from "@/hooks/useEstablishmentBranding";
+import { supabase } from "@/integrations/supabase/client";
+
+const LOGO_BUCKET = "establishment-logos";
 
 export type WordSection =
   | { kind: "heading"; text: string; level?: 1 | 2 | 3 }
@@ -42,8 +45,21 @@ const hexToRgb = (hex: string): [number, number, number] => {
   return [r, g, b];
 };
 
-async function fetchLogoBuffer(url: string): Promise<{ buffer: ArrayBuffer; type: "png" | "jpg" | "gif" } | null> {
+async function resolveLogoUrl(stored: string): Promise<string | null> {
+  // Already a full URL → use directly (legacy public URLs)
+  if (/^https?:\/\//i.test(stored)) return stored;
+  // Otherwise treat as storage path in the private bucket
+  const { data, error } = await supabase.storage
+    .from(LOGO_BUCKET)
+    .createSignedUrl(stored, 60 * 10);
+  if (error || !data?.signedUrl) return null;
+  return data.signedUrl;
+}
+
+async function fetchLogoBuffer(stored: string): Promise<{ buffer: ArrayBuffer; type: "png" | "jpg" | "gif" } | null> {
   try {
+    const url = await resolveLogoUrl(stored);
+    if (!url) return null;
     const res = await fetch(url);
     if (!res.ok) return null;
     const buf = await res.arrayBuffer();
@@ -51,7 +67,7 @@ async function fetchLogoBuffer(url: string): Promise<{ buffer: ArrayBuffer; type
     let type: "png" | "jpg" | "gif" = "png";
     if (ct.includes("jpeg") || ct.includes("jpg")) type = "jpg";
     else if (ct.includes("gif")) type = "gif";
-    else if (url.toLowerCase().endsWith(".jpg") || url.toLowerCase().endsWith(".jpeg")) type = "jpg";
+    else if (url.toLowerCase().includes(".jpg") || url.toLowerCase().includes(".jpeg")) type = "jpg";
     return { buffer: buf, type };
   } catch {
     return null;

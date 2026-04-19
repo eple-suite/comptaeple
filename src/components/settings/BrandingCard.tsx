@@ -11,7 +11,7 @@ import { toast } from "sonner";
 
 export function BrandingCard() {
   const { selectedEstablishment } = useEstablishment();
-  const { branding, save, saving, uploadLogo } = useEstablishmentBranding();
+  const { branding, logoUrl, save, saving, uploadLogo } = useEstablishmentBranding();
   const [form, setForm] = useState({
     full_name: "",
     address: "",
@@ -125,8 +125,8 @@ export function BrandingCard() {
           </Label>
           <div className="flex items-center gap-4">
             <div className="h-24 w-24 rounded-lg border-2 border-dashed border-border flex items-center justify-center bg-muted/30 overflow-hidden">
-              {branding?.logo_url ? (
-                <img src={branding.logo_url} alt="Logo" className="max-h-full max-w-full object-contain" />
+              {logoUrl ? (
+                <img src={logoUrl} alt="Logo" className="max-h-full max-w-full object-contain" />
               ) : (
                 <ImageIcon className="h-8 w-8 text-muted-foreground/50" />
               )}
