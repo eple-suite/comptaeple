@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700;9..40,800&family=Instrument+Serif:ital@0;1&display=swap');
 
 @layer base {
   :root {
@@ -60,15 +60,36 @@
     --shadow-card-hover: 0 8px 24px -4px hsl(220 25% 12% / 0.10), 0 4px 8px -2px hsl(220 25% 12% / 0.05);
     --shadow-primary: 0 4px 14px -2px hsl(220 65% 48% / 0.30);
 
-    /* Sidebar */
-    --sidebar-background: 222 30% 14%;
-    --sidebar-foreground: 220 15% 85%;
-    --sidebar-primary: 220 65% 58%;
+    /* Sidebar — premium dark institutional */
+    --sidebar-background: 222 35% 11%;
+    --sidebar-foreground: 220 12% 78%;
+    --sidebar-primary: 220 75% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 25% 20%;
-    --sidebar-accent-foreground: 220 15% 85%;
-    --sidebar-border: 222 25% 20%;
-    --sidebar-ring: 220 65% 58%;
+    --sidebar-accent: 222 28% 17%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 222 25% 18%;
+    --sidebar-ring: 220 75% 60%;
+
+    /* Motion tokens */
+    --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+    --ease-out-back: cubic-bezier(0.34, 1.56, 0.64, 1);
+    --ease-in-out-quint: cubic-bezier(0.83, 0, 0.17, 1);
+    --duration-fast: 150ms;
+    --duration-base: 250ms;
+    --duration-slow: 450ms;
+
+    /* Premium surfaces */
+    --surface-raised: 0 0% 100%;
+    --surface-sunken: 220 14% 96%;
+    --surface-overlay: 0 0% 100% / 0.85;
+
+    /* Brand accents */
+    --brand-blue: 220 75% 52%;
+    --brand-indigo: 245 65% 55%;
+    --brand-violet: 270 60% 55%;
+    --brand-emerald: 158 55% 42%;
+    --brand-amber: 38 92% 50%;
+    --brand-coral: 12 80% 58%;
   }
 }
 
@@ -88,44 +109,110 @@
 }
 
 @layer utilities {
-  .gradient-primary {
-    background: var(--gradient-primary);
-  }
-  .gradient-success {
-    background: var(--gradient-success);
-  }
-  .gradient-accent {
-    background: var(--gradient-accent);
-  }
-  .gradient-hero {
-    background: var(--gradient-hero);
-  }
-  .shadow-card {
-    box-shadow: var(--shadow-card);
-  }
-  .shadow-card-hover {
-    box-shadow: var(--shadow-card-hover);
-  }
-  .shadow-primary {
-    box-shadow: var(--shadow-primary);
-  }
-  .shadow-elevated {
-    box-shadow: var(--shadow-lg);
-  }
+  .gradient-primary { background: var(--gradient-primary); }
+  .gradient-success { background: var(--gradient-success); }
+  .gradient-accent  { background: var(--gradient-accent); }
+  .gradient-hero    { background: var(--gradient-hero); }
+  .shadow-card       { box-shadow: var(--shadow-card); }
+  .shadow-card-hover { box-shadow: var(--shadow-card-hover); }
+  .shadow-primary    { box-shadow: var(--shadow-primary); }
+  .shadow-elevated   { box-shadow: var(--shadow-lg); }
 
-  /* Glass morphism for overlays */
+  /* Premium glass */
   .glass {
-    backdrop-filter: blur(12px) saturate(180%);
+    backdrop-filter: blur(14px) saturate(180%);
     background: hsl(0 0% 100% / 0.72);
     border: 1px solid hsl(220 13% 90% / 0.6);
   }
+  .glass-dark {
+    backdrop-filter: blur(14px) saturate(180%);
+    background: hsl(222 30% 11% / 0.78);
+    border: 1px solid hsl(222 25% 22% / 0.6);
+  }
 
-  /* Subtle grid pattern for section backgrounds */
+  /* Editorial serif accent */
+  .font-serif-accent { font-family: 'Instrument Serif', Georgia, serif; font-style: italic; letter-spacing: -0.01em; }
+
+  /* Mono numerals for tables / KPIs */
+  .tabular-nums { font-variant-numeric: tabular-nums; }
+
+  /* Background patterns */
   .bg-grid {
     background-image:
       linear-gradient(hsl(220 13% 90% / 0.4) 1px, transparent 1px),
       linear-gradient(90deg, hsl(220 13% 90% / 0.4) 1px, transparent 1px);
     background-size: 24px 24px;
+  }
+  .bg-dots {
+    background-image: radial-gradient(hsl(220 13% 80% / 0.5) 1px, transparent 1px);
+    background-size: 16px 16px;
+  }
+  .bg-noise {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+  .bg-radial-fade {
+    background: radial-gradient(ellipse at top, hsl(var(--primary) / 0.08), transparent 60%);
+  }
+
+  /* Premium hover lift */
+  .hover-lift {
+    transition: transform var(--duration-base) var(--ease-out-expo), box-shadow var(--duration-base) var(--ease-out-expo);
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Command palette kbd style */
+  .kbd {
+    @apply inline-flex items-center justify-center px-1.5 h-5 rounded-md border border-border/70 bg-muted/60 text-[10px] font-mono font-semibold text-muted-foreground;
+    box-shadow: inset 0 -1px 0 hsl(220 13% 80% / 0.6);
+  }
+
+  /* Animated gradient border */
+  .gradient-border {
+    position: relative;
+    background: hsl(var(--card));
+    background-clip: padding-box;
+    border: 1px solid transparent;
+  }
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(var(--primary) / 0.4), hsl(var(--secondary) / 0.4), transparent);
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Focus ring premium */
+  .focus-ring {
+    @apply outline-none ring-offset-2 ring-offset-background transition-shadow;
+  }
+  .focus-ring:focus-visible {
+    @apply ring-2 ring-primary/60;
+  }
+
+  /* Animated underline */
+  .link-underline {
+    background-image: linear-gradient(currentColor, currentColor);
+    background-size: 0% 1px;
+    background-repeat: no-repeat;
+    background-position: left bottom;
+    transition: background-size var(--duration-base) var(--ease-out-expo);
+  }
+  .link-underline:hover { background-size: 100% 1px; }
+
+  /* Skeleton shimmer */
+  .skeleton-shimmer {
+    background: linear-gradient(90deg, hsl(var(--muted)) 0%, hsl(var(--muted) / 0.5) 50%, hsl(var(--muted)) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
   }
 }
 
