@@ -34,7 +34,8 @@ serve(async (req) => {
   const authError = await verifyAuth(req);
   if (authError) return authError;
   try {
-    const { type, etablissement, resultats, anomalies, bloquants, indicateurs, historique, scopeDescription, detailLevel, systemPrompt: incomingSystemPrompt } = await req.json();
+    const body = await req.json();
+    const { type, etablissement, resultats, anomalies, bloquants, indicateurs, historique, scopeDescription, detailLevel, systemPrompt: incomingSystemPrompt, prompt: incomingPrompt, sectionId, context } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -208,6 +209,42 @@ Indicateurs clés :
 - Reliquats subventions : ${fmtEur(R.reliquatsSubventions)}
 
 Contrainte : termine avec un bloc "Actions prioritaires" en 5 points maximum.`;
+    } else if (type === 'narration_section') {
+      // Narration éditoriale d'une section précise du Rapport Ordonnateur (S1..S13)
+      resolvedSystemPrompt = (typeof incomingSystemPrompt === 'string' && incomingSystemPrompt.trim().length > 0)
+        ? incomingSystemPrompt
+        : `Tu es un expert-comptable EPLE (M9-6 / GBCP). Rédige une analyse éditoriale concise (200-300 mots), structurée en 2-3 paragraphes, ton institutionnel mais accessible. Mets en évidence les chiffres clés en **gras** et termine par une recommandation actionnable.`;
+
+      const ctx = context || {};
+      const ctxEtab = ctx.etablissement || {};
+      const ctxR = ctx.resultats || {};
+      const ctxInd = ctx.indicateurs || {};
+      const userQuestion = (typeof incomingPrompt === 'string' && incomingPrompt.trim().length > 0)
+        ? incomingPrompt
+        : `Analyse cette section et fournis une lecture experte.`;
+
+      userPrompt = `Section : ${ctx.section || sectionId || 'N/A'}
+Établissement : ${ctxEtab.nom || 'N/A'} (${ctxEtab.uai || 'N/A'}) — Type ${ctxEtab.type || 'N/A'} — Exercice ${ctxEtab.exercice || 'N/A'}
+
+Indicateurs financiers consolidés (peuvent être vides si aucun import) :
+- Résultat budgétaire : ${fmtEur(ctxR.resultatBudgetaire)}
+- Résultat comptable : ${fmtEur(ctxR.resultatComptable)}
+- FDR : ${fmtEur(ctxR.fdrComptable)} (${Math.round(toNum(ctxR.joursFdr))} j)
+- Trésorerie nette : ${fmtEur(ctxR.tresorerieNette ?? ctxR.tresorerie)} (${Math.round(toNum(ctxR.joursTresorerie))} j)
+- BFR : ${fmtEur(ctxR.bfr)}
+- CAF comptable : ${fmtEur(ctxR.cafComptable)} — CAF budgétaire : ${fmtEur(ctxR.cafBudgetaire)}
+- TMcap : ${fmtPct(ctxR.tmcap)} — TMnr : ${fmtPct(ctxR.tmnr)}
+- Créances : ${fmtEur(ctxR.totalCreances)} — Dettes : ${fmtEur(ctxR.totalDettes)}
+- Réserves c/1068 : ${fmtEur(ctxR.reserves)}
+
+Indicateurs hors-comptables :
+- Élèves : ${ctxInd.effectif_eleves || 0} — DP : ${ctxInd.effectif_dp || 0} — Internes : ${ctxInd.effectif_internes || 0} — Boursiers : ${ctxInd.effectif_boursiers || 0}
+- Personnel : ${ctxInd.effectif_personnel || 0} ETP — Surface : ${ctxInd.surface_batiments || 0} m²
+- Repas servis : ${ctxInd.nb_repas_servis || 0}
+
+Demande : ${userQuestion}
+
+Si les données financières sont vides (avant import), produis une analyse contextuelle prudente sur le périmètre de la section et invite l'utilisateur à importer les fichiers Op@le pour affiner.`;
     } else {
       return jsonError(400, "Type de rapport non supporté", "invalid_type");
     }
