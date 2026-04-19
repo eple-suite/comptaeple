@@ -411,10 +411,6 @@ SOURCE 5 — OUTILS ET PRATIQUES PROFESSIONNELLES
 ═══════════════════════════════════════════════════════════════
 
 OUTILS AC :
-- REPROFI : profils financiers comparatifs (5 exercices, indicateurs, comparaison moyenne académique/nationale, alertes)
-- Mobilisco : suivi mobilité des AC et FDP, passations de service
-- ESSATEDÉ : suivi SATD/recouvrement forcé (créances impayées, prescription 4 ans, émission SATD via PEPS)
-- EFFESCO : effectifs scolaires/restauration (coût denrées, crédit nourriture A2, prix de revient)
 - Op@le : progiciel comptable EPLE (budget, comptabilité, paye, régies, inventaire, recouvrement, reporting). Tutoriels disponibles sur IH2EF, académies, Intendance Zone, Espace EPLE.
 
 FONCTIONNALITÉS OP@LE :
@@ -427,7 +423,7 @@ FONCTIONNALITÉS OP@LE :
 - Reporting : balance, grand livre, compte financier
 
 ENQUÊTES RECTORALES (calendrier type) :
-- EFA (février-mars) : données financières pour REPROFI
+- EFA (février-mars) : remontée annuelle des données financières
 - Créances impayées (trimestriel) : créances > 3 mois, diligences, ANV
 - Rapport CIC (janvier) : taux contrôle, anomalies, plan d'action
 - Enquête SRH (octobre et mars) : effectifs, coûts, tarifs

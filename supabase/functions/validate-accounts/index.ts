@@ -57,10 +57,6 @@ DISTINCTION CRITIQUE — COMPTES ÉTAT vs COLLECTIVITÉ :
 - Familles : 4112, 4113, 44312
 
 OUTILS AC DE RÉFÉRENCE :
-- REPROFI : profils financiers comparatifs
-- Mobilisco : mobilité des AC
-- Essatédé : suivi SATD / recouvrement forcé
-- Effesco : effectifs restauration / crédit nourriture
 - Op@le : progiciel comptable (ex-GFC/COFI)
 
 SOLDES NORMAUX DE RÉFÉRENCE (M9-6 du 19/01/2026) :

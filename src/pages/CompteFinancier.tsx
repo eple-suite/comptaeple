@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════
-// COFIEPLE — Page Compte Financier — Refonte v3.0 REPROFI
+// COFIEPLE — Page Compte Financier — Refonte v3.0
 // 2 onglets principaux : Rapport Ordonnateur (13 sections)
 //                        Rapport Agent Comptable (existant)
 // + Onglets utilitaires : Accueil, Import, Journal, Contrôles…
@@ -286,7 +286,7 @@ const CompteFinancier = () => {
           <div className="flex gap-1 px-3 pt-2">
             {[
               { key: 'utils' as MainTab, label: '🛠️ Outils', desc: 'Import, contrôles, indicateurs' },
-              { key: 'ordo' as MainTab, label: '📋 Rapport Ordonnateur', desc: '13 sections REPROFI' },
+              { key: 'ordo' as MainTab, label: '📋 Rapport Ordonnateur', desc: '13 sections M9-6' },
               { key: 'ac' as MainTab, label: '📊 Rapport Agent Comptable', desc: 'Analyse comptable' },
             ].map(tab => (
               <button

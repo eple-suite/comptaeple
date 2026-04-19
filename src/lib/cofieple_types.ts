@@ -136,7 +136,7 @@ export interface ResultatsM96 {
   tauxExecCharges: number; tauxExecProduits: number;
   joursAutonomie: number; ratioFdrBfr: number;
   prelevementsReserves: PrelevementsReserves;
-  // REPROFI indicators
+  // Indicateurs M9-6 — Bilan de santé financière
   joursFdr: number;
   joursTresorerie: number;
   fdrPartEncaissee: number;

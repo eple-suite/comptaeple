@@ -76,7 +76,7 @@ export interface ResultatsUI extends ResultatsM96 {
   totalFluxTresorerie: number;   // Flux nets de trésorerie
   parService: Record<string, ServiceDataUI>;
   indicateursBA?: IndicateursBA;
-  // Analyse prédictive (dépassement REPROFI)
+  // Analyse prédictive M9-6
   scoreRisque?: number;          // 0-100, score de risque global
   niveauRisque?: 'faible' | 'modéré' | 'élevé' | 'critique';
 }

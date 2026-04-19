@@ -14,7 +14,7 @@ import { Search, Ban, AlertTriangle, CheckCircle2, Scale, FileSpreadsheet, Trend
 
 // ═══════════════════════════════════════════════════════════════
 // SUPERVISEUR — Vérification du sens des soldes (M9-6 Plan comptable EPLE)
-// Avantage vs REPROFI : détection automatique + conséquences M9-6
+// Détection automatique + conséquences M9-6
 // ═══════════════════════════════════════════════════════════════
 export function SuperviseurSection() {
   const anomalies = useCofiepleStore(s => s.anomaliesBalance);
@@ -189,7 +189,7 @@ export function SyntheseSection() {
 // ═══════════════════════════════════════════════════════════════
 // TABLEAUX — FDR / BFR / Trésorerie / CAF / Bilan / Compte de Résultat
 // M9-6 §§ IV.1-3 + Bilan fonctionnel + CdR par nature
-// Avantage vs REPROFI : Bilan et CdR intégrés + vérification d'équilibre
+// Bilan et CdR intégrés + vérification d'équilibre
 // ═══════════════════════════════════════════════════════════════
 export function TableauxSection() {
   const resultats = useCofiepleStore(s => s.resultats);

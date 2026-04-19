@@ -193,34 +193,6 @@ export const SEUILS_MARCHES_PUBLICS = {
 
 export const OUTILS_AC = [
   {
-    nom: "REPROFI",
-    description: "Restitution des Profils Financiers — Outil académique d'aide au pilotage financier des EPLE",
-    usage: "Analyse comparative inter-établissements, indicateurs financiers, profil radar",
-    source: "DAF A3 / Académie",
-    lien: "Accessible via le portail académique (intranet)",
-    fonctionnalites: [
-      "Profil financier sur 5 exercices",
-      "Indicateurs réglementaires (FDR, BFR, trésorerie, jours fonctionnement)",
-      "Comparaison avec la moyenne académique et nationale",
-      "Alertes automatiques sur les seuils",
-      "Export pour le compte financier",
-    ],
-  },
-  {
-    nom: "ESSATEDÉ (Essatédé)",
-    description: "Outil de suivi des Saisies Administratives à Tiers Détenteur (SATD) pour les EPLE",
-    usage: "Suivi du recouvrement forcé, prescription, gestion des SATD",
-    source: "Académie / DDFiP",
-    lien: "Portail PEPS (dématérialisé depuis 2026)",
-    fonctionnalites: [
-      "Suivi des créances impayées",
-      "Calcul automatique des délais de prescription (4 ans)",
-      "Émission dématérialisée des SATD via PEPS",
-      "Suivi des retours bancaires et employeurs",
-      "Statistiques de recouvrement",
-    ],
-  },
-  {
     nom: "Op@le",
     description: "Progiciel de gestion budgétaire et comptable des EPLE — remplace GFC/COFI",
     usage: "Comptabilité, budget, paye, régies, inventaire",
@@ -256,7 +228,7 @@ export const ENQUETES_RECTORALES = [
   {
     nom: "Enquête financière annuelle (EFA)",
     periode: "Février-Mars",
-    description: "Collecte des données financières pour REPROFI. Indicateurs FDR, BFR, trésorerie, charges, produits.",
+    description: "Collecte des données financières annuelles. Indicateurs FDR, BFR, trésorerie, charges, produits.",
     destinataire: "DAF A3 / Rectorat",
     obligatoire: true,
     donnees: ["Balance définitive N-1", "Indicateurs financiers", "Effectifs", "Crédit nourriture"],

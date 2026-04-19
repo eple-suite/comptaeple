@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 // DOCUMENT JOINT À LA CONVOCATION DU CONSEIL D'ADMINISTRATION
-// Synthèse du compte financier — Modèle REPROFI
+// Synthèse du compte financier — Modèle officiel M9-6
 // Version professionnelle avec visuels pour membres du CA
 // M9-6 2026 · Décret 2012-1246 (RGCP)
 // ═══════════════════════════════════════════════════════════════
@@ -298,7 +298,7 @@ export function generateDocumentCA(data: DocumentCAData): void {
   doc.setFontSize(10);
   doc.text('Document joint a la convocation du Conseil d\'Administration', pw / 2, 48, { align: 'center' });
   doc.setFontSize(8);
-  doc.text('Modele REPROFI - M9-6 - Decret 2012-1246 (RGCP)', pw / 2, 56, { align: 'center' });
+  doc.text('M9-6 - Decret 2012-1246 (RGCP)', pw / 2, 56, { align: 'center' });
 
   // Establishment info card
   const cardY = 82;
