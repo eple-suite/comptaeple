@@ -44,22 +44,6 @@ const fetchEstablishmentByUAI = async (uai: string): Promise<AnnuaireResult | nu
   return null;
 };
 
-// Génère un UAI dérivé pour l'annexe : 7 chiffres du support + lettre dépendante du type
-// Si collision (autre annexe même type), on incrémente le dernier chiffre numérique
-const buildAnnexeUai = (supportUai: string, type: AnnexeType, existing: string[]): string => {
-  const base = supportUai.toUpperCase().replace(/[^0-9A-Z]/g, "").slice(0, 7).padEnd(7, "0");
-  const letter = ANNEXE_META[type].suffix;
-  let candidate = `${base}${letter}`;
-  let i = 1;
-  while (existing.includes(candidate)) {
-    // remplace dernier chiffre par i
-    const num = base.slice(0, 6) + String(i % 10);
-    candidate = `${num}${letter}`;
-    i++;
-    if (i > 99) break;
-  }
-  return candidate;
-};
 
 const Establishments = () => {
   const [search, setSearch] = useState("");
