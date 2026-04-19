@@ -9,6 +9,7 @@ import { analyser, buildAssistantContext } from '@/lib/hyperaleAnalyseEngine';
 import { Bot, Send, User, Loader2, Lightbulb, Database, BarChart3 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -52,11 +53,19 @@ export default function HyperaleAssistant() {
     let assistantSoFar = '';
 
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+      if (!accessToken) {
+        toast.error('Vous devez être connecté pour utiliser l\'assistant.');
+        setLoading(false);
+        return;
+      }
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/chat-eple`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${accessToken}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           messages: [
