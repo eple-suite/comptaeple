@@ -27,7 +27,7 @@ export function OrdoS9ActivitesPeda() {
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <SectionTitre numero="S9" title="Activités pédagogiques" />
+        <SectionTitre numero="S9" title="Activités pédagogiques" withNarration />
 
         {apDomaines.length > 0 ? (
           <>

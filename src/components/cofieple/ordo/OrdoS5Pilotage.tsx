@@ -22,7 +22,7 @@ export function OrdoS5Pilotage() {
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <SectionTitre numero="S5" title="Pilotage budgétaire" />
+        <SectionTitre numero="S5" title="Pilotage budgétaire" withNarration />
 
         {/* Tableau budget initial vs exécuté */}
         <div className="overflow-x-auto">

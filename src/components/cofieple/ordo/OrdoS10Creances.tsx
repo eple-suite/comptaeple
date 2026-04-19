@@ -22,7 +22,7 @@ export function OrdoS10Creances() {
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <SectionTitre numero="S10" title="Analyse des créances et recouvrements" />
+        <SectionTitre numero="S10" title="Analyse des créances et recouvrements" withNarration />
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <KPICard label="Total créances" value={formatEur(safe.totalCreances)} color={safe.totalCreances > 0 ? 'amber' : 'green'} icon="📋" />

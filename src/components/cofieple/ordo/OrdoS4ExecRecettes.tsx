@@ -39,7 +39,7 @@ export function OrdoS4ExecRecettes() {
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <SectionTitre numero="S4" title="Exécution budgétaire — Recettes" />
+        <SectionTitre numero="S4" title="Exécution budgétaire — Recettes" withNarration />
 
         {/* Tableau SDR */}
         <div className="overflow-x-auto">

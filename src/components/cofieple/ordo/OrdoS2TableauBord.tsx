@@ -25,7 +25,7 @@ export function OrdoS2TableauBord() {
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <SectionTitre numero="S2" title="Tableau de bord financier" />
+        <SectionTitre numero="S2" title="Tableau de bord financier" withNarration />
 
         {/* KPI line */}
         <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-2">
