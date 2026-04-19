@@ -109,8 +109,8 @@ export function calculerResultatsM96(
   const produitsNonEncaissables = (crd78 - dbt78) + (crd775 - dbt775) + (crd776 - dbt776) + (crd777 - dbt777);
   const cafComptable = resultatComptable + chargesNonDecaissables - produitsNonEncaissables;
 
-  // ── CAF budgétaire (M9-6 § IV.3 / REPROFI — Bilan de santé financière)
-  // REPROFI standard : CAF = Produits encaissables − Charges décaissables
+  // ── CAF budgétaire (M9-6 § IV.3 — Bilan de santé financière)
+  // Standard M9-6 : CAF = Produits encaissables − Charges décaissables
   //   Charges décaissables = Total SDE − Charges d'ordre SDE (cpt 68* + 675*)
   //   Produits encaissables = Total SDR − Produits d'ordre SDR (cpt 78* + 775* + 776* + 777*)
   // Équivalent : CAF = Résultat budgétaire + Charges OO(SDE) − Produits OO(SDR)
@@ -376,32 +376,32 @@ export function calculerResultatsM96(
   const joursFdr = drfnQuotidien > 0 ? fdrComptable / drfnQuotidien : 0;
   const joursTresorerie = drfnQuotidien > 0 ? tresorerie / drfnQuotidien : 0;
 
-  // ── REPROFI — TMcap (Taux moyen charges à payer) ──────────────────
+  // ── M9-6 — TMcap (Taux moyen charges à payer) ─────────────────────
   // Part impayée des charges = dettes fournisseurs / charges réalisées
   // Dénominateur : SDE si dispo, sinon balance classe 6
   const dettesFournisseurs = sumBal(bal, c => c.startsWith('401') || c.startsWith('408'), 'solCrd');
   const tmcap = totalChargesRef > 0 ? (dettesFournisseurs / totalChargesRef) * 100 : 0;
 
-  // ── REPROFI — TMnr (Taux moyen de non-recouvrement) ───────────────
+  // ── M9-6 — TMnr (Taux moyen de non-recouvrement) ──────────────────
   // Part non recouvrée = créances cl4 débit / recettes réalisées
   // Dénominateur : SDR si dispo, sinon balance classe 7
   const totalCreancesCl4 = sumBal(bal, c => c.charAt(0) === '4', 'solDbt');
   const tmnr = totalProduitsRef > 0 ? (totalCreancesCl4 / totalProduitsRef) * 100 : 0;
 
-  // ── REPROFI — Créances par origine ────────────────────────────────
+  // ── M9-6 — Créances par origine ───────────────────────────────────
   const creancesEtat = sumBal(bal, c => c.startsWith('4411') || c.startsWith('4431') || c.startsWith('4432') || c.startsWith('4438'), 'solDbt');
   const creancesCollectivite = sumBal(bal, c => c.startsWith('4412') || c.startsWith('4413'), 'solDbt');
   const creancesFamilles = sumBal(bal, c => c.startsWith('411') || c.startsWith('412') || c.startsWith('413'), 'solDbt');
   const creancesAutres = totalCreancesCl4 - creancesEtat - creancesCollectivite - creancesFamilles;
   const totalCreances = totalCreancesCl4;
 
-  // ── REPROFI — Dettes par type ─────────────────────────────────────
+  // ── M9-6 — Dettes par type ────────────────────────────────────────
   const dettesEtat = sumBal(bal, c => c.startsWith('4411') || c.startsWith('4431') || c.startsWith('4432') || c.startsWith('4438'), 'solCrd');
   const dettesCollectivite = sumBal(bal, c => c.startsWith('4412') || c.startsWith('4413'), 'solCrd');
   const dettesAutresCl4 = sumBal(bal, c => c.charAt(0) === '4', 'solCrd') - dettesFournisseurs - dettesEtat - dettesCollectivite;
   const totalDettes = sumBal(bal, c => c.charAt(0) === '4', 'solCrd');
 
-  // ── REPROFI — Reliquats de subventions ────────────────────────────
+  // ── M9-6 — Reliquats de subventions ───────────────────────────────
   const reliquatsSubventions = sumBal(bal, c => c.startsWith('441') || c.startsWith('443') || c.startsWith('468'), 'solCrd');
 
   // ── Part encaissée du FDR (M9-6) ───────────────────────────────────
@@ -418,7 +418,7 @@ export function calculerResultatsM96(
   const fdrPctEncaissee = fdrComptable > 0 ? (fdrPartEncaissee / fdrComptable) * 100 : 0;
   const fdrPctNonEncaissee = fdrComptable > 0 ? (fdrPartNonEncaissee / fdrComptable) * 100 : 0;
 
-  // ── REPROFI — FDR mobilisable ─────────────────────────────────────
+  // ── M9-6 — FDR mobilisable ────────────────────────────────────────
   const stocks = sumBal(bal, c => c.charAt(0) === '3', 'solDbt');
   const creancesAnciennes = sumBal(bal, c => c.startsWith('416'), 'solDbt');
   const fdrMobilisable = fdrComptable - stocks - creancesAnciennes;

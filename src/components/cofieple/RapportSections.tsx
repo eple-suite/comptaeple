@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 // COFIEPLE — Rapport Ordonnateur + Rapport Agent Comptable
-// Modèle REPROFI 25 pages — M9-6 2026, Décret 2012-1246
+// Modèle officiel 25 pages — M9-6 2026, Décret 2012-1246
 // Version enrichie : dashboard financier complet, graphiques variés,
 // commentaires d'analyse pour CA non spécialiste,
 // PDF officiel AC, pas de visa comptable supérieur
@@ -84,7 +84,7 @@ export function RapportOrdoSection() {
   const pKey = `cofieple_rapport_ordo_${etab.uai}_${etab.exercice}`;
   const [nomOrdonnateur, setNomOrdonnateur] = usePersistedState(`${pKey}_nom_ordo`, etab.ordonnateur || '');
   const [nomSecretaireGeneral, setNomSecretaireGeneral] = usePersistedState(`${pKey}_nom_sg`, etab.secretaireGeneral || '');
-  // Commentaires ordonnateur sur chaque rubrique (REPROFI-style "Faits caractéristiques")
+  // Commentaires ordonnateur sur chaque rubrique ("Faits caractéristiques")
   const [commentairePresentation, setCommentairePresentation, statusPres, lastSavedPres] = usePersistedText(`${pKey}_com_presentation`, '');
   const [commentaireResultat, setCommentaireResultat, statusRes, lastSavedRes] = usePersistedText(`${pKey}_com_resultat`, '');
   const [commentaireRepartition, setCommentaireRepartition, statusRep, lastSavedRep] = usePersistedText(`${pKey}_com_repartition`, '');
@@ -864,7 +864,7 @@ export function RapportOrdoSection() {
           </div>
           <CommentaireBox label="Commentaire sur la situation patrimoniale" value={commentairePatrimoine} onChange={setCommentairePatrimoine} status={statusPat} lastSaved={lastSavedPat} />
 
-          {/* §12 Pilotage budgétaire (REPROFI) */}
+          {/* §12 Pilotage budgétaire */}
           <SectionTitre numero="12" title="Pilotage budgétaire — Budget initial vs exécuté" />
           <div className="overflow-x-auto mb-4">
             <table className="w-full text-xs border">

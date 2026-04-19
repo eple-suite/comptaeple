@@ -89,7 +89,7 @@ export const mockRepartitionCharges = [
   { name: "Investissement", value: 7.0, fill: "hsl(215, 25%, 60%)" },
 ];
 
-// ─── Données supplémentaires REPROFI ───
+// ─── Données supplémentaires — Bilan de santé financière ───
 
 // Confrontation subventions (sous condition d'emploi)
 export const mockConfrontationSubventions = [

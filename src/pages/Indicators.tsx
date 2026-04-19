@@ -20,7 +20,7 @@ const Indicators = () => {
   const resultats = useCofiepleStore(s => s.resultats);
   const r = resultats[activeBudget];
 
-  // Indicateurs réels REPROFI si données importées, sinon mock
+  // Indicateurs réels M9-6 si données importées, sinon mock
   const live = useMemo(() => {
     if (!r) return mockIndicators;
     const chargesInvest = r.chargesNature ? Object.entries(r.chargesNature).filter(([k]) => /^(20|21|23)/.test(k)).reduce((s, [, v]) => s + v, 0) : 0;
@@ -54,8 +54,8 @@ const Indicators = () => {
     { title: "Part du SRH", value: formatPercent(live.poidsSRH), raw: live.poidsSRH, icon: Users, variant: "warning" as const, formula: "Charges SRH / Total charges" },
   ];
 
-  // REPROFI extended indicators
-  const reprofiExtended = useMemo(() => {
+  // M9-6 extended indicators
+  const extendedIndicators = useMemo(() => {
     if (!r) return [];
     return [
       { label: "CAF budgétaire", value: formatCurrency(r.cafBudgetaire), formula: "Résultat + Ch. OO(SDE) - Pr. OO(SDR)" },
@@ -117,7 +117,7 @@ const Indicators = () => {
             <div>
               <h1 className="text-2xl font-bold font-display tracking-tight">Indicateurs financiers M9-6</h1>
               <p className="text-sm text-muted-foreground mt-0.5">
-                {hasRealData ? 'Indicateurs calculés à partir des données importées — Modèle REPROFI' : 'Données de démonstration — Importez SDE/SDR/Balance pour obtenir vos indicateurs réels'}
+                {hasRealData ? 'Indicateurs calculés à partir des données importées — Modèle officiel M9-6' : 'Données de démonstration — Importez SDE/SDR/Balance pour obtenir vos indicateurs réels'}
               </p>
             </div>
           </div>
@@ -135,14 +135,14 @@ const Indicators = () => {
       {!hasRealData && (
         <div className="rounded-xl border border-warning/30 bg-warning/5 p-4 text-sm text-warning-foreground">
           <strong>Mode démonstration :</strong> Les indicateurs affichés sont des données fictives. 
-          Pour afficher vos indicateurs réels REPROFI, importez vos fichiers SDE, SDR et Balance dans le module <em>Compte Financier</em>.
+          Pour afficher vos indicateurs réels M9-6, importez vos fichiers SDE, SDR et Balance dans le module <em>Compte Financier</em>.
         </div>
       )}
 
       {/* Gauges row */}
       <Card className="shadow-card">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold">Tableau de bord synthétique — Bilan de santé financière (REPROFI)</CardTitle>
+          <CardTitle className="text-sm font-semibold">Tableau de bord synthétique — Bilan de santé financière (M9-6)</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-wrap justify-center gap-6">
@@ -154,15 +154,15 @@ const Indicators = () => {
         </CardContent>
       </Card>
 
-      {/* REPROFI Extended Indicators (only with real data) */}
-      {hasRealData && reprofiExtended.length > 0 && (
+      {/* M9-6 Extended Indicators (only with real data) */}
+      {hasRealData && extendedIndicators.length > 0 && (
         <Card className="shadow-card border-primary/20">
           <CardHeader className="pb-2 bg-gradient-to-r from-[hsl(222,30%,14%)] to-[hsl(222,25%,20%)] rounded-t-lg">
-            <CardTitle className="text-sm font-semibold text-white">Indicateurs REPROFI — Bilan de santé financière</CardTitle>
+            <CardTitle className="text-sm font-semibold text-white">Indicateurs M9-6 — Bilan de santé financière</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {reprofiExtended.map((ind) => (
+              {extendedIndicators.map((ind) => (
                 <div key={ind.label} className="p-3 rounded-lg border bg-card">
                   <p className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">{ind.label}</p>
                   <p className="text-lg font-bold font-display mt-1">{ind.value}</p>

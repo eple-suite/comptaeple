@@ -1,7 +1,7 @@
 // ═══════════════════════════════════════════════════════════════
 // COFIEPLE — Check-List M9-6 (15 vérifications réglementaires)
 // Réf : M9-6 §§ II, III, IV — Décret 2012-1246 art. 195-199
-// Avantage vs REPROFI : Score de risque prédictif, pistes de correction
+// Score de risque prédictif, pistes de correction
 // ═══════════════════════════════════════════════════════════════
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +38,7 @@ export function CheckListSection() {
 
   return (
     <div className="space-y-5">
-      {/* Score de risque prédictif — Avantage vs REPROFI */}
+      {/* Score de risque prédictif */}
       <Card className="border-l-4 border-l-primary">
         <CardContent className="p-4">
           <div className="flex items-center gap-4 flex-wrap">

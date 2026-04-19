@@ -44,7 +44,7 @@ export function VueEnsembleSection() {
   const nbAnom = checkItems.filter(c => c.statut !== 'ok').length;
   const nbSoldesAnormaux = anomaliesBalance.filter(a => a.anomalie).length;
 
-  // Safe access to REPROFI properties
+  // Safe access to financial indicator properties
   const joursFdr = R.joursFdr ?? 0;
   const joursTreso = R.joursTresorerie ?? 0;
   const drfn = R.drfn ?? 0;

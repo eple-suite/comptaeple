@@ -1,6 +1,6 @@
 // ═══════════════════════════════════════════════════════════════
 // PDF RAPPORT DE L'AGENT COMPTABLE — Document officiel
-// Modèle REPROFI enrichi — M9-6 2026 · Décret 2012-1246
+// Modèle officiel — M9-6 2026 · Décret 2012-1246
 // Avec graphiques intégrés, visuels professionnels, radar, trend charts
 // ═══════════════════════════════════════════════════════════════
 
