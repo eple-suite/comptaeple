@@ -72,22 +72,22 @@ Points d'attention (analyse de l'agent comptable) : la CAF/IAF budgétaire est d
       }
 
       if (type === 'agent_comptable') {
-        return `Rapport généré en mode automatique de continuité. ${reasonText} Les observations ci-dessous sont produites à partir des données financières disponibles pour l'exercice ${etab.exercice || 'N/A'}.
+        return `${posturePreambule}Rapport généré en mode automatique de continuité par l'agent comptable. ${reasonText} Les observations ci-dessous sont produites à partir des données financières disponibles pour l'exercice ${etab.exercice || 'N/A'}, dans le respect strict du cadre GBCP (décret n°2012-1246) et de l'instruction M9-6.
 
-Le résultat comptable s'établit à ${fmtEur(R.resultatComptable)}, pour un résultat budgétaire de ${fmtEur(R.resultatBudgetaire)}. La CAF/IAF comptable est de ${fmtEur(R.cafComptable)}, tandis que la CAF/IAF budgétaire atteint ${fmtEur(R.cafBudgetaire)}. Ces éléments traduisent la capacité d'autofinancement actuelle de l'établissement et orientent l'analyse de soutenabilité.
+Le résultat comptable s'établit à ${fmtEur(R.resultatComptable)}, pour un résultat budgétaire de ${fmtEur(R.resultatBudgetaire)}. La CAF/IAF comptable est de ${fmtEur(R.cafComptable)}, tandis que la CAF/IAF budgétaire atteint ${fmtEur(R.cafBudgetaire)}. Ces éléments traduisent la capacité d'autofinancement actuelle de l'établissement et orientent l'analyse de soutenabilité conduite par l'agent comptable au titre de sa responsabilité personnelle et pécuniaire.
 
-Le fonds de roulement est arrêté à ${fmtEur(R.fdrComptable)} (${Math.round(toNum(R.joursFdr))} jours), dont ${toNum(R.fdrPctEncaissee).toFixed(1)}% en part encaissée. Le FDR mobilisable est évalué à ${fmtEur(R.fdrMobilisable)}. Le besoin en fonds de roulement est de ${fmtEur(R.bfr)} et la trésorerie nette de ${fmtEur(R.tresorerieNette ?? R.tresorerie)} (${Math.round(toNum(R.joursTresorerie))} jours), avec cohérence de lecture entre les masses bilantielles.
+Le fonds de roulement est arrêté à ${fmtEur(R.fdrComptable)} (${Math.round(toNum(R.joursFdr))} jours), dont ${toNum(R.fdrPctEncaissee).toFixed(1)}% en part encaissée. Le FDR mobilisable est évalué à ${fmtEur(R.fdrMobilisable)}. Le besoin en fonds de roulement est de ${fmtEur(R.bfr)} et la trésorerie nette de ${fmtEur(R.tresorerieNette ?? R.tresorerie)} (${Math.round(toNum(R.joursTresorerie))} jours), avec cohérence de lecture entre les masses bilantielles (haut et bas de bilan).
 
-Les indicateurs de gestion à court terme s'établissent à TMcap ${fmtPct(R.tmcap)} et TMnr ${fmtPct(R.tmnr)}. Les créances atteignent ${fmtEur(R.totalCreances)} et les dettes ${fmtEur(R.totalDettes)} ; les reliquats de subventions sont de ${fmtEur(R.reliquatsSubventions)}. Une vigilance est recommandée sur les délais de recouvrement et la dynamique des charges à payer.
+Les indicateurs de gestion à court terme s'établissent à TMcap ${fmtPct(R.tmcap)} et TMnr ${fmtPct(R.tmnr)}. Les créances atteignent ${fmtEur(R.totalCreances)} et les dettes ${fmtEur(R.totalDettes)} ; les reliquats de subventions sont de ${fmtEur(R.reliquatsSubventions)}. Une vigilance particulière est recommandée sur les délais de recouvrement (qualité comptable du compte 4116) et la dynamique des charges à payer.
 
-Le patrimoine net comptable est de ${fmtEur(R.valeurNette)}, avec une variation annuelle de ${fmtEur(R.variationPatrimoine)}. Les réserves (c/1068) s'établissent à ${fmtEur(R.reserves)}. Les mouvements de réserves et leur affectation doivent être explicités dans la délibération du conseil d'administration conformément au cadre M9-6 et au décret 2012-1246.
+Le patrimoine net comptable est de ${fmtEur(R.valeurNette)}, avec une variation annuelle de ${fmtEur(R.variationPatrimoine)}. Les réserves (c/1068) s'établissent à ${fmtEur(R.reserves)}. Les mouvements de réserves et leur affectation doivent être explicités dans la délibération du conseil d'administration conformément au cadre M9-6 et au décret 2012-1246, et tracés dans Op@le selon la logique services / domaines / activités.
 
-Conclusion : l'établissement dispose d'un socle financier objectivé par les indicateurs ci-dessus. Il est proposé de maintenir un pilotage prudent de la trésorerie, de sécuriser le recouvrement des créances et de justifier précisément toute mobilisation du fonds de roulement dans les actes budgétaires à venir.`;
+Conclusion de l'agent comptable : l'établissement dispose d'un socle financier objectivé par les indicateurs ci-dessus. Il est proposé de maintenir un pilotage prudent de la trésorerie, de sécuriser le recouvrement des créances et de justifier précisément toute mobilisation du fonds de roulement dans les actes budgétaires à venir, en garantissant la régularité, la sincérité et la qualité comptable des écritures.`;
       }
 
-      return `## Synthèse financière globale (mode automatique)
+      return `${posturePreambule}## Synthèse financière globale (mode automatique — agent comptable)
 
-${reasonText} Cette analyse est produite automatiquement à partir des données disponibles.
+${reasonText} Cette analyse est produite automatiquement à partir des données disponibles, dans le respect du cadre GBCP, M9-6 et du code de l'éducation.
 
 ### Situation d'ensemble
 Le résultat budgétaire est de ${fmtEur(R.resultatBudgetaire)} et le résultat comptable de ${fmtEur(R.resultatComptable)}. Le fonds de roulement s'établit à ${fmtEur(R.fdrComptable)} (FDR mobilisable : ${fmtEur(R.fdrMobilisable)}). La trésorerie nette atteint ${fmtEur(R.tresorerieNette ?? R.tresorerie)} et le BFR est de ${fmtEur(R.bfr)}.
