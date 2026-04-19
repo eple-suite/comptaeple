@@ -34,6 +34,8 @@ import { IndicateursSrh } from '@/components/cofieple/IndicateursSrh';
 import { PerimetreComptable } from '@/components/cofieple/PerimetreComptable';
 import { VueConsolidee } from '@/components/cofieple/VueConsolidee';
 import { RapportImpression } from '@/components/rapport/RapportImpression';
+import { CofiepleHero } from '@/components/cofieple/premium/CofiepleHero';
+import { MagazineExportButton } from '@/components/cofieple/premium/MagazineExportButton';
 import {
   OrdoS1Presentation, OrdoS2TableauBord, OrdoS3ExecFonctionnement,
   OrdoS4ExecRecettes, OrdoS5Pilotage, OrdoS6SRH, OrdoS7VieEleve,
