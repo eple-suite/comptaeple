@@ -198,17 +198,21 @@ export default function HyperaleAssistant() {
 
 function generateFallback(question: string, analyse: ReturnType<typeof analyser>, nom: string, exercice: number): string {
   const q = question.toLowerCase();
+  // Préambule institutionnel — posture Agent Comptable Expert EPLE (GBCP / M9-6 / Op@le)
+  const preambule = `> *Réponse produite en mode de continuité (IA indisponible), sous la posture d'agent comptable expert EPLE — décret n°2012-1246 (GBCP), instruction M9-6, code de l'éducation, ordonnance n°2022-408, code de la commande publique. L'analyse vise à garantir la régularité, la sincérité et la qualité comptable.*\n\n`;
+  const cadreRef = `\n\n---\n*Cadre de référence : GBCP (décret 2012-1246) · M9-6 · Code de l'éducation · Op@le (logique services / domaines / activités).*`;
+
   if (q.includes('fdr') || q.includes('fonds de roulement')) {
-    return `## Analyse du FDR\n\n${analyse.engine.analyseDetaillee.filter(p => p.toLowerCase().includes('fdr')).join('\n\n')}\n\n**Points de vigilance :**\n${analyse.vigilance.filter(v => v.toLowerCase().includes('fdr')).map(v => `- ${v}`).join('\n') || '- Aucun point de vigilance spécifique.'}`;
+    return `${preambule}## Analyse du FDR — lecture de l'agent comptable\n\n${analyse.engine.analyseDetaillee.filter(p => p.toLowerCase().includes('fdr')).join('\n\n')}\n\n**Points de vigilance (M9-6) :**\n${analyse.vigilance.filter(v => v.toLowerCase().includes('fdr')).map(v => `- ${v}`).join('\n') || '- Aucun point de vigilance spécifique identifié au regard des seuils M9-6.'}${cadreRef}`;
   }
   if (q.includes('risque')) {
-    return `## Risques financiers — ${nom}\n\n**Causes identifiées :**\n${analyse.causes.map(c => `- ${c}`).join('\n')}\n\n**Conséquences possibles :**\n${analyse.consequences.map(c => `- ${c}`).join('\n')}`;
+    return `${preambule}## Risques financiers — ${nom} (analyse AC)\n\n**Causes identifiées :**\n${analyse.causes.map(c => `- ${c}`).join('\n')}\n\n**Conséquences possibles sur la régularité et la soutenabilité :**\n${analyse.consequences.map(c => `- ${c}`).join('\n')}${cadreRef}`;
   }
   if (q.includes('cofi') || q.includes('annexe')) {
-    return `## Annexe COFI — ${nom} (${exercice})\n\n${analyse.engine.texteCOFI}`;
+    return `${preambule}## Annexe COFI — ${nom} (${exercice})\n\nFormulation prête à l'emploi, conforme à l'instruction M9-6 :\n\n${analyse.engine.texteCOFI}${cadreRef}`;
   }
   if (q.includes('ca') || q.includes('conseil')) {
-    return `## Présentation CA\n\n${analyse.engine.texteCA}`;
+    return `${preambule}## Présentation au Conseil d'Administration\n\nFormulation institutionnelle (cadre R.421-58 et suivants du code de l'éducation) :\n\n${analyse.engine.texteCA}${cadreRef}`;
   }
-  return `## Synthèse — ${nom} (${exercice})\n\n${analyse.engine.resume}\n\n**Recommandations :**\n${analyse.recommandationsAvecPriorite.map((r, i) => `${i + 1}. ${r.texte}`).join('\n')}\n\n*Mode de secours — l'IA n'est pas disponible actuellement.*`;
+  return `${preambule}## Synthèse financière — ${nom} (${exercice})\n\n${analyse.engine.resume}\n\n**Recommandations opérationnelles (sous responsabilité de l'agent comptable) :**\n${analyse.recommandationsAvecPriorite.map((r, i) => `${i + 1}. ${r.texte}`).join('\n')}${cadreRef}\n\n*Mode de secours — l'IA n'est pas disponible actuellement. La présente analyse repose sur les indicateurs financiers consolidés.*`;
 }

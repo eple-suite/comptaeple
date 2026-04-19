@@ -62,29 +62,32 @@ serve(async (req) => {
         ? "Le service IA est momentanément indisponible (crédits épuisés)."
         : "Le service IA est momentanément indisponible (limite de requêtes atteinte).";
 
+      // Préambule institutionnel — posture Agent Comptable Expert EPLE (GBCP / M9-6 / Op@le)
+      const posturePreambule = `*Note de production : ce document est rédigé en mode de continuité automatique, dans le strict respect du cadre réglementaire applicable aux EPLE — décret n°2012-1246 (GBCP), instruction M9-6, code de l'éducation, ordonnance n°2022-408 et code de la commande publique. L'analyse ci-dessous est produite sous la responsabilité de l'agent comptable, garant de la régularité, de la sincérité et de la qualité comptable des écritures portées par Op@le.*\n\n`;
+
       if (type === 'ordonnateur') {
-        return `${etab.nom || 'Établissement'} (${etab.uai || 'UAI non renseigné'}) — Exercice ${etab.exercice || 'N/A'}. ${reasonText} La présente synthèse automatique reprend les indicateurs financiers consolidés afin de sécuriser la continuité de production du rapport destiné au conseil d'administration. Le résultat budgétaire s'établit à ${fmtEur(R.resultatBudgetaire)}, avec un fonds de roulement de ${fmtEur(R.fdrComptable)} et une trésorerie nette de ${fmtEur(R.tresorerieNette ?? R.tresorerie)}.${indBlock}
+        return `${posturePreambule}${etab.nom || 'Établissement'} (${etab.uai || 'UAI non renseigné'}) — Exercice ${etab.exercice || 'N/A'}. ${reasonText} La présente synthèse automatique reprend les indicateurs financiers consolidés afin de sécuriser la continuité de production du rapport destiné au conseil d'administration, conformément aux articles R.421-58 et suivants du code de l'éducation. Le résultat budgétaire s'établit à ${fmtEur(R.resultatBudgetaire)}, avec un fonds de roulement de ${fmtEur(R.fdrComptable)} et une trésorerie nette de ${fmtEur(R.tresorerieNette ?? R.tresorerie)}.${indBlock}
 ---
-Points d'attention : la CAF/IAF budgétaire est de ${fmtEur(R.cafBudgetaire)}, les charges réelles s'élèvent à ${fmtEur(R.totalChargesReel)} et les produits réels à ${fmtEur(R.totalProduitsReel)}. Le suivi des équilibres de court terme et de l'exécution budgétaire doit être poursuivi, en particulier sur les postes pouvant affecter le besoin en fonds de roulement et la soutenabilité des prélèvements sur réserves.`;
+Points d'attention (analyse de l'agent comptable) : la CAF/IAF budgétaire est de ${fmtEur(R.cafBudgetaire)}, les charges réelles s'élèvent à ${fmtEur(R.totalChargesReel)} et les produits réels à ${fmtEur(R.totalProduitsReel)}. Au regard du cadre M9-6 et du décret GBCP, le suivi des équilibres de court terme et de l'exécution budgétaire doit être poursuivi, en particulier sur les postes pouvant affecter le besoin en fonds de roulement et la soutenabilité des prélèvements sur réserves (compte 1068). Toute mobilisation du fonds de roulement devra faire l'objet d'une délibération motivée du conseil d'administration.`;
       }
 
       if (type === 'agent_comptable') {
-        return `Rapport généré en mode automatique de continuité. ${reasonText} Les observations ci-dessous sont produites à partir des données financières disponibles pour l'exercice ${etab.exercice || 'N/A'}.
+        return `${posturePreambule}Rapport généré en mode automatique de continuité par l'agent comptable. ${reasonText} Les observations ci-dessous sont produites à partir des données financières disponibles pour l'exercice ${etab.exercice || 'N/A'}, dans le respect strict du cadre GBCP (décret n°2012-1246) et de l'instruction M9-6.
 
-Le résultat comptable s'établit à ${fmtEur(R.resultatComptable)}, pour un résultat budgétaire de ${fmtEur(R.resultatBudgetaire)}. La CAF/IAF comptable est de ${fmtEur(R.cafComptable)}, tandis que la CAF/IAF budgétaire atteint ${fmtEur(R.cafBudgetaire)}. Ces éléments traduisent la capacité d'autofinancement actuelle de l'établissement et orientent l'analyse de soutenabilité.
+Le résultat comptable s'établit à ${fmtEur(R.resultatComptable)}, pour un résultat budgétaire de ${fmtEur(R.resultatBudgetaire)}. La CAF/IAF comptable est de ${fmtEur(R.cafComptable)}, tandis que la CAF/IAF budgétaire atteint ${fmtEur(R.cafBudgetaire)}. Ces éléments traduisent la capacité d'autofinancement actuelle de l'établissement et orientent l'analyse de soutenabilité conduite par l'agent comptable au titre de sa responsabilité personnelle et pécuniaire.
 
-Le fonds de roulement est arrêté à ${fmtEur(R.fdrComptable)} (${Math.round(toNum(R.joursFdr))} jours), dont ${toNum(R.fdrPctEncaissee).toFixed(1)}% en part encaissée. Le FDR mobilisable est évalué à ${fmtEur(R.fdrMobilisable)}. Le besoin en fonds de roulement est de ${fmtEur(R.bfr)} et la trésorerie nette de ${fmtEur(R.tresorerieNette ?? R.tresorerie)} (${Math.round(toNum(R.joursTresorerie))} jours), avec cohérence de lecture entre les masses bilantielles.
+Le fonds de roulement est arrêté à ${fmtEur(R.fdrComptable)} (${Math.round(toNum(R.joursFdr))} jours), dont ${toNum(R.fdrPctEncaissee).toFixed(1)}% en part encaissée. Le FDR mobilisable est évalué à ${fmtEur(R.fdrMobilisable)}. Le besoin en fonds de roulement est de ${fmtEur(R.bfr)} et la trésorerie nette de ${fmtEur(R.tresorerieNette ?? R.tresorerie)} (${Math.round(toNum(R.joursTresorerie))} jours), avec cohérence de lecture entre les masses bilantielles (haut et bas de bilan).
 
-Les indicateurs de gestion à court terme s'établissent à TMcap ${fmtPct(R.tmcap)} et TMnr ${fmtPct(R.tmnr)}. Les créances atteignent ${fmtEur(R.totalCreances)} et les dettes ${fmtEur(R.totalDettes)} ; les reliquats de subventions sont de ${fmtEur(R.reliquatsSubventions)}. Une vigilance est recommandée sur les délais de recouvrement et la dynamique des charges à payer.
+Les indicateurs de gestion à court terme s'établissent à TMcap ${fmtPct(R.tmcap)} et TMnr ${fmtPct(R.tmnr)}. Les créances atteignent ${fmtEur(R.totalCreances)} et les dettes ${fmtEur(R.totalDettes)} ; les reliquats de subventions sont de ${fmtEur(R.reliquatsSubventions)}. Une vigilance particulière est recommandée sur les délais de recouvrement (qualité comptable du compte 4116) et la dynamique des charges à payer.
 
-Le patrimoine net comptable est de ${fmtEur(R.valeurNette)}, avec une variation annuelle de ${fmtEur(R.variationPatrimoine)}. Les réserves (c/1068) s'établissent à ${fmtEur(R.reserves)}. Les mouvements de réserves et leur affectation doivent être explicités dans la délibération du conseil d'administration conformément au cadre M9-6 et au décret 2012-1246.
+Le patrimoine net comptable est de ${fmtEur(R.valeurNette)}, avec une variation annuelle de ${fmtEur(R.variationPatrimoine)}. Les réserves (c/1068) s'établissent à ${fmtEur(R.reserves)}. Les mouvements de réserves et leur affectation doivent être explicités dans la délibération du conseil d'administration conformément au cadre M9-6 et au décret 2012-1246, et tracés dans Op@le selon la logique services / domaines / activités.
 
-Conclusion : l'établissement dispose d'un socle financier objectivé par les indicateurs ci-dessus. Il est proposé de maintenir un pilotage prudent de la trésorerie, de sécuriser le recouvrement des créances et de justifier précisément toute mobilisation du fonds de roulement dans les actes budgétaires à venir.`;
+Conclusion de l'agent comptable : l'établissement dispose d'un socle financier objectivé par les indicateurs ci-dessus. Il est proposé de maintenir un pilotage prudent de la trésorerie, de sécuriser le recouvrement des créances et de justifier précisément toute mobilisation du fonds de roulement dans les actes budgétaires à venir, en garantissant la régularité, la sincérité et la qualité comptable des écritures.`;
       }
 
-      return `## Synthèse financière globale (mode automatique)
+      return `${posturePreambule}## Synthèse financière globale (mode automatique — agent comptable)
 
-${reasonText} Cette analyse est produite automatiquement à partir des données disponibles.
+${reasonText} Cette analyse est produite automatiquement à partir des données disponibles, dans le respect du cadre GBCP, M9-6 et du code de l'éducation.
 
 ### Situation d'ensemble
 Le résultat budgétaire est de ${fmtEur(R.resultatBudgetaire)} et le résultat comptable de ${fmtEur(R.resultatComptable)}. Le fonds de roulement s'établit à ${fmtEur(R.fdrComptable)} (FDR mobilisable : ${fmtEur(R.fdrMobilisable)}). La trésorerie nette atteint ${fmtEur(R.tresorerieNette ?? R.tresorerie)} et le BFR est de ${fmtEur(R.bfr)}.
@@ -95,12 +98,14 @@ Les ratios de suivi court terme ressortent à TMcap ${fmtPct(R.tmcap)} et TMnr $
 ### Trajectoire
 La CAF/IAF comptable (${fmtEur(R.cafComptable)}) et budgétaire (${fmtEur(R.cafBudgetaire)}) doivent être suivies conjointement avec l'évolution des jours de couverture (FDR : ${Math.round(toNum(R.joursFdr))} ; trésorerie : ${Math.round(toNum(R.joursTresorerie))}).
 
-### Actions prioritaires
-- Vérifier les postes contribuant le plus aux tensions de trésorerie.
-- Sécuriser le plan de recouvrement des créances anciennes.
-- Prioriser les dépenses obligatoires et différer les charges non urgentes.
-- Encadrer les prélèvements sur réserves par une trajectoire pluriannuelle.
-- Présenter en CA un suivi mensuel des indicateurs de liquidité.`;
+### Actions prioritaires (sous responsabilité de l'agent comptable)
+- Vérifier les postes contribuant le plus aux tensions de trésorerie (cf. classes 4 et 5 du plan comptable Op@le).
+- Sécuriser le plan de recouvrement des créances anciennes, en garantissant la régularité des actes (mises en demeure, SATD).
+- Prioriser les dépenses obligatoires (rémunérations, énergies, dettes exigibles) et différer les charges non urgentes.
+- Encadrer tout prélèvement sur réserves (c/1068) par une trajectoire pluriannuelle motivée et délibérée en CA.
+- Présenter en CA un suivi mensuel des indicateurs de liquidité, conformément au cadre de pilotage M9-6.
+
+*Cadre de référence : décret n°2012-1246 (GBCP), instruction M9-6, code de l'éducation, code de la commande publique, ordonnance n°2022-408.*`;
     };
 
     let resolvedSystemPrompt: string, userPrompt: string;
