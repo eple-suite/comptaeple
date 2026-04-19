@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { withExpertPersona } from "../_shared/expertEPLEPersona.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -211,7 +212,7 @@ Contrainte : termine avec un bloc "Actions prioritaires" en 5 points maximum.`;
       headers: { Authorization: `Bearer ${LOVABLE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
-        messages: [{ role: "system", content: resolvedSystemPrompt }, { role: "user", content: userPrompt }],
+        messages: [{ role: "system", content: withExpertPersona(resolvedSystemPrompt) }, { role: "user", content: userPrompt }],
       }),
     });
 
@@ -244,6 +245,6 @@ Contrainte : termine avec un bloc "Actions prioritaires" en 5 points maximum.`;
     return new Response(JSON.stringify({ text }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("generate-report error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erreur inconnue" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "Erreur interne du service" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

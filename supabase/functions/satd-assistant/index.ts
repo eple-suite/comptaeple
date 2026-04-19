@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { withExpertPersona } from "../_shared/expertEPLEPersona.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -61,8 +62,8 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
-    // Build contextual system message
-    let systemMessage = SYSTEM_PROMPT;
+    // Build contextual system message (with global expert persona prefix)
+    let systemMessage = withExpertPersona(SYSTEM_PROMPT);
     if (context) {
       systemMessage += `\n\nContexte du dossier en cours :\n${JSON.stringify(context, null, 2)}`;
     }
@@ -109,7 +110,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("satd-assistant error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erreur inconnue" }), {
+    return new Response(JSON.stringify({ error: "Erreur interne du service" }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { withExpertPersona } from "../_shared/expertEPLEPersona.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -696,9 +697,9 @@ serve(async (req) => {
       });
     }
 
-    // Build conversation with system prompt + full history
+    // Build conversation with system prompt + full history (with global expert persona prefix)
     const aiMessages: ChatMessage[] = [
-      { role: "system", content: SYSTEM_PROMPT },
+      { role: "system", content: withExpertPersona(SYSTEM_PROMPT) },
       ...messages.filter(m => m.role === "user" || m.role === "assistant"),
     ];
 
@@ -740,7 +741,7 @@ serve(async (req) => {
     });
   } catch (e) {
     console.error("chat-eple error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erreur inconnue" }), {
+    return new Response(JSON.stringify({ error: "Erreur interne du service" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

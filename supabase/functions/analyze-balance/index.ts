@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { withExpertPersona } from "../_shared/expertEPLEPersona.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -130,7 +131,7 @@ Pour chaque compte :
       body: JSON.stringify({
         model: "google/gemini-2.5-flash",
         messages: [
-          { role: "system", content: systemPrompt },
+          { role: "system", content: withExpertPersona(systemPrompt) },
           { role: "user", content: userPrompt },
         ],
         stream: true,
@@ -160,7 +161,7 @@ Pour chaque compte :
     });
   } catch (e) {
     console.error("analyze-balance error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erreur inconnue" }), {
+    return new Response(JSON.stringify({ error: "Erreur interne du service" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }
