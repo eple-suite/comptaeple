@@ -78,6 +78,11 @@ const Establishments = () => {
   const [annexeType, setAnnexeType] = useState<AnnexeType>("CFA");
   const [annexeName, setAnnexeName] = useState("");
   const [annexeOpale, setAnnexeOpale] = useState("");
+  const [annexeUaiInput, setAnnexeUaiInput] = useState("");
+  const [annexeLookupLoading, setAnnexeLookupLoading] = useState(false);
+  const [annexeLookupDone, setAnnexeLookupDone] = useState(false); // true après une recherche (succès ou échec)
+  const [annexeLookupFound, setAnnexeLookupFound] = useState<AnnuaireResult | null>(null);
+  const [annexeLookupError, setAnnexeLookupError] = useState("");
 
   const queryClient = useQueryClient();
   const { establishments, selectedEstablishment, selectEstablishment, isLoading, refetch } = useEstablishment();
