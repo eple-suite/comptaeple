@@ -170,7 +170,7 @@ Vérifie les points spécifiques demandés et donne un avis.`;
     });
   } catch (e) {
     console.error("validate-accounts error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erreur inconnue" }), {
+    return new Response(JSON.stringify({ error: "Erreur interne du service" }), {
       status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   }

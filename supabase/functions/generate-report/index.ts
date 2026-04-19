@@ -245,6 +245,6 @@ Contrainte : termine avec un bloc "Actions prioritaires" en 5 points maximum.`;
     return new Response(JSON.stringify({ text }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("generate-report error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erreur inconnue" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "Erreur interne du service" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });

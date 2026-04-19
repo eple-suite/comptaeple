@@ -215,6 +215,6 @@ Section libre : engagements hors bilan (marchés notifiés, baux), événements 
     return new Response(JSON.stringify({ text }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   } catch (e) {
     console.error("generate-annexe error:", e);
-    return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Erreur inconnue" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "Erreur interne du service" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 });
