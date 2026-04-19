@@ -62,10 +62,13 @@ serve(async (req) => {
         ? "Le service IA est momentanément indisponible (crédits épuisés)."
         : "Le service IA est momentanément indisponible (limite de requêtes atteinte).";
 
+      // Préambule institutionnel — posture Agent Comptable Expert EPLE (GBCP / M9-6 / Op@le)
+      const posturePreambule = `*Note de production : ce document est rédigé en mode de continuité automatique, dans le strict respect du cadre réglementaire applicable aux EPLE — décret n°2012-1246 (GBCP), instruction M9-6, code de l'éducation, ordonnance n°2022-408 et code de la commande publique. L'analyse ci-dessous est produite sous la responsabilité de l'agent comptable, garant de la régularité, de la sincérité et de la qualité comptable des écritures portées par Op@le.*\n\n`;
+
       if (type === 'ordonnateur') {
-        return `${etab.nom || 'Établissement'} (${etab.uai || 'UAI non renseigné'}) — Exercice ${etab.exercice || 'N/A'}. ${reasonText} La présente synthèse automatique reprend les indicateurs financiers consolidés afin de sécuriser la continuité de production du rapport destiné au conseil d'administration. Le résultat budgétaire s'établit à ${fmtEur(R.resultatBudgetaire)}, avec un fonds de roulement de ${fmtEur(R.fdrComptable)} et une trésorerie nette de ${fmtEur(R.tresorerieNette ?? R.tresorerie)}.${indBlock}
+        return `${posturePreambule}${etab.nom || 'Établissement'} (${etab.uai || 'UAI non renseigné'}) — Exercice ${etab.exercice || 'N/A'}. ${reasonText} La présente synthèse automatique reprend les indicateurs financiers consolidés afin de sécuriser la continuité de production du rapport destiné au conseil d'administration, conformément aux articles R.421-58 et suivants du code de l'éducation. Le résultat budgétaire s'établit à ${fmtEur(R.resultatBudgetaire)}, avec un fonds de roulement de ${fmtEur(R.fdrComptable)} et une trésorerie nette de ${fmtEur(R.tresorerieNette ?? R.tresorerie)}.${indBlock}
 ---
-Points d'attention : la CAF/IAF budgétaire est de ${fmtEur(R.cafBudgetaire)}, les charges réelles s'élèvent à ${fmtEur(R.totalChargesReel)} et les produits réels à ${fmtEur(R.totalProduitsReel)}. Le suivi des équilibres de court terme et de l'exécution budgétaire doit être poursuivi, en particulier sur les postes pouvant affecter le besoin en fonds de roulement et la soutenabilité des prélèvements sur réserves.`;
+Points d'attention (analyse de l'agent comptable) : la CAF/IAF budgétaire est de ${fmtEur(R.cafBudgetaire)}, les charges réelles s'élèvent à ${fmtEur(R.totalChargesReel)} et les produits réels à ${fmtEur(R.totalProduitsReel)}. Au regard du cadre M9-6 et du décret GBCP, le suivi des équilibres de court terme et de l'exécution budgétaire doit être poursuivi, en particulier sur les postes pouvant affecter le besoin en fonds de roulement et la soutenabilité des prélèvements sur réserves (compte 1068). Toute mobilisation du fonds de roulement devra faire l'objet d'une délibération motivée du conseil d'administration.`;
       }
 
       if (type === 'agent_comptable') {
