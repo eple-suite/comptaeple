@@ -34,7 +34,8 @@ serve(async (req) => {
   const authError = await verifyAuth(req);
   if (authError) return authError;
   try {
-    const { type, etablissement, resultats, anomalies, bloquants, indicateurs, historique, scopeDescription, detailLevel, systemPrompt: incomingSystemPrompt } = await req.json();
+    const body = await req.json();
+    const { type, etablissement, resultats, anomalies, bloquants, indicateurs, historique, scopeDescription, detailLevel, systemPrompt: incomingSystemPrompt, prompt: incomingPrompt, sectionId, context } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
