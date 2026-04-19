@@ -216,41 +216,20 @@ const CompteFinancier = () => {
   return (
     <>
       <div className="space-y-0 no-print-wrapper">
-        {/* Header COFIEPLE */}
-        <div className="bg-gradient-to-r from-[hsl(222,30%,14%)] to-[hsl(222,25%,20%)] shadow-xl rounded-xl no-print">
-          <div className="px-5 py-4 flex items-center gap-4">
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="w-11 h-11 rounded-xl bg-warning flex items-center justify-center text-2xl font-black text-white shadow-lg">₣</div>
-              <div>
-                <h1 className="text-xl font-black text-white tracking-wide">COFIEPLE</h1>
-                <p className="text-xs text-warning font-medium tracking-widest uppercase">Compte Financier EPLE · M9-6 2026</p>
-              </div>
-            </div>
-            <div className="flex-1 min-w-0 ml-4">
-              {etab.nom ? (
-                <div className="flex items-baseline gap-3 flex-wrap">
-                  <span className="text-white font-semibold text-sm truncate">{etab.nom}</span>
-                  <span className="text-[hsl(220,15%,55%)] text-xs">RNE {etab.uai}</span>
-                  <span className="text-[hsl(220,15%,55%)] text-xs">{etab.commune}</span>
-                  <Badge variant="outline" className="border-warning/50 text-warning text-xs">Ex. {etab.exercice}</Badge>
-                </div>
-              ) : (
-                <span className="text-[hsl(220,15%,45%)] text-sm italic">Renseignez le code UAI pour identifier l'établissement</span>
-              )}
-              {etab.academie && <p className="text-xs text-[hsl(220,15%,45%)] mt-0.5">{etab.regionAcademique} · {etab.academie}</p>}
-            </div>
-            {hasData && (
-              <div className="flex items-center gap-2 shrink-0">
-                {nbBloq > 0 ? (
-                  <Badge className="bg-destructive text-destructive-foreground">🚫 {nbBloq} bloquant{nbBloq > 1 ? 's' : ''}</Badge>
-                ) : nbAnom > 0 ? (
-                  <Badge className="bg-warning text-warning-foreground">⚠️ {nbAnom} anomalie{nbAnom > 1 ? 's' : ''}</Badge>
-                ) : (
-                  <Badge className="bg-success text-success-foreground">✅ Aucun bloquant</Badge>
-                )}
-              </div>
-            )}
-          </div>
+        {/* ═══════ HERO ÉDITORIAL PREMIUM ═══════ */}
+        <div className="no-print mb-3">
+          <CofiepleHero
+            etabNom={etab.nom}
+            exercice={etab.exercice}
+            uai={etab.uai}
+            commune={etab.commune}
+            hasData={hasData}
+            nbBloq={nbBloq}
+            nbAnom={nbAnom}
+            resultatComptable={resultats[activeBudget]?.resultatComptable}
+            fdr={resultats[activeBudget]?.fdrComptable}
+            treso={resultats[activeBudget]?.tresorerie}
+          />
         </div>
 
         {/* Progress Stepper */}
