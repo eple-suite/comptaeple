@@ -584,6 +584,59 @@ export function ImportSection() {
             duration: 10000,
           });
         }
+
+        // ── Détection compte 185000 — Liaison inter-budgets (M9-6 §5.3.2) ──
+        const lignes185 = parsed.filter((b: any) => String(b.compte || '').startsWith('185'));
+        const totalDbt185 = lignes185.reduce((s: number, b: any) => s + (Number(b.solDbt) || 0), 0);
+        const totalCrd185 = lignes185.reduce((s: number, b: any) => s + (Number(b.solCrd) || 0), 0);
+        const solde185 = totalDbt185 - totalCrd185; // >0 = débiteur (annexe), <0 = créditeur (support)
+        const TOLERANCE = 1; // €
+
+        if (Math.abs(solde185) > TOLERANCE) {
+          if (slot.typeBudget !== 'principal' && solde185 > TOLERANCE) {
+            // Annexe : compte 185 doit être débiteur — vérifier la réciprocité avec le support
+            const balPrincipal = useCofiepleStore.getState().balance.principal || [];
+            if (balPrincipal.length > 0) {
+              const lignes185BP = balPrincipal.filter((b: any) => String(b.compte || '').startsWith('185'));
+              const crdBP = lignes185BP.reduce((s: number, b: any) => s + (Number(b.solCrd) || 0), 0);
+              const dbtBP = lignes185BP.reduce((s: number, b: any) => s + (Number(b.solDbt) || 0), 0);
+              const soldeBP = crdBP - dbtBP; // >0 = créditeur attendu côté support
+              const ecart = Math.abs(solde185 - soldeBP);
+              if (ecart > TOLERANCE) {
+                toast.warning('⚠️ Liaison inter-budgets non équilibrée (C/185)', {
+                  description: `Débit C/185 annexe : ${solde185.toFixed(2)} € — Crédit C/185 support : ${soldeBP.toFixed(2)} € — Écart : ${ecart.toFixed(2)} € (M9-6 §5.3.2 : tolérance ≤ 1 €).`,
+                  duration: 12000,
+                });
+              } else {
+                toast.success('✅ Liaison inter-budgets équilibrée (C/185)', {
+                  description: `Débit annexe ↔ Crédit support concordants (${solde185.toFixed(2)} €).`,
+                  duration: 6000,
+                });
+              }
+            } else {
+              toast.info('🔗 Compte 185 débiteur détecté (budget annexe)', {
+                description: `Solde débiteur C/185 : ${solde185.toFixed(2)} €. Importez la balance du budget principal pour vérifier la réciprocité (M9-6 §5.3.2).`,
+                duration: 10000,
+              });
+            }
+          } else if (slot.typeBudget === 'principal' && solde185 < -TOLERANCE) {
+            // Principal : compte 185 doit être créditeur — alerter si annexe non rattachée
+            toast.info('🔗 Compte 185 créditeur détecté (budget principal)', {
+              description: `Crédit C/185 : ${Math.abs(solde185).toFixed(2)} € — un budget annexe (CFA/GRETA/SRH) doit être rattaché et présenter un débit équivalent (M9-6 §5.3.2).`,
+              duration: 10000,
+            });
+          } else if (slot.typeBudget === 'principal' && solde185 > TOLERANCE) {
+            toast.warning('⚠️ Compte 185 anormalement débiteur sur le budget principal', {
+              description: `Solde débiteur ${solde185.toFixed(2)} € sur C/185 du BP — sens inhabituel, vérifier les écritures de liaison (M9-6 §5.3.2).`,
+              duration: 10000,
+            });
+          } else if (slot.typeBudget !== 'principal' && solde185 < -TOLERANCE) {
+            toast.warning('⚠️ Compte 185 anormalement créditeur sur le budget annexe', {
+              description: `Solde créditeur ${Math.abs(solde185).toFixed(2)} € sur C/185 de l'annexe — sens inhabituel (attendu : débiteur).`,
+              duration: 10000,
+            });
+          }
+        }
       }
       else if (slot.type === 'bal1') setBalance1(parserBalance(rows, slot.typeBudget), slot.typeBudget);
       logImport({ fileName, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: 'success', fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
