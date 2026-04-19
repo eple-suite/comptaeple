@@ -174,26 +174,68 @@ const Establishments = () => {
     onError: (err: any) => toast.error(err.message || "Erreur lors de l'ajout"),
   });
 
+  // ---- Lookup UAI pour annexe ----
+  const handleAnnexeLookup = async (val?: string) => {
+    const uai = (val ?? annexeUaiInput).trim().toUpperCase();
+    if (!/^[0-9]{7}[A-Z]$/.test(uai)) return;
+    setAnnexeLookupLoading(true);
+    setAnnexeLookupError("");
+    setAnnexeLookupFound(null);
+    setAnnexeLookupDone(false);
+    try {
+      const res = await fetchEstablishmentByUAI(uai);
+      if (res) {
+        setAnnexeLookupFound(res);
+        setAnnexeName(res.nom_etablissement || "");
+      } else {
+        setAnnexeLookupError("UAI introuvable dans l'annuaire — saisie manuelle activée ci-dessous.");
+      }
+    } catch {
+      setAnnexeLookupError("Erreur réseau — vous pouvez saisir les informations manuellement ci-dessous.");
+    } finally {
+      setAnnexeLookupLoading(false);
+      setAnnexeLookupDone(true);
+    }
+  };
+
+  const handleAnnexeUaiChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.toUpperCase();
+    setAnnexeUaiInput(val);
+    setAnnexeLookupFound(null);
+    setAnnexeLookupError("");
+    setAnnexeLookupDone(false);
+    if (/^[0-9]{7}[A-Z]$/.test(val)) handleAnnexeLookup(val);
+  };
+
+  const annexeUaiValid = /^[0-9]{7}[A-Z]$/.test(annexeUaiInput.trim().toUpperCase());
+  const annexeUaiAlreadyExists = establishments.some(
+    e => e.uai.toUpperCase() === annexeUaiInput.trim().toUpperCase()
+  );
+
   // ---- Mutation Annexe ----
   const annexeMutation = useMutation({
     mutationFn: async () => {
       if (!annexeSupportId) throw new Error("Sélectionnez l'établissement support (lycée principal).");
+      const uai = annexeUaiInput.trim().toUpperCase();
+      if (!annexeUaiValid) throw new Error("UAI invalide (format : 7 chiffres + 1 lettre, ex: 9710746J).");
+      if (annexeUaiAlreadyExists) throw new Error("Cet UAI est déjà enregistré dans votre liste.");
       if (!annexeName.trim()) throw new Error("Le nom du budget annexe est obligatoire.");
       if (!annexeOpale.trim() || !/^P\d{5}$/.test(annexeOpale.toUpperCase())) {
-        throw new Error("Identifiant Op@le invalide (format P + 5 chiffres, ex: P00804).");
+        throw new Error("Identifiant Op@le invalide (format P + 5 chiffres, ex: P00805).");
       }
       const support = establishments.find(e => e.id === annexeSupportId);
       if (!support) throw new Error("Établissement support introuvable.");
 
       const meta = ANNEXE_META[annexeType];
-      const uai = buildAnnexeUai(support.uai, annexeType, establishments.map(e => e.uai.toUpperCase()));
+      const academy = annexeLookupFound?.libelle_academie || support.academy;
+      const city = annexeLookupFound?.nom_commune || support.city;
 
       const { data: created, error } = await supabase.from("establishments").insert({
         uai,
         name: annexeName.trim(),
         type: meta.typeLabel,
-        academy: support.academy,
-        city: support.city,
+        academy,
+        city,
         opale_number: annexeOpale.toUpperCase(),
       }).select().single();
       if (error) throw error;
