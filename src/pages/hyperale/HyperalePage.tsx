@@ -1,8 +1,8 @@
 import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
+import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
-  Home, BarChart3, CalendarDays, Settings, Bot, FileSpreadsheet,
+  Home, BarChart3, CalendarDays, Settings, Bot, FileSpreadsheet, Zap,
 } from 'lucide-react';
 import HyperaleAccueil from './HyperaleAccueil';
 import HyperaleAnalyse from './HyperaleAnalyse';
@@ -28,44 +28,72 @@ export default function HyperalePage() {
     end ? location.pathname === path : location.pathname.startsWith(path);
 
   return (
-    <div className="space-y-0">
-      {/* Module header */}
-      <div className="bg-gradient-to-r from-primary/15 to-accent/10 border border-primary/20 rounded-xl mb-4">
-        <div className="px-5 py-4 flex items-center gap-4">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center text-2xl font-black text-primary-foreground shadow-lg">
-            ⚡
+    <div className="space-y-4">
+      {/* Module brand strip */}
+      <motion.div
+        initial={{ opacity: 0, y: -8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: [0.19, 1, 0.22, 1] }}
+        className="relative overflow-hidden rounded-2xl border border-border/40 bg-gradient-to-r from-primary/8 via-card to-secondary/5"
+      >
+        <div className="absolute inset-0 bg-grid opacity-[0.1] pointer-events-none" />
+        <div className="relative px-5 py-3.5 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shadow-primary">
+              <Zap className="h-5 w-5 text-primary-foreground" />
+            </div>
+            <div>
+              <h1 className="text-lg font-display font-bold tracking-tight text-foreground leading-none">HYPER@LE</h1>
+              <p className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground mt-0.5">Analyse financière augmentée</p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-xl font-black text-foreground tracking-wide">HYPER@LE</h1>
-            <p className="text-xs text-muted-foreground font-medium tracking-widest uppercase">Analyse Financière Augmentée · EPLE</p>
-          </div>
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-[10px] font-bold uppercase tracking-wider text-primary">
+            Module premium
+          </span>
         </div>
-      </div>
+      </motion.div>
 
-      {/* Navigation */}
-      <nav className="flex gap-1 overflow-x-auto pb-3 scrollbar-hide">
-        {NAV_ITEMS.map(item => {
+      {/* Premium tab navigation */}
+      <nav className="relative flex gap-1 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+        {NAV_ITEMS.map((item, i) => {
           const active = isActive(item.path, item.end);
+          const Icon = item.icon;
           return (
-            <Button
+            <motion.button
               key={item.path}
-              variant={active ? 'default' : 'ghost'}
-              size="sm"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: i * 0.04 }}
               onClick={() => navigate(item.path)}
               className={cn(
-                'gap-1.5 text-xs font-semibold shrink-0 transition-all',
-                active && 'shadow-md'
+                'relative inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold shrink-0 transition-all',
+                active
+                  ? 'bg-card border border-border/60 text-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
               )}
             >
-              <item.icon className="h-3.5 w-3.5" />
+              <Icon className={cn('h-3.5 w-3.5', active && 'text-primary')} />
               {item.label}
-            </Button>
+              {active && (
+                <motion.span
+                  layoutId="hyperale-tab-indicator"
+                  className="absolute -bottom-1 left-1/2 -translate-x-1/2 h-0.5 w-8 rounded-full gradient-primary"
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                />
+              )}
+            </motion.button>
           );
         })}
       </nav>
 
-      {/* Content */}
-      <div className="pt-2">
+      {/* Animated content area */}
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.19, 1, 0.22, 1] }}
+        className="pt-1"
+      >
         <Routes>
           <Route index element={<HyperaleAccueil />} />
           <Route path="analyse" element={<HyperaleAnalyse />} />
@@ -74,7 +102,7 @@ export default function HyperalePage() {
           <Route path="parametres" element={<HyperaleParametres />} />
           <Route path="assistant" element={<HyperaleAssistant />} />
         </Routes>
-      </div>
+      </motion.div>
     </div>
   );
 }
