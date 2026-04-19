@@ -50,8 +50,8 @@ export function AppLayout() {
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
           {/* Premium glass header */}
-          <header className="h-14 flex items-center justify-between border-b border-border/60 bg-card/70 backdrop-blur-xl px-4 shrink-0 sticky top-0 z-30 supports-[backdrop-filter]:bg-card/60">
-            <div className="flex items-center gap-2 min-w-0">
+          <header className="h-14 flex items-center gap-3 border-b border-border/60 bg-card/70 backdrop-blur-xl px-4 shrink-0 sticky top-0 z-30 supports-[backdrop-filter]:bg-card/60">
+            <div className="flex items-center gap-2 min-w-0 shrink-0">
               <SidebarTrigger className="hover:bg-accent rounded-lg transition-colors h-8 w-8" />
               <div className="h-5 w-px bg-border/60 mx-1" />
 
