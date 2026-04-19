@@ -326,16 +326,17 @@ const Establishments = () => {
               <Plus className="h-4 w-4 mr-1" /> Ajouter
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-lg">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
+            <DialogHeader className="px-6 pt-6 pb-3 border-b shrink-0">
               <DialogTitle>Ajouter un établissement</DialogTitle>
               <DialogDescription>
-                Établissement principal (via annuaire UAI) ou budget annexe rattaché (CFA, GRETA, SRH).
+                Établissement principal ou budget annexe (CFA, GRETA, SRH) — recherche par UAI.
               </DialogDescription>
             </DialogHeader>
 
-            <Tabs value={tab} onValueChange={(v) => setTab(v as any)}>
-              <TabsList className="grid w-full grid-cols-2">
+            <Tabs value={tab} onValueChange={(v) => setTab(v as any)} className="flex-1 flex flex-col min-h-0">
+              <div className="px-6 pt-3 shrink-0">
+                <TabsList className="grid w-full grid-cols-2">
                 <TabsTrigger value="principal" className="gap-2">
                   <Building2 className="h-4 w-4" /> Établissement principal
                 </TabsTrigger>
