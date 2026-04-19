@@ -10,6 +10,9 @@ import {
 } from "docx";
 import { saveAs } from "file-saver";
 import type { EstablishmentBranding } from "@/hooks/useEstablishmentBranding";
+import { supabase } from "@/integrations/supabase/client";
+
+const LOGO_BUCKET = "establishment-logos";
 
 export type WordSection =
   | { kind: "heading"; text: string; level?: 1 | 2 | 3 }
