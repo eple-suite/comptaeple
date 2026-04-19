@@ -18,6 +18,8 @@ import {
   ArrowUpRight, ArrowDownRight, Minus, ChevronRight, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SuggestionsPanel } from '@/components/hyperale/SuggestionsPanel';
+import { useHyperaleScore } from '@/components/hyperale/useHyperaleScore';
 
 const fmt = (v: number) => new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v);
 const fmtK = (v: number) => `${(v / 1000).toFixed(0)}k`;
@@ -142,6 +144,7 @@ export default function HyperaleAnalyse() {
   }), [data, prevYear, seuils]);
 
   const analyse = useMemo(() => analyser({ nom, exercice, data, seuils }), [nom, exercice, data, seuils, refreshKey]);
+  const score = useHyperaleScore(data, nom);
 
   const kpis: KpiDef[] = [
     { label: 'FDR', value: data.fdr, days: data.fdrJours, icon: Wallet, comp: batch.fdr },
@@ -329,6 +332,9 @@ export default function HyperaleAnalyse() {
           <CopyBlock label="Note au chef d'établissement" icon={FileText} text={analyse.engine.texteNote} />
         </div>
       </section>
+
+      {/* Floating proactive AI suggestions */}
+      <SuggestionsPanel suggestions={score.suggestions} contextLabel="Suggestions IA · Analyse" />
     </div>
   );
 }
