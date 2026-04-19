@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Logos publiquement accessibles" ON storage.objects;
