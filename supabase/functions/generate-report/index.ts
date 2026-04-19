@@ -98,12 +98,14 @@ Les ratios de suivi court terme ressortent à TMcap ${fmtPct(R.tmcap)} et TMnr $
 ### Trajectoire
 La CAF/IAF comptable (${fmtEur(R.cafComptable)}) et budgétaire (${fmtEur(R.cafBudgetaire)}) doivent être suivies conjointement avec l'évolution des jours de couverture (FDR : ${Math.round(toNum(R.joursFdr))} ; trésorerie : ${Math.round(toNum(R.joursTresorerie))}).
 
-### Actions prioritaires
-- Vérifier les postes contribuant le plus aux tensions de trésorerie.
-- Sécuriser le plan de recouvrement des créances anciennes.
-- Prioriser les dépenses obligatoires et différer les charges non urgentes.
-- Encadrer les prélèvements sur réserves par une trajectoire pluriannuelle.
-- Présenter en CA un suivi mensuel des indicateurs de liquidité.`;
+### Actions prioritaires (sous responsabilité de l'agent comptable)
+- Vérifier les postes contribuant le plus aux tensions de trésorerie (cf. classes 4 et 5 du plan comptable Op@le).
+- Sécuriser le plan de recouvrement des créances anciennes, en garantissant la régularité des actes (mises en demeure, SATD).
+- Prioriser les dépenses obligatoires (rémunérations, énergies, dettes exigibles) et différer les charges non urgentes.
+- Encadrer tout prélèvement sur réserves (c/1068) par une trajectoire pluriannuelle motivée et délibérée en CA.
+- Présenter en CA un suivi mensuel des indicateurs de liquidité, conformément au cadre de pilotage M9-6.
+
+*Cadre de référence : décret n°2012-1246 (GBCP), instruction M9-6, code de l'éducation, code de la commande publique, ordonnance n°2022-408.*`;
     };
 
     let resolvedSystemPrompt: string, userPrompt: string;
