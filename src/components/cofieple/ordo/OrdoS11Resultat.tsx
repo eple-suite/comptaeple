@@ -23,7 +23,7 @@ export function OrdoS11Resultat() {
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <SectionTitre numero="S11" title="Résultat et affectation" />
+        <SectionTitre numero="S11" title="Résultat et affectation" withNarration />
 
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           <KPICard label="Résultat comptable" value={formatEur(R.resultatComptable)} color={R.resultatComptable >= 0 ? 'green' : 'red'} icon="📊" />

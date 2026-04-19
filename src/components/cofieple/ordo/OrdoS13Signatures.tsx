@@ -15,7 +15,7 @@ export function OrdoS13Signatures() {
   return (
     <Card>
       <CardContent className="p-6 space-y-6">
-        <SectionTitre numero="S13" title="Signatures et certification" />
+        <SectionTitre numero="S13" title="Signatures et certification" withNarration />
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>

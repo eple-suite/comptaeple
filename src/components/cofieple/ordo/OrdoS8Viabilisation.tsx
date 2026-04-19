@@ -37,7 +37,7 @@ export function OrdoS8Viabilisation() {
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <SectionTitre numero="S8" title="Viabilisation et énergie" />
+        <SectionTitre numero="S8" title="Viabilisation et énergie" withNarration />
 
         <p className="text-xs text-muted-foreground">Saisissez les montants annuels de charges de viabilisation (en €).</p>
 

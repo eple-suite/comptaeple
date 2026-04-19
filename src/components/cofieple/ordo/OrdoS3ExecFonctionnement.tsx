@@ -38,7 +38,7 @@ export function OrdoS3ExecFonctionnement() {
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <SectionTitre numero="S3" title="Exécution budgétaire — Dépenses de fonctionnement" />
+        <SectionTitre numero="S3" title="Exécution budgétaire — Dépenses de fonctionnement" withNarration />
 
         {/* Tableau SDE */}
         <div className="overflow-x-auto">

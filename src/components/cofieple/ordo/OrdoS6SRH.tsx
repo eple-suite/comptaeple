@@ -102,7 +102,7 @@ export function OrdoS6SRH() {
 
   if (!hasSRHData) return (
     <Card><CardContent className="p-6">
-      <SectionTitre numero="S6" title="Service de restauration et hébergement (SRH)" />
+      <SectionTitre numero="S6" title="Service de restauration et hébergement (SRH)" withNarration />
       <div className="bg-muted/30 rounded-lg p-4 text-xs text-muted-foreground">
         ℹ️ Aucune donnée SRH détectée. Si l'établissement dispose d'un SRH, renseignez les indicateurs dans l'onglet <strong>Indicateurs</strong>.
       </div>
@@ -138,7 +138,7 @@ export function OrdoS6SRH() {
   return (
     <Card>
       <CardContent className="p-6 space-y-4">
-        <SectionTitre numero="S6" title="Service de restauration et hébergement (SRH)" />
+        <SectionTitre numero="S6" title="Service de restauration et hébergement (SRH)" withNarration />
 
         {/* KPI from CGR root totals */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
