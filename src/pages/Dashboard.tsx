@@ -109,7 +109,12 @@ const Dashboard = () => {
   return (
     <div className="space-y-8 max-w-[1400px] mx-auto">
       {/* HERO premium éditorial */}
-      <DashboardHeroWrap liveIndicators={liveIndicators} hasData={balanceData.length > 0} />
+      <DashboardHero
+        greeting="Agent comptable"
+        exercice={new Date().getFullYear()}
+        hasData={balanceData.length > 0}
+        fdr={formatCurrency(liveIndicators.fdr)}
+      />
 
       {/* KPI Hero — 4 cards premium */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
