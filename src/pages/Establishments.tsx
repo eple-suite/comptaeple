@@ -204,8 +204,8 @@ const Establishments = () => {
       if (!annexeUaiValid) throw new Error("UAI invalide (format : 7 chiffres + 1 lettre, ex: 9710746J).");
       if (annexeUaiAlreadyExists) throw new Error("Cet UAI est déjà enregistré dans votre liste.");
       if (!annexeName.trim()) throw new Error("Le nom du budget annexe est obligatoire.");
-      if (!annexeOpale.trim() || !/^P\d{5}$/.test(annexeOpale.toUpperCase())) {
-        throw new Error("Identifiant Op@le invalide (format P + 5 chiffres, ex: P00805).");
+      if (!annexeOpale.trim() || !/^A\d{5}$/.test(annexeOpale.toUpperCase())) {
+        throw new Error("Identifiant Op@le du budget annexe invalide (format A + 5 chiffres, ex: A00805).");
       }
       const support = establishments.find(e => e.id === annexeSupportId);
       if (!support) throw new Error("Établissement support introuvable.");
