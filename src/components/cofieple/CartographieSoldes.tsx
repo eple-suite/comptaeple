@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Treemap, ResponsiveContainer, Tooltip as RTooltip } from 'recharts';
-import { Download, Eye, EyeOff, Filter, Map } from 'lucide-react';
+import { Download, Eye, EyeOff, Filter, Map as MapIcon } from 'lucide-react';
 import { toPng } from 'html-to-image';
 import { cn } from '@/lib/utils';
 
