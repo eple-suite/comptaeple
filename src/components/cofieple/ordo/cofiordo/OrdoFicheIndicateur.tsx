@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-// OrdoFicheIndicateur — composant générique REPROFI
+// COFI ORDO — Composant générique de fiche indicateur
 // Affiche : titre, définition, tableau N-2/N-1/N, graphique, commentaire,
 // boutons d'export individuel (PDF/Excel via impression navigateur).
 // ⚠️ Aucun indicateur bilanciel ici — strict M9-6 sphère ordonnateur.
@@ -21,7 +21,6 @@ import {
   Legend, LineChart, Line, PieChart, Pie, Cell,
 } from 'recharts';
 
-// Format français — euros sans décimales (masses budgétaires)
 const fmtEur = (n: number | null | undefined) => {
   if (n == null || !isFinite(n)) return '—';
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
@@ -55,10 +54,8 @@ export interface OrdoFicheIndicateurProps {
   rows?: FicheRow[];
   chartData?: FicheChartPoint[];
   chartSeries?: { key: string; label: string; color?: string }[];
-  /** Affiche un message si données absentes */
   hasData?: boolean;
   emptyMessage?: string;
-  /** Slot enfant libre : encarts, alertes, contenus complémentaires */
   children?: ReactNode;
 }
 
@@ -67,12 +64,8 @@ const ACCENT_BY_SECTION: Record<string, 'primary' | 'success' | 'warning' | 'des
 };
 
 const DEFAULT_COLORS = [
-  'hsl(215,70%,50%)',
-  'hsl(160,45%,45%)',
-  'hsl(38,92%,50%)',
-  'hsl(0,72%,55%)',
-  'hsl(280,50%,50%)',
-  'hsl(190,60%,40%)',
+  'hsl(215,70%,50%)', 'hsl(160,45%,45%)', 'hsl(38,92%,50%)',
+  'hsl(0,72%,55%)',   'hsl(280,50%,50%)', 'hsl(190,60%,40%)',
 ];
 
 function variation(prev?: number | null, curr?: number | null) {
@@ -93,14 +86,11 @@ export function OrdoFicheIndicateur({
   const { etab, ind, pKey } = useOrdoData();
   const accent = ACCENT_BY_SECTION[fiche.section] ?? 'primary';
   const [commentaire, setCommentaire, status, lastSaved] =
-    usePersistedText(`${pKey}_reprofi_${fiche.id}`, '');
+    usePersistedText(`${pKey}_cofiordo_${fiche.id}`, '');
 
   const showN2 = rows.some(r => r.n_2 != null);
 
-  const variations = useMemo(
-    () => rows.map(r => variation(r.n_1, r.n)),
-    [rows]
-  );
+  const variations = useMemo(() => rows.map(r => variation(r.n_1, r.n)), [rows]);
 
   const handlePrint = () => window.print();
   const handleExportCsv = () => {
@@ -115,7 +105,7 @@ export function OrdoFicheIndicateur({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `ordo_${fiche.id}_${etab.uai || 'na'}_${etab.exercice}.csv`;
+    a.download = `cofiordo_${fiche.id}_${etab.uai || 'na'}_${etab.exercice}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
@@ -131,11 +121,8 @@ export function OrdoFicheIndicateur({
           accent={accent}
         />
 
-        {/* Actions export — masquées à l'impression */}
         <div className="flex flex-wrap items-center gap-2 no-print">
-          <Badge variant="outline" className="text-[10px]">
-            {fiche.meta}
-          </Badge>
+          <Badge variant="outline" className="text-[10px]">{fiche.meta}</Badge>
           {fiche.service && (
             <Badge variant="secondary" className="text-[10px]">
               Service {fiche.service}{fiche.flux ? ` · ${fiche.flux}` : ''}
@@ -157,7 +144,6 @@ export function OrdoFicheIndicateur({
           </div>
         )}
 
-        {/* Tableau N-2 / N-1 / N */}
         {hasData && rows.length > 0 && (
           <div className="overflow-x-auto rounded-lg border border-border">
             <table className="w-full text-xs">
@@ -190,7 +176,6 @@ export function OrdoFicheIndicateur({
           </div>
         )}
 
-        {/* Graphique */}
         {hasData && chartData.length > 0 && chartSeries.length > 0 && (
           <div className="w-full h-64">
             <ResponsiveContainer width="100%" height="100%">
@@ -237,9 +222,8 @@ export function OrdoFicheIndicateur({
 
         {children}
 
-        {/* Narration IA contextualisée */}
         <NarrationIA
-          sectionId={`ordo_reprofi_${fiche.id}_${etab.uai || 'na'}_${etab.exercice}`}
+          sectionId={`cofiordo_${fiche.id}_${etab.uai || 'na'}_${etab.exercice}`}
           title={`Lecture experte — ${fiche.title}`}
           variant="compact"
           context={{
@@ -251,15 +235,12 @@ export function OrdoFicheIndicateur({
           }}
         />
 
-        {/* Commentaire libre ordonnateur */}
         <div className="mt-4">
           <div className="flex items-center gap-2 mb-2">
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
               ✎ Commentaire de l'ordonnateur
             </span>
-            {status && (
-              <SaveIndicator status={status} lastSaved={lastSaved ?? null} />
-            )}
+            {status && <SaveIndicator status={status} lastSaved={lastSaved ?? null} />}
           </div>
           <TextareaElastique
             value={commentaire}

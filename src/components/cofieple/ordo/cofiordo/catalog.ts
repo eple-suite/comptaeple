@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════
-// Catalogue REPROFI — Rapport Ordonnateur (M9-6 2026)
+// COFI ORDO — Catalogue Rapport Ordonnateur (M9-6 2026)
 // 4 sections (A,B,C,D) → 34 fiches.
 // ⚠️ Strict M9-6 : aucun indicateur bilanciel (FDR/BFR/TN/ratios solv.)
 //    → ces indicateurs relèvent EXCLUSIVEMENT de l'Agent Comptable.
@@ -22,14 +22,14 @@ export interface OrdoFicheDef {
   hasN1N2?: boolean;     // N-2 / N-1 / N
 }
 
-export const ORDO_SECTIONS_REPROFI: { key: OrdoSectionKey; label: string; subtitle: string }[] = [
-  { key: 'A', label: 'A. Indicateurs structurels', subtitle: 'Périmètre, services, population, dotation' },
-  { key: 'B', label: 'B. Bilan budgétaire', subtitle: 'Pilotage, masses, taux, codes activité, commande publique' },
-  { key: 'C', label: 'C. Exécution budgétaire', subtitle: 'Charges & produits par service général (AP, VE, ALO, SRH, OPC)' },
-  { key: 'D', label: 'D. Analyse de gestion', subtitle: 'Focus thématiques (financements, dépenses pédago, voyages…)' },
+export const ORDO_SECTIONS: { key: OrdoSectionKey; label: string; subtitle: string; accent: string }[] = [
+  { key: 'A', label: 'A. Indicateurs structurels', subtitle: 'Périmètre, services, population, dotation', accent: 'hsl(215,70%,50%)' },
+  { key: 'B', label: 'B. Bilan budgétaire',         subtitle: 'Pilotage, masses, taux, codes activité, commande publique', accent: 'hsl(280,55%,55%)' },
+  { key: 'C', label: 'C. Exécution budgétaire',     subtitle: 'Charges & produits par service général (AP, VE, ALO, SRH, OPC)', accent: 'hsl(38,92%,50%)' },
+  { key: 'D', label: 'D. Analyse de gestion',       subtitle: 'Focus thématiques (financements, dépenses pédago, voyages…)', accent: 'hsl(160,55%,42%)' },
 ];
 
-export const ORDO_FICHES_REPROFI: OrdoFicheDef[] = [
+export const ORDO_FICHES: OrdoFicheDef[] = [
   // ─── A. INDICATEURS STRUCTURELS ──────────────────────────────────
   { id: 'ordo_a1', numero: 'A.1', section: 'A', title: 'Présentation de la structure',
     fullTitle: "Présentation de la structure de l'établissement",
@@ -86,45 +86,35 @@ export const ORDO_FICHES_REPROFI: OrdoFicheDef[] = [
     definition: "Atteinte des objectifs définis dans la lettre de mission et le contrat d'objectifs académique.",
     meta: 'M9-6 §2.6', hasN1N2: false },
 
-  // ─── C. EXÉCUTION BUDGÉTAIRE (10 fiches : 5 services × charges/produits) ─
-  { id: 'ordo_c1', numero: 'C.1', section: 'C', title: 'Charges AP',
-    fullTitle: "Charges du service général AP — Activités pédagogiques",
+  // ─── C. EXÉCUTION BUDGÉTAIRE ────────────────────────────────────
+  { id: 'ordo_c1',  numero: 'C.1',  section: 'C', title: 'Charges AP',  fullTitle: "Charges du service général AP — Activités pédagogiques",
     definition: "Exécution des charges du service AP : enseignement, fournitures pédagogiques, sorties éducatives.",
     meta: 'M9-6 §3.1', service: 'AP', flux: 'charges', hasChart: true, chartHint: 'bars', hasN1N2: true },
-  { id: 'ordo_c2', numero: 'C.2', section: 'C', title: 'Produits AP',
-    fullTitle: "Produits du service général AP — Activités pédagogiques",
+  { id: 'ordo_c2',  numero: 'C.2',  section: 'C', title: 'Produits AP', fullTitle: "Produits du service général AP — Activités pédagogiques",
     definition: "Recettes adossées au service AP : subventions ciblées, contributions des familles.",
     meta: 'M9-6 §3.1', service: 'AP', flux: 'produits', hasChart: true, chartHint: 'donut', hasN1N2: true },
-  { id: 'ordo_c3', numero: 'C.3', section: 'C', title: 'Charges VE',
-    fullTitle: "Charges du service général VE — Vie de l'élève",
+  { id: 'ordo_c3',  numero: 'C.3',  section: 'C', title: 'Charges VE',  fullTitle: "Charges du service général VE — Vie de l'élève",
     definition: "Exécution des charges du service VE : fonds sociaux, vie scolaire, santé.",
     meta: 'M9-6 §3.2', service: 'VE', flux: 'charges', hasChart: true, chartHint: 'bars', hasN1N2: true },
-  { id: 'ordo_c4', numero: 'C.4', section: 'C', title: 'Produits VE',
-    fullTitle: "Produits du service général VE — Vie de l'élève",
+  { id: 'ordo_c4',  numero: 'C.4',  section: 'C', title: 'Produits VE', fullTitle: "Produits du service général VE — Vie de l'élève",
     definition: "Recettes adossées au service VE : bourses, subventions sociales.",
     meta: 'M9-6 §3.2', service: 'VE', flux: 'produits', hasChart: true, chartHint: 'donut', hasN1N2: true },
-  { id: 'ordo_c5', numero: 'C.5', section: 'C', title: 'Charges ALO',
-    fullTitle: "Charges du service général ALO — Administration et logistique",
+  { id: 'ordo_c5',  numero: 'C.5',  section: 'C', title: 'Charges ALO', fullTitle: "Charges du service général ALO — Administration et logistique",
     definition: "Exécution des charges ALO : fluides, entretien, maintenance, administration générale.",
     meta: 'M9-6 §3.3', service: 'ALO', flux: 'charges', hasChart: true, chartHint: 'bars', hasN1N2: true },
-  { id: 'ordo_c6', numero: 'C.6', section: 'C', title: 'Produits ALO',
-    fullTitle: "Produits du service général ALO — Administration et logistique",
+  { id: 'ordo_c6',  numero: 'C.6',  section: 'C', title: 'Produits ALO', fullTitle: "Produits du service général ALO — Administration et logistique",
     definition: "Recettes adossées au service ALO : DGF, locations de salles, taxe d'apprentissage.",
     meta: 'M9-6 §3.3', service: 'ALO', flux: 'produits', hasChart: true, chartHint: 'donut', hasN1N2: true },
-  { id: 'ordo_c7', numero: 'C.7', section: 'C', title: 'Charges SRH',
-    fullTitle: "Charges du service spécial SRH — Restauration & hébergement",
+  { id: 'ordo_c7',  numero: 'C.7',  section: 'C', title: 'Charges SRH', fullTitle: "Charges du service spécial SRH — Restauration & hébergement",
     definition: "Exécution des charges SRH : denrées, personnel logé, fluides cuisine, FARPI/FCSH.",
     meta: 'M9-6 §3.4', service: 'SRH', flux: 'charges', hasChart: true, chartHint: 'bars', hasN1N2: true },
-  { id: 'ordo_c8', numero: 'C.8', section: 'C', title: 'Produits SRH',
-    fullTitle: "Produits du service spécial SRH — Restauration & hébergement",
+  { id: 'ordo_c8',  numero: 'C.8',  section: 'C', title: 'Produits SRH', fullTitle: "Produits du service spécial SRH — Restauration & hébergement",
     definition: "Recettes du SRH : pension, demi-pension, commensaux, subventions de la collectivité.",
     meta: 'M9-6 §3.4', service: 'SRH', flux: 'produits', hasChart: true, chartHint: 'donut', hasN1N2: true },
-  { id: 'ordo_c9', numero: 'C.9', section: 'C', title: 'Charges OPC',
-    fullTitle: "Charges du service OPC — Opérations en capital",
+  { id: 'ordo_c9',  numero: 'C.9',  section: 'C', title: 'Charges OPC', fullTitle: "Charges du service OPC — Opérations en capital",
     definition: "Exécution des charges d'investissement et d'opérations en capital (classe 2).",
     meta: 'M9-6 §3.5', service: 'OPC', flux: 'charges', hasChart: true, chartHint: 'bars', hasN1N2: true },
-  { id: 'ordo_c10', numero: 'C.10', section: 'C', title: 'Produits OPC',
-    fullTitle: "Produits du service OPC — Opérations en capital",
+  { id: 'ordo_c10', numero: 'C.10', section: 'C', title: 'Produits OPC', fullTitle: "Produits du service OPC — Opérations en capital",
     definition: "Recettes d'investissement : subventions d'équipement, prélèvements sur fonds de roulement.",
     meta: 'M9-6 §3.5', service: 'OPC', flux: 'produits', hasChart: true, chartHint: 'donut', hasN1N2: true },
 
@@ -176,9 +166,9 @@ export const ORDO_FICHES_REPROFI: OrdoFicheDef[] = [
 ];
 
 export function getFichesBySection(key: OrdoSectionKey): OrdoFicheDef[] {
-  return ORDO_FICHES_REPROFI.filter(f => f.section === key);
+  return ORDO_FICHES.filter(f => f.section === key);
 }
 
 export function getFicheById(id: string): OrdoFicheDef | undefined {
-  return ORDO_FICHES_REPROFI.find(f => f.id === id);
+  return ORDO_FICHES.find(f => f.id === id);
 }
