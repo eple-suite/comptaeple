@@ -41,6 +41,7 @@ import {
   OrdoS4ExecRecettes, OrdoS5Pilotage, OrdoS6SRH, OrdoS7VieEleve,
   OrdoS8Viabilisation, OrdoS9ActivitesPeda, OrdoS10Creances,
   OrdoS11Resultat, OrdoS12Perspectives, OrdoS13Signatures,
+  RapportOrdoReprofi,
 } from '@/components/cofieple/ordo';
 import {
   Home, Upload, ScrollText, Eye, ShieldCheck, AlertTriangle,
@@ -58,21 +59,11 @@ interface NavItem {
   requiresData?: boolean;
 }
 
-// ── Ordonnateur sub-sections ─────────────────────────────────────
+// ── Ordonnateur — REPROFI 2026 (single entry, navigation interne A/B/C/D) ─
+// Les anciennes sections S1-S13 restent exportées pour rollback mais ne
+// sont plus montées (strict M9-6 : aucun indicateur bilancé côté ordo).
 const ORDO_SECTIONS: NavItem[] = [
-  { id: 'ordo_s1', label: 'S1 Présentation', icon: <Home className="h-4 w-4" /> },
-  { id: 'ordo_s2', label: 'S2 Tableau de bord', icon: <BarChart3 className="h-4 w-4" />, requiresData: true },
-  { id: 'ordo_s3', label: 'S3 Dépenses', icon: <FileText className="h-4 w-4" />, requiresData: true },
-  { id: 'ordo_s4', label: 'S4 Recettes', icon: <FileText className="h-4 w-4" />, requiresData: true },
-  { id: 'ordo_s5', label: 'S5 Pilotage', icon: <Search className="h-4 w-4" />, requiresData: true },
-  { id: 'ordo_s6', label: 'S6 SRH', icon: <UtensilsCrossed className="h-4 w-4" />, requiresData: true },
-  { id: 'ordo_s7', label: 'S7 Vie élève', icon: <GraduationCap className="h-4 w-4" /> },
-  { id: 'ordo_s8', label: 'S8 Énergie', icon: <Building2 className="h-4 w-4" /> },
-  { id: 'ordo_s9', label: 'S9 Act. péda.', icon: <BookOpen className="h-4 w-4" />, requiresData: true },
-  { id: 'ordo_s10', label: 'S10 Créances', icon: <AlertTriangle className="h-4 w-4" />, requiresData: true },
-  { id: 'ordo_s11', label: 'S11 Résultat', icon: <ClipboardList className="h-4 w-4" />, requiresData: true },
-  { id: 'ordo_s12', label: 'S12 Perspectives', icon: <PenTool className="h-4 w-4" /> },
-  { id: 'ordo_s13', label: 'S13 Signatures', icon: <Shield className="h-4 w-4" /> },
+  { id: 'ordo_reprofi', label: 'Rapport REPROFI', icon: <FileText className="h-4 w-4" /> },
 ];
 
 const CompteFinancier = () => {
@@ -195,20 +186,8 @@ const CompteFinancier = () => {
       case 'rapport_ac': return <RapportACSection />;
       case 'annexe': return <AnnexeComptableSection />;
       case 'diaporama': return <DiaporamaSection />;
-      // Ordonnateur sections
-      case 'ordo_s1': return <OrdoS1Presentation />;
-      case 'ordo_s2': return <OrdoS2TableauBord />;
-      case 'ordo_s3': return <OrdoS3ExecFonctionnement />;
-      case 'ordo_s4': return <OrdoS4ExecRecettes />;
-      case 'ordo_s5': return <OrdoS5Pilotage />;
-      case 'ordo_s6': return <OrdoS6SRH />;
-      case 'ordo_s7': return <OrdoS7VieEleve />;
-      case 'ordo_s8': return <OrdoS8Viabilisation />;
-      case 'ordo_s9': return <OrdoS9ActivitesPeda />;
-      case 'ordo_s10': return <OrdoS10Creances />;
-      case 'ordo_s11': return <OrdoS11Resultat />;
-      case 'ordo_s12': return <OrdoS12Perspectives />;
-      case 'ordo_s13': return <OrdoS13Signatures />;
+      // Ordonnateur — REPROFI 2026 (4 sections A/B/C/D)
+      case 'ordo_reprofi': return <RapportOrdoReprofi />;
       default: return <AccueilSection />;
     }
   };

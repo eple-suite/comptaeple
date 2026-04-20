@@ -97,6 +97,54 @@ export type Database = {
         }
         Relationships: []
       }
+      cofieple_codes_activite: {
+        Row: {
+          actif: boolean
+          categorie_analyse: string
+          code: string
+          created_at: string
+          domaine: string
+          exercice: number
+          id: string
+          libelle: string
+          ordre: number
+          service: string
+          uai: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actif?: boolean
+          categorie_analyse?: string
+          code: string
+          created_at?: string
+          domaine?: string
+          exercice: number
+          id?: string
+          libelle?: string
+          ordre?: number
+          service?: string
+          uai: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actif?: boolean
+          categorie_analyse?: string
+          code?: string
+          created_at?: string
+          domaine?: string
+          exercice?: number
+          id?: string
+          libelle?: string
+          ordre?: number
+          service?: string
+          uai?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cofieple_exercises: {
         Row: {
           bfr: number
