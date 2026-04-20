@@ -475,24 +475,10 @@ const BalanceAnalysis = () => {
               </CardContent>
             </Card>
 
-            {/* Treemap */}
-            <Card className="shadow-card lg:col-span-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  Cartographie des soldes
-                  <span className="text-[10px] text-muted-foreground font-normal">(rouge = anomalie critique, orange = attention)</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <Treemap data={treemapData} dataKey="size" nameKey="name" stroke="hsl(var(--background))">
-                    {treemapData.map((item, idx) => (
-                      <Cell key={idx} fill={item.fill} />
-                    ))}
-                  </Treemap>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            {/* Cartographie premium — Treemap hiérarchique par classe M9-6 */}
+            <div className="lg:col-span-2">
+              <CartographieSoldes balanceN={cartoBalanceN} balanceN1={cartoBalanceN1} />
+            </div>
           </div>
 
           {/* Balance par classe enrichie */}
