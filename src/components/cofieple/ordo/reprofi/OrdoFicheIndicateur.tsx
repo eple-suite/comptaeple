@@ -8,7 +8,7 @@ import { ReactNode, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Printer, Download, FileSpreadsheet } from 'lucide-react';
+import { Printer, FileSpreadsheet } from 'lucide-react';
 import { TextareaElastique } from '@/components/rapport/TextareaElastique';
 import { SaveIndicator } from '@/components/SaveIndicator';
 import { SectionEditorial } from '@/components/cofieple/premium/SectionEditorial';
@@ -90,7 +90,7 @@ export function OrdoFicheIndicateur({
   fiche, rows = [], chartData = [], chartSeries = [],
   hasData = true, emptyMessage, children,
 }: OrdoFicheIndicateurProps) {
-  const { etab, R, ind, pKey } = useOrdoData();
+  const { etab, ind, pKey } = useOrdoData();
   const accent = ACCENT_BY_SECTION[fiche.section] ?? 'primary';
   const [commentaire, setCommentaire, status, lastSaved] =
     usePersistedText(`${pKey}_reprofi_${fiche.id}`, '');
@@ -257,8 +257,8 @@ export function OrdoFicheIndicateur({
             <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
               ✎ Commentaire de l'ordonnateur
             </span>
-            {status && status !== 'idle' && (
-              <SaveIndicator status={status as 'saving' | 'saved'} lastSaved={lastSaved ?? null} />
+            {status && (
+              <SaveIndicator status={status} lastSaved={lastSaved ?? null} />
             )}
           </div>
           <TextareaElastique
