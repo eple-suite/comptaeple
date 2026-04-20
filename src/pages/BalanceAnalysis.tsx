@@ -133,6 +133,21 @@ const BalanceAnalysis = () => {
   const totalDebit = mockBalanceData.reduce((s, r) => s + r.debit, 0);
   const totalCredit = mockBalanceData.reduce((s, r) => s + r.credit, 0);
 
+  // Données réelles de balance depuis le store cofieple (avec fallback sur les détails enrichis)
+  const storeBalance = useCofiepleStore(s => s.balance);
+  const storeBalance1 = useCofiepleStore(s => s.balance1);
+  const activeBudget = useCofiepleStore(s => s.activeBudget);
+  const cartoBalanceN = useMemo(() => {
+    const real = storeBalance?.[activeBudget] || [];
+    if (real.length > 0) return real;
+    // Fallback : utiliser les detailedAccounts (mockés) pour rester démo-able
+    return enrichedDetailed.map(a => ({
+      compte: a.numero, intituleReduit: a.label,
+      solDbt: a.debit, solCrd: a.credit,
+    }));
+  }, [storeBalance, activeBudget]);
+  const cartoBalanceN1 = useMemo(() => storeBalance1?.[activeBudget] || [], [storeBalance1, activeBudget]);
+
   const anomaliesCount = enrichedDetailed.filter(c => c.anomalie !== "normal").length;
   const critiquesCount = enrichedDetailed.filter(c => c.anomalie === "critique").length;
 
