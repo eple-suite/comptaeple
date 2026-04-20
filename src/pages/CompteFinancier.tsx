@@ -41,7 +41,7 @@ import {
   OrdoS4ExecRecettes, OrdoS5Pilotage, OrdoS6SRH, OrdoS7VieEleve,
   OrdoS8Viabilisation, OrdoS9ActivitesPeda, OrdoS10Creances,
   OrdoS11Resultat, OrdoS12Perspectives, OrdoS13Signatures,
-  RapportOrdoReprofi,
+  RapportOrdoCofi,
 } from '@/components/cofieple/ordo';
 import {
   Home, Upload, ScrollText, Eye, ShieldCheck, AlertTriangle,
@@ -59,11 +59,11 @@ interface NavItem {
   requiresData?: boolean;
 }
 
-// ── Ordonnateur — REPROFI 2026 (single entry, navigation interne A/B/C/D) ─
+// ── Ordonnateur — COFI ORDO (entrée unique, 3 vues internes : Mosaïque / Fiches / Narration) ─
 // Les anciennes sections S1-S13 restent exportées pour rollback mais ne
-// sont plus montées (strict M9-6 : aucun indicateur bilancé côté ordo).
+// sont plus montées (strict M9-6 : aucun indicateur bilanciel côté ordo).
 const ORDO_SECTIONS: NavItem[] = [
-  { id: 'ordo_reprofi', label: 'Rapport REPROFI', icon: <FileText className="h-4 w-4" /> },
+  { id: 'ordo_cofi', label: 'COFI ORDO', icon: <FileText className="h-4 w-4" /> },
 ];
 
 const CompteFinancier = () => {
@@ -186,8 +186,8 @@ const CompteFinancier = () => {
       case 'rapport_ac': return <RapportACSection />;
       case 'annexe': return <AnnexeComptableSection />;
       case 'diaporama': return <DiaporamaSection />;
-      // Ordonnateur — REPROFI 2026 (4 sections A/B/C/D)
-      case 'ordo_reprofi': return <RapportOrdoReprofi />;
+      // Ordonnateur — COFI ORDO (4 sections A/B/C/D, 3 vues : Mosaïque/Fiches/Narration)
+      case 'ordo_cofi': return <RapportOrdoCofi />;
       default: return <AccueilSection />;
     }
   };
@@ -246,7 +246,7 @@ const CompteFinancier = () => {
           <div className="flex gap-1 px-3 pt-2">
             {[
               { key: 'utils' as MainTab, label: '🛠️ Outils', desc: 'Import, contrôles, indicateurs' },
-              { key: 'ordo' as MainTab, label: '📋 Rapport Ordonnateur', desc: '13 sections M9-6' },
+              { key: 'ordo' as MainTab, label: '📋 Rapport Ordonnateur', desc: 'COFI ORDO · M9-6' },
               { key: 'ac' as MainTab, label: '📊 Rapport Agent Comptable', desc: 'Analyse comptable' },
             ].map(tab => (
               <button
