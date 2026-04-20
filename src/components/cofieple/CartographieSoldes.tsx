@@ -341,7 +341,7 @@ export function CartographieSoldes({ balanceN, balanceN1 = [] }: Props) {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">
-            <Map className="h-5 w-5 text-primary" /> Cartographie des soldes
+            <MapIcon className="h-5 w-5 text-primary" /> Cartographie des soldes
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -359,7 +359,7 @@ export function CartographieSoldes({ balanceN, balanceN1 = [] }: Props) {
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <CardTitle className="flex items-center gap-2 text-base">
-              <Map className="h-5 w-5 text-primary" />
+              <MapIcon className="h-5 w-5 text-primary" />
               Cartographie hiérarchique des soldes
               <Badge variant="outline" className="ml-1 text-[10px] font-mono">M9-6 · Treemap</Badge>
             </CardTitle>
