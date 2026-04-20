@@ -28,6 +28,8 @@ import {
 import ReactMarkdown from "react-markdown";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
+import { CartographieSoldes } from "@/components/cofieple/CartographieSoldes";
+import { useCofiepleStore } from "@/store/useCofiepleStore";
 
 // ─── Enrichir les données balance avec la nomenclature M9-6 ───
 interface EnrichedBalanceRow {
