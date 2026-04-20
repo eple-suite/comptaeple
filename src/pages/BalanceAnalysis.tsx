@@ -28,6 +28,8 @@ import {
 import ReactMarkdown from "react-markdown";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
+import { CartographieSoldes } from "@/components/cofieple/CartographieSoldes";
+import { useCofiepleStore } from "@/store/useCofiepleStore";
 
 // ─── Enrichir les données balance avec la nomenclature M9-6 ───
 interface EnrichedBalanceRow {
@@ -130,6 +132,21 @@ const BalanceAnalysis = () => {
   const enrichedData = useMemo(() => enrichBalance(mockBalanceData), []);
   const totalDebit = mockBalanceData.reduce((s, r) => s + r.debit, 0);
   const totalCredit = mockBalanceData.reduce((s, r) => s + r.credit, 0);
+
+  // Données réelles de balance depuis le store cofieple (avec fallback sur les détails enrichis)
+  const storeBalance = useCofiepleStore(s => s.balance);
+  const storeBalance1 = useCofiepleStore(s => s.balance1);
+  const activeBudget = useCofiepleStore(s => s.activeBudget);
+  const cartoBalanceN = useMemo(() => {
+    const real = storeBalance?.[activeBudget] || [];
+    if (real.length > 0) return real;
+    // Fallback : utiliser les detailedAccounts (mockés) pour rester démo-able
+    return enrichedDetailed.map(a => ({
+      compte: a.numero, intituleReduit: a.label,
+      solDbt: a.debit, solCrd: a.credit,
+    }));
+  }, [storeBalance, activeBudget]);
+  const cartoBalanceN1 = useMemo(() => storeBalance1?.[activeBudget] || [], [storeBalance1, activeBudget]);
 
   const anomaliesCount = enrichedDetailed.filter(c => c.anomalie !== "normal").length;
   const critiquesCount = enrichedDetailed.filter(c => c.anomalie === "critique").length;
@@ -458,24 +475,10 @@ const BalanceAnalysis = () => {
               </CardContent>
             </Card>
 
-            {/* Treemap */}
-            <Card className="shadow-card lg:col-span-2">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  Cartographie des soldes
-                  <span className="text-[10px] text-muted-foreground font-normal">(rouge = anomalie critique, orange = attention)</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ResponsiveContainer width="100%" height={300}>
-                  <Treemap data={treemapData} dataKey="size" nameKey="name" stroke="hsl(var(--background))">
-                    {treemapData.map((item, idx) => (
-                      <Cell key={idx} fill={item.fill} />
-                    ))}
-                  </Treemap>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            {/* Cartographie premium — Treemap hiérarchique par classe M9-6 */}
+            <div className="lg:col-span-2">
+              <CartographieSoldes balanceN={cartoBalanceN} balanceN1={cartoBalanceN1} />
+            </div>
           </div>
 
           {/* Balance par classe enrichie */}
