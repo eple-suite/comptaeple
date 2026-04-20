@@ -506,14 +506,14 @@ const Establishments = () => {
                       <div className="space-y-2">
                         <Label>Identifiant Op@le du budget annexe *</Label>
                         <Input
-                          placeholder="Ex: P00805"
+                          placeholder="Ex: A00805"
                           value={annexeOpale}
                           onChange={(e) => setAnnexeOpale(e.target.value.toUpperCase())}
                           maxLength={6}
                           className="font-mono"
                         />
                         <p className="text-xs text-muted-foreground">
-                          Chaque budget annexe possède son propre code Op@le (différent du support).
+                          Chaque budget annexe possède son propre code Op@le commençant par <strong>A</strong> (différent du support en P).
                         </p>
                       </div>
                     </>
