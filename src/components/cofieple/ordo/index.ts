@@ -12,7 +12,7 @@ export { OrdoS11Resultat } from './OrdoS11Resultat';
 export { OrdoS12Perspectives } from './OrdoS12Perspectives';
 export { OrdoS13Signatures } from './OrdoS13Signatures';
 
-// ── REPROFI 2026 (4 sections A/B/C/D — strict M9-6 sphère ordonnateur) ──
+// ── COFI ORDO (4 sections A/B/C/D — strict M9-6 sphère ordonnateur) ──
 // Les exports S1-S13 ci-dessus sont conservés pour compatibilité / rollback
 // mais ne sont plus montés dans la navigation Compte Financier.
-export { RapportOrdoReprofi } from './reprofi/RapportOrdoReprofi';
+export { RapportOrdoCofi } from './cofiordo/RapportOrdoCofi';
