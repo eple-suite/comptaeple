@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, ClipboardCheck, Trash2, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardCheck, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useCommissions, useUpsertCommission } from "./useFsData";
 import { currentAnneeScolaire, type FsCommission } from "./fsv2Types";

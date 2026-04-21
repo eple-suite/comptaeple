@@ -3,7 +3,7 @@
 // ═══════════════════════════════════════════════════════════════
 
 import { useMemo, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +27,9 @@ import { toast } from "sonner";
 
 const STATUT_COLORS: Record<string, string> = {
   brouillon: "bg-muted text-muted-foreground",
-  decide: "bg-blue-500/10 text-blue-600 border-blue-300",
-  mandate: "bg-amber-500/10 text-amber-700 border-amber-300",
-  paye: "bg-emerald-500/10 text-emerald-700 border-emerald-300",
+  decide: "bg-primary/10 text-primary border-primary/30",
+  mandate: "bg-secondary text-secondary-foreground",
+  paye: "bg-primary text-primary-foreground",
   annule: "bg-destructive/10 text-destructive",
 };
 
