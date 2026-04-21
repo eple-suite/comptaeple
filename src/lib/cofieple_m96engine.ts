@@ -15,6 +15,7 @@ import {
   deriveSdeExecutionTotals, deriveSdrExecutionTotals,
   getChargeRateBase, getProductRateBase,
 } from './opaleExecutionHierarchy';
+import { findSensNormalOverride } from './cofieple_sensNormalOverrides';
 
 // Tolérance d'arrondi comptable : 1 € (standard EPLE, cohérent avec Op@le)
 // Les écarts < 1 € entre budgétaire et comptable sont normaux (arrondis, centimes)
@@ -710,8 +711,14 @@ export function buildChecklist(r: ResultatsM96, options: { isAnnexe?: boolean; b
 // - Les comptes de produits (classe 7) = CRÉDITEUR
 // - Les comptes de classe 8 = MIXTE (engagements hors bilan)
 
-function getSensNormal(compte: string): SensNormal {
+function getSensNormal(compte: string, uai?: string): SensNormal {
   const c = compte.replace(/\s/g, '');
+
+  // ① Surcharge utilisateur via la table `cofieple_comptes_sens_normal`
+  //    (paramétrable par l'agent comptable). Prime sur les règles M9-6.
+  const override = findSensNormalOverride(c, uai);
+  if (override) return override.sensNormal;
+
   const cl = c.charAt(0);
   const r2 = c.substring(0, 2); // racine 2 chiffres
   const r3 = c.substring(0, 3); // racine 3 chiffres
@@ -849,11 +856,15 @@ function getSensNormal(compte: string): SensNormal {
   return 'debiteur';
 }
 
-export function analyserBalance(bal: LigneBalance[], options?: { hasAnnexe?: boolean }): CompteBalance[] {
+export function analyserBalance(
+  bal: LigneBalance[],
+  options?: { hasAnnexe?: boolean; uai?: string },
+): CompteBalance[] {
   const hasAnnexe = options?.hasAnnexe ?? false;
+  const uai = options?.uai;
 
   return bal.filter(b => b.compte && b.compte.length >= 3).map(b => {
-    const sensNormal = getSensNormal(b.compte);
+    const sensNormal = getSensNormal(b.compte, uai);
     // Use NET balance to determine actual sense — not raw columns
     // An aggregated account can have both solDbt and solCrd > 0 (sub-accounts)
     const soldeNet = (b.solDbt || 0) - (b.solCrd || 0);
