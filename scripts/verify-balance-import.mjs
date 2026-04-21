@@ -11,7 +11,7 @@
 
 import XLSX from 'xlsx';
 import { readFileSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, extname } from 'path';
 
 const C = {
   reset: '\x1b[0m', bold: '\x1b[1m',
@@ -59,6 +59,20 @@ const TCD_SIGNATURES = ['somme de', '__empty', 'unnamed:', 'total général'];
 
 const normalize = (s) => String(s ?? '').toLowerCase().trim().replace(/\s+/g, ' ');
 
+// ─── Réparation !ref (fréquemment corrompu par Op@le) ───────────
+function repairSheetRange(sheet) {
+  const cellKeys = Object.keys(sheet).filter(k => /^[A-Z]+\d+$/.test(k));
+  if (cellKeys.length === 0) return sheet;
+  let maxR = 0, maxC = 0;
+  for (const k of cellKeys) {
+    const c = XLSX.utils.decode_cell(k);
+    if (c.r > maxR) maxR = c.r;
+    if (c.c > maxC) maxC = c.c;
+  }
+  sheet['!ref'] = `A1:${XLSX.utils.encode_cell({ r: maxR, c: maxC })}`;
+  return sheet;
+}
+
 function isTCDHeader(row) {
   return row.some(cell => {
     const s = normalize(cell);
@@ -77,6 +91,7 @@ function isValidHeaderRow(row) {
 }
 
 function findHeaderRow(sheet) {
+  repairSheetRange(sheet);
   const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, blankrows: false });
   for (let i = 0; i < Math.min(rows.length, 8); i++) {
     if (isValidHeaderRow(rows[i])) return { index: i, rows };
