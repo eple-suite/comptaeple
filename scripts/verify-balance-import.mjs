@@ -148,16 +148,55 @@ function parseSheet(sheet, headerInfo) {
 }
 
 function findBalanceSheet(wb) {
-  const candidates = [];
+  const scored = [];
   for (const name of wb.SheetNames) {
     const sheet = wb.Sheets[name];
+    repairSheetRange(sheet);
     const header = findHeaderRow(sheet);
-    if (!header) continue;
+    if (!header) { scored.push({ name, score: -10, parsed: null }); continue; }
     const parsed = parseSheet(sheet, header);
-    if (parsed.data.length > 0) candidates.push({ name, ...parsed });
+    // métadonnées : balayer toutes les lignes < header pour récupérer UAI / période
+    for (let i = 0; i < header.index; i++) {
+      const r = header.rows[i] || [];
+      for (let c = 0; c < r.length; c++) {
+        const v = String(r[c] ?? '').trim();
+        if (!parsed.establishment && /^[0-9]{7}[A-Z]$/i.test(v)) parsed.establishment = v;
+        if (!parsed.period && /^(0?[1-9]|1[0-2])\/[0-9]{4}$/.test(v)) parsed.period = v;
+      }
+    }
+    let score = 0;
+    const headerNorm = header.rows[header.index].map(normalize);
+    const canonical = ['compte', 'montant débit', 'montant crédit', 'solde débit', 'solde crédit', 'classe'];
+    score += canonical.filter(c => headerNorm.some(h => h.startsWith(normalize(c)))).length * 5;
+    if (headerNorm.some(h => TCD_SIGNATURES.some(sig => h.includes(sig)))) score -= 10;
+    score += parsed.data.length;
+    scored.push({ name, score, parsed });
   }
-  candidates.sort((a, b) => b.data.length - a.data.length);
-  return candidates[0] || null;
+  scored.sort((a, b) => b.score - a.score);
+  const winner = scored[0];
+  if (!winner || winner.score < 10 || !winner.parsed || winner.parsed.data.length === 0) return null;
+  return { name: winner.name, ...winner.parsed };
+}
+
+// ─── Parsing CSV ─────────────────────────────────────────────────
+function parseCsvFile(filePath) {
+  let text = readFileSync(filePath, 'utf8');
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+  const firstLine = text.split(/\r?\n/, 1)[0] || '';
+  const semis = (firstLine.match(/;/g) || []).length;
+  const commas = (firstLine.match(/,/g) || []).length;
+  const sep = (semis >= commas && semis > 0) ? ';' : (commas > 0 ? ',' : ';');
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const splitLine = (l) => l.split(sep).map(c => c.replace(/^"|"$/g, ''));
+  const rows = lines.map(splitLine);
+  // Construire un faux workbook avec un seul onglet
+  const aoa = rows.map(r => r.map(c => {
+    const v = c.trim();
+    if (/^-?\d+([,.]\d+)?$/.test(v)) return Number(v.replace(',', '.'));
+    return v;
+  }));
+  const sheet = XLSX.utils.aoa_to_sheet(aoa);
+  return { SheetNames: ['CSV'], Sheets: { CSV: sheet } };
 }
 
 const [, , filePath] = process.argv;
