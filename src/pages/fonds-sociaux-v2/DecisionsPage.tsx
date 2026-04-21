@@ -197,8 +197,8 @@ export default function DecisionsPage() {
                       <TableCell>
                         <div className="flex gap-1">
                           <Button size="icon" variant="ghost" className="h-7 w-7" title="Décision CE" onClick={() => handlePdfDecision(d)}><FileDown className="h-3.5 w-3.5" /></Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" title="Notification famille" onClick={() => handlePdfNotification(d)}><FileDown className="h-3.5 w-3.5 text-blue-600" /></Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" title="Pièce comptable" onClick={() => handlePdfMandat(d)}><FileDown className="h-3.5 w-3.5 text-emerald-600" /></Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" title="Notification famille" onClick={() => handlePdfNotification(d)}><FileDown className="h-3.5 w-3.5 text-primary" /></Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" title="Pièce comptable" onClick={() => handlePdfMandat(d)}><FileDown className="h-3.5 w-3.5 text-accent-foreground" /></Button>
                         </div>
                       </TableCell>
                     </TableRow>
