@@ -28,11 +28,47 @@ Source : `PROMPTS_LOVABLE_FONDS_SOCIAUX.md` (994 lignes, 6 sprints).
 - Routes ajoutées dans `src/App.tsx` : `/fonds-sociaux/v2`, `/eleves`, `/decisions`, `/commissions`, `/enquete`.
 - Entrée menu « Action sociale & Enquête » ajoutée dans `src/components/AppSidebar.tsx`.
 
-## ⏳ Sprints 3 → 6 — À livrer
-- **Sprint 3** : `DecisionsPage.tsx` (liste + DataTable) + `NouvelleDecisionWizard.tsx` (5 étapes).
-- **Sprint 4** : `src/lib/fs-pdf/` avec 3 templates jsPDF (décision CE, notification famille, pièce comptable) + utilitaires `montantEnLettres`, `numerotation`.
-- **Sprint 5** : `src/lib/enquete-rectorat/validation.ts` (16 règles R1-R16) + `EnquetePage.tsx` (accordion Q1-Q17 + KPIs).
-- **Sprint 6** : `CommissionsPage.tsx` (cards + détail + PV PDF) + polish accueil + `docs/FONDS_SOCIAUX.md`.
+## ✅ Sprint 3 — Décisions FS / FSC (terminé)
+- `src/pages/fonds-sociaux-v2/NouvelleDecisionWizard.tsx` — wizard 5 étapes (élève → type/nature → modalités → imputation → récap).
+- `src/pages/fonds-sociaux-v2/DecisionsPage.tsx` — liste filtrable (année / type / statut / recherche), changement de statut inline (brouillon → décidé → mandaté → payé), génération PDF par décision.
+- Auto-numérotation `FS-YYYY-NNN` / `FSC-YYYY-NNN` via `buildNumeroDecision`.
+- Code activité Op@le auto (`16FS` / `16FSC`) dérivé du type via `CODE_ACTIVITE_DEFAULT`.
+
+## ✅ Sprint 4 — Génération PDF (terminé)
+- `src/lib/fs-pdf/utils.ts` — helpers `formatEur`, `formatDateFr`, `montantEnLettres` (récursif, gère 0 → millions).
+- `src/lib/fs-pdf/decisionPdf.ts` — 3 templates **jsPDF + autoTable** :
+  - `generateDecisionChefEtablissementPdf` (Vu/Décide, références réglementaires L.531-1, D.531-7, circulaire 2017-122, M9-6),
+  - `generateNotificationFamillePdf` (lettre famille avec adresse responsable),
+  - `generatePieceComptablePdf` (mandat — bénéficiaire, INE, imputation, montant lettres).
+- Branding pulled from `useEstablishmentBranding` (signataires ordo / AC, ville).
+
+## ✅ Sprint 5 — Moteur Enquête Rectorat (terminé)
+- `src/lib/enquete-rectorat/validation.ts` :
+  - `computeEnqueteKpis` calcule **Q1 → Q17** (volumes, montants, répartitions par voie / type / modalité / nature, taux de consommation = versé / (subv + reliquat)).
+  - `validateEnquete` exécute **16 règles R1 → R16** : commission tenue, décision sans commission, urgence sans motif, tiers incomplet, code/compte Op@le, montant > 0, mandat manquant, élève inconnu, FSC ↔ restauration, taux > 100/110%, BOP valide (141/230/214/140), unicité numéros, cohérence Q5/Q1, élèves boursiers représentés.
+- `src/pages/fonds-sociaux-v2/EnquetePage.tsx` :
+  - Synthèse contrôles (erreurs / warnings / infos / statut global),
+  - Accordion Q1→Q17 avec cartes KPI et répartitions,
+  - Liste typée des contrôles avec hints,
+  - Export CSV brut prêt à coller dans la grille DGESCO.
+
+## ✅ Sprint 6 — Commissions & Polish (terminé)
+- `src/pages/fonds-sociaux-v2/CommissionsPage.tsx` — grille de cartes + dialog création (date, type ordinaire/extraordinaire/urgence, année scolaire, membres présents au format texte « Nom — Qualité », observations).
+- Accueil v2 inchangé : compteurs live déjà branchés (élèves, décisions année, commissions, total versé) — pas de refonte destructive.
+
+## Décisions complémentaires prises en autonomie (Sprints 3-6)
+1. **Statuts décision** stockés en TEXT côté BDD : changement de statut inline via `<Select>` dans la liste, pas de workflow strict bloquant — l'utilisateur reste maître.
+2. **Membres commission** saisis en texte libre (« Nom — Qualité » par ligne) → JSONB. Évite un sous-formulaire dynamique en attendant un retour utilisateur.
+3. **Export CSV Q1-Q17** plutôt que générer un PDF/XLSX dédié : suffit pour copier-coller dans la grille Rectorat. Une vraie maquette XLSX viendra si la DGESCO la fournit.
+4. **Aucune destruction** : les modules `fonds-sociaux/*` historiques (mocks) restent en place. `fonds-sociaux/v2/*` est un module parallèle.
+5. **Aucun nouveau bucket de stockage** créé pour les pièces justificatives : champs `pieces_justificatives_urls` (JSONB) et `*_pdf_url` (text) restent vides — branchement storage à ajouter ultérieurement (sinon nécessite création bucket + RLS).
+
+## Recette finale — points à vérifier
+- ✅ `npx tsc --noEmit` passe sans erreur.
+- 🔍 Tester le wizard : créer une décision urgence sans motif → doit être bloqué. Créer une décision tiers sans SIRET → bloqué.
+- 🔍 Générer les 3 PDFs : décision CE, notification famille, pièce comptable — vérifier signataires / branding.
+- 🔍 Onglet Enquête : passer en revue les 16 règles avec données vides puis avec ≥1 décision/commission.
+- 🔍 Vérifier filtres RLS multi-établissement via le sélecteur.
 
 ## Points d'attention recette
 - Tester l'import CSV avec un fichier réel d'élèves (vérifier mapping INE / responsables).
