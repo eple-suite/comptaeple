@@ -385,6 +385,9 @@ const SettingsPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Règles sens normal des comptes (M9-6) */}
+      <ComptesSensNormalManager uai={selectedEstablishment?.uai ?? null} />
     </div>
   );
 };
