@@ -28,6 +28,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
+import { supabase } from "@/integrations/supabase/client";
 import { CartographieSoldes } from "@/components/cofieple/CartographieSoldes";
 import { useCofiepleStore } from "@/store/useCofiepleStore";
 
@@ -196,11 +197,16 @@ const BalanceAnalysis = () => {
     setAiAnalysis("");
     
     try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error("Session expirée. Veuillez vous reconnecter.");
+      }
       const resp = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/analyze-balance`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${session.access_token}`,
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
         },
         body: JSON.stringify({
           balanceData: detailedAccounts,
