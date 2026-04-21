@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { clearAllCofiepleData } from "@/hooks/usePersistedState";
 import { store } from "@/store/persistentStore";
+import ComptesSensNormalManager from "@/components/settings/ComptesSensNormalManager";
 
 const SettingsPage = () => {
   const { selectedEstablishment, refetch } = useEstablishment();
