@@ -108,6 +108,7 @@ export const TYPE_TIERS_LABELS: Record<string, string> = {
   bailleur: "Bailleur / Locataire",
   notaire: "Notaire / Huissier",
   tresor_public: "Trésor public / DDFiP",
+  association: "Association (loi 1901)",
   autre: "Autre",
 };
 
@@ -116,6 +117,7 @@ export const TYPE_DEBITEUR_LABELS: Record<string, string> = {
   fournisseur: "Fournisseur",
   usager: "Usager du service public",
   eleve_famille: "Famille d'élève",
+  association: "Association (loi 1901)",
   autre: "Autre",
 };
 
