@@ -856,11 +856,15 @@ function getSensNormal(compte: string, uai?: string): SensNormal {
   return 'debiteur';
 }
 
-export function analyserBalance(bal: LigneBalance[], options?: { hasAnnexe?: boolean }): CompteBalance[] {
+export function analyserBalance(
+  bal: LigneBalance[],
+  options?: { hasAnnexe?: boolean; uai?: string },
+): CompteBalance[] {
   const hasAnnexe = options?.hasAnnexe ?? false;
+  const uai = options?.uai;
 
   return bal.filter(b => b.compte && b.compte.length >= 3).map(b => {
-    const sensNormal = getSensNormal(b.compte);
+    const sensNormal = getSensNormal(b.compte, uai);
     // Use NET balance to determine actual sense — not raw columns
     // An aggregated account can have both solDbt and solCrd > 0 (sub-accounts)
     const soldeNet = (b.solDbt || 0) - (b.solCrd || 0);
