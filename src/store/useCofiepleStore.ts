@@ -17,6 +17,7 @@ import type {
 import {
   calculerResultats, consolider, construireCheckList, analyserBalance,
 } from '@/lib/cofieple_calculations';
+import { loadSensNormalOverridesFromSupabase } from '@/lib/cofieple_sensNormalOverrides';
 
 const BUDGETS_VIDES = () => ({
   principal: [] as any[],
