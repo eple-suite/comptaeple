@@ -105,7 +105,7 @@ export default function FondsSociauxV2Home() {
 // ═══════════════════════════════════════════════════════════════
 function PdfTestSection() {
   const { selectedEstablishment } = useEstablishment();
-  const branding = useEstablishmentBranding(selectedEstablishment?.id);
+  const { branding, logoUrl } = useEstablishmentBranding();
 
   const ctx: PdfContext = {
     etablissementNom: selectedEstablishment?.name ?? "Lycée Exemple",
@@ -116,7 +116,7 @@ function PdfTestSection() {
     signataireOrdonnateur: branding?.signataire_ordonnateur || selectedEstablishment?.ordonnateur || "Le Proviseur",
     signataireAgentComptable: branding?.signataire_agent_comptable || selectedEstablishment?.agent_comptable || "L'Agent comptable",
     ville: branding?.city || selectedEstablishment?.city,
-    logoDataUrl: branding?.logo_url ?? null,
+    logoDataUrl: logoUrl ?? null,
   };
 
   // Jeu de données fictif conforme au modèle métier (additif, non persisté)
