@@ -282,6 +282,7 @@ export default function SatdFormulaire({ open, onOpenChange, tiersDetenteurs, on
                     <SelectItem value="agent">Agent de l'État</SelectItem>
                     <SelectItem value="fournisseur">Fournisseur</SelectItem>
                     <SelectItem value="usager">Usager du service public</SelectItem>
+                    <SelectItem value="association">Association (loi 1901)</SelectItem>
                     <SelectItem value="autre">Autre</SelectItem>
                   </SelectContent>
                 </Select>
