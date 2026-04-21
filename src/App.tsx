@@ -14,6 +14,11 @@ import BalanceAnalysis from "./pages/BalanceAnalysis";
 import CompteFinancier from "./pages/CompteFinancier";
 import Voyages from "./pages/Voyages";
 import FondsSociaux from "./pages/FondsSociaux";
+import FondsSociauxV2Home from "./pages/fonds-sociaux-v2/FondsSociauxV2Home";
+import ElevesPage from "./pages/fonds-sociaux-v2/ElevesPage";
+import DecisionsPage from "./pages/fonds-sociaux-v2/DecisionsPage";
+import CommissionsPage from "./pages/fonds-sociaux-v2/CommissionsPage";
+import EnquetePage from "./pages/fonds-sociaux-v2/EnquetePage";
 import SATD from "./pages/SATD";
 import CreditNourriture from "./pages/CreditNourriture";
 import VeilleJuridique from "./pages/VeilleJuridique";
@@ -74,6 +79,11 @@ const App = () => (
               <Route path="/compte-financier" element={<CompteFinancier />} />
               <Route path="/voyages" element={<Voyages />} />
               <Route path="/fonds-sociaux" element={<FondsSociaux />} />
+              <Route path="/fonds-sociaux/v2" element={<FondsSociauxV2Home />} />
+              <Route path="/fonds-sociaux/v2/eleves" element={<ElevesPage />} />
+              <Route path="/fonds-sociaux/v2/decisions" element={<DecisionsPage />} />
+              <Route path="/fonds-sociaux/v2/commissions" element={<CommissionsPage />} />
+              <Route path="/fonds-sociaux/v2/enquete" element={<EnquetePage />} />
               <Route path="/satd" element={<SATD />} />
               <Route path="/credit-nourriture" element={<CreditNourriture />} />
               <Route path="/regies" element={<RegiesCaisse />} />
