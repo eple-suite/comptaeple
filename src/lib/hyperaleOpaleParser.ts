@@ -2,8 +2,8 @@
  * Parseur de fichiers Op@le (CSV / XLSX) pour HYPER@LE.
  * Normalise les colonnes, valide les données et retourne un tableau propre.
  */
-import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
+import { parseCsvFile, selectLargestWorkbookSheet, selectWorkbookSheetByHeaders } from './opaleWorkbook';
 
 export interface OpaleRow {
   uai: string;
@@ -158,32 +158,28 @@ export async function parseOpaleFile(file: File): Promise<ParseResult> {
   const ext = file.name.split('.').pop()?.toLowerCase();
 
   if (ext === 'csv' || ext === 'txt') {
-    return new Promise((resolve) => {
-      Papa.parse(file, {
-        header: true,
-        skipEmptyLines: true,
-        encoding: 'UTF-8',
-        complete: (results) => {
-          resolve(parseRows(results.data as Record<string, unknown>[]));
-        },
-        error: () => {
-          resolve({ success: false, data: [], errors: ['Impossible de lire le fichier CSV.'], warnings: [], rowCount: 0 });
-        },
-      });
-    });
+    try {
+      const rows = await parseCsvFile(file);
+      return parseRows(rows as Record<string, unknown>[]);
+    } catch {
+      return { success: false, data: [], errors: ['Impossible de lire le fichier CSV.'], warnings: [], rowCount: 0 };
+    }
   }
 
   if (ext === 'xlsx' || ext === 'xls') {
     try {
       const buffer = await file.arrayBuffer();
       const workbook = XLSX.read(buffer, { type: 'array' });
-      const sheetName = workbook.SheetNames[0];
-      if (!sheetName) {
+      const candidate = selectWorkbookSheetByHeaders(workbook, {
+        requiredHeaders: [...REQUIRED_COLUMNS],
+        maxHeaderScanRows: 8,
+        minMatches: REQUIRED_COLUMNS.length,
+      }) ?? selectLargestWorkbookSheet(workbook);
+
+      if (!candidate) {
         return { success: false, data: [], errors: ['Le fichier Excel ne contient aucune feuille.'], warnings: [], rowCount: 0 };
       }
-      const sheet = workbook.Sheets[sheetName];
-      const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: '' });
-      return parseRows(rawRows);
+      return parseRows(candidate.records as Record<string, unknown>[]);
     } catch {
       return { success: false, data: [], errors: ['Impossible de lire le fichier Excel.'], warnings: [], rowCount: 0 };
     }

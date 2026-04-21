@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "@/hooks/use-toast";
 import Papa from "papaparse";
 import * as XLSX from "xlsx";
+import { parseCsvFile, selectLargestWorkbookSheet, selectWorkbookSheetByHeaders } from "@/lib/opaleWorkbook";
 
 interface ImportResult {
   fileName: string;
@@ -37,7 +38,7 @@ const DataImport = () => {
   const [dragActive, setDragActive] = useState(false);
   const [previewData, setPreviewData] = useState<ImportResult | null>(null);
 
-  const parseFile = useCallback((file: File) => {
+  const parseFile = useCallback(async (file: File) => {
     const ext = file.name.split(".").pop()?.toLowerCase();
 
     const processData = (data: Record<string, string>[]) => {
@@ -62,35 +63,45 @@ const DataImport = () => {
     };
 
     if (ext === "csv") {
-      Papa.parse(file, {
-        header: true, skipEmptyLines: true, encoding: "UTF-8",
-        complete: (results) => processData(results.data as Record<string, string>[]),
-        error: (error) => {
-          setImports((prev) => [{
-            fileName: file.name, type: selectedType, rows: 0, columns: [], data: [],
-            status: "error", error: error.message, date: new Date().toLocaleDateString("fr-FR"),
-          }, ...prev]);
-          toast({ title: "Erreur de parsing", description: error.message, variant: "destructive" });
-        },
-      });
+      try {
+        const data = await parseCsvFile(file);
+        processData(data as Record<string, string>[]);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Erreur CSV";
+        setImports((prev) => [{
+          fileName: file.name, type: selectedType, rows: 0, columns: [], data: [],
+          status: "error", error: message, date: new Date().toLocaleDateString("fr-FR"),
+        }, ...prev]);
+        toast({ title: "Erreur de parsing", description: message, variant: "destructive" });
+      }
     } else if (ext === "xlsx" || ext === "xls") {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        try {
-          const wb = XLSX.read(e.target?.result, { type: "array" });
-          const ws = wb.Sheets[wb.SheetNames[0]];
-          const data = XLSX.utils.sheet_to_json<Record<string, string>>(ws);
-          processData(data);
-        } catch (err) {
-          const msg = err instanceof Error ? err.message : "Erreur inconnue";
-          setImports((prev) => [{
-            fileName: file.name, type: selectedType, rows: 0, columns: [], data: [],
-            status: "error", error: msg, date: new Date().toLocaleDateString("fr-FR"),
-          }, ...prev]);
-          toast({ title: "Erreur Excel", description: msg, variant: "destructive" });
-        }
-      };
-      reader.readAsArrayBuffer(file);
+      try {
+        const buffer = await file.arrayBuffer();
+        const wb = XLSX.read(buffer, { type: "array" });
+        const candidate = selectWorkbookSheetByHeaders(wb, {
+          requiredHeaders: [
+            "Compte",
+            "Montant débit antérieur",
+            "Montant crédit antérieur",
+            "Montant débit",
+            "Montant crédit",
+            "Solde débit",
+            "Solde crédit",
+          ],
+          forbiddenHeaderPatterns: [/^__empty/i, /^unnamed:/i, /^somme de/i, /^total general/i, /^total général/i],
+          maxHeaderScanRows: 8,
+          minMatches: 5,
+        }) ?? selectLargestWorkbookSheet(wb);
+
+        processData((candidate?.records ?? []) as Record<string, string>[]);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Erreur inconnue";
+        setImports((prev) => [{
+          fileName: file.name, type: selectedType, rows: 0, columns: [], data: [],
+          status: "error", error: msg, date: new Date().toLocaleDateString("fr-FR"),
+        }, ...prev]);
+        toast({ title: "Erreur Excel", description: msg, variant: "destructive" });
+      }
     } else {
       toast({ title: "Format non supporté", description: "Utilisez CSV, XLS ou XLSX.", variant: "destructive" });
     }
