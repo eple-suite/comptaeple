@@ -102,8 +102,14 @@ function findHeaderRow(sheet) {
 function parseSheet(sheet, headerInfo) {
   const { index, rows } = headerInfo;
   const headers = rows[index].map(normalize);
-  const col = (name) =>
-    headers.findIndex(h => h === normalize(name) || h.startsWith(normalize(name)));
+  // exact match d'abord, sinon startsWith — évite "montant débit" qui matcherait
+  // "montant débit antérieur"
+  const col = (name) => {
+    const target = normalize(name);
+    const exact = headers.findIndex(h => h === target);
+    if (exact !== -1) return exact;
+    return headers.findIndex(h => h.startsWith(target));
+  };
 
   const idx = {
     compte: col('compte'),
@@ -115,7 +121,7 @@ function parseSheet(sheet, headerInfo) {
     sDeb: col('solde débit'),
     sCre: col('solde crédit'),
     classe: col('classe de compte'),
-    etab: col('etablissement'),
+    etab: col('etablissement (uai)'),
     periode: col('période de début'),
   };
 
