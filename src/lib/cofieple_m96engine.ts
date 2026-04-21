@@ -711,8 +711,14 @@ export function buildChecklist(r: ResultatsM96, options: { isAnnexe?: boolean; b
 // - Les comptes de produits (classe 7) = CRÉDITEUR
 // - Les comptes de classe 8 = MIXTE (engagements hors bilan)
 
-function getSensNormal(compte: string): SensNormal {
+function getSensNormal(compte: string, uai?: string): SensNormal {
   const c = compte.replace(/\s/g, '');
+
+  // ① Surcharge utilisateur via la table `cofieple_comptes_sens_normal`
+  //    (paramétrable par l'agent comptable). Prime sur les règles M9-6.
+  const override = findSensNormalOverride(c, uai);
+  if (override) return override.sensNormal;
+
   const cl = c.charAt(0);
   const r2 = c.substring(0, 2); // racine 2 chiffres
   const r3 = c.substring(0, 3); // racine 3 chiffres
