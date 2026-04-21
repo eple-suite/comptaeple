@@ -35,4 +35,12 @@ Les données Op@le (SDE/SDR) sont organisées en arbre hiérarchique :
 
 ### Exceptions de solde (comptes mixtes)
 - 443110 (Bourses) : classé 'mixte' — débit ou crédit autorisé
-- 515900 (Trésor règlements en cours) : classé 'mixte'
+- 515900 (Trésor règlements en cours) : **CRÉDITEUR strict** (M9-6 Tome 3, ord. 2022-408).
+  Schéma : D 401XXX / C 515900 puis D 515900 / C 515100. Solde débiteur = 🔴 critique.
+
+### Comptes à sens unilatéral (paramétrables via table `cofieple_comptes_sens_normal`)
+- 515100, 531 : strictement débiteur ou nul
+- 515900 : strictement créditeur ou nul
+- 28x, 29x, 39x, 49x, 59x : strictement créditeur (passifs correcteurs)
+- 419 : créditeur strict (avances reçues)
+- 409 : débiteur strict (avances versées)
