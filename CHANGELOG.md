@@ -1,36 +1,52 @@
 # CHANGELOG
 
-## [En attente] Recette import balance Op@le — fichier `w105973251.xlsx`
+## [BLOQUÉ] Recette import balance Op@le — fichier `w105973251.xlsx` reçu mais VIDE
 
 ### Script de recette
-- Ajout de `scripts/verify-balance-import.mjs` (référentiel autonome).
-- Usage : `node scripts/verify-balance-import.mjs <chemin/w105973251.xlsx>`
+- `scripts/verify-balance-import.mjs` opérationnel.
 
-### Statut
-❌ **Validation NON exécutée sur le fichier de référence** : le fichier
-`w105973251.xlsx` (UAI attendu `9710040S`, période `04/2026`) n'est pas
-présent dans le workspace (`/dev-server/tmp_uploads/` ne contient que
-`balance.xlsx` et `balance-1-2.xlsx`, qui correspondent à un autre
-établissement — UAI `P03427`).
-
-### Test à blanc effectué (script vs `balance.xlsx` UAI P03427)
-Le script s'exécute correctement et applique bien sa logique :
-- ✓ Détection automatique de l'onglet exploitable (rejet TCD)
-- ✓ Aucune colonne fantôme (`__EMPTY_`, `Unnamed:`, `Somme de`)
-- ✓ Équilibre Débit/Crédit vérifié (écart 0,00 €)
-- ✗ Échecs **attendus** sur les valeurs de référence (UAI/période/totaux/comptes)
-  car le fichier testé n'est pas le fichier de recette.
-
-### Action requise de l'utilisateur
-Déposer `w105973251.xlsx` dans le chat (ou dans `/tmp/uploads/`),
-puis relancer :
+### Sortie complète de l'exécution
 ```
-node scripts/verify-balance-import.mjs <chemin/w105973251.xlsx>
+╔════════════════════════════════════════════════════════╗
+║  RECETTE IMPORT BALANCE OP@LE — verify-balance-import  ║
+╚════════════════════════════════════════════════════════╝
+
+Fichier testé : /tmp/w105973251.xlsx
+
+━━━ 1. Onglets trouvés ━━━
+  ℹ « Balance »
+  ℹ « Donnees »
+
+━━━ 2. Détection de l'onglet balance ━━━
+  ✗ Aucun onglet exploitable détecté
+
+VALIDATION ÉCHOUÉE — Import impossible.
 ```
-La sortie complète sera annexée à ce CHANGELOG dès obtention du fichier.
+Exit code : **1**
+
+### Diagnostic
+Le fichier `w105973251.xlsx` fourni est **structurellement vide** :
+
+- **Sheet « Balance »** (TCD) : 7 lignes d'en-têtes seulement, `Total général = 0`.
+- **Sheet « Donnees »** : 3 lignes — `A1` = méta job (toutes valeurs à `0`),
+  `A2` = méta établissement (UAI = `0`, période = `0`), `A3` = en-têtes de
+  colonnes. **Aucune ligne de données comptables.**
+- **Cellules numériques non nulles dans tout le classeur : 0.**
+
+Le référentiel attendu par le script (88 lignes, UAI `9710040S`, période
+`04/2026`, totaux ~1,5 M€, 8 comptes de contrôle) **ne peut pas être
+rapproché de ce fichier** : il n'y a littéralement rien à importer.
+
+### Hypothèses
+1. Export Op@le effectué sans période sélectionnée (filtre vide).
+2. Mauvais fichier joint (template au lieu de l'extraction réelle).
+3. Anonymisation excessive avant transmission.
+
+### Action requise
+Merci de redéposer le fichier `w105973251.xlsx` **avec ses données
+comptables réelles** (UAI `9710040S`, période `04/2026`). Le script
+sera relancé immédiatement et la sortie sera annexée ici.
 
 ### Code applicatif
-Aucune modification du code applicatif (`src/`) effectuée à ce stade :
-sans le fichier de référence et sa sortie réelle, je ne dispose pas du
-diagnostic exact du défaut à corriger côté applicatif. Toute correction
-« à l'aveugle » risquerait de masquer le vrai bug.
+Aucune modification de `src/` : aucune correction à l'aveugle tant que
+le fichier de référence n'est pas exploitable.
