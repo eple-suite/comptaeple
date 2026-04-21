@@ -317,6 +317,7 @@ export const BASE_REGLEMENTAIRE = {
     { type: "Caisse de retraite", detail: "SATD sur pension. Quotité saisissable applicable." },
     { type: "Agent comptable EPLE", detail: "Auto-SATD sur bourse scolaire." },
     { type: "Notaire", detail: "SATD sur fonds détenus par un notaire (vente immobilière, succession)." },
+    { type: "Association (MDL, FSE, AS, FCPE…)", detail: "Cas particulier : l'association peut être DÉBITRICE de l'EPLE (convention de locaux, fluides refacturés, MAD de personnel, subvention trop perçue, reversement de billetterie…) OU TIERS DÉTENTEUR de fonds appartenant à un débiteur (rare). La SATD est notifiée au siège social, à l'attention du président en exercice (RNA + SIRET requis). Pas de quotité saisissable : la créance est saisie en totalité sur les avoirs de l'association." },
   ],
   auto_satd_bourse: {
     description: "L'agent comptable peut se saisir lui-même en tant que tiers détenteur lorsqu'il détient des fonds pour le compte du débiteur (bourse scolaire notamment).",
@@ -474,6 +475,51 @@ export const ASSISTANT_ADVICE: Record<string, { title: string; tips: string[]; w
     references: [
       "Instruction M9-6 — Admission en non-valeur",
       "Décret n° 2012-1246 art. 60 — Responsabilité du comptable",
+    ],
+  },
+  debiteur_association: {
+    title: "Créance sur une association (MDL, FSE, AS, FCPE, amicale…)",
+    tips: [
+      "Identifiez l'association : SIRET (INSEE) + n° RNA (W…) au répertoire national des associations (data.gouv.fr / journal-officiel.gouv.fr)",
+      "Vérifiez le représentant légal en exercice via la dernière déclaration en préfecture (changement de bureau)",
+      "Notifiez la SATD au siège social déclaré, à l'attention du président, par LRAR",
+      "Le tiers détenteur sera la BANQUE de l'association (compte ouvert au nom de la personne morale) — adressez-y la SATD pour saisir les avoirs",
+      "Il n'existe PAS de quotité saisissable pour les personnes morales : la SATD porte sur l'intégralité du solde disponible",
+      "Pour une MDL/FSE/AS hébergée par l'EPLE : privilégiez la conciliation amiable (CA conjoint, médiation rectorat) avant la SATD",
+      "Cas fréquents : convention de mise à disposition de locaux non payée, fluides refacturés (eau, élec, gaz), MAD de personnel, subvention trop perçue, billetterie de spectacle non reversée",
+    ],
+    warnings: [
+      "Une association DISSOUTE ou RADIÉE du RNA n'a plus de personnalité morale : la SATD est inopérante. Vérifiez les statuts (dévolution des biens — art. 9 loi 1901) et passez en non-valeur (compte 416 puis ANV par le CA)",
+      "Si l'association est en LIQUIDATION : adressez-vous au liquidateur amiable ou judiciaire désigné. Déclarez votre créance dans les délais",
+      "Les comptes joints association/personne physique (rare) sont saisissables pour le tout, sauf preuve contraire",
+      "Une association loi 1901 ne bénéficie PAS du SBI (réservé aux personnes physiques)",
+      "Risque politique : la SATD sur une MDL/FCPE est très visible. Documentez la phase amiable (procès-verbal de CA, échanges écrits) pour sécuriser la procédure",
+      "Si l'association reverse des produits encaissés POUR l'EPLE (ex. billetterie spectacle, photos scolaires) : le reversement est dû même sans titre de recette préalable — émettez d'abord un titre exécutoire (art. L. 1617-5 CGCT)",
+    ],
+    references: [
+      "Loi du 1er juillet 1901 — art. 5 (déclaration), art. 6 (capacité juridique), art. 9 (dissolution et dévolution)",
+      "Art. L. 1617-5 du CGCT — Recouvrement forcé des produits des EPLE",
+      "Art. L. 262-1 du LPF — SATD applicable à toute personne (physique ou morale)",
+      "Circulaire MEN n° 2010-009 du 29-1-2010 — Foyers socio-éducatifs et MDL",
+      "Circulaire MEN n° 96-249 du 25-10-1996 — Maisons des lycéens",
+      "Instruction M9-6 — Conventions de mise à disposition de locaux et de personnel",
+    ],
+  },
+  tiers_association: {
+    title: "Association comme tiers détenteur de fonds (rare)",
+    tips: [
+      "Hypothèse : une association détient des fonds appartenant au débiteur (ex. cotisation remboursable, caution, sommes en attente de reversement)",
+      "Notifiez la SATD au siège social par LRAR, à l'attention du président",
+      "Le trésorier est tenu de répondre dans les 30 jours sur l'existence et le montant des fonds détenus",
+      "À défaut de réponse, le président peut être personnellement condamné à payer les sommes (art. R. 262-2 LPF)",
+    ],
+    warnings: [
+      "Cas peu fréquent en EPLE — vérifiez d'abord s'il existe une voie plus directe (banque du débiteur, employeur)",
+      "Si l'association est elle-même débitrice de l'EPLE : utilisez la procédure « débiteur association » et non « tiers détenteur »",
+    ],
+    references: [
+      "Art. L. 262-1 du LPF — Tiers détenteur (toute personne)",
+      "Art. R. 262-2 du LPF — Obligation de réponse du tiers",
     ],
   },
 };
