@@ -15,6 +15,7 @@ import {
   deriveSdeExecutionTotals, deriveSdrExecutionTotals,
   getChargeRateBase, getProductRateBase,
 } from './opaleExecutionHierarchy';
+import { findSensNormalOverride } from './cofieple_sensNormalOverrides';
 
 // Tolérance d'arrondi comptable : 1 € (standard EPLE, cohérent avec Op@le)
 // Les écarts < 1 € entre budgétaire et comptable sont normaux (arrondis, centimes)
