@@ -305,6 +305,20 @@ export const useCofiepleStore = create<Store>()(
           // Try to restore from backend (new device scenario)
           setTimeout(() => get().syncFromBackend(), 500);
         }
+
+        // Charger les surcharges « sens normal » paramétrées par l'agent
+        // comptable pour cet UAI, afin que le moteur M9-6 les applique
+        // EN PRIORITÉ avant ses règles codées en dur.
+        const uaiAfterLoad = get().etablissement?.uai;
+        if (uaiAfterLoad) {
+          loadSensNormalOverridesFromSupabase(uaiAfterLoad)
+            .then((n) => {
+              if (n > 0) console.log(`[COFIEPLE] ${n} surcharges sens_normal chargées pour ${uaiAfterLoad}`);
+              // Re-déclenche l'analyse pour appliquer les overrides
+              get().analyserBudget?.();
+            })
+            .catch((e) => console.warn('[COFIEPLE] sens_normal load failed', e));
+        }
       },
 
       setEtablissement: (etab) => {
