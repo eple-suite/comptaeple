@@ -115,6 +115,92 @@ export function stripUtf8Bom(text: string): string {
   return text.replace(/^\uFEFF/, '');
 }
 
+// ─────────────────────────────────────────────────────────────────
+// Sélection d'onglet balance Op@le par scoring (cohérent avec
+// scripts/verify-balance-import.mjs).
+// ─────────────────────────────────────────────────────────────────
+
+const BALANCE_CANONICAL_HEADERS = [
+  'compte', 'montant débit', 'montant crédit', 'solde débit', 'solde crédit', 'classe',
+];
+const BALANCE_TCD_SIGNATURES = ['somme de', '__empty', 'unnamed:', 'total général', 'étiquettes de lignes'];
+
+export interface BalanceSheetSelection {
+  sheetName: string;
+  matrix: SheetCell[][];
+  headerRowIndex: number;
+  headers: string[];
+  score: number;
+}
+
+export function selectOpaleBalanceSheet(workbook: XLSX.WorkBook): BalanceSheetSelection | null {
+  let best: BalanceSheetSelection | null = null;
+
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName];
+    repairWorksheetRange(sheet);
+    const matrix = XLSX.utils.sheet_to_json<SheetCell[]>(sheet, {
+      header: 1, defval: null, blankrows: false, raw: true,
+    });
+
+    let headerRowIndex = -1;
+    let headerScore = 0;
+    for (let i = 0; i < Math.min(matrix.length, 8); i += 1) {
+      const row = matrix[i] ?? [];
+      const norm = row.map((c) => normalizeColumnName(String(c ?? '')));
+      const tcd = norm.some((h) => BALANCE_TCD_SIGNATURES.some((s) => h.includes(s)));
+      if (tcd) continue;
+      const matches = BALANCE_CANONICAL_HEADERS.filter((c) =>
+        norm.some((h) => h.startsWith(normalizeColumnName(c))),
+      ).length;
+      if (matches > headerScore) { headerScore = matches; headerRowIndex = i; }
+    }
+
+    let score = headerScore * 5;
+    if (headerRowIndex >= 0) {
+      const headers = matrix[headerRowIndex].map((c) => normalizeColumnName(String(c ?? '')));
+      // pénalité si TCD signatures dans la ligne d'en-tête
+      if (headers.some((h) => BALANCE_TCD_SIGNATURES.some((s) => h.includes(s)))) score -= 10;
+      // +1 par ligne valide (compte 3-10 chars + classe 1-8)
+      const compteIdx = headers.findIndex((h) => h === 'compte');
+      const classeIdx = headers.findIndex((h) => h.startsWith('classe'));
+      if (compteIdx !== -1 && classeIdx !== -1) {
+        for (let i = headerRowIndex + 1; i < matrix.length; i += 1) {
+          const r = matrix[i] ?? [];
+          const compte = String(r[compteIdx] ?? '').trim();
+          const classe = String(r[classeIdx] ?? '').trim();
+          if (/^[0-9A-Z]{3,10}$/i.test(compte) && /^[1-8]$/.test(classe)) score += 1;
+        }
+      }
+    }
+
+    if (score >= 10 && headerRowIndex >= 0) {
+      const headers = (matrix[headerRowIndex] ?? []).map((c) => String(c ?? ''));
+      if (!best || score > best.score) {
+        best = { sheetName, matrix, headerRowIndex, headers, score };
+      }
+    }
+  }
+
+  return best;
+}
+
+/**
+ * Cherche un UAI (7 chiffres + 1 lettre) dans toutes les cellules des
+ * lignes de données. Op@le ne le place pas toujours dans une colonne
+ * dédiée, parfois dans une cellule méta hors-tableau.
+ */
+export function findUaiInMatrix(matrix: SheetCell[][]): string | null {
+  for (const row of matrix) {
+    if (!row) continue;
+    for (const cell of row) {
+      const v = String(cell ?? '').trim();
+      if (/^[0-9]{7}[A-Z]$/i.test(v)) return v.toUpperCase();
+    }
+  }
+  return null;
+}
+
 export function detectCsvDelimiter(text: string): string {
   const firstLine = stripUtf8Bom(text).split(/\r?\n/, 1)[0] ?? '';
   const semicolons = (firstLine.match(/;/g) || []).length;
