@@ -27,3 +27,11 @@
 - Auto-SATD bourse : conditions, cas pratiques
 - Analyse de proportionnalité automatique (favorable/attention/déconseillé)
 - 7 contextes assistant (vs 3 avant) : création, banque, employeur, FICOBA, contestation, auto-SATD, irrécouvrabilité
+
+## Avr 2026 — Cas association (débiteur OU tiers détenteur)
+- `typeDebiteur: "association"` + champs SIRET, RNA (W…), représentant légal, statut RNA (active/dissoute/en_liquidation/radiée)
+- `type: "association"` côté `TiersDetenteur` (5 mocks : MDL, FSE, AS-UNSS, FCPE, amicale)
+- Bloc UI conditionnel dans SatdFormulaire étape 2 (alerte si dissoute/radiée → non-valeur)
+- 6 nouvelles natures de créance assoc : convention locaux (4128), refacturation fluides, MAD personnel, repas commensaux (4122), subvention trop perçue (4671), reversement billetterie (4671)
+- 2 nouveaux contextes assistant : `debiteur_association` (créance sur asso, dissolution, art. 9 loi 1901, MDL/FSE/FCPE) et `tiers_association` (asso détenant fonds — rare, art. R. 262-2 LPF)
+- Pas de quotité saisissable pour personnes morales · pas de SBI

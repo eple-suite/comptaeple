@@ -1,7 +1,7 @@
 export interface TiersDetenteur {
   id: string;
   nom: string;
-  type: "employeur_public" | "employeur_prive" | "banque" | "caf" | "cpam" | "retraite" | "pole_emploi" | "msa" | "mutuelle" | "assurance" | "bailleur" | "notaire" | "tresor_public" | "autre";
+  type: "employeur_public" | "employeur_prive" | "banque" | "caf" | "cpam" | "retraite" | "pole_emploi" | "msa" | "mutuelle" | "assurance" | "bailleur" | "notaire" | "tresor_public" | "association" | "autre";
   adresse: string;
   codePostal: string;
   ville: string;
@@ -43,7 +43,12 @@ export interface Satd {
   debiteurAdresse: string;
   debiteurCP: string;
   debiteurVille: string;
-  typeDebiteur: "agent" | "fournisseur" | "usager" | "eleve_famille" | "autre";
+  typeDebiteur: "agent" | "fournisseur" | "usager" | "eleve_famille" | "association" | "autre";
+  // Spécifique association débitrice
+  associationSiret?: string;
+  associationRna?: string; // n° W… au RNA
+  associationRepresentant?: string; // président / trésorier signataire
+  associationStatut?: "active" | "dissoute" | "en_liquidation" | "radiee";
   // Créance
   creances: Creance[];
   montantTotal: number;
@@ -103,6 +108,7 @@ export const TYPE_TIERS_LABELS: Record<string, string> = {
   bailleur: "Bailleur / Locataire",
   notaire: "Notaire / Huissier",
   tresor_public: "Trésor public / DDFiP",
+  association: "Association (loi 1901)",
   autre: "Autre",
 };
 
@@ -111,6 +117,7 @@ export const TYPE_DEBITEUR_LABELS: Record<string, string> = {
   fournisseur: "Fournisseur",
   usager: "Usager du service public",
   eleve_famille: "Famille d'élève",
+  association: "Association (loi 1901)",
   autre: "Autre",
 };
 
@@ -193,6 +200,13 @@ export const mockTiers: TiersDetenteur[] = [
 
   // Notaires
   { id: "t12", nom: "SCP Notaires associés — Me Martin", type: "notaire", adresse: "12 cours Mirabeau", codePostal: "13100", ville: "Aix-en-Provence", siret: "", contact: "Me Martin", email: "", telephone: "" },
+
+  // Associations (tiers détenteur OU débiteur potentiel)
+  { id: "t13", nom: "Maison des Lycéens (MDL) — Lycée Victor Hugo", type: "association", adresse: "3 bd Longchamp", codePostal: "13001", ville: "Marseille", siret: "", contact: "Trésorier MDL", email: "mdl@lycee-vhugo.fr", telephone: "" },
+  { id: "t13b", nom: "Foyer Socio-Éducatif (FSE) — Collège Pasteur", type: "association", adresse: "12 rue Pasteur", codePostal: "13005", ville: "Marseille", siret: "", contact: "Président FSE", email: "", telephone: "" },
+  { id: "t13c", nom: "Association Sportive (AS-UNSS)", type: "association", adresse: "Maison du Sport, 2 av. Pasteur", codePostal: "13001", ville: "Marseille", siret: "78290123400015", contact: "Trésorier", email: "as@lycee-vhugo.fr", telephone: "" },
+  { id: "t13d", nom: "Association des Parents d'Élèves (APE/FCPE)", type: "association", adresse: "Siège local FCPE 13", codePostal: "13001", ville: "Marseille", siret: "31527812400028", contact: "Trésorier", email: "fcpe13@fcpe.asso.fr", telephone: "" },
+  { id: "t13e", nom: "Association culturelle locale (ex. amicale du personnel)", type: "association", adresse: "à compléter", codePostal: "", ville: "", siret: "", contact: "Président", email: "", telephone: "" },
 ];
 
 export const mockSatds: Satd[] = [
