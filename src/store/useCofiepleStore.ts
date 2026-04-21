@@ -429,7 +429,10 @@ export const useCofiepleStore = create<Store>()(
           const sdeActive = S.sde[activeBudget] || [];
           const sdrActive = S.sdr[activeBudget] || [];
           const checkItems = resultatsActifs ? construireCheckList(resultatsActifs, activeBudget, balanceActive, sdeActive, sdrActive) : [];
-          const anomaliesBalance = analyserBalance(balanceActive, { hasAnnexe: S.budgets.length > 1 });
+          const anomaliesBalance = analyserBalance(balanceActive, {
+            hasAnnexe: S.budgets.length > 1,
+            uai: S.etablissement?.uai,
+          });
 
           set(state => {
             state.resultats = newResultats;
