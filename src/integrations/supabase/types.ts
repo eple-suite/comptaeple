@@ -145,6 +145,51 @@ export type Database = {
         }
         Relationships: []
       }
+      cofieple_comptes_sens_normal: {
+        Row: {
+          actif: boolean
+          commentaire: string
+          compte_prefix: string
+          created_at: string
+          gravite_violation: string
+          id: string
+          libelle: string
+          sens_normal: string
+          source: string
+          uai: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actif?: boolean
+          commentaire?: string
+          compte_prefix: string
+          created_at?: string
+          gravite_violation?: string
+          id?: string
+          libelle?: string
+          sens_normal?: string
+          source?: string
+          uai: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actif?: boolean
+          commentaire?: string
+          compte_prefix?: string
+          created_at?: string
+          gravite_violation?: string
+          id?: string
+          libelle?: string
+          sens_normal?: string
+          source?: string
+          uai?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       cofieple_exercises: {
         Row: {
           bfr: number

@@ -762,6 +762,9 @@ function getSensNormal(compte: string): SensNormal {
     if (r3 === '416') return 'debiteur';
     // Comptes transitoires d'encaissement → DÉBITEUR
     if (r3 === '418') return 'debiteur';
+    // Avances et acomptes reçus des clients/familles → CRÉDITEUR strict (M9-6 Tome 3)
+    // Un solde débiteur = 🔴 écriture inversée ou avance non régularisée.
+    if (r3 === '419') return 'crediteur';
     // Dépréciation des comptes de tiers → CRÉDITEUR (passif correcteur)
     if (r2 === '49') return 'crediteur';
 
@@ -822,9 +825,15 @@ function getSensNormal(compte: string): SensNormal {
   if (cl === '5') {
     if (r3 === '519') return 'crediteur';
     if (r2 === '59') return 'crediteur';
-    // 515900 : Trésor règlements en cours — crédité (paiements émis) puis soldé/débité
-    // à réception du relevé DFT → sens MIXTE (peut être débiteur ou créditeur)
-    if (c.startsWith('5159') || c === '515900') return 'mixte';
+    // 515900 — Trésor règlements en cours (M9-6 Tome 3, ord. 2022-408)
+    // Schéma normalisé :
+    //   1. Mandatement :    D 6xx     / C 401XXX
+    //   2. Prise en charge : D 401XXX / C 515900
+    //   3. Décaissement DFT : D 515900 / C 515100
+    // → Le compte est STRUCTURELLEMENT CRÉDITEUR ou nul.
+    //   Solde débiteur = 🔴 CRITIQUE (écriture à l'envers, paiement avant prise en charge,
+    //   OD de correction mal passée). Cas mixte interdit.
+    if (c.startsWith('5159') || c === '515900') return 'crediteur';
     return 'debiteur';
   }
 

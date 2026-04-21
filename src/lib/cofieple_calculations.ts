@@ -449,18 +449,34 @@ export function analyserBalance(bal: LigneBalance[], options?: { hasAnnexe?: boo
                       c.sensNormal === 'mixte' ? 'mixte' : 'nul';
     let conseqM96 = '';
     if (c.anomalie) {
-      if (c.compte.startsWith('5')) {
+      if (c.compte.startsWith('5159') || c.compte === '515900') {
+        conseqM96 = 'C/515900 débiteur — 🔴 CRITIQUE : écriture à l\'envers ou paiement enregistré avant prise en charge. Schéma M9-6 Tome 3 : D 401XXX / C 515900 puis D 515900 / C 515100. Sortir le grand livre du compte et passer une OD de correction.';
+      } else if (c.compte.startsWith('515100')) {
+        conseqM96 = 'C/515100 (Trésor) créditeur — 🔴 CRITIQUE : trésorerie négative impossible sur DFT. Vérifier les écritures de virement et l\'intégration des relevés. Signalement comptable supérieur (RGCP art. 28).';
+      } else if (c.compte.startsWith('531')) {
+        conseqM96 = 'C/531 (Caisse) créditeur — 🔴 CRITIQUE : caisse impossible en négatif. Recompter, contrôler PV billetage et écritures de régie.';
+      } else if (c.compte.startsWith('5')) {
         conseqM96 = 'Trésorerie négative — Obligation de signalement au comptable supérieur (RGCP art. 28, M9-6 § IV.2)';
       } else if (c.compte.startsWith('185')) {
         conseqM96 = 'Déséquilibre des comptes de liaison BP/BA — M9-6 § III.4.2';
       } else if (c.compte.startsWith('1')) {
         conseqM96 = 'Impact direct sur le FDR — Vérifier le bilan de l\'EPLE (M9-6 § IV.1)';
       } else if (c.compte.startsWith('4')) {
-        conseqM96 = 'Impact sur le BFR — Vérifier la concordance ordonnateur/agent comptable (M9-6 § II)';
+        if (c.compte.startsWith('419')) {
+          conseqM96 = 'C/419 (Avances reçues) débiteur — 🔴 écriture inversée : une avance encaissée doit être créditée. Vérifier le rattachement au tiers et passer l\'OD de régularisation.';
+        } else if (c.compte.startsWith('409')) {
+          conseqM96 = 'C/409 (Avances versées) créditeur — 🔴 écriture inversée : une avance fournisseur doit être débitrice. Contrôler la pièce et la prise en charge du mandat.';
+        } else {
+          conseqM96 = 'Impact sur le BFR — Vérifier la concordance ordonnateur/agent comptable (M9-6 § II)';
+        }
       } else if (c.compte.startsWith('6') || c.compte.startsWith('7')) {
         conseqM96 = 'Impact sur le résultat de l\'exercice — Vérifier les opérations d\'ordre et écritures de fin d\'exercice';
       } else if (c.compte.startsWith('2')) {
-        conseqM96 = 'Impact sur les immobilisations — Vérifier l\'inventaire physique et les dotations aux amortissements (M9-6 § III.3)';
+        if (c.compte.substring(0, 2) === '28' || c.compte.substring(0, 2) === '29') {
+          conseqM96 = 'C/28x ou C/29x débiteur — 🔴 amortissement/dépréciation à l\'envers : ces comptes correcteurs d\'actif sont strictement créditeurs. Reprendre l\'écriture de dotation (D 681x / C 28x ou 29x).';
+        } else {
+          conseqM96 = 'Impact sur les immobilisations — Vérifier l\'inventaire physique et les dotations aux amortissements (M9-6 § III.3)';
+        }
       } else if (c.compte.startsWith('3')) {
         conseqM96 = 'Impact sur les stocks — Vérifier la variation de stocks et l\'inventaire physique (M9-6 § III.3)';
       } else {
