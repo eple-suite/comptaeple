@@ -1,7 +1,7 @@
 export interface TiersDetenteur {
   id: string;
   nom: string;
-  type: "employeur_public" | "employeur_prive" | "banque" | "caf" | "cpam" | "retraite" | "pole_emploi" | "msa" | "mutuelle" | "assurance" | "bailleur" | "notaire" | "tresor_public" | "autre";
+  type: "employeur_public" | "employeur_prive" | "banque" | "caf" | "cpam" | "retraite" | "pole_emploi" | "msa" | "mutuelle" | "assurance" | "bailleur" | "notaire" | "tresor_public" | "association" | "autre";
   adresse: string;
   codePostal: string;
   ville: string;
@@ -43,7 +43,12 @@ export interface Satd {
   debiteurAdresse: string;
   debiteurCP: string;
   debiteurVille: string;
-  typeDebiteur: "agent" | "fournisseur" | "usager" | "eleve_famille" | "autre";
+  typeDebiteur: "agent" | "fournisseur" | "usager" | "eleve_famille" | "association" | "autre";
+  // Spécifique association débitrice
+  associationSiret?: string;
+  associationRna?: string; // n° W… au RNA
+  associationRepresentant?: string; // président / trésorier signataire
+  associationStatut?: "active" | "dissoute" | "en_liquidation" | "radiee";
   // Créance
   creances: Creance[];
   montantTotal: number;
