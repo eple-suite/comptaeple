@@ -315,7 +315,7 @@ export const useCofiepleStore = create<Store>()(
             .then((n) => {
               if (n > 0) console.log(`[COFIEPLE] ${n} surcharges sens_normal chargées pour ${uaiAfterLoad}`);
               // Re-déclenche l'analyse pour appliquer les overrides
-              get().analyserBudget?.();
+              get().lancerAnalyse?.();
             })
             .catch((e) => console.warn('[COFIEPLE] sens_normal load failed', e));
         }
