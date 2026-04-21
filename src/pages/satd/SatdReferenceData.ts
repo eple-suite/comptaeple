@@ -262,6 +262,13 @@ export const NATURE_CREANCE_OPTIONS = [
   { value: "location_salle", label: "Location de salle", compte: "4128" },
   { value: "agent_trop_percu", label: "Agent — trop-perçu", compte: "421" },
   { value: "fournisseur_avoir", label: "Fournisseur — avoir non réglé", compte: "409" },
+  // Spécifique associations (MDL, FSE, AS, FCPE, amicales, partenaires) débitrices de l'EPLE
+  { value: "asso_convention_locaux", label: "Association — convention de mise à disposition de locaux", compte: "4128" },
+  { value: "asso_fluides_refacturation", label: "Association — refacturation fluides (eau/élec/gaz)", compte: "4128" },
+  { value: "asso_personnel_mad", label: "Association — mise à disposition de personnel non remboursée", compte: "4128" },
+  { value: "asso_repas_commensaux", label: "Association — repas commensaux non payés", compte: "4122" },
+  { value: "asso_subv_trop_percue", label: "Association — subvention trop perçue à reverser", compte: "4671" },
+  { value: "asso_reversement_pj", label: "Association — reversement de produits encaissés pour l'EPLE", compte: "4671" },
   { value: "autre", label: "Autre créance", compte: "468" },
 ];
 

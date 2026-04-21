@@ -105,6 +105,12 @@ export default function SatdFormulaire({ open, onOpenChange, tiersDetenteurs, on
       debiteurCP: form.codePostal,
       debiteurVille: form.ville,
       typeDebiteur: form.typeDebiteur,
+      ...(form.typeDebiteur === "association" ? {
+        associationSiret: form.associationSiret,
+        associationRna: form.associationRna,
+        associationRepresentant: form.associationRepresentant,
+        associationStatut: form.associationStatut,
+      } : {}),
       creances: [creance],
       montantTotal: montant,
       fraisPoursuite: 0,
@@ -139,6 +145,7 @@ export default function SatdFormulaire({ open, onOpenChange, tiersDetenteurs, on
       exercice: String(new Date().getFullYear()),
       civilite: "", nom: "", prenom: "", dateNaissance: "", lieuNaissance: "",
       adresse: "", codePostal: "", ville: "", typeDebiteur: "eleve_famille",
+      associationSiret: "", associationRna: "", associationRepresentant: "", associationStatut: "active",
       typeTiers: "", tiersDetenteurId: "", nomTiers: "", adresseTiers: "", cpTiers: "", villeTiers: "",
       motif: "", observations: "",
     });
@@ -292,6 +299,58 @@ export default function SatdFormulaire({ open, onOpenChange, tiersDetenteurs, on
                   </SelectContent>
                 </Select>
               </div>
+
+              {/* Bloc spécifique association débitrice */}
+              {form.typeDebiteur === "association" && (
+                <Card className="border-primary/30 bg-primary/5">
+                  <CardContent className="pt-4 space-y-3">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                      <div className="text-xs text-muted-foreground">
+                        <strong className="text-foreground">Association débitrice de l'EPLE.</strong> Renseignez le SIRET et le n° RNA pour fiabiliser la procédure.
+                        La SATD doit être notifiée au siège social et viser le <strong>représentant légal en exercice</strong> (président). En cas de dissolution, vérifiez s'il existe un liquidateur ou un dévolutaire des biens (statuts).
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label>SIRET</Label>
+                        <Input value={form.associationSiret} onChange={e => update("associationSiret", e.target.value)} placeholder="14 chiffres" maxLength={14} />
+                      </div>
+                      <div>
+                        <Label>N° RNA (W…)</Label>
+                        <Input value={form.associationRna} onChange={e => update("associationRna", e.target.value)} placeholder="W751234567" maxLength={10} />
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Représentant légal (président / trésorier signataire)</Label>
+                      <Input value={form.associationRepresentant} onChange={e => update("associationRepresentant", e.target.value)} placeholder="M./Mme Nom Prénom — Qualité" />
+                    </div>
+                    <div>
+                      <Label>Statut juridique au RNA</Label>
+                      <Select value={form.associationStatut} onValueChange={(v: any) => update("associationStatut", v)}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="en_liquidation">En liquidation</SelectItem>
+                          <SelectItem value="dissoute">Dissoute</SelectItem>
+                          <SelectItem value="radiee">Radiée du RNA</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {(form.associationStatut === "dissoute" || form.associationStatut === "radiee") && (
+                      <div className="flex items-start gap-2 p-2 rounded bg-warning/10 text-warning text-xs">
+                        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                        <span>
+                          <strong>Attention</strong> : association {form.associationStatut === "radiee" ? "radiée" : "dissoute"}. La créance peut être inscrite en non-valeur (compte 416 puis admission en non-valeur par le CA). Vérifiez la dévolution des biens dans les statuts (art. 9 loi 1901) avant tout abandon.
+                        </span>
+                      </div>
+                    )}
+                    <Button size="sm" variant="ghost" className="text-xs" onClick={() => { setAssistantCtx("debiteur_association"); setShowAssistant(true); }}>
+                      <Sparkles className="h-3.5 w-3.5 mr-1" /> Aide IA — créance sur association
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           )}
 
