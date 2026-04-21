@@ -144,7 +144,7 @@ const SettingsPage = () => {
   ];
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-5xl">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <h1 className="text-2xl font-bold font-display">Paramètres</h1>
         <p className="text-sm text-muted-foreground mt-1">Configuration de l'application et de l'établissement</p>
