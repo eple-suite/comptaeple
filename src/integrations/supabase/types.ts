@@ -627,6 +627,354 @@ export type Database = {
         }
         Relationships: []
       }
+      fs_commissions: {
+        Row: {
+          annee_scolaire: string
+          created_at: string
+          date_commission: string
+          dossiers_examines_count: number
+          establishment_id: string
+          id: string
+          membres_presents: Json
+          observations: string | null
+          proces_verbal_url: string | null
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annee_scolaire?: string
+          created_at?: string
+          date_commission: string
+          dossiers_examines_count?: number
+          establishment_id: string
+          id?: string
+          membres_presents?: Json
+          observations?: string | null
+          proces_verbal_url?: string | null
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annee_scolaire?: string
+          created_at?: string
+          date_commission?: string
+          dossiers_examines_count?: number
+          establishment_id?: string
+          id?: string
+          membres_presents?: Json
+          observations?: string | null
+          proces_verbal_url?: string | null
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_commissions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fs_decisions: {
+        Row: {
+          annee_scolaire: string
+          code_activite_opale: string
+          commission_id: string | null
+          compte_imputation_opale: string | null
+          created_at: string
+          date_decision: string
+          date_mandatement: string | null
+          decision_chef_etablissement_pdf_url: string | null
+          eleve_id: string
+          establishment_id: string
+          id: string
+          modalite_attribution: string
+          modalite_versement: string
+          montant: number
+          motif: string
+          nature_aide: string
+          notification_famille_pdf_url: string | null
+          numero_decision: string
+          numero_mandat: string | null
+          organisme_tiers_nom: string | null
+          organisme_tiers_siret: string | null
+          piece_comptable_pdf_url: string | null
+          pieces_justificatives_urls: Json
+          statut: string
+          type_fonds: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annee_scolaire?: string
+          code_activite_opale?: string
+          commission_id?: string | null
+          compte_imputation_opale?: string | null
+          created_at?: string
+          date_decision: string
+          date_mandatement?: string | null
+          decision_chef_etablissement_pdf_url?: string | null
+          eleve_id: string
+          establishment_id: string
+          id?: string
+          modalite_attribution: string
+          modalite_versement: string
+          montant: number
+          motif?: string
+          nature_aide: string
+          notification_famille_pdf_url?: string | null
+          numero_decision: string
+          numero_mandat?: string | null
+          organisme_tiers_nom?: string | null
+          organisme_tiers_siret?: string | null
+          piece_comptable_pdf_url?: string | null
+          pieces_justificatives_urls?: Json
+          statut?: string
+          type_fonds: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annee_scolaire?: string
+          code_activite_opale?: string
+          commission_id?: string | null
+          compte_imputation_opale?: string | null
+          created_at?: string
+          date_decision?: string
+          date_mandatement?: string | null
+          decision_chef_etablissement_pdf_url?: string | null
+          eleve_id?: string
+          establishment_id?: string
+          id?: string
+          modalite_attribution?: string
+          modalite_versement?: string
+          montant?: number
+          motif?: string
+          nature_aide?: string
+          notification_famille_pdf_url?: string | null
+          numero_decision?: string
+          numero_mandat?: string | null
+          organisme_tiers_nom?: string | null
+          organisme_tiers_siret?: string | null
+          piece_comptable_pdf_url?: string | null
+          pieces_justificatives_urls?: Json
+          statut?: string
+          type_fonds?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_decisions_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "fs_commissions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fs_decisions_eleve_id_fkey"
+            columns: ["eleve_id"]
+            isOneToOne: false
+            referencedRelation: "fs_eleves"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fs_decisions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fs_eleves: {
+        Row: {
+          actif: boolean
+          adresse_postale: Json | null
+          annee_scolaire: string
+          classe: string
+          created_at: string
+          date_naissance: string | null
+          demi_pensionnaire: boolean
+          echelon_bourse: number | null
+          establishment_id: string
+          filiere: string | null
+          id: string
+          ine: string | null
+          interne: boolean
+          niveau: string | null
+          nom: string
+          prenom: string
+          responsables_legaux: Json
+          statut_boursier: boolean
+          updated_at: string
+          user_id: string
+          voie: string
+        }
+        Insert: {
+          actif?: boolean
+          adresse_postale?: Json | null
+          annee_scolaire?: string
+          classe?: string
+          created_at?: string
+          date_naissance?: string | null
+          demi_pensionnaire?: boolean
+          echelon_bourse?: number | null
+          establishment_id: string
+          filiere?: string | null
+          id?: string
+          ine?: string | null
+          interne?: boolean
+          niveau?: string | null
+          nom: string
+          prenom: string
+          responsables_legaux?: Json
+          statut_boursier?: boolean
+          updated_at?: string
+          user_id: string
+          voie?: string
+        }
+        Update: {
+          actif?: boolean
+          adresse_postale?: Json | null
+          annee_scolaire?: string
+          classe?: string
+          created_at?: string
+          date_naissance?: string | null
+          demi_pensionnaire?: boolean
+          echelon_bourse?: number | null
+          establishment_id?: string
+          filiere?: string | null
+          id?: string
+          ine?: string | null
+          interne?: boolean
+          niveau?: string | null
+          nom?: string
+          prenom?: string
+          responsables_legaux?: Json
+          statut_boursier?: boolean
+          updated_at?: string
+          user_id?: string
+          voie?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_eleves_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fs_reliquats_ouverture: {
+        Row: {
+          annee_civile: number
+          bop: string
+          compte: string
+          created_at: string
+          establishment_id: string
+          id: string
+          libelle_dispositif: string | null
+          montant: number
+          nature: string | null
+          user_id: string
+        }
+        Insert: {
+          annee_civile: number
+          bop: string
+          compte: string
+          created_at?: string
+          establishment_id: string
+          id?: string
+          libelle_dispositif?: string | null
+          montant: number
+          nature?: string | null
+          user_id: string
+        }
+        Update: {
+          annee_civile?: number
+          bop?: string
+          compte?: string
+          created_at?: string
+          establishment_id?: string
+          id?: string
+          libelle_dispositif?: string | null
+          montant?: number
+          nature?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_reliquats_ouverture_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      fs_subventions_rectorat: {
+        Row: {
+          annee_scolaire: string
+          bop: string
+          compte_imputation: string
+          created_at: string
+          date_notification: string | null
+          date_versement_tresor: string
+          est_avance_annee_suivante: boolean
+          establishment_id: string
+          id: string
+          libelle_notification: string | null
+          montant: number
+          nature: string | null
+          user_id: string
+        }
+        Insert: {
+          annee_scolaire?: string
+          bop: string
+          compte_imputation: string
+          created_at?: string
+          date_notification?: string | null
+          date_versement_tresor: string
+          est_avance_annee_suivante?: boolean
+          establishment_id: string
+          id?: string
+          libelle_notification?: string | null
+          montant: number
+          nature?: string | null
+          user_id: string
+        }
+        Update: {
+          annee_scolaire?: string
+          bop?: string
+          compte_imputation?: string
+          created_at?: string
+          date_notification?: string | null
+          date_versement_tresor?: string
+          est_avance_annee_suivante?: boolean
+          establishment_id?: string
+          id?: string
+          libelle_notification?: string | null
+          montant?: number
+          nature?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_subventions_rectorat_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       indicators: {
         Row: {
           bfr: number | null
