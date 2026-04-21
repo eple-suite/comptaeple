@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { clearAllCofiepleData } from "@/hooks/usePersistedState";
 import { store } from "@/store/persistentStore";
+import ComptesSensNormalManager from "@/components/settings/ComptesSensNormalManager";
 
 const SettingsPage = () => {
   const { selectedEstablishment, refetch } = useEstablishment();
@@ -143,7 +144,7 @@ const SettingsPage = () => {
   ];
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-5xl">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <h1 className="text-2xl font-bold font-display">Paramètres</h1>
         <p className="text-sm text-muted-foreground mt-1">Configuration de l'application et de l'établissement</p>
@@ -384,6 +385,9 @@ const SettingsPage = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Règles sens normal des comptes (M9-6) */}
+      <ComptesSensNormalManager uai={selectedEstablishment?.uai ?? null} />
     </div>
   );
 };
