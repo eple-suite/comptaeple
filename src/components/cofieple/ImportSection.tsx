@@ -20,7 +20,8 @@ import { useEstablishment } from '@/contexts/EstablishmentContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { parserSDE, parserSDR, parserBalance } from '@/lib/cofieple_calculations';
-import { buildRowsFromSheetMatrix, findColumnIndex, normalizeColumnName, normalizeRowsForOpaleImport } from '@/lib/opaleImportUtils';
+import { findColumnIndex, normalizeColumnName, normalizeRowsForOpaleImport } from '@/lib/opaleImportUtils';
+import { getWorkbookSheetCandidates, selectWorkbookSheetByHeaders } from '@/lib/opaleWorkbook';
 import { detectBudgetType, type BudgetTypeDetection } from '@/lib/cofieple_csvParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import { toast } from 'sonner';
@@ -272,6 +273,29 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
   const expectedType = slotType.replace('1', '');
   const title = extractWorkbookTitle(wb);
   const meta = extractWorkbookMeta(wb);
+
+  if (expectedType === 'bal') {
+    const balanceSheet = selectWorkbookSheetByHeaders(wb, {
+      requiredHeaders: [
+        'Compte',
+        'Montant débit antérieur',
+        'Montant crédit antérieur',
+        'Montant débit',
+        'Montant crédit',
+        'Solde débit',
+        'Solde crédit',
+        'Classe de compte',
+      ],
+      forbiddenHeaderPatterns: [/^__empty/i, /^unnamed:/i, /^somme de/i, /^total general/i, /^total général/i],
+      maxHeaderScanRows: 8,
+      minMatches: 5,
+    });
+
+    if (balanceSheet) {
+      return { rows: normalizeRowsForOpaleImport(balanceSheet.records), title, meta };
+    }
+  }
+
   let bestRows: Record<string, string>[] = [];
   let bestScore = -Infinity;
 
@@ -280,54 +304,16 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
     let score = 0;
 
     if ((expected === 'sde' || expected === 'sdr') && normalized.includes('ecbu')) score += 30;
-    if (expected === 'bal' && normalized.includes('balance')) score += 30;
-
-    // "Donnees" contains useful detail but often not the establishment-level totals;
-    // use it as fallback, not as primary source when ECBU/Balance is available.
-    if (normalized.includes('donnee')) score -= 8;
+    if (expected === 'bal' && normalized.includes('donnee')) score += 30;
+    if (expected === 'bal' && normalized.includes('balance')) score -= 10;
 
     return score;
   };
 
-  for (const sheetName of wb.SheetNames) {
-    const ws = wb.Sheets[sheetName];
-
-    // Fix broken !ref range — Op@le pivot exports often declare only 2 rows
-    if (ws['!ref']) {
-      let maxRow = 0;
-      for (const key of Object.keys(ws)) {
-        const m = key.match(/^[A-Z]+(\d+)$/);
-        if (m) { const r = parseInt(m[1], 10); if (r > maxRow) maxRow = r; }
-      }
-      const refMatch = ws['!ref'].match(/^([A-Z]+\d+):([A-Z]+)(\d+)$/);
-      if (refMatch && maxRow > parseInt(refMatch[3], 10)) {
-        ws['!ref'] = `${refMatch[1]}:${refMatch[2]}${maxRow}`;
-      }
-    }
-
-    const matrix = XLSX.utils.sheet_to_json<(string | number | boolean | null | undefined)[]>(ws, {
-      header: 1, defval: '', raw: false,
-    });
-
-    // ── DIAGNOSTIC: dump raw matrix first rows ──
-    console.log(`[MATRIX-DIAG] Sheet "${sheetName}": ${matrix.length} rows, first 8 rows:`);
-    for (let i = 0; i < Math.min(8, matrix.length); i++) {
-      const row = matrix[i] as (string | number | boolean | null | undefined)[];
-      console.log(`[MATRIX-DIAG]   row[${i}] (${row?.length || 0} cols):`, JSON.stringify(row?.slice(0, 15)));
-    }
-
-    const initialRows = buildRowsFromSheetMatrix(matrix);
-    if (!initialRows.length) continue;
-
-    // ── DIAGNOSTIC: dump post-buildRows ──
-    console.log(`[MATRIX-DIAG] Sheet "${sheetName}" after buildRows: ${initialRows.length} records`);
-    if (initialRows.length > 0) {
-      console.log(`[MATRIX-DIAG]   headers:`, Object.keys(initialRows[0]));
-      console.log(`[MATRIX-DIAG]   row[0]:`, JSON.stringify(initialRows[0]));
-      if (initialRows.length > 3) console.log(`[MATRIX-DIAG]   row[3]:`, JSON.stringify(initialRows[3]));
-    }
-
-    const rows = normalizeRowsForOpaleImport(initialRows);
+  for (const candidate of getWorkbookSheetCandidates(wb)) {
+    const { sheetName } = candidate;
+    const rows = normalizeRowsForOpaleImport(candidate.records);
+    if (!rows.length) continue;
     const headers = Object.keys(rows[0] || {});
     const detected = detectDocumentType(headers, title);
 
