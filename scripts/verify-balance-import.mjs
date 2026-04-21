@@ -212,8 +212,13 @@ console.log(`\nFichier testé : ${C.bold}${resolve(filePath)}${C.reset}`);
 
 let wb;
 try {
-  const buf = readFileSync(resolve(filePath));
-  wb = XLSX.read(buf, { type: 'buffer', cellDates: false });
+  const ext = extname(filePath).toLowerCase();
+  if (ext === '.csv' || ext === '.txt') {
+    wb = parseCsvFile(resolve(filePath));
+  } else {
+    const buf = readFileSync(resolve(filePath));
+    wb = XLSX.read(buf, { type: 'buffer', cellDates: false });
+  }
 } catch (e) {
   console.error(`${C.red}ERREUR: impossible de lire le fichier: ${e.message}${C.reset}`);
   process.exit(2);
