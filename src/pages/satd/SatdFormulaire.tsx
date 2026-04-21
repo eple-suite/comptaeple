@@ -60,6 +60,11 @@ export default function SatdFormulaire({ open, onOpenChange, tiersDetenteurs, on
     codePostal: "",
     ville: "",
     typeDebiteur: "eleve_famille" as Satd["typeDebiteur"],
+    // Association débitrice
+    associationSiret: "",
+    associationRna: "",
+    associationRepresentant: "",
+    associationStatut: "active" as NonNullable<Satd["associationStatut"]>,
     // Tiers
     typeTiers: "",
     tiersDetenteurId: "",
