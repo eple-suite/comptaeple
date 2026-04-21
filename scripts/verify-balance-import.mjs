@@ -121,7 +121,6 @@ function parseSheet(sheet, headerInfo) {
     sDeb: col('solde débit'),
     sCre: col('solde crédit'),
     classe: col('classe de compte'),
-    etab: col('etablissement (uai)'),
     periode: col('période de début'),
   };
 
@@ -146,7 +145,13 @@ function parseSheet(sheet, headerInfo) {
       soldeCredit: Number(r[idx.sCre]) || 0,
       classe,
     });
-    if (!establishment && r[idx.etab]) establishment = String(r[idx.etab]);
+    // UAI : scanner toute la ligne pour pattern 7 chiffres + 1 lettre
+    if (!establishment) {
+      for (const cell of r) {
+        const v = String(cell ?? '').trim();
+        if (/^[0-9]{7}[A-Z]$/i.test(v)) { establishment = v.toUpperCase(); break; }
+      }
+    }
     if (!period && r[idx.periode]) period = String(r[idx.periode]);
   }
 
