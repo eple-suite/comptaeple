@@ -15,6 +15,9 @@ import { useEleves, useDeleteEleve } from "./useFsData";
 import { EleveFormDialog } from "./EleveFormDialog";
 import { EleveImportCsvDialog } from "./EleveImportCsvDialog";
 import { FsEleve } from "./fsv2Types";
+import { ProfilCompletudeBadge } from "./ProfilCompletudeBadge";
+import { evaluerCompletudeEleve } from "./fsEnqueteHelpers";
+import { VoieBadge } from "./VoieBadge";
 import { toast } from "sonner";
 
 export default function ElevesPage() {
@@ -26,17 +29,22 @@ export default function ElevesPage() {
   const [search, setSearch] = useState("");
   const [voieFilter, setVoieFilter] = useState("all");
   const [boursierFilter, setBoursierFilter] = useState("all");
+  const [completudeFilter, setCompletudeFilter] = useState("all");
 
   const filtered = useMemo(() => eleves.filter(e => {
     if (voieFilter !== "all" && e.voie !== voieFilter) return false;
     if (boursierFilter === "oui" && !e.statut_boursier) return false;
     if (boursierFilter === "non" && e.statut_boursier) return false;
+    if (completudeFilter === "incompletes") {
+      const c = evaluerCompletudeEleve(e);
+      if (c.pct === 100) return false;
+    }
     if (search) {
       const q = search.toLowerCase();
       if (!`${e.nom} ${e.prenom} ${e.classe}`.toLowerCase().includes(q)) return false;
     }
     return true;
-  }), [eleves, search, voieFilter, boursierFilter]);
+  }), [eleves, search, voieFilter, boursierFilter, completudeFilter]);
 
   const handleEdit = (e: FsEleve) => { setEditing(e); setOpenForm(true); };
   const handleNew = () => { setEditing(null); setOpenForm(true); };
@@ -95,6 +103,13 @@ export default function ElevesPage() {
                 <SelectItem value="non">Non boursiers</SelectItem>
               </SelectContent>
             </Select>
+            <Select value={completudeFilter} onValueChange={setCompletudeFilter}>
+              <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Toutes fiches</SelectItem>
+                <SelectItem value="incompletes">Fiches incomplètes</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="border rounded-lg overflow-hidden">
@@ -107,28 +122,26 @@ export default function ElevesPage() {
                   <TableHead>Voie</TableHead>
                   <TableHead>Boursier</TableHead>
                   <TableHead>Régime</TableHead>
+                  <TableHead>Complétude</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading && <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-6">Chargement…</TableCell></TableRow>}
+                {isLoading && <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-6">Chargement…</TableCell></TableRow>}
                 {!isLoading && filtered.length === 0 && (
-                  <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-6">Aucun élève — utilisez « Ajouter » ou « Importer CSV »</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={8} className="text-center text-sm text-muted-foreground py-6">Aucun élève — utilisez « Ajouter » ou « Importer CSV »</TableCell></TableRow>
                 )}
                 {filtered.map(e => (
                   <TableRow key={e.id}>
                     <TableCell className="font-semibold">{e.nom}</TableCell>
                     <TableCell>{e.prenom}</TableCell>
                     <TableCell>{e.classe}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={e.voie === "GT" ? "border-primary/40 text-primary" : e.voie === "PRO" ? "border-accent/40 text-accent-foreground" : ""}>
-                        {e.voie}
-                      </Badge>
-                    </TableCell>
+                    <TableCell><VoieBadge voie={e.voie} /></TableCell>
                     <TableCell>{e.statut_boursier ? <Badge className="bg-success/15 text-success border-0">Éch. {e.echelon_bourse ?? "?"}</Badge> : <span className="text-xs text-muted-foreground">—</span>}</TableCell>
                     <TableCell className="text-xs">
                       {e.interne ? "Interne" : e.demi_pensionnaire ? "DP" : "Externe"}
                     </TableCell>
+                    <TableCell><ProfilCompletudeBadge eleve={e} onEdit={() => handleEdit(e)} /></TableCell>
                     <TableCell className="text-right">
                       <Button size="sm" variant="ghost" onClick={() => handleEdit(e)}><Pencil className="h-3 w-3" /></Button>
                       <Button size="sm" variant="ghost" onClick={() => handleDelete(e)}><Trash2 className="h-3 w-3 text-destructive" /></Button>

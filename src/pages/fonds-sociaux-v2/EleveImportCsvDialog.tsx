@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Download, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
@@ -23,6 +24,28 @@ interface Props {
 }
 
 type Row = Record<string, string>;
+
+const VOIES_VALIDES: Voie[] = ["GT", "PRO", "1er_degre"];
+
+function rowErrors(r: Row): string[] {
+  const errs: string[] = [];
+  if (!r.nom?.trim()) errs.push("nom");
+  if (!r.prenom?.trim()) errs.push("prenom");
+  if (!r.voie || !VOIES_VALIDES.includes(r.voie as Voie))
+    errs.push("voie (GT/PRO/1er_degre obligatoire)");
+  if (r.statut_boursier === undefined || r.statut_boursier === "")
+    errs.push("statut_boursier (true/false)");
+  const isBoursier = r.statut_boursier === "true" || r.statut_boursier === "1";
+  if (isBoursier && (!r.echelon_bourse || isNaN(Number(r.echelon_bourse))))
+    errs.push("echelon_bourse requis si boursier");
+  return errs;
+}
+
+const CSV_TEMPLATE = [
+  "voie,statut_boursier,echelon_bourse,ine,nom,prenom,date_naissance,classe,niveau,filiere,demi_pensionnaire,interne,responsable1_nom,responsable1_prenom,responsable1_lien,responsable1_tel,responsable1_email",
+  "GT,true,3,123456789AA,Dupont,Marie,2008-05-12,2nde A,Seconde,STMG,true,false,Dupont,Sophie,mère,0612345678,sophie.dupont@example.com",
+  "PRO,false,,,Martin,Léo,2007-09-03,Tle Bac Pro,Terminale,MELEC,true,false,Martin,Karim,père,,",
+].join("\n");
 
 export function EleveImportCsvDialog({ open, onOpenChange }: Props) {
   const { selectedEstablishment } = useEstablishment();
@@ -38,18 +61,31 @@ export function EleveImportCsvDialog({ open, onOpenChange }: Props) {
       skipEmptyLines: true,
       complete: (res) => {
         setRows(res.data.filter(r => r.nom && r.prenom));
-        toast.success(`${res.data.length} ligne(s) lue(s)`);
+        const lignes = res.data.filter(r => r.nom && r.prenom);
+        const ko = lignes.filter(r => rowErrors(r).length > 0).length;
+        toast.success(`${lignes.length} ligne(s) lue(s) — ${ko} avec erreurs`);
       },
       error: () => toast.error("Erreur de lecture du fichier"),
     });
   };
 
+  const downloadTemplate = () => {
+    const blob = new Blob([CSV_TEMPLATE], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "modele-import-eleves-fs.csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   const doImport = async () => {
     if (!selectedEstablishment || !user) return;
     setBusy(true);
-    let created = 0, updated = 0, errors = 0;
+    let created = 0, updated = 0, errors = 0, skipped = 0;
     try {
       for (const r of rows) {
+        const errs = rowErrors(r);
+        if (errs.length > 0) { skipped++; continue; }
         const payload: any = {
           establishment_id: selectedEstablishment.id,
           user_id: user.id,
@@ -87,7 +123,7 @@ export function EleveImportCsvDialog({ open, onOpenChange }: Props) {
         const { error } = await supabase.from("fs_eleves").insert(payload);
         if (error) errors++; else created++;
       }
-      toast.success(`Import : ${created} créé(s), ${updated} mis à jour, ${errors} erreur(s)`);
+      toast.success(`Import : ${created} créé(s), ${updated} mis à jour, ${skipped} ignoré(s) pour champs manquants, ${errors} erreur(s)`);
       qc.invalidateQueries({ queryKey: ["fs_eleves"] });
       onOpenChange(false);
       setRows([]);
@@ -102,9 +138,21 @@ export function EleveImportCsvDialog({ open, onOpenChange }: Props) {
         </DialogHeader>
 
         <div className="space-y-3 pt-2">
-          <p className="text-xs text-muted-foreground">
-            Colonnes attendues : <code>ine, nom, prenom, date_naissance, classe, niveau, voie, filiere, statut_boursier, echelon_bourse, demi_pensionnaire, interne, responsable1_nom, responsable1_prenom, responsable1_lien, responsable1_tel, responsable1_email</code>
-          </p>
+          <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs space-y-2">
+            <p>
+              <strong>Colonnes obligatoires pour l'enquête DGESCO</strong> :
+              <code className="mx-1 font-bold text-primary">voie</code> (GT / PRO / 1er_degre),
+              <code className="mx-1 font-bold text-primary">statut_boursier</code> (true/false),
+              <code className="mx-1 font-bold text-primary">echelon_bourse</code> (si boursier).
+            </p>
+            <p className="text-muted-foreground">
+              Colonnes additionnelles : ine, nom, prenom, date_naissance, classe, niveau, filiere,
+              demi_pensionnaire, interne, responsable1_nom/prenom/lien/tel/email.
+            </p>
+            <Button size="sm" variant="outline" onClick={downloadTemplate}>
+              <Download className="h-3 w-3 mr-1" /> Télécharger le modèle CSV
+            </Button>
+          </div>
           <Input type="file" accept=".csv" onChange={e => e.target.files?.[0] && onFile(e.target.files[0])} />
           <div className="flex items-center gap-2">
             <Switch checked={updateDoublons} onCheckedChange={setUpdateDoublons} />
@@ -113,7 +161,11 @@ export function EleveImportCsvDialog({ open, onOpenChange }: Props) {
 
           {rows.length > 0 && (
             <>
-              <p className="text-xs font-semibold">Aperçu (10 premières lignes sur {rows.length})</p>
+              <p className="text-xs font-semibold">
+                Aperçu — {rows.filter(r => rowErrors(r).length === 0).length} valide(s),{" "}
+                <span className="text-destructive">{rows.filter(r => rowErrors(r).length > 0).length} en erreur</span>{" "}
+                (les lignes en erreur ne seront pas importées)
+              </p>
               <div className="border rounded max-h-64 overflow-auto">
                 <Table>
                   <TableHeader>
@@ -121,18 +173,27 @@ export function EleveImportCsvDialog({ open, onOpenChange }: Props) {
                       <TableHead>Nom</TableHead><TableHead>Prénom</TableHead>
                       <TableHead>Classe</TableHead><TableHead>Voie</TableHead>
                       <TableHead>Boursier</TableHead>
+                      <TableHead>Statut</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {rows.slice(0, 10).map((r, i) => (
-                      <TableRow key={i}>
-                        <TableCell>{r.nom}</TableCell>
-                        <TableCell>{r.prenom}</TableCell>
-                        <TableCell>{r.classe}</TableCell>
-                        <TableCell>{r.voie}</TableCell>
-                        <TableCell>{r.statut_boursier === "true" || r.statut_boursier === "1" ? "Oui" : "Non"}</TableCell>
-                      </TableRow>
-                    ))}
+                    {rows.slice(0, 20).map((r, i) => {
+                      const errs = rowErrors(r);
+                      return (
+                        <TableRow key={i} className={errs.length > 0 ? "bg-destructive/5" : ""}>
+                          <TableCell>{r.nom}</TableCell>
+                          <TableCell>{r.prenom}</TableCell>
+                          <TableCell>{r.classe}</TableCell>
+                          <TableCell>{r.voie || <span className="text-destructive">—</span>}</TableCell>
+                          <TableCell>{r.statut_boursier === "true" || r.statut_boursier === "1" ? "Oui" : r.statut_boursier === "false" || r.statut_boursier === "0" ? "Non" : <span className="text-destructive">?</span>}</TableCell>
+                          <TableCell className="text-xs">
+                            {errs.length === 0
+                              ? <span className="text-success">OK</span>
+                              : <span className="text-destructive inline-flex items-center gap-1"><AlertTriangle className="h-3 w-3" />{errs.join(", ")}</span>}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -142,7 +203,7 @@ export function EleveImportCsvDialog({ open, onOpenChange }: Props) {
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
             <Button onClick={doImport} disabled={!rows.length || busy}>
-              {busy ? "Import en cours…" : `Importer ${rows.length} élève(s)`}
+              {busy ? "Import en cours…" : `Importer ${rows.filter(r => rowErrors(r).length === 0).length} élève(s) valide(s)`}
             </Button>
           </div>
         </div>

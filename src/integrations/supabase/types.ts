@@ -1568,7 +1568,109 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      v_enquete_q10: {
+        Row: {
+          annee: number | null
+          annee_scolaire: string | null
+          beneficiaires_aide_directe: number | null
+          beneficiaires_via_tiers: number | null
+          establishment_id: string | null
+          montant_aide_directe: number | null
+          montant_via_tiers: number | null
+          nature_aide: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_decisions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_enquete_q11: {
+        Row: {
+          annee: number | null
+          annee_scolaire: string | null
+          beneficiaires: number | null
+          boursiers: number | null
+          depenses: number | null
+          depenses_boursiers: number | null
+          establishment_id: string | null
+          type_fonds: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_decisions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_enquete_q15: {
+        Row: {
+          annee: number | null
+          annee_scolaire: string | null
+          establishment_id: string | null
+          nb_commission: number | null
+          nb_urgence: number | null
+          pourcentage_urgence: number | null
+          total_decisions: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_decisions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_enquete_q7: {
+        Row: {
+          annee: number | null
+          annee_scolaire: string | null
+          beneficiaires: number | null
+          boursiers: number | null
+          depenses: number | null
+          depenses_boursiers: number | null
+          establishment_id: string | null
+          type_fonds: string | null
+          voie: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_decisions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      v_enquete_q8: {
+        Row: {
+          annee: number | null
+          annee_scolaire: string | null
+          beneficiaires_uniques: number | null
+          boursiers_uniques: number | null
+          establishment_id: string | null
+          voie: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_decisions_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       can_create_establishment_with_uai: {

@@ -11,13 +11,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Loader2, AlertTriangle, Info } from "lucide-react";
 import { useEleves, useCommissions, useDecisions, useUpsertDecision } from "./useFsData";
 import {
   buildNumeroDecision, currentAnneeScolaire, defaultTypeFondsForNature, CODE_ACTIVITE_DEFAULT,
   NATURE_AIDE_LABELS, NATURES_Q10,
   type FsDecision, type NatureAide, type TypeFonds, type ModaliteAttribution, type ModaliteVersement,
 } from "./fsv2Types";
+import { VoieBadge } from "./VoieBadge";
+import {
+  Q10_LIGNE_LABELS, evaluerCompletudeEleve,
+  cumulAnnuelEleve, premiereAideAnnee,
+} from "./fsEnqueteHelpers";
 import { toast } from "sonner";
 
 interface Props { open: boolean; onClose: () => void; }
@@ -42,6 +47,7 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
   const [modaliteVersement, setModaliteVersement] = useState<ModaliteVersement>("aide_directe");
   const [organismeNom, setOrganismeNom] = useState("");
   const [organismeSiret, setOrganismeSiret] = useState("");
+  const [organismeType, setOrganismeType] = useState<string>("autre");
   const [codeActivite, setCodeActivite] = useState<string>(CODE_ACTIVITE_DEFAULT.FS);
   const [compteImputation, setCompteImputation] = useState<string>("6571");
   const [dateDecision, setDateDecision] = useState<string>(new Date().toISOString().slice(0, 10));
@@ -57,6 +63,9 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
   }, [eleves, search]);
 
   const eleveSelectionne = eleves.find(e => e.id === eleveId);
+  const eleveCompletude = eleveSelectionne ? evaluerCompletudeEleve(eleveSelectionne) : null;
+  const cumulCourant = eleveSelectionne ? cumulAnnuelEleve(eleveSelectionne.id, annee, decisionsExist) : null;
+  const premiere = eleveSelectionne ? premiereAideAnnee(eleveSelectionne.id, annee, decisionsExist) : false;
 
   function handleNatureChange(n: NatureAide) {
     setNatureAide(n);
@@ -118,13 +127,18 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
     setStep(0); setEleveId(""); setSearch(""); setTypeFonds("FS");
     setNatureAide("restauration"); setMontant(0); setMotif("");
     setModaliteAttribution("commission"); setCommissionId(null);
-    setModaliteVersement("aide_directe"); setOrganismeNom(""); setOrganismeSiret("");
+    setModaliteVersement("aide_directe"); setOrganismeNom(""); setOrganismeSiret(""); setOrganismeType("autre");
     setCodeActivite(CODE_ACTIVITE_DEFAULT.FS); setCompteImputation("6571");
     setDateDecision(new Date().toISOString().slice(0, 10));
   }
 
   const canNext = () => {
-    if (step === 0) return !!eleveId;
+    if (step === 0) {
+      if (!eleveId || !eleveSelectionne) return false;
+      // Bloque le passage si la voie n'est pas renseignée
+      if (!eleveSelectionne.voie) return false;
+      return true;
+    }
     if (step === 1) return montant > 0;
     if (step === 2) {
       if (modaliteAttribution === "commission" && !commissionId) return false;
@@ -173,8 +187,10 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">{e.nom} {e.prenom}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {e.classe} • {e.voie} {e.statut_boursier && <Badge variant="outline" className="ml-1 text-[9px]">Boursier éch. {e.echelon_bourse ?? "?"}</Badge>}
+                      <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                        <span>{e.classe || "—"}</span>
+                        <VoieBadge voie={e.voie} />
+                        {e.statut_boursier && <Badge variant="outline" className="text-[9px]">Boursier éch. {e.echelon_bourse ?? "?"}</Badge>}
                       </div>
                     </div>
                     {eleveId === e.id && <Check className="h-4 w-4 text-primary" />}
@@ -182,6 +198,73 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                 </button>
               ))}
             </div>
+
+            {eleveSelectionne && eleveCompletude && (
+              <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <div className="font-bold text-base">{eleveSelectionne.nom} {eleveSelectionne.prenom}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {eleveSelectionne.classe || "Classe non renseignée"} • {eleveSelectionne.niveau || "Niveau non précisé"}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <VoieBadge voie={eleveSelectionne.voie} />
+                    {eleveSelectionne.statut_boursier ? (
+                      <Badge className="bg-success/15 text-success border-0 text-[10px]">
+                        Boursier éch. {eleveSelectionne.echelon_bourse ?? "?"}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px]">Non boursier</Badge>
+                    )}
+                    <Badge variant="outline" className="text-[10px]">
+                      {eleveSelectionne.interne ? "Interne" : eleveSelectionne.demi_pensionnaire ? "DP" : "Externe"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {!eleveSelectionne.voie && (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>
+                      Le champ <strong>Voie d'inscription</strong> est obligatoire pour que cette aide soit
+                      correctement classée dans l'enquête DGESCO. Modifiez la fiche élève avant de poursuivre.
+                    </span>
+                  </div>
+                )}
+
+                {eleveCompletude.level !== "ok" && (
+                  <div className="rounded-md border border-orange-500/40 bg-orange-500/10 p-3 text-xs text-orange-700 dark:text-orange-300 flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>
+                      Fiche complétée à <strong>{eleveCompletude.pct}%</strong>. Champs manquants :{" "}
+                      {eleveCompletude.missing.join(", ")}.
+                    </span>
+                  </div>
+                )}
+
+                {cumulCourant && cumulCourant.total > 600 && (
+                  <div className="rounded-md border border-orange-500/40 bg-orange-500/10 p-3 text-xs text-orange-700 dark:text-orange-300 flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>Attention : cumul annuel élevé ({cumulCourant.total.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}).</span>
+                  </div>
+                )}
+
+                {cumulCourant && cumulCourant.nbFs > 0 && cumulCourant.nbFsc > 0 && (
+                  <div className="rounded-md border border-primary/30 bg-primary/10 p-3 text-xs text-primary flex items-start gap-2">
+                    <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>Élève déjà aidé sur les deux fonds — sera compté <strong>1 fois</strong> en Q8.</span>
+                  </div>
+                )}
+
+                {eleveSelectionne.voie === "1er_degre" && (
+                  <div className="rounded-md border border-purple-500/40 bg-purple-500/10 p-3 text-xs text-purple-700 dark:text-purple-300 flex items-start gap-2">
+                    <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>Bénéficiaire 1er degré — sera reporté en <strong>Q11</strong> de l'enquête.</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -195,6 +278,9 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                   {NATURES_Q10.map(n => <SelectItem key={n} value={n}>{NATURE_AIDE_LABELS[n]}</SelectItem>)}
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Ligne Q10 : <strong>{Q10_LIGNE_LABELS[natureAide]}</strong>
+              </p>
             </div>
             <div>
               <Label>Type de fonds</Label>
@@ -229,6 +315,11 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                   <SelectItem value="urgence">Urgence (chef d'établissement)</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {modaliteAttribution === "commission"
+                  ? "Q15 — case « Dans le cadre d'une commission »"
+                  : "Q15 — case « Procédure d'urgence, circulaire n°2017-122 du 02/08/2017 »"}
+              </p>
             </div>
             {modaliteAttribution === "commission" && (
               <div>
@@ -244,6 +335,7 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                 {commissions.filter(c => c.annee_scolaire === annee).length === 0 && (
                   <p className="text-xs text-destructive mt-1">Aucune commission saisie pour {annee}. Créez-en une dans l'onglet Commissions.</p>
                 )}
+                <p className="text-[11px] text-muted-foreground mt-1">Alimente Q15a — fréquence des commissions.</p>
               </div>
             )}
             <div>
@@ -255,9 +347,14 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                   <SelectItem value="organisme_tiers">Versement à un organisme tiers</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {modaliteVersement === "aide_directe"
+                  ? "Q10 — colonne « aide directe »"
+                  : "Q10 — colonne « via un versement à un organisme tiers »"}
+              </p>
             </div>
             {modaliteVersement === "organisme_tiers" && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label>Nom organisme</Label>
                   <Input value={organismeNom} onChange={e => setOrganismeNom(e.target.value)} />
@@ -265,6 +362,18 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                 <div>
                   <Label>SIRET</Label>
                   <Input value={organismeSiret} onChange={e => setOrganismeSiret(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Type d'organisme</Label>
+                  <Select value={organismeType} onValueChange={setOrganismeType}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="caf">CAF</SelectItem>
+                      <SelectItem value="association">Association</SelectItem>
+                      <SelectItem value="commune">Commune</SelectItem>
+                      <SelectItem value="autre">Autre</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}
@@ -302,6 +411,29 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
               <div className="text-muted-foreground">Imputation</div><div className="font-medium">{codeActivite} / {compteImputation}</div>
               <div className="text-muted-foreground">Date décision</div><div className="font-medium">{dateDecision}</div>
               <div className="text-muted-foreground">N° prévu</div><div className="font-medium">{buildNumeroDecision(typeFonds, annee, nextSeqForType())}</div>
+            </div>
+
+            <div className="mt-3">
+              <div className="font-bold text-sm mb-2">Cette décision alimentera l'enquête DGESCO ainsi :</div>
+              <div className="border rounded-md overflow-hidden text-xs">
+                <table className="w-full">
+                  <thead className="bg-muted/40 text-left">
+                    <tr><th className="p-2">Question</th><th className="p-2">Champ</th><th className="p-2">Valeur</th></tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    <tr><td className="p-2 font-mono">{eleveSelectionne.voie === "GT" ? "Q7b" : eleveSelectionne.voie === "PRO" ? "Q7c" : "Q11"}</td><td className="p-2">Voie d'inscription</td><td className="p-2">{eleveSelectionne.voie}</td></tr>
+                    <tr><td className="p-2 font-mono">Q7b/c</td><td className="p-2">Ligne {typeFonds}</td><td className="p-2">{typeFonds}</td></tr>
+                    <tr><td className="p-2 font-mono">Q7b/c</td><td className="p-2">Bénéficiaires</td><td className="p-2">+1</td></tr>
+                    <tr><td className="p-2 font-mono">Q7b/c</td><td className="p-2">Dont boursiers</td><td className="p-2">{eleveSelectionne.statut_boursier ? "+1" : "0"}</td></tr>
+                    <tr><td className="p-2 font-mono">Q7b/c</td><td className="p-2">Montant dépenses</td><td className="p-2">+ {montant.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}</td></tr>
+                    <tr><td className="p-2 font-mono">Q8</td><td className="p-2">Bénéficiaires uniques {eleveSelectionne.voie}</td><td className="p-2">{premiere ? "+1 (1ʳᵉ aide année)" : "0 (déjà compté)"}</td></tr>
+                    <tr><td className="p-2 font-mono">Q10</td><td className="p-2">Ligne {Q10_LIGNE_LABELS[natureAide]}</td><td className="p-2">+1 / + {montant.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}</td></tr>
+                    <tr><td className="p-2 font-mono">Q10</td><td className="p-2">Colonne {modaliteVersement === "aide_directe" ? "Aide directe" : "Organisme tiers"}</td><td className="p-2">+1 bénéficiaire</td></tr>
+                    <tr><td className="p-2 font-mono">Q15</td><td className="p-2">Modalité</td><td className="p-2">{modaliteAttribution === "commission" ? "Commission" : "Urgence"}</td></tr>
+                    <tr><td className="p-2 font-mono">Q16</td><td className="p-2">Cumul annuel élève</td><td className="p-2">{((cumulCourant?.total ?? 0) + montant).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
             <p className="text-xs text-muted-foreground">La décision sera enregistrée en statut « Brouillon ». Vous pourrez ensuite générer les PDFs et la mandater.</p>
           </div>
