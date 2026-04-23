@@ -47,6 +47,7 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
   const [modaliteVersement, setModaliteVersement] = useState<ModaliteVersement>("aide_directe");
   const [organismeNom, setOrganismeNom] = useState("");
   const [organismeSiret, setOrganismeSiret] = useState("");
+  const [organismeType, setOrganismeType] = useState<string>("autre");
   const [codeActivite, setCodeActivite] = useState<string>(CODE_ACTIVITE_DEFAULT.FS);
   const [compteImputation, setCompteImputation] = useState<string>("6571");
   const [dateDecision, setDateDecision] = useState<string>(new Date().toISOString().slice(0, 10));
@@ -126,7 +127,7 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
     setStep(0); setEleveId(""); setSearch(""); setTypeFonds("FS");
     setNatureAide("restauration"); setMontant(0); setMotif("");
     setModaliteAttribution("commission"); setCommissionId(null);
-    setModaliteVersement("aide_directe"); setOrganismeNom(""); setOrganismeSiret("");
+    setModaliteVersement("aide_directe"); setOrganismeNom(""); setOrganismeSiret(""); setOrganismeType("autre");
     setCodeActivite(CODE_ACTIVITE_DEFAULT.FS); setCompteImputation("6571");
     setDateDecision(new Date().toISOString().slice(0, 10));
   }
