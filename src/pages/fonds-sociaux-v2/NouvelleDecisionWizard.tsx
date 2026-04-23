@@ -186,8 +186,10 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                   <div className="flex items-center justify-between">
                     <div>
                       <div className="font-medium">{e.nom} {e.prenom}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {e.classe} • {e.voie} {e.statut_boursier && <Badge variant="outline" className="ml-1 text-[9px]">Boursier éch. {e.echelon_bourse ?? "?"}</Badge>}
+                      <div className="text-xs text-muted-foreground flex items-center gap-1.5 flex-wrap">
+                        <span>{e.classe || "—"}</span>
+                        <VoieBadge voie={e.voie} />
+                        {e.statut_boursier && <Badge variant="outline" className="text-[9px]">Boursier éch. {e.echelon_bourse ?? "?"}</Badge>}
                       </div>
                     </div>
                     {eleveId === e.id && <Check className="h-4 w-4 text-primary" />}
@@ -195,6 +197,73 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                 </button>
               ))}
             </div>
+
+            {eleveSelectionne && eleveCompletude && (
+              <div className="border rounded-lg p-4 space-y-3 bg-muted/20">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div>
+                    <div className="font-bold text-base">{eleveSelectionne.nom} {eleveSelectionne.prenom}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {eleveSelectionne.classe || "Classe non renseignée"} • {eleveSelectionne.niveau || "Niveau non précisé"}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <VoieBadge voie={eleveSelectionne.voie} />
+                    {eleveSelectionne.statut_boursier ? (
+                      <Badge className="bg-success/15 text-success border-0 text-[10px]">
+                        Boursier éch. {eleveSelectionne.echelon_bourse ?? "?"}
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-[10px]">Non boursier</Badge>
+                    )}
+                    <Badge variant="outline" className="text-[10px]">
+                      {eleveSelectionne.interne ? "Interne" : eleveSelectionne.demi_pensionnaire ? "DP" : "Externe"}
+                    </Badge>
+                  </div>
+                </div>
+
+                {!eleveSelectionne.voie && (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>
+                      Le champ <strong>Voie d'inscription</strong> est obligatoire pour que cette aide soit
+                      correctement classée dans l'enquête DGESCO. Modifiez la fiche élève avant de poursuivre.
+                    </span>
+                  </div>
+                )}
+
+                {eleveCompletude.level !== "ok" && (
+                  <div className="rounded-md border border-orange-500/40 bg-orange-500/10 p-3 text-xs text-orange-700 dark:text-orange-300 flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>
+                      Fiche complétée à <strong>{eleveCompletude.pct}%</strong>. Champs manquants :{" "}
+                      {eleveCompletude.missing.join(", ")}.
+                    </span>
+                  </div>
+                )}
+
+                {cumulCourant && cumulCourant.total > 600 && (
+                  <div className="rounded-md border border-orange-500/40 bg-orange-500/10 p-3 text-xs text-orange-700 dark:text-orange-300 flex items-start gap-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>Attention : cumul annuel élevé ({cumulCourant.total.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}).</span>
+                  </div>
+                )}
+
+                {cumulCourant && cumulCourant.nbFs > 0 && cumulCourant.nbFsc > 0 && (
+                  <div className="rounded-md border border-primary/30 bg-primary/10 p-3 text-xs text-primary flex items-start gap-2">
+                    <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>Élève déjà aidé sur les deux fonds — sera compté <strong>1 fois</strong> en Q8.</span>
+                  </div>
+                )}
+
+                {eleveSelectionne.voie === "1er_degre" && (
+                  <div className="rounded-md border border-purple-500/40 bg-purple-500/10 p-3 text-xs text-purple-700 dark:text-purple-300 flex items-start gap-2">
+                    <Info className="h-4 w-4 shrink-0 mt-0.5" />
+                    <span>Bénéficiaire 1er degré — sera reporté en <strong>Q11</strong> de l'enquête.</span>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         )}
 
