@@ -16,6 +16,8 @@ import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { useEstablishmentBranding } from "@/hooks/useEstablishmentBranding";
 import { NATURE_AIDE_LABELS, currentAnneeScolaire, type FsDecision } from "./fsv2Types";
 import { NouvelleDecisionWizard } from "./NouvelleDecisionWizard";
+import { impactsEnquete } from "./fsEnqueteHelpers";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import {
   generateDecisionChefEtablissementPdf,
   generateNotificationFamillePdf,
@@ -169,11 +171,13 @@ export default function DecisionsPage() {
                   <TableHead>Date</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Documents</TableHead>
+                  <TableHead>Impact enquête</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map(d => {
                   const e = elevesById.get(d.eleve_id);
+                  const impacts = impactsEnquete(d, e);
                   return (
                     <TableRow key={d.id}>
                       <TableCell className="font-mono text-xs">{d.numero_decision}</TableCell>
@@ -200,6 +204,22 @@ export default function DecisionsPage() {
                           <Button size="icon" variant="ghost" className="h-7 w-7" title="Notification famille" onClick={() => handlePdfNotification(d)}><FileDown className="h-3.5 w-3.5 text-primary" /></Button>
                           <Button size="icon" variant="ghost" className="h-7 w-7" title="Pièce comptable" onClick={() => handlePdfMandat(d)}><FileDown className="h-3.5 w-3.5 text-accent-foreground" /></Button>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        <TooltipProvider delayDuration={150}>
+                          <div className="flex flex-wrap gap-1 max-w-[180px]">
+                            {impacts.map((imp, idx) => (
+                              <Tooltip key={idx}>
+                                <TooltipTrigger asChild>
+                                  <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 border-primary/30 text-primary cursor-help">
+                                    {imp.code}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent><p className="text-xs">{imp.label}</p></TooltipContent>
+                              </Tooltip>
+                            ))}
+                          </div>
+                        </TooltipProvider>
                       </TableCell>
                     </TableRow>
                   );

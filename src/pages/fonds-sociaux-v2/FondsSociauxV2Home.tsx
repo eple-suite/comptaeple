@@ -5,9 +5,10 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Users, FileText, ClipboardCheck, BarChart3, HandHeart } from "lucide-react";
+import { Users, FileText, ClipboardCheck, BarChart3, HandHeart, AlertTriangle } from "lucide-react";
 import { useEleves, useDecisions, useCommissions } from "./useFsData";
 import { currentAnneeScolaire } from "./fsv2Types";
+import { evaluerCompletudeEleve } from "./fsEnqueteHelpers";
 import { motion } from "framer-motion";
 
 const tiles = [
@@ -25,6 +26,7 @@ export default function FondsSociauxV2Home() {
   const decisionsAnnee = decisions.filter(d => d.annee_scolaire === annee);
   const totalVerse = decisions.filter(d => d.statut === "paye" || d.statut === "mandate" || d.statut === "decide")
     .reduce((s, d) => s + Number(d.montant), 0);
+  const fichesIncompletes = eleves.filter(e => evaluerCompletudeEleve(e).pct < 100).length;
 
   const counters: Record<string, string> = {
     "/fonds-sociaux/v2/eleves": `${eleves.length} élève${eleves.length > 1 ? "s" : ""}`,
@@ -58,6 +60,19 @@ export default function FondsSociauxV2Home() {
           </div>
         </div>
       </motion.div>
+
+      {fichesIncompletes > 0 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="rounded-xl border border-orange-500/40 bg-orange-500/10 p-4 flex items-start gap-3">
+          <AlertTriangle className="h-5 w-5 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <div className="font-semibold text-sm">{fichesIncompletes} fiche{fichesIncompletes > 1 ? "s" : ""} élève{fichesIncompletes > 1 ? "s" : ""} incomplète{fichesIncompletes > 1 ? "s" : ""}</div>
+            <p className="text-xs text-muted-foreground">Ces fiches empêchent une enquête DGESCO propre (voie, statut boursier ou échelon manquants).</p>
+          </div>
+          <Link to="/fonds-sociaux/v2/eleves" className="text-xs font-semibold text-orange-700 dark:text-orange-300 underline whitespace-nowrap">
+            Corriger maintenant →
+          </Link>
+        </motion.div>
+      )}
 
       {/* Tiles */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
