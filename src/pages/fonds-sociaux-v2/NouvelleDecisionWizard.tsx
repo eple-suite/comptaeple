@@ -412,6 +412,29 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
               <div className="text-muted-foreground">Date décision</div><div className="font-medium">{dateDecision}</div>
               <div className="text-muted-foreground">N° prévu</div><div className="font-medium">{buildNumeroDecision(typeFonds, annee, nextSeqForType())}</div>
             </div>
+
+            <div className="mt-3">
+              <div className="font-bold text-sm mb-2">Cette décision alimentera l'enquête DGESCO ainsi :</div>
+              <div className="border rounded-md overflow-hidden text-xs">
+                <table className="w-full">
+                  <thead className="bg-muted/40 text-left">
+                    <tr><th className="p-2">Question</th><th className="p-2">Champ</th><th className="p-2">Valeur</th></tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    <tr><td className="p-2 font-mono">{eleveSelectionne.voie === "GT" ? "Q7b" : eleveSelectionne.voie === "PRO" ? "Q7c" : "Q11"}</td><td className="p-2">Voie d'inscription</td><td className="p-2">{eleveSelectionne.voie}</td></tr>
+                    <tr><td className="p-2 font-mono">Q7b/c</td><td className="p-2">Ligne {typeFonds}</td><td className="p-2">{typeFonds}</td></tr>
+                    <tr><td className="p-2 font-mono">Q7b/c</td><td className="p-2">Bénéficiaires</td><td className="p-2">+1</td></tr>
+                    <tr><td className="p-2 font-mono">Q7b/c</td><td className="p-2">Dont boursiers</td><td className="p-2">{eleveSelectionne.statut_boursier ? "+1" : "0"}</td></tr>
+                    <tr><td className="p-2 font-mono">Q7b/c</td><td className="p-2">Montant dépenses</td><td className="p-2">+ {montant.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}</td></tr>
+                    <tr><td className="p-2 font-mono">Q8</td><td className="p-2">Bénéficiaires uniques {eleveSelectionne.voie}</td><td className="p-2">{premiere ? "+1 (1ʳᵉ aide année)" : "0 (déjà compté)"}</td></tr>
+                    <tr><td className="p-2 font-mono">Q10</td><td className="p-2">Ligne {Q10_LIGNE_LABELS[natureAide]}</td><td className="p-2">+1 / + {montant.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}</td></tr>
+                    <tr><td className="p-2 font-mono">Q10</td><td className="p-2">Colonne {modaliteVersement === "aide_directe" ? "Aide directe" : "Organisme tiers"}</td><td className="p-2">+1 bénéficiaire</td></tr>
+                    <tr><td className="p-2 font-mono">Q15</td><td className="p-2">Modalité</td><td className="p-2">{modaliteAttribution === "commission" ? "Commission" : "Urgence"}</td></tr>
+                    <tr><td className="p-2 font-mono">Q16</td><td className="p-2">Cumul annuel élève</td><td className="p-2">{((cumulCourant?.total ?? 0) + montant).toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
             <p className="text-xs text-muted-foreground">La décision sera enregistrée en statut « Brouillon ». Vous pourrez ensuite générer les PDFs et la mandater.</p>
           </div>
         )}
