@@ -61,8 +61,8 @@ const analysisItems: NavItem[] = [
 
 const toolItems: NavItem[] = [
   { title: "Voyages scolaires", url: "/voyages", icon: Bus },
-  { title: "Fonds sociaux", url: "/fonds-sociaux", icon: Heart },
-  { title: "Action sociale & Enquête", url: "/fonds-sociaux/v2", icon: HandHeart, hot: true },
+  { title: "Fonds sociaux (ancien)", url: "/fonds-sociaux", icon: Heart },
+  { title: "Fonds sociaux", url: "/fonds-sociaux/v2", icon: HandHeart, hot: true },
   { title: "SATD", url: "/satd", icon: Gavel },
   { title: "Crédit nourriture", url: "/credit-nourriture", icon: UtensilsCrossed },
   { title: "Régies & Caisse", url: "/regies", icon: Landmark },
