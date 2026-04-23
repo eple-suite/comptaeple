@@ -21,6 +21,16 @@ import { useEstablishmentBranding } from "@/hooks/useEstablishmentBranding";
 function fmtEur(n: number) { return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" }); }
 function fmtPct(n: number) { return `${n.toFixed(1)} %`; }
 
+function formatRelativeTime(d: Date): string {
+  const diff = Math.max(0, Math.floor((Date.now() - d.getTime()) / 1000));
+  if (diff < 5) return "à l'instant";
+  if (diff < 60) return `il y a ${diff} s`;
+  const m = Math.floor(diff / 60);
+  if (m < 60) return `il y a ${m} min`;
+  const h = Math.floor(m / 60);
+  return `il y a ${h} h`;
+}
+
 const SEVERITY_ICON: Record<Severity, JSX.Element> = {
   error: <AlertTriangle className="h-4 w-4 text-destructive" />,
   warning: <AlertTriangle className="h-4 w-4 text-secondary-foreground" />,
