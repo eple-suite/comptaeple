@@ -62,6 +62,9 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
   }, [eleves, search]);
 
   const eleveSelectionne = eleves.find(e => e.id === eleveId);
+  const eleveCompletude = eleveSelectionne ? evaluerCompletudeEleve(eleveSelectionne) : null;
+  const cumulCourant = eleveSelectionne ? cumulAnnuelEleve(eleveSelectionne.id, annee, decisionsExist) : null;
+  const premiere = eleveSelectionne ? premiereAideAnnee(eleveSelectionne.id, annee, decisionsExist) : false;
 
   function handleNatureChange(n: NatureAide) {
     setNatureAide(n);
@@ -129,7 +132,12 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
   }
 
   const canNext = () => {
-    if (step === 0) return !!eleveId;
+    if (step === 0) {
+      if (!eleveId || !eleveSelectionne) return false;
+      // Bloque le passage si la voie n'est pas renseignée
+      if (!eleveSelectionne.voie) return false;
+      return true;
+    }
     if (step === 1) return montant > 0;
     if (step === 2) {
       if (modaliteAttribution === "commission" && !commissionId) return false;
