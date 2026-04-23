@@ -74,3 +74,28 @@ Source : `PROMPTS_LOVABLE_FONDS_SOCIAUX.md` (994 lignes, 6 sprints).
 - Tester l'import CSV avec un fichier réel d'élèves (vérifier mapping INE / responsables).
 - Vérifier que les RLS bloquent bien les utilisateurs non rattachés à l'établissement.
 - Vérifier compatibilité avec multi-établissement via le sélecteur en haut de page.
+
+## ✅ Correctif enquête DGESCO — complétude (terminé)
+- **Composants ajoutés / modifiés** :
+  - `src/pages/fonds-sociaux-v2/fsEnqueteHelpers.ts` — complétude fiche élève, mapping Q10, impacts décision, cumul annuel.
+  - `src/pages/fonds-sociaux-v2/VoieBadge.tsx`, `ProfilCompletudeBadge.tsx` — composants visuels.
+  - `NouvelleDecisionWizard.tsx` — blocage si voie manquante, alertes cumul > 600 €, tableau impact enquête au récap.
+  - `EleveImportCsvDialog.tsx` — colonnes voie / statut_boursier / echelon_bourse obligatoires + template téléchargeable.
+  - `ElevesPage.tsx` — filtre « Fiches incomplètes » + badge complétude.
+  - `DecisionsPage.tsx` — colonne « Impact enquête » avec badges Q7/Q8/Q10/Q15/Q16.
+  - `FondsSociauxV2Home.tsx` — bandeau d'alerte fiches incomplètes.
+- **Vues SQL créées** (migration `20260423110123` + `20260423110138`) :
+  - `v_enquete_q7` (voie × type_fonds), `v_enquete_q8` (bénéficiaires uniques par voie),
+    `v_enquete_q10` (nature × modalité versement), `v_enquete_q11` (1er degré),
+    `v_enquete_q15` (commission vs urgence). Toutes en `security_invoker = true` (respect RLS).
+- **PDF d'aide à la saisie** (`src/lib/fs-pdf/enquetePdf.ts`) :
+  - Synthèse Q1→Q17, répartitions Q6→Q9, ventilation Q10, contrôles R1→R16,
+    mode d'emploi report grille DGESCO. Branding établissement + signataires.
+- **EnquetePage** :
+  - Bouton « Aide à la saisie (PDF) » + bouton CSV existant.
+  - Indicateur de fraîcheur (« il y a N min ») recalculé à chaque mutation React Query.
+- **Points de vigilance restants** :
+  - Les vues SQL sont disponibles côté BDD mais l'agrégation côté UI continue d'utiliser le moteur TS
+    `validation.ts` (rapide, offline-friendly). Brancher les vues comme source secondaire de
+    cross-check serait utile si un agent comptable veut comparer.
+  - Pas encore de drill-down « Voir les décisions sous-jacentes » par case Q10 (prévu en suivant si demandé).
