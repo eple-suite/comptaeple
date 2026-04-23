@@ -2,17 +2,21 @@
 // Tableau de bord Enquête Rectorat DGESCO (Q1 → Q17 + R1 → R16)
 // ═══════════════════════════════════════════════════════════════
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { ArrowLeft, AlertTriangle, CheckCircle2, Info, BarChart3, Download } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle2, Info, BarChart3, Download, FileText, Clock } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEleves, useDecisions, useCommissions, useSubventions, useReliquats } from "./useFsData";
 import { currentAnneeScolaire, NATURE_AIDE_LABELS, type NatureAide } from "./fsv2Types";
 import { computeEnqueteKpis, validateEnquete, type Severity } from "@/lib/enquete-rectorat/validation";
+import { generateEnqueteAidePdf } from "@/lib/fs-pdf/enquetePdf";
+import { downloadBlob, type PdfContext } from "@/lib/fs-pdf/decisionPdf";
+import { useEstablishment } from "@/contexts/EstablishmentContext";
+import { useEstablishmentBranding } from "@/hooks/useEstablishmentBranding";
 
 function fmtEur(n: number) { return n.toLocaleString("fr-FR", { style: "currency", currency: "EUR" }); }
 function fmtPct(n: number) { return `${n.toFixed(1)} %`; }
@@ -36,6 +40,18 @@ export default function EnquetePage() {
   const { data: commissions = [] } = useCommissions();
   const { data: subventions = [] } = useSubventions();
   const { data: reliquats = [] } = useReliquats();
+  const { selectedEstablishment } = useEstablishment();
+  const { branding, logoUrl } = useEstablishmentBranding();
+
+  // Indicateur de fraîcheur — recalculé à chaque changement de données.
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [, forceTick] = useState(0);
+  useEffect(() => { setLastRefresh(new Date()); },
+    [eleves, decisions, commissions, subventions, reliquats, annee]);
+  useEffect(() => {
+    const t = setInterval(() => forceTick(n => n + 1), 30_000);
+    return () => clearInterval(t);
+  }, []);
 
   const kpis = useMemo(() =>
     computeEnqueteKpis({ anneeScolaire: annee, eleves, decisions, commissions, subventions, reliquats }),
@@ -48,6 +64,25 @@ export default function EnquetePage() {
   const errors = issues.filter(i => i.severity === "error");
   const warnings = issues.filter(i => i.severity === "warning");
   const infos = issues.filter(i => i.severity === "info");
+
+  function buildPdfContext(): PdfContext {
+    return {
+      etablissementNom: selectedEstablishment?.name ?? "Établissement",
+      etablissementAdresse: branding?.address || undefined,
+      etablissementCp: branding?.postal_code || undefined,
+      etablissementVille: branding?.city || selectedEstablishment?.city,
+      uai: selectedEstablishment?.uai,
+      signataireOrdonnateur: branding?.signataire_ordonnateur || selectedEstablishment?.ordonnateur,
+      signataireAgentComptable: branding?.signataire_agent_comptable || selectedEstablishment?.agent_comptable,
+      ville: branding?.city || selectedEstablishment?.city,
+      logoDataUrl: logoUrl ?? null,
+    };
+  }
+
+  function handleExportPdf() {
+    const blob = generateEnqueteAidePdf(buildPdfContext(), { anneeScolaire: annee, kpis, issues });
+    downloadBlob(blob, `aide-saisie-enquete-${annee}.pdf`);
+  }
 
   function handleExportCsv() {
     const rows: string[] = [];
@@ -94,7 +129,17 @@ export default function EnquetePage() {
             <SelectItem value={currentAnneeScolaire()}>{currentAnneeScolaire()}</SelectItem>
           </SelectContent>
         </Select>
+        <Button variant="default" onClick={handleExportPdf}>
+          <FileText className="h-4 w-4 mr-1" /> Aide à la saisie (PDF)
+        </Button>
         <Button variant="outline" onClick={handleExportCsv}><Download className="h-4 w-4 mr-1" /> Export CSV</Button>
+      </div>
+
+      {/* Indicateur de fraîcheur */}
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Clock className="h-3 w-3" />
+        <span>Dernière agrégation : {formatRelativeTime(lastRefresh)}</span>
+        <span className="text-muted-foreground/60">• {decisions.length} décisions, {eleves.length} élèves analysés</span>
       </div>
 
       {/* Synthèse contrôles */}
