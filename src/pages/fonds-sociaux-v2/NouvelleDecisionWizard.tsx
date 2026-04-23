@@ -277,6 +277,9 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                   {NATURES_Q10.map(n => <SelectItem key={n} value={n}>{NATURE_AIDE_LABELS[n]}</SelectItem>)}
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                Ligne Q10 : <strong>{Q10_LIGNE_LABELS[natureAide]}</strong>
+              </p>
             </div>
             <div>
               <Label>Type de fonds</Label>
@@ -311,6 +314,11 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                   <SelectItem value="urgence">Urgence (chef d'établissement)</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {modaliteAttribution === "commission"
+                  ? "Q15 — case « Dans le cadre d'une commission »"
+                  : "Q15 — case « Procédure d'urgence, circulaire n°2017-122 du 02/08/2017 »"}
+              </p>
             </div>
             {modaliteAttribution === "commission" && (
               <div>
@@ -326,6 +334,7 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                 {commissions.filter(c => c.annee_scolaire === annee).length === 0 && (
                   <p className="text-xs text-destructive mt-1">Aucune commission saisie pour {annee}. Créez-en une dans l'onglet Commissions.</p>
                 )}
+                <p className="text-[11px] text-muted-foreground mt-1">Alimente Q15a — fréquence des commissions.</p>
               </div>
             )}
             <div>
@@ -337,9 +346,14 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                   <SelectItem value="organisme_tiers">Versement à un organisme tiers</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-[11px] text-muted-foreground mt-1">
+                {modaliteVersement === "aide_directe"
+                  ? "Q10 — colonne « aide directe »"
+                  : "Q10 — colonne « via un versement à un organisme tiers »"}
+              </p>
             </div>
             {modaliteVersement === "organisme_tiers" && (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label>Nom organisme</Label>
                   <Input value={organismeNom} onChange={e => setOrganismeNom(e.target.value)} />
@@ -347,6 +361,18 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                 <div>
                   <Label>SIRET</Label>
                   <Input value={organismeSiret} onChange={e => setOrganismeSiret(e.target.value)} />
+                </div>
+                <div>
+                  <Label>Type d'organisme</Label>
+                  <Select value={organismeType} onValueChange={setOrganismeType}>
+                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="caf">CAF</SelectItem>
+                      <SelectItem value="association">Association</SelectItem>
+                      <SelectItem value="commune">Commune</SelectItem>
+                      <SelectItem value="autre">Autre</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             )}
