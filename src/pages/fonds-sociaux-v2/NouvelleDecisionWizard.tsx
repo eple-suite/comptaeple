@@ -11,13 +11,18 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Check, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Loader2, AlertTriangle, Info } from "lucide-react";
 import { useEleves, useCommissions, useDecisions, useUpsertDecision } from "./useFsData";
 import {
   buildNumeroDecision, currentAnneeScolaire, defaultTypeFondsForNature, CODE_ACTIVITE_DEFAULT,
   NATURE_AIDE_LABELS, NATURES_Q10,
   type FsDecision, type NatureAide, type TypeFonds, type ModaliteAttribution, type ModaliteVersement,
 } from "./fsv2Types";
+import { VoieBadge } from "./VoieBadge";
+import {
+  Q10_LIGNE_LABELS, evaluerCompletudeEleve,
+  cumulAnnuelEleve, premiereAideAnnee,
+} from "./fsEnqueteHelpers";
 import { toast } from "sonner";
 
 interface Props { open: boolean; onClose: () => void; }
