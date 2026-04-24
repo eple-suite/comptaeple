@@ -23,6 +23,7 @@ import {
 import type { TypeProjet, NatureRecette, PosteDepense, StatutFinanceur, VoyageRecette, VoyageDepense } from "../types";
 import type { VoyageDraft } from "../hooks/useVoyageV2";
 import { snapshotVoyage, formatEuro, compteSuggereDepense, compteSuggereRecette } from "../lib/financialEngine";
+import { AlertesPanel, buildAlertesInputFromDraft } from "./AlertesPanel";
 
 type Updater = <K extends keyof VoyageDraft>(key: K, value: VoyageDraft[K]) => void;
 
@@ -580,6 +581,10 @@ export function Step8Recap({
     ),
     [draft.nb_eleves_prevus, recettes, depenses],
   );
+  const alertesInput = useMemo(
+    () => buildAlertesInputFromDraft(draft, recettes, depenses),
+    [draft, recettes, depenses],
+  );
 
   return (
     <div className="space-y-4">
@@ -603,7 +608,22 @@ export function Step8Recap({
         <p className="text-xs text-muted-foreground">
           {draft.date_depart || "?"} → {draft.date_retour || "?"} ({computeNuitees(draft.date_depart, draft.date_retour)} nuit·s) — {TYPE_PROJET_LABELS[draft.type_projet as TypeProjet] || draft.type_projet}
         </p>
+        <p className="text-xs text-muted-foreground pt-1 border-t border-border/50 mt-2">
+          <strong>CA — vote n°1 (principe) :</strong>{" "}
+          {draft.date_ca_principe || "—"}
+          {draft.numero_acte_ca_principe ? ` (acte ${draft.numero_acte_ca_principe})` : ""}
+          {" · "}
+          <strong>vote n°2 (budget) :</strong>{" "}
+          {draft.date_ca_budget || "—"}
+          {draft.numero_acte_ca_budget ? ` (acte ${draft.numero_acte_ca_budget})` : ""}
+        </p>
       </div>
+
+      {/* Moteur d'alertes complet (délai CA, engagement anticipé, budget, marchés…) */}
+      <AlertesPanel
+        input={alertesInput}
+        titre="Contrôles réglementaires automatisés"
+      />
 
       {snapshot.alertes.length > 0 && (
         <div className="space-y-2">
