@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import { Info, Upload, Play, Loader2, CheckCircle2, XCircle, RefreshCw, ShieldAlert, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Info, Upload, Play, Loader2, CheckCircle2, XCircle, RefreshCw, ShieldAlert, ShieldCheck, AlertTriangle, FileSearch, Sparkles, ListRestart } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { useEstablishment } from '@/contexts/EstablishmentContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -276,10 +276,46 @@ function extractWorkbookMeta(wb: XLSX.WorkBook): string {
   return parts.join(' ');
 }
 
-function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Record<string, string>[]; title: string | null; meta: string } {
+/** Diagnostic du choix de l'onglet effectué pour SDE/SDR/Balance.
+ *  Permet à l'UI d'afficher l'onglet retenu et d'offrir un re-choix
+ *  manuel en cas de fallback (heuristique de scoring legacy). */
+export interface SheetPickDiagnostic {
+  /** Onglet effectivement utilisé pour l'import. */
+  sheetName: string;
+  /** `canonique` = parser SDE/SDR officiel; `balance-headers` = sélecteur balance par en-têtes;
+   *  `fallback` = scoring legacy lorsque les sélecteurs canoniques échouent;
+   *  `forced` = onglet imposé manuellement par l'utilisateur. */
+  mode: 'canonique' | 'balance-headers' | 'fallback' | 'forced';
+  score: number | null;
+  /** Liste exhaustive des onglets évalués (pour la boîte « Reprendre sélection »). */
+  candidates: Array<{ sheetName: string; score: number | null; reason: string }>;
+}
+
+function pickBestWorkbookRows(
+  wb: XLSX.WorkBook,
+  slotType: string,
+  forcedSheetName?: string,
+): { rows: Record<string, string>[]; title: string | null; meta: string; diag: SheetPickDiagnostic } {
   const expectedType = slotType.replace('1', '');
   const title = extractWorkbookTitle(wb);
   const meta = extractWorkbookMeta(wb);
+
+  // ── Forçage manuel (bouton « Reprendre sélection ») ────────────────
+  if (forcedSheetName && wb.Sheets[forcedSheetName]) {
+    const records = XLSX.utils.sheet_to_json<Record<string, string>>(wb.Sheets[forcedSheetName], { defval: '' });
+    const rows = normalizeRowsForOpaleImport(records);
+    return {
+      rows,
+      title: title || forcedSheetName,
+      meta,
+      diag: {
+        sheetName: forcedSheetName,
+        mode: 'forced',
+        score: null,
+        candidates: wb.SheetNames.map((n) => ({ sheetName: n, score: null, reason: n === forcedSheetName ? 'imposé manuellement' : '' })),
+      },
+    };
+  }
 
   if (expectedType === 'bal') {
     const balanceSheet = selectWorkbookSheetByHeaders(wb, {
@@ -299,7 +335,17 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
     });
 
     if (balanceSheet) {
-      return { rows: normalizeRowsForOpaleImport(balanceSheet.records), title, meta };
+      return {
+        rows: normalizeRowsForOpaleImport(balanceSheet.records),
+        title,
+        meta,
+        diag: {
+          sheetName: balanceSheet.sheetName,
+          mode: 'balance-headers',
+          score: null,
+          candidates: wb.SheetNames.map((n) => ({ sheetName: n, score: null, reason: n === balanceSheet.sheetName ? 'sélecteur balance par en-têtes' : '' })),
+        },
+      };
     }
   }
 
@@ -332,7 +378,17 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
           `[IMPORT-CANONIQUE] ${expectedType.toUpperCase()} → onglet « ${selection.sheetName} » ` +
           `(score ${selection.score}, ligne d'en-tête ${selection.headerRowIndex + 1}, ${dataRows.length} lignes)`
         );
-        return { rows: normalizeRowsForOpaleImport(dataRows), title: title || selection.sheetName, meta };
+        return {
+          rows: normalizeRowsForOpaleImport(dataRows),
+          title: title || selection.sheetName,
+          meta,
+          diag: {
+            sheetName: selection.sheetName,
+            mode: 'canonique',
+            score: selection.score,
+            candidates: selection.scoredSheets.map((s) => ({ sheetName: s.sheetName, score: s.score, reason: s.reason })),
+          },
+        };
       }
     }
     // sinon → fallback sur la logique de scoring historique ci-dessous
@@ -340,6 +396,8 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
 
   let bestRows: Record<string, string>[] = [];
   let bestScore = -Infinity;
+  let bestSheet = '';
+  const fallbackCandidates: Array<{ sheetName: string; score: number | null; reason: string }> = [];
 
   const getPreferredSheetScore = (sheetName: string, expected: string): number => {
     const normalized = normalizeColumnName(sheetName);
@@ -355,17 +413,14 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
   for (const candidate of getWorkbookSheetCandidates(wb)) {
     const { sheetName } = candidate;
     const rows = normalizeRowsForOpaleImport(candidate.records);
-    if (!rows.length) continue;
+    if (!rows.length) {
+      fallbackCandidates.push({ sheetName, score: 0, reason: 'aucune donnée' });
+      continue;
+    }
     const headers = Object.keys(rows[0] || {});
     const detected = detectDocumentType(headers, title);
 
     const preferredSheetBoost = getPreferredSheetScore(sheetName, expectedType);
-
-    // Fast path: if we hit the canonical Op@le summary sheet for this slot and
-    // the detected structure matches, select it immediately.
-    if (preferredSheetBoost >= 30 && detected === expectedType) {
-      return { rows, title, meta };
-    }
 
     let score = 0;
     score += Math.min(rows.length, 200) / 40;
@@ -374,13 +429,46 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
     score += preferredSheetBoost;
     if (headers.some((h) => normalizeColumnName(h).startsWith('montant colonne'))) score += 6;
 
+    fallbackCandidates.push({
+      sheetName,
+      score: Math.round(score * 10) / 10,
+      reason: `${rows.length} lignes${detected ? `, type détecté : ${detected}` : ', type indéterminé'}`,
+    });
+
+    // Fast path: if we hit the canonical Op@le summary sheet for this slot and
+    // the detected structure matches, select it immediately.
+    if (preferredSheetBoost >= 30 && detected === expectedType) {
+      return {
+        rows,
+        title,
+        meta,
+        diag: {
+          sheetName,
+          mode: 'fallback',
+          score: Math.round(score * 10) / 10,
+          candidates: fallbackCandidates,
+        },
+      };
+    }
+
     if (score > bestScore) {
       bestScore = score;
       bestRows = rows;
+      bestSheet = sheetName;
     }
   }
 
-  return { rows: bestRows, title, meta };
+  return {
+    rows: bestRows,
+    title,
+    meta,
+    diag: {
+      sheetName: bestSheet || (wb.SheetNames[0] ?? ''),
+      mode: 'fallback',
+      score: bestScore === -Infinity ? null : Math.round(bestScore * 10) / 10,
+      candidates: fallbackCandidates,
+    },
+  };
 }
 
 /** Vérifie que les colonnes du fichier correspondent au type de slot attendu */
@@ -489,6 +577,13 @@ export function ImportSection() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [securityBlocks, setSecurityBlocks] = useState<Record<string, string>>({});
   const [lockAlert, setLockAlert] = useState<TripleLockResult & { slotLabel?: string } | null>(null);
+  /** Diagnostic du choix d'onglet par slot (SDE/SDR/Balance Excel). */
+  const [sheetDiag, setSheetDiag] = useState<Record<string, SheetPickDiagnostic>>({});
+  /** Workbooks XLSX gardés en mémoire par slot, pour permettre une
+   *  re-sélection manuelle de l'onglet sans re-uploader le fichier. */
+  const workbooksRef = useRef<Record<string, { wb: XLSX.WorkBook; fileName: string }>>({});
+  /** Slot dont l'utilisateur a ouvert le dialogue « Reprendre sélection ». */
+  const [reSelectSlot, setReSelectSlot] = useState<FileSlot | null>(null);
 
   const slots = getSlots(budgets);
   const obligatoires = slots.filter(s => s.obligatoire);
@@ -524,7 +619,36 @@ export function ImportSection() {
     }
   }
 
-  function processImportedRows(rawRows: Record<string, string>[], fileName: string, slot: FileSlot, sheetTitle?: string | null, sheetMeta?: string | null) {
+  function processImportedRows(
+    rawRows: Record<string, string>[],
+    fileName: string,
+    slot: FileSlot,
+    sheetTitle?: string | null,
+    sheetMeta?: string | null,
+    diag?: SheetPickDiagnostic,
+  ) {
+    if (diag) {
+      setSheetDiag((prev) => ({ ...prev, [slot.key]: diag }));
+      // Toast informatif : onglet retenu + mode (canonique vs fallback)
+      const modeLabel: Record<SheetPickDiagnostic['mode'], string> = {
+        canonique: '✅ Sélection canonique',
+        'balance-headers': '✅ Sélection par en-têtes',
+        fallback: '⚠️ Sélection heuristique (fallback)',
+        forced: '🔧 Sélection manuelle',
+      };
+      const description = `Onglet retenu : « ${diag.sheetName} »` +
+        (diag.score != null ? ` (score ${diag.score})` : '') +
+        (diag.candidates.length > 1 ? ` · ${diag.candidates.length} onglets évalués` : '');
+      if (diag.mode === 'canonique' || diag.mode === 'balance-headers' || diag.mode === 'forced') {
+        toast.success(`${modeLabel[diag.mode]} — ${slot.label}`, { description, duration: 6000 });
+      } else {
+        toast.warning(`${modeLabel[diag.mode]} — ${slot.label}`, {
+          description: `${description}. Cliquez sur « Reprendre sélection » si un autre onglet est plus approprié.`,
+          duration: 9000,
+        });
+      }
+    }
+
     // ── DIAGNOSTIC: dump raw Excel rows before normalization ──
     if (rawRows.length > 0) {
       const rawKeys = Object.keys(rawRows[0]);
@@ -734,8 +858,10 @@ export function ImportSection() {
       reader.onload = (evt) => {
         try {
           const wb = XLSX.read(evt.target?.result, { type: 'array' });
-          const { rows, title, meta } = pickBestWorkbookRows(wb, slot.type);
-          processImportedRows(rows, file.name, slot, title, meta);
+          // Conserve le workbook en mémoire pour autoriser une re-sélection manuelle
+          workbooksRef.current[slot.key] = { wb, fileName: file.name };
+          const { rows, title, meta, diag } = pickBestWorkbookRows(wb, slot.type);
+          processImportedRows(rows, file.name, slot, title, meta, diag);
         } catch (err: any) {
           setErrors(prev => ({ ...prev, [slot.key]: `Erreur Excel : ${err.message || 'Format non reconnu'}` }));
         }
@@ -751,11 +877,34 @@ export function ImportSection() {
       skipEmptyLines: true,
       encoding: 'UTF-8',
       complete: (results) => {
+        // CSV : un seul « onglet », pas de re-sélection possible
+        delete workbooksRef.current[slot.key];
+        setSheetDiag((prev) => { const n = { ...prev }; delete n[slot.key]; return n; });
         processImportedRows(results.data as Record<string, string>[], file.name, slot);
       },
       error: (err) => { setErrors(prev => ({ ...prev, [slot.key]: err.message })); },
     });
     e.target.value = '';
+  }
+
+  /** Re-sélectionne manuellement un onglet pour un slot SDE/SDR/Balance déjà chargé. */
+  function reSelectSheet(slot: FileSlot, sheetName: string) {
+    const entry = workbooksRef.current[slot.key];
+    if (!entry) {
+      toast.error('Workbook indisponible — veuillez recharger le fichier.');
+      return;
+    }
+    try {
+      const { rows, title, meta, diag } = pickBestWorkbookRows(entry.wb, slot.type, sheetName);
+      if (!rows || rows.length === 0) {
+        toast.error(`L'onglet « ${sheetName} » est vide ou ne peut pas être lu.`);
+        return;
+      }
+      processImportedRows(rows, entry.fileName, slot, title, meta, diag);
+      setReSelectSlot(null);
+    } catch (err: any) {
+      toast.error(`Erreur lors du changement d'onglet : ${err?.message || err}`);
+    }
   }
 
 
@@ -793,6 +942,75 @@ export function ImportSection() {
           <div className="flex justify-end">
             <DialogClose asChild>
               <Button variant="destructive" size="sm">Compris</Button>
+            </DialogClose>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog « Reprendre sélection d'onglet » ─────────────────── */}
+      <Dialog open={!!reSelectSlot} onOpenChange={(o) => !o && setReSelectSlot(null)}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSearch className="h-5 w-5 text-primary" />
+              Reprendre la sélection d'onglet
+            </DialogTitle>
+            <DialogDescription className="space-y-2 pt-2">
+              <p className="text-sm text-foreground">
+                Emplacement : <strong>{reSelectSlot?.label}</strong>
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Le parser canonique n'a pas pu identifier l'onglet « Donnees » avec certitude. Choisissez
+                manuellement ci-dessous l'onglet qui contient les lignes brutes Op@le (et non un tableau
+                croisé dynamique « Situation… »). Les onglets sont triés par score décroissant.
+              </p>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1">
+            {reSelectSlot && (sheetDiag[reSelectSlot.key]?.candidates ?? [])
+              .slice()
+              .sort((a, b) => (b.score ?? -Infinity) - (a.score ?? -Infinity))
+              .map((cand) => {
+                const isCurrent = sheetDiag[reSelectSlot!.key]?.sheetName === cand.sheetName;
+                return (
+                  <button
+                    key={cand.sheetName}
+                    onClick={() => reSelectSheet(reSelectSlot!, cand.sheetName)}
+                    className={`w-full text-left rounded-lg border p-3 transition-all hover:border-primary hover:bg-primary/5 ${
+                      isCurrent ? 'border-emerald-500 bg-emerald-500/5' : 'border-border'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono font-semibold text-sm truncate">{cand.sheetName}</span>
+                          {isCurrent && (
+                            <Badge className="bg-emerald-600 text-white text-[10px]">actuel</Badge>
+                          )}
+                          {cand.score != null && (
+                            <Badge variant="outline" className="text-[10px] tabular-nums">
+                              score : {cand.score}
+                            </Badge>
+                          )}
+                        </div>
+                        {cand.reason && (
+                          <p className="text-xs text-muted-foreground mt-1">{cand.reason}</p>
+                        )}
+                      </div>
+                      <Sparkles className="h-4 w-4 text-primary opacity-60 shrink-0 mt-1" />
+                    </div>
+                  </button>
+                );
+              })}
+            {reSelectSlot && (!sheetDiag[reSelectSlot.key] || sheetDiag[reSelectSlot.key].candidates.length === 0) && (
+              <p className="text-sm text-muted-foreground italic p-4 text-center">
+                Aucun candidat évalué — rechargez le fichier Excel d'abord.
+              </p>
+            )}
+          </div>
+          <div className="flex justify-end pt-2">
+            <DialogClose asChild>
+              <Button variant="outline" size="sm">Annuler</Button>
             </DialogClose>
           </div>
         </DialogContent>
@@ -856,6 +1074,9 @@ export function ImportSection() {
               <ImportBox key={slot.key} slot={slot} loaded={!!fichierCharge[slot.key]}
                 stat={fileStats[slot.key]} error={errors[slot.key]}
                 securityBlock={securityBlocks[slot.key]}
+                diag={sheetDiag[slot.key]}
+                canReSelect={!!workbooksRef.current[slot.key]}
+                onReSelect={() => setReSelectSlot(slot)}
                 onFile={e => handleFile(e, slot)} />
             ))}
           </CardContent>
@@ -883,11 +1104,21 @@ export function ImportSection() {
   );
 }
 
-function ImportBox({ slot, loaded, stat, error, securityBlock, onFile }: {
+function ImportBox({ slot, loaded, stat, error, securityBlock, diag, canReSelect, onReSelect, onFile }: {
   slot: FileSlot; loaded: boolean; stat?: { rows: number; name: string }; error?: string;
-  securityBlock?: string; onFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  securityBlock?: string;
+  diag?: SheetPickDiagnostic;
+  canReSelect?: boolean;
+  onReSelect?: () => void;
+  onFile: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const diagModeStyle: Record<SheetPickDiagnostic['mode'], { cls: string; label: string; icon: React.ReactNode }> = {
+    canonique: { cls: 'bg-emerald-600 text-white', label: 'canonique', icon: <CheckCircle2 className="h-3 w-3" /> },
+    'balance-headers': { cls: 'bg-emerald-600 text-white', label: 'en-têtes', icon: <CheckCircle2 className="h-3 w-3" /> },
+    fallback: { cls: 'bg-warning text-warning-foreground', label: 'fallback', icon: <AlertTriangle className="h-3 w-3" /> },
+    forced: { cls: 'bg-primary text-primary-foreground', label: 'manuel', icon: <Sparkles className="h-3 w-3" /> },
+  };
   return (
     <label className={`relative block border-2 border-dashed rounded-xl p-4 cursor-pointer transition-all group ${
       securityBlock ? 'border-destructive bg-destructive/5 border-solid' :
@@ -915,6 +1146,35 @@ function ImportBox({ slot, loaded, stat, error, securityBlock, onFile }: {
             </div>
           )}
           {loaded && stat && <div className="text-xs text-emerald-700 dark:text-emerald-400 font-semibold truncate">{stat.rows} lignes — {stat.name}</div>}
+          {loaded && diag && (
+            <div className="mt-1.5 space-y-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge className={`${diagModeStyle[diag.mode].cls} text-[10px] font-bold inline-flex items-center gap-1`}>
+                  {diagModeStyle[diag.mode].icon}
+                  {diagModeStyle[diag.mode].label}
+                </Badge>
+                <span className="text-[11px] text-muted-foreground truncate" title={diag.sheetName}>
+                  Onglet : <span className="font-mono font-semibold text-foreground">« {diag.sheetName} »</span>
+                  {diag.score != null && <span className="opacity-70"> · score {diag.score}</span>}
+                </span>
+              </div>
+              {(diag.mode === 'fallback' || diag.candidates.length > 1) && canReSelect && (
+                <button
+                  type="button"
+                  onClick={(e) => { e.preventDefault(); e.stopPropagation(); onReSelect?.(); }}
+                  className={`inline-flex items-center gap-1 text-[11px] font-semibold rounded-md px-2 py-1 transition-colors ${
+                    diag.mode === 'fallback'
+                      ? 'bg-warning/15 text-warning hover:bg-warning/25'
+                      : 'bg-primary/10 text-primary hover:bg-primary/20'
+                  }`}
+                  title="Choisir manuellement un autre onglet"
+                >
+                  <ListRestart className="h-3 w-3" />
+                  Reprendre sélection ({diag.candidates.length} onglet{diag.candidates.length > 1 ? 's' : ''})
+                </button>
+              )}
+            </div>
+          )}
           {error && <div className="text-xs text-destructive font-semibold">{error}</div>}
           {!loaded && !error && !securityBlock && <div className="text-xs text-muted-foreground italic">CSV ou Excel — Cliquer pour charger</div>}
           {loaded && !securityBlock && <div className="text-xs text-primary font-semibold mt-1">Cliquer ici pour remplacer ce fichier</div>}
