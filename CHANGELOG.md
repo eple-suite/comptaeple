@@ -1,5 +1,20 @@
 # CHANGELOG — Refonte Compte financier (rectorat Guadeloupe)
 
+## ✅ UI — Onglet « REPROFI » (10 indicateurs sur Compte financier)
+
+- `src/lib/compteFinancier/balanceAdapter.ts` — adapter
+  `lignesCofieple → Balance` consommée par les moteurs.
+- `src/components/cofieple/IndicateursReprofiSection.tsx` — section
+  affichant les 10 indicateurs REPROFI 4.6 + bloc « Réserves »
+  (5 rubriques M9-6 art. 43231) avec :
+  • code couleur par niveau (critique / fragile / normal / confortable / excellent),
+  • explication contextualisée par niveau et par indicateur,
+  • compteur de synthèse en en-tête, légende détaillée en pied,
+  • icône métier par indicateur, format FR (€/%/années).
+- Nouvel onglet **REPROFI** ajouté dans la sous-nav « Outils »
+  de `src/pages/CompteFinancier.tsx` (badge `10`, requiresData).
+- TypeScript compile-clean (`tsc --noEmit` exit 0).
+
 ## ⚠️ Avis d'avancement honnête
 
 Le brief reçu (8 chantiers, ~30 formules bilancielles, 11 visuels avec
