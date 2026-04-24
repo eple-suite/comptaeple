@@ -405,23 +405,148 @@ export function Step6Accompagnateurs({ draft, update }: { draft: VoyageDraft; up
 
 // ─── Étape 7 — Validation CA ─────────────────────────────────────
 export function Step7ValidationCA({ draft, update }: { draft: VoyageDraft; update: Updater }) {
+  // Calcul du délai entre le vote du budget et le départ (alerte critique)
+  const dateRefCa = draft.date_ca_budget || draft.date_ca_autorisation;
+  const delaiJours =
+    dateRefCa && draft.date_depart
+      ? Math.round(
+          (new Date(draft.date_depart).getTime() - new Date(dateRefCa).getTime()) /
+            (1000 * 60 * 60 * 24),
+        )
+      : null;
+  const delaiNiveau =
+    delaiJours === null
+      ? null
+      : delaiJours < 0
+      ? "critique-passe"
+      : delaiJours < 30
+      ? "critique"
+      : delaiJours < 60
+      ? "vigilance"
+      : "ok";
+
   return (
     <div className="space-y-4">
       <Alert>
         <Info className="h-4 w-4" />
-        <AlertTitle>Acte du Conseil d'Administration</AlertTitle>
+        <AlertTitle>Deux délibérations CA distinctes — R.421-20 Code éducation</AlertTitle>
         <AlertDescription className="text-xs">
-          Toute sortie ou voyage scolaire doit être autorisé par le Conseil d'Administration (art. R.421-20 Code de l'éducation).
-          Renseignez la date et le numéro de l'acte si la délibération a déjà eu lieu.
+          Un voyage scolaire requiert <strong>deux votes du CA</strong> :{" "}
+          <strong>(1)</strong> autorisation de principe (programmation, contributions familles),
+          puis <strong>(2)</strong> approbation du budget définitif après mise en concurrence.
+          Les actes ne deviennent exécutoires qu'à l'issue du contrôle de légalité (15 à 30 jours
+          après transmission — art. L.421-14).
         </AlertDescription>
       </Alert>
+
+      {/* Vote n°1 — autorisation de principe */}
+      <div className="rounded-lg border-2 border-primary/30 bg-primary/5 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Badge className="bg-primary text-primary-foreground">Vote n°1</Badge>
+          <h3 className="font-semibold text-sm">Autorisation de principe</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Le CA autorise le principe du voyage, la programmation et les contributions familles
+          (avant mise en concurrence). Aucune dépense ne peut être engagée avant ce vote.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Field label="Date du vote — autorisation de principe">
+            <Input
+              type="date"
+              value={draft.date_ca_principe || ""}
+              onChange={(e) => update("date_ca_principe", e.target.value || null)}
+            />
+          </Field>
+          <Field label="Numéro de l'acte (vote n°1)">
+            <Input
+              value={draft.numero_acte_ca_principe || ""}
+              onChange={(e) => update("numero_acte_ca_principe", e.target.value)}
+              placeholder="Ex : 2026-08"
+            />
+          </Field>
+        </div>
+      </div>
+
+      {/* Vote n°2 — approbation du budget */}
+      <div className="rounded-lg border-2 border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/20 p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <Badge className="bg-emerald-600 text-white">Vote n°2</Badge>
+          <h3 className="font-semibold text-sm">Approbation du budget définitif</h3>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Après mise en concurrence, le CA approuve le budget chiffré définitif. C'est la date
+          de référence pour le contrôle de légalité et le calcul des délais.
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <Field label="Date du vote — approbation du budget">
+            <Input
+              type="date"
+              value={draft.date_ca_budget || ""}
+              onChange={(e) => update("date_ca_budget", e.target.value || null)}
+            />
+          </Field>
+          <Field label="Numéro de l'acte (vote n°2)">
+            <Input
+              value={draft.numero_acte_ca_budget || ""}
+              onChange={(e) => update("numero_acte_ca_budget", e.target.value)}
+              placeholder="Ex : 2026-15"
+            />
+          </Field>
+        </div>
+      </div>
+
+      {/* Alerte délai vote budget → départ */}
+      {delaiJours !== null && (
+        <Alert
+          variant={delaiNiveau === "critique" || delaiNiveau === "critique-passe" ? "destructive" : "default"}
+          className={
+            delaiNiveau === "ok"
+              ? "border-emerald-500/40 bg-emerald-50 dark:bg-emerald-950/20"
+              : delaiNiveau === "vigilance"
+              ? "border-amber-500/50 bg-amber-50 dark:bg-amber-950/20"
+              : ""
+          }
+        >
+          {delaiNiveau === "ok" ? (
+            <CheckCircle2 className="h-4 w-4 text-emerald-700" />
+          ) : (
+            <AlertTriangle className="h-4 w-4" />
+          )}
+          <AlertTitle className="text-sm">
+            Délai vote budget CA → départ : <strong>{delaiJours} jour(s)</strong>
+          </AlertTitle>
+          <AlertDescription className="text-xs">
+            {delaiNiveau === "critique-passe" && (
+              <span>
+                ⛔ Le vote du budget est postérieur au départ. <strong>Engagement irrégulier</strong> :
+                le voyage est entrepris sans budget exécutoire. Régulariser d'urgence.
+              </span>
+            )}
+            {delaiNiveau === "critique" && (
+              <span>
+                ⛔ Délai trop court ({delaiJours} j &lt; 30 j). Les actes EPLE deviennent
+                exécutoires entre 15 et 30 jours après transmission au contrôle de légalité
+                (art. L.421-14). <strong>Risque : voyage entrepris sur acte non exécutoire.</strong>
+                {" "}Reporter la délibération ou la date de départ.
+              </span>
+            )}
+            {delaiNiveau === "vigilance" && (
+              <span>
+                ⚠️ Délai serré ({delaiJours} j). Vérifier auprès de la DSDEN/rectorat que l'acte
+                est rendu exécutoire avant le départ.
+              </span>
+            )}
+            {delaiNiveau === "ok" && (
+              <span>
+                ✅ Délai conforme : l'acte budgétaire pourra être rendu exécutoire largement avant
+                le départ.
+              </span>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Field label="Date de la délibération CA">
-          <Input type="date" value={draft.date_ca_autorisation || ""} onChange={(e) => update("date_ca_autorisation", e.target.value || null)} />
-        </Field>
-        <Field label="Numéro de l'acte">
-          <Input value={draft.numero_acte_ca || ""} onChange={(e) => update("numero_acte_ca", e.target.value)} placeholder="Ex : 2026-12" />
-        </Field>
         <Field label="Statut du voyage">
           <Select value={draft.statut || "projet"} onValueChange={(v) => update("statut", v as any)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
