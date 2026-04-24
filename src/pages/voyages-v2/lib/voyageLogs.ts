@@ -74,3 +74,75 @@ export async function getEtablissementUai(establishmentId: string | null | undef
     return null;
   }
 }
+
+// ─── Lecture historique règle 8 € ────────────────────────────────
+
+const REGLE8_ACTIONS: Regle8LogAction[] = [
+  "voyage_regle8_bloquant",
+  "voyage_regle8_don_tacite_assume",
+  "voyage_regle8_don_tacite_retire",
+];
+
+export interface Regle8LogEntry {
+  id: string;
+  created_at: string;
+  action: Regle8LogAction;
+  user_id: string | null;
+  uai: string | null;
+  details: Record<string, any>;
+}
+
+export interface FetchRegle8LogsOptions {
+  /** Filtre sur un voyage précis (recommandé en wizard) */
+  voyageId?: string | null;
+  /** Filtre sur un UAI précis (sinon : tous ceux visibles par RLS) */
+  uai?: string | null;
+  /** Limite de résultats (défaut 100) */
+  limit?: number;
+  /** Si true et voyageId présent : inclure aussi les logs sans voyage_id (sessions hors-voyage) */
+  includeOrphans?: boolean;
+}
+
+/**
+ * Récupère l'historique des événements règle 8 € visibles pour
+ * l'utilisateur courant (RLS appliquée par Supabase).
+ * Best-effort : retourne [] en cas d'erreur, jamais d'exception.
+ */
+export async function fetchRegle8Logs(opts: FetchRegle8LogsOptions = {}): Promise<Regle8LogEntry[]> {
+  try {
+    let q = supabase
+      .from("logs")
+      .select("id, created_at, action, user_id, uai, details")
+      .in("action", REGLE8_ACTIONS)
+      .order("created_at", { ascending: false })
+      .limit(Math.max(1, Math.min(500, opts.limit ?? 100)));
+
+    if (opts.uai) q = q.eq("uai", opts.uai);
+
+    const { data, error } = await q;
+    if (error) {
+      console.warn("[fetchRegle8Logs]", error.message);
+      return [];
+    }
+
+    let rows = (data || []) as unknown as Regle8LogEntry[];
+
+    if (opts.voyageId) {
+      rows = rows.filter((r) => {
+        const vid = (r.details as any)?.voyage_id;
+        return vid === opts.voyageId || (opts.includeOrphans && (vid === null || vid === undefined));
+      });
+    }
+
+    return rows;
+  } catch (e: any) {
+    console.warn("[fetchRegle8Logs] exception:", e?.message || e);
+    return [];
+  }
+}
+
+export const REGLE8_ACTION_LABELS: Record<Regle8LogAction, string> = {
+  voyage_regle8_bloquant: "Tentative de finalisation bloquée",
+  voyage_regle8_don_tacite_assume: "Don tacite assumé (case cochée)",
+  voyage_regle8_don_tacite_retire: "Don tacite retiré (case décochée)",
+};

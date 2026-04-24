@@ -29,6 +29,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ShieldAlert, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { logRegle8Event, getEtablissementUai } from "../lib/voyageLogs";
+import { Regle8History } from "./Regle8History";
 
 const STEPS = [
   { n: 1, key: "identification", label: "Identification" },
@@ -256,6 +257,9 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
             result={regle8}
             donTaciteAccepte={donTaciteAccepte}
             onToggleDon={handleToggleDonTacite}
+            voyageId={voyageId ?? null}
+            uai={uai}
+            voyageLibelle={draft.libelle || undefined}
           />
         )}
 
@@ -295,10 +299,16 @@ function Regle8Banner({
   result,
   donTaciteAccepte,
   onToggleDon,
+  voyageId,
+  uai,
+  voyageLibelle,
 }: {
   result: Regle8Result;
   donTaciteAccepte: boolean;
   onToggleDon: (v: boolean) => void;
+  voyageId: string | null;
+  uai: string | null;
+  voyageLibelle?: string;
 }) {
   const variant =
     result.niveau === "bloquant" ? "destructive" : result.niveau === "warning" ? "default" : "default";
@@ -318,6 +328,9 @@ function Regle8Banner({
         <Badge variant={result.niveau === "bloquant" ? "destructive" : "outline"} className="text-[10px]">
           {result.niveau === "bloquant" ? "BLOQUANT" : result.niveau === "warning" ? "VIGILANCE" : "CONFORME"}
         </Badge>
+        <div className="ml-auto">
+          <Regle8History voyageId={voyageId} uai={uai} voyageLibelle={voyageLibelle} />
+        </div>
       </AlertTitle>
       <AlertDescription className="text-xs space-y-1.5 mt-1">
         <div>{result.message}</div>
