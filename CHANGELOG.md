@@ -111,6 +111,35 @@ exit 0
 
 ## 🟡 Reste à faire — Chantiers 4 à 8
 
+## ✅ Livré et testé — Branchement parser SDE/SDR dans l'import UI
+
+### Fichiers modifiés
+- `src/lib/opaleSdeSdrParser.ts` — ajout des fonctions
+  `buildSdeRowsFromRecords`, `buildSdrRowsFromRecords`,
+  `computeTauxDepensesFromRecords`, `computeTauxRecettesFromRecords`
+  (adaptateurs pour rows déjà normalisés clé/valeur).
+- `src/components/cofieple/ImportSection.tsx` :
+  * `pickBestWorkbookRows` utilise désormais `selectOpaleSdeSdrSheet`
+    en *fast path* pour SDE/SDR : sélection automatique de l'onglet
+    « Donnees » canonique, rejet TCD, log diagnostic dédié. Fallback
+    intact sur la logique de scoring historique si la sélection
+    canonique échoue.
+  * Après import réussi d'un fichier SDE/SDR, calcul immédiat des
+    taux d'exécution réglementaires (engagement, liquidation,
+    mandatement, disponibilité pour SDE ; exécution recettes,
+    recouvrement pour SDR) et affichage en toast récapitulatif.
+  * Vérification de cohérence OI + DBM = OT avec alerte ciblée
+    (premier écart + nombre total).
+
+### Non-régression
+- Aucun changement de signature exposée (store, parsers existants
+  intacts).
+- Le calcul des taux est encapsulé dans un try/catch : un échec
+  n'empêche jamais l'import de réussir.
+- Imports CSV inchangés (le branchement n'opère que pour les
+  workbooks XLSX/XLS via `pickBestWorkbookRows`).
+- TypeScript : `bunx tsc --noEmit` exit 0.
+
 - **Chantier 4** — Composant `IndicateurAvecVisuel` consommant
   `BilanComplet` + `PanierReprofi` ; intégration page `CompteFinancier`.
 - **Chantier 5** — Moteur de commentaires hybride (templates par
