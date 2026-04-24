@@ -23,6 +23,13 @@ import { parserSDE, parserSDR, parserBalance } from '@/lib/cofieple_calculations
 import { findColumnIndex, normalizeColumnName, normalizeRowsForOpaleImport } from '@/lib/opaleImportUtils';
 import { getWorkbookSheetCandidates, selectWorkbookSheetByHeaders } from '@/lib/opaleWorkbook';
 import { detectBudgetType } from '@/lib/cofieple_csvParser';
+import {
+  selectOpaleSdeSdrSheet,
+  computeTauxDepensesFromRecords,
+  computeTauxRecettesFromRecords,
+  buildSdeRowsFromRecords,
+  verifierCoherenceOuvertures,
+} from '@/lib/opaleSdeSdrParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import { toast } from 'sonner';
 import { ImportDebug } from './ImportDebug';
