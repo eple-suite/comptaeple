@@ -178,7 +178,7 @@ function IndicateurCard({ ind }: { ind: IndicateurReprofi }) {
           </Badge>
         </div>
         <CardDescription className="text-[11px] font-mono uppercase opacity-70 mt-1">
-          Code REPROFI : {ind.code}
+          Code indicateur : {ind.code}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -264,7 +264,7 @@ export function IndicateursReprofiSection() {
       <div className="p-8 text-center text-muted-foreground">
         <Info className="h-10 w-10 mx-auto mb-3 opacity-50" />
         <p className="font-semibold">Aucune balance disponible</p>
-        <p className="text-sm mt-1">Importez une balance générale Op@le pour calculer les 10 indicateurs REPROFI.</p>
+        <p className="text-sm mt-1">Importez une balance générale Op@le pour calculer les 10 indicateurs de diagnostic.</p>
       </div>
     );
   }
