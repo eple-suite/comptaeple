@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogClose } from '@/components/ui/dialog';
-import { Info, Upload, Play, Loader2, CheckCircle2, XCircle, RefreshCw, ShieldAlert, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Info, Upload, Play, Loader2, CheckCircle2, XCircle, RefreshCw, ShieldAlert, ShieldCheck, AlertTriangle, FileSearch, Sparkles, ListRestart } from 'lucide-react';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { useEstablishment } from '@/contexts/EstablishmentContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -276,10 +276,46 @@ function extractWorkbookMeta(wb: XLSX.WorkBook): string {
   return parts.join(' ');
 }
 
-function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Record<string, string>[]; title: string | null; meta: string } {
+/** Diagnostic du choix de l'onglet effectué pour SDE/SDR/Balance.
+ *  Permet à l'UI d'afficher l'onglet retenu et d'offrir un re-choix
+ *  manuel en cas de fallback (heuristique de scoring legacy). */
+export interface SheetPickDiagnostic {
+  /** Onglet effectivement utilisé pour l'import. */
+  sheetName: string;
+  /** `canonique` = parser SDE/SDR officiel; `balance-headers` = sélecteur balance par en-têtes;
+   *  `fallback` = scoring legacy lorsque les sélecteurs canoniques échouent;
+   *  `forced` = onglet imposé manuellement par l'utilisateur. */
+  mode: 'canonique' | 'balance-headers' | 'fallback' | 'forced';
+  score: number | null;
+  /** Liste exhaustive des onglets évalués (pour la boîte « Reprendre sélection »). */
+  candidates: Array<{ sheetName: string; score: number | null; reason: string }>;
+}
+
+function pickBestWorkbookRows(
+  wb: XLSX.WorkBook,
+  slotType: string,
+  forcedSheetName?: string,
+): { rows: Record<string, string>[]; title: string | null; meta: string; diag: SheetPickDiagnostic } {
   const expectedType = slotType.replace('1', '');
   const title = extractWorkbookTitle(wb);
   const meta = extractWorkbookMeta(wb);
+
+  // ── Forçage manuel (bouton « Reprendre sélection ») ────────────────
+  if (forcedSheetName && wb.Sheets[forcedSheetName]) {
+    const records = XLSX.utils.sheet_to_json<Record<string, string>>(wb.Sheets[forcedSheetName], { defval: '' });
+    const rows = normalizeRowsForOpaleImport(records);
+    return {
+      rows,
+      title: title || forcedSheetName,
+      meta,
+      diag: {
+        sheetName: forcedSheetName,
+        mode: 'forced',
+        score: null,
+        candidates: wb.SheetNames.map((n) => ({ sheetName: n, score: null, reason: n === forcedSheetName ? 'imposé manuellement' : '' })),
+      },
+    };
+  }
 
   if (expectedType === 'bal') {
     const balanceSheet = selectWorkbookSheetByHeaders(wb, {
@@ -299,7 +335,17 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
     });
 
     if (balanceSheet) {
-      return { rows: normalizeRowsForOpaleImport(balanceSheet.records), title, meta };
+      return {
+        rows: normalizeRowsForOpaleImport(balanceSheet.records),
+        title,
+        meta,
+        diag: {
+          sheetName: balanceSheet.sheetName,
+          mode: 'balance-headers',
+          score: null,
+          candidates: wb.SheetNames.map((n) => ({ sheetName: n, score: null, reason: n === balanceSheet.sheetName ? 'sélecteur balance par en-têtes' : '' })),
+        },
+      };
     }
   }
 
@@ -332,7 +378,17 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
           `[IMPORT-CANONIQUE] ${expectedType.toUpperCase()} → onglet « ${selection.sheetName} » ` +
           `(score ${selection.score}, ligne d'en-tête ${selection.headerRowIndex + 1}, ${dataRows.length} lignes)`
         );
-        return { rows: normalizeRowsForOpaleImport(dataRows), title: title || selection.sheetName, meta };
+        return {
+          rows: normalizeRowsForOpaleImport(dataRows),
+          title: title || selection.sheetName,
+          meta,
+          diag: {
+            sheetName: selection.sheetName,
+            mode: 'canonique',
+            score: selection.score,
+            candidates: selection.scoredSheets.map((s) => ({ sheetName: s.sheetName, score: s.score, reason: s.reason })),
+          },
+        };
       }
     }
     // sinon → fallback sur la logique de scoring historique ci-dessous
@@ -340,6 +396,8 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
 
   let bestRows: Record<string, string>[] = [];
   let bestScore = -Infinity;
+  let bestSheet = '';
+  const fallbackCandidates: Array<{ sheetName: string; score: number | null; reason: string }> = [];
 
   const getPreferredSheetScore = (sheetName: string, expected: string): number => {
     const normalized = normalizeColumnName(sheetName);
@@ -355,17 +413,14 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
   for (const candidate of getWorkbookSheetCandidates(wb)) {
     const { sheetName } = candidate;
     const rows = normalizeRowsForOpaleImport(candidate.records);
-    if (!rows.length) continue;
+    if (!rows.length) {
+      fallbackCandidates.push({ sheetName, score: 0, reason: 'aucune donnée' });
+      continue;
+    }
     const headers = Object.keys(rows[0] || {});
     const detected = detectDocumentType(headers, title);
 
     const preferredSheetBoost = getPreferredSheetScore(sheetName, expectedType);
-
-    // Fast path: if we hit the canonical Op@le summary sheet for this slot and
-    // the detected structure matches, select it immediately.
-    if (preferredSheetBoost >= 30 && detected === expectedType) {
-      return { rows, title, meta };
-    }
 
     let score = 0;
     score += Math.min(rows.length, 200) / 40;
@@ -374,13 +429,46 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
     score += preferredSheetBoost;
     if (headers.some((h) => normalizeColumnName(h).startsWith('montant colonne'))) score += 6;
 
+    fallbackCandidates.push({
+      sheetName,
+      score: Math.round(score * 10) / 10,
+      reason: `${rows.length} lignes${detected ? `, type détecté : ${detected}` : ', type indéterminé'}`,
+    });
+
+    // Fast path: if we hit the canonical Op@le summary sheet for this slot and
+    // the detected structure matches, select it immediately.
+    if (preferredSheetBoost >= 30 && detected === expectedType) {
+      return {
+        rows,
+        title,
+        meta,
+        diag: {
+          sheetName,
+          mode: 'fallback',
+          score: Math.round(score * 10) / 10,
+          candidates: fallbackCandidates,
+        },
+      };
+    }
+
     if (score > bestScore) {
       bestScore = score;
       bestRows = rows;
+      bestSheet = sheetName;
     }
   }
 
-  return { rows: bestRows, title, meta };
+  return {
+    rows: bestRows,
+    title,
+    meta,
+    diag: {
+      sheetName: bestSheet || (wb.SheetNames[0] ?? ''),
+      mode: 'fallback',
+      score: bestScore === -Infinity ? null : Math.round(bestScore * 10) / 10,
+      candidates: fallbackCandidates,
+    },
+  };
 }
 
 /** Vérifie que les colonnes du fichier correspondent au type de slot attendu */
