@@ -39,7 +39,7 @@ function dateOffset(j: number): string {
 }
 
 export default function VoyagesV2Page() {
-  const { currentEstablishment } = useEstablishment();
+  const { selectedEstablishment } = useEstablishment();
   const [wizardOpen, setWizardOpen] = useState(false);
   const [demoAlertes, setDemoAlertes] = useState<AlerteVoyage[] | null>(null);
 
@@ -218,11 +218,11 @@ export default function VoyagesV2Page() {
         </Card>
       )}
 
-      {currentEstablishment?.id && (
+      {selectedEstablishment?.id && (
         <VoyageWizard
           open={wizardOpen}
           onOpenChange={setWizardOpen}
-          establishmentId={currentEstablishment.id}
+          establishmentId={selectedEstablishment.id}
         />
       )}
     </div>

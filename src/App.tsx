@@ -13,6 +13,7 @@ import BalanceAnalysis from "./pages/BalanceAnalysis";
 // WorkingCapital & Indicators merged into HYPER@LE
 import CompteFinancier from "./pages/CompteFinancier";
 import Voyages from "./pages/Voyages";
+import VoyagesV2Page from "./pages/voyages-v2/VoyagesV2Page";
 import FondsSociaux from "./pages/FondsSociaux";
 import FondsSociauxV2Home from "./pages/fonds-sociaux-v2/FondsSociauxV2Home";
 import ElevesPage from "./pages/fonds-sociaux-v2/ElevesPage";
@@ -78,6 +79,7 @@ const App = () => (
               <Route path="/indicateurs" element={<Navigate to="/hyperale/analyse" replace />} />
               <Route path="/compte-financier" element={<CompteFinancier />} />
               <Route path="/voyages" element={<Voyages />} />
+              <Route path="/voyages-v2" element={<VoyagesV2Page />} />
               <Route path="/fonds-sociaux" element={<FondsSociaux />} />
               <Route path="/fonds-sociaux/v2" element={<FondsSociauxV2Home />} />
               <Route path="/fonds-sociaux/v2/eleves" element={<ElevesPage />} />
