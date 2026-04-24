@@ -132,7 +132,9 @@ export async function loadVoyageContext(
       date_retour: voyage.date_retour || null,
       nombre_nuitees: num(voyage.nombre_nuitees),
       type_projet: voyage.type_projet || undefined,
-      classes_concernees: Array.isArray(voyage.classes_concernees) ? voyage.classes_concernees : [],
+      classes_concernees: Array.isArray(voyage.classes_concernees)
+        ? (voyage.classes_concernees as any[]).map((c) => String(c))
+        : [],
       nb_eleves_prevus: num(voyage.nb_eleves_prevus),
       nb_accompagnateurs_prevus: num(voyage.nb_accompagnateurs_prevus),
       responsable_pedago_nom: voyage.responsable_pedago_nom || FALLBACK,
