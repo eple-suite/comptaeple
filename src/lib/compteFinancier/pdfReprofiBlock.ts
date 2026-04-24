@@ -1,13 +1,13 @@
 // =====================================================================
-// Bloc PDF — Indicateurs REPROFI 4.6 + Réserves (M9-6)
+// Bloc PDF — Diagnostic Financier EPLE (10 indicateurs + Réserves M9-6)
 // ---------------------------------------------------------------------
 // Bloc réutilisable pour jsPDF, intégrable dans :
 //   • le rapport de l'agent comptable (paysage A4)
 //   • le document joint à la convocation du CA (portrait A4)
 //
 // Rendu : grille des 10 indicateurs + bandeau Réserves + verdict synthèse,
-//         tout en respectant les couleurs REPROFI (critique/fragile/normal/
-//         confortable/excellent).
+//         couleurs réglementaires (critique → excellent) conformes aux
+//         pratiques M9-6 d'analyse financière des EPLE.
 // =====================================================================
 
 import type jsPDF from 'jspdf';
@@ -94,7 +94,7 @@ export function dessinerBlocReprofi(
   const ph = doc.internal.pageSize.getHeight();
   const margin = opts.margin ?? 14;
   const width = opts.width ?? pw - 2 * margin;
-  const titre = opts.titre ?? 'Diagnostic REPROFI 4.6 — 10 indicateurs reglementaires';
+  const titre = opts.titre ?? 'Diagnostic Financier EPLE - 10 indicateurs reglementaires';
   let y = startY;
 
   // Saut de page si trop bas
@@ -254,11 +254,11 @@ export function ajouterPageReprofi(
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
-  doc.text(sanitize('DIAGNOSTIC REPROFI 4.6 - INDICATEURS REGLEMENTAIRES'), pw / 2, 8, { align: 'center' });
+  doc.text(sanitize('DIAGNOSTIC FINANCIER EPLE - 10 INDICATEURS REGLEMENTAIRES'), pw / 2, 8, { align: 'center' });
 
   dessinerBlocReprofi(doc, 18, panier, {
     inclureReserves: true,
     ...opts,
-    titre: opts.titre ?? '10 indicateurs additionnels (REPROFI 4.6) + Reserves (M9-6 art. 43231)',
+    titre: opts.titre ?? '10 indicateurs reglementaires + Reserves (M9-6 art. 43231)',
   });
 }
