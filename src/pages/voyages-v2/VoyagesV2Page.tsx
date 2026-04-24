@@ -3,6 +3,7 @@
 // Non destructif : /voyages (v1) reste intact.
 // ════════════════════════════════════════════════════════════════
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +16,7 @@ import {
   Calendar,
   Bug,
   FileText,
+  ClipboardCheck,
 } from "lucide-react";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { VoyageWizard } from "./wizard/VoyageWizard";
@@ -44,6 +46,7 @@ function dateOffset(j: number): string {
 
 export default function VoyagesV2Page() {
   const { selectedEstablishment } = useEstablishment();
+  const navigate = useNavigate();
   const [wizardOpen, setWizardOpen] = useState(false);
   const [demoAlertes, setDemoAlertes] = useState<AlerteVoyage[] | null>(null);
   const [showDocs, setShowDocs] = useState(false);
@@ -154,6 +157,9 @@ export default function VoyagesV2Page() {
         <div className="flex gap-2">
           <Button onClick={() => setWizardOpen(true)} size="lg">
             <Wand2 className="h-4 w-4 mr-2" /> Lancer le wizard
+          </Button>
+          <Button variant="outline" size="lg" onClick={() => navigate("/voyages-v2/enquetes-rectorat")}>
+            <ClipboardCheck className="h-4 w-4 mr-2" /> Enquêtes rectorat
           </Button>
         </div>
           </div>
