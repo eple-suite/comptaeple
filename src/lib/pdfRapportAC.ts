@@ -1199,6 +1199,9 @@ export function generateRapportACPdf(data: RapportACData) {
         inclureReserves: true,
         titre: `Diagnostic REPROFI 4.6 - Exercice ${etab.exercice}`,
       });
+      // Force la signature sur une page propre apres le diagnostic REPROFI.
+      doc.addPage();
+      ys = 18;
     } catch (e) {
       console.warn('[pdfRapportAC] page REPROFI : fallback', e);
     }
