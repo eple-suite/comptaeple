@@ -667,6 +667,55 @@ export function ImportSection() {
         }
       }
       else if (slot.type === 'bal1') setBalance1(parserBalance(rows, slot.typeBudget), slot.typeBudget);
+
+      // ── Calcul des taux d'exécution réglementaires (M9-6 / GBCP) ──
+      // Affiche immédiatement à l'utilisateur les taux consolidés,
+      // sans attendre l'analyse complète. Sécurisé par try/catch :
+      // un échec ici ne doit pas faire échouer l'import lui-même.
+      try {
+        if (slot.type === 'sde' || slot.type === 'sde1') {
+          const taux = computeTauxDepensesFromRecords(rows);
+          const c = taux.consolide;
+          const fmt = (n: number) => `${n.toFixed(1)} %`;
+          const exerciceLabel = slot.type === 'sde1' ? `${exerciceTravail - 1} (N-1)` : `${exerciceTravail}`;
+          toast.success(`📊 Taux d'exécution dépenses ${exerciceLabel} — ${slot.label}`, {
+            description:
+              `Engagement : ${fmt(c.tauxEngagement)} · ` +
+              `Liquidation : ${fmt(c.tauxLiquidation)} · ` +
+              `Mandatement : ${fmt(c.tauxMandatement)} · ` +
+              `Disponible : ${fmt(c.tauxDisponibilite)} ` +
+              `(OT consolidées : ${c.ot.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €)`,
+            duration: 9000,
+          });
+          // Cohérence OI + DBM = OT
+          const sdeRows = buildSdeRowsFromRecords(rows);
+          const coh = verifierCoherenceOuvertures(sdeRows);
+          if (!coh.ok && coh.ecarts.length > 0) {
+            toast.warning(`⚠️ Cohérence OI + DBM ≠ OT (${coh.ecarts.length} ligne(s))`, {
+              description: `Premier écart : compte ${coh.ecarts[0].compte} → ${coh.ecarts[0].ecart.toFixed(2)} €.`,
+              duration: 10000,
+            });
+          }
+          console.log(`[TAUX-SDE] ${slot.label}`, c, `services:`, taux.parService.length);
+        } else if (slot.type === 'sdr' || slot.type === 'sdr1') {
+          const taux = computeTauxRecettesFromRecords(rows);
+          const c = taux.consolide;
+          const fmt = (n: number) => `${n.toFixed(1)} %`;
+          const exerciceLabel = slot.type === 'sdr1' ? `${exerciceTravail - 1} (N-1)` : `${exerciceTravail}`;
+          toast.success(`📈 Taux d'exécution recettes ${exerciceLabel} — ${slot.label}`, {
+            description:
+              `Exécution recettes : ${fmt(c.tauxExecutionRecettes)} · ` +
+              `Recouvrement : ${fmt(c.tauxRecouvrement)} ` +
+              `(PT consolidées : ${c.pt.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} € · ` +
+              `Reste à recouvrer : ${c.resteARecouvrer.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €)`,
+            duration: 9000,
+          });
+          console.log(`[TAUX-SDR] ${slot.label}`, c, `services:`, taux.parService.length);
+        }
+      } catch (tauxErr) {
+        console.warn('[TAUX] Calcul des taux indisponible :', tauxErr);
+      }
+
       logImport({ fileName, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: 'success', fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
     } catch (err: any) {
       setErrors(prev => ({ ...prev, [slot.key]: err.message || 'Erreur de parsing' }));
