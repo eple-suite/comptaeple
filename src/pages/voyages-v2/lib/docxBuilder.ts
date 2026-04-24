@@ -24,7 +24,7 @@ import {
 
 const FONT = "Arial";
 
-function p(text: string, opts: { bold?: boolean; size?: number; align?: AlignmentType; italics?: boolean } = {}) {
+function p(text: string, opts: { bold?: boolean; size?: number; align?: (typeof AlignmentType)[keyof typeof AlignmentType]; italics?: boolean } = {}) {
   return new Paragraph({
     alignment: opts.align,
     children: [
@@ -59,7 +59,7 @@ function spacer() {
   return new Paragraph({ children: [new TextRun({ text: "", font: FONT })] });
 }
 
-function cell(text: string, opts: { bold?: boolean; width: number; bg?: string; align?: AlignmentType } = { width: 2000 }) {
+function cell(text: string, opts: { bold?: boolean; width: number; bg?: string; align?: (typeof AlignmentType)[keyof typeof AlignmentType] } = { width: 2000 }) {
   return new TableCell({
     width: { size: opts.width, type: WidthType.DXA },
     shading: opts.bg ? { fill: opts.bg, type: ShadingType.CLEAR, color: "auto" } : undefined,
