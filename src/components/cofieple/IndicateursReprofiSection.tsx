@@ -285,12 +285,12 @@ export function IndicateursReprofiSection() {
           <div className="min-w-0">
             <h2 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-primary" />
-              Indicateurs REPROFI 4.6
+              Diagnostic Financier EPLE — 10 indicateurs réglementaires
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              10 indicateurs additionnels à la triade FR / BFR / TN — calculés à partir de la balance et de la CAF
+              Analyse exhaustive en complément du triptyque FR / BFR / Trésorerie — calculée à partir de la balance générale et de la CAF
               ({new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(caf)}).
-              Source : REPROFI 4.6, M9-6 tome 4 art. 43231, pièce 14 du compte financier.
+              Sources réglementaires : Instruction M9-6 (tomes 3 & 4, art. 43231) et pièce 14 du compte financier.
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">
