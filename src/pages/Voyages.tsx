@@ -31,7 +31,6 @@ import { VoyageActesCATab } from "./voyages/VoyageActesCATab";
 import { VoyageSubventionsTab } from "./voyages/VoyageSubventionsTab";
 import { VoyageParticipantsTab } from "./voyages/VoyageParticipantsTab";
 import { VoyageRecettesTab } from "./voyages/VoyageRecettesTab";
-import { VoyageTemplatesTab } from "./voyages/VoyageTemplatesTab";
 import { VoyageEncaissementsTab } from "./voyages/VoyageEncaissementsTab";
 import { VoyageCreancesTab } from "./voyages/VoyageCreancesTab";
 import { VoyageImportSiecleTab } from "./voyages/VoyageImportSiecleTab";
@@ -210,7 +209,6 @@ const Voyages = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="w-full justify-start flex-wrap">
           <TabsTrigger value="tableau-bord">📊 Tableau de bord</TabsTrigger>
-          <TabsTrigger value="templates">📁 Modèles</TabsTrigger>
           <TabsTrigger value="marches-publics" className="relative">
             ⚖️ Marchés publics
             {alertesCount > 0 && (
@@ -452,65 +450,7 @@ const Voyages = () => {
         </TabsContent>
 
         {/* TAB: Modèles */}
-        <TabsContent value="templates">
-          <VoyageTemplatesTab
-            voyages={voyages}
-            onCreateFromTemplate={(tpl) => {
-              const newVoyage: Voyage = {
-                id: `v-${Date.now()}`,
-                destination: tpl.destination,
-                pays: tpl.pays,
-                dateDepart: "",
-                dateRetour: "",
-                nbEleves: tpl.nb_eleves,
-                nbAccompagnateurs: tpl.nb_accompagnateurs,
-                budgetTotal: tpl.transport + tpl.hebergement + tpl.restauration + tpl.activites + tpl.assurance + tpl.divers,
-                participationFamilles: tpl.participation_familles,
-                subventions: tpl.subvention_collectivite + tpl.subvention_etat + tpl.subvention_autre,
-                chargeEtablissement: 0,
-                statut: "projet",
-                transport: tpl.transport,
-                hebergement: tpl.hebergement,
-                restauration: tpl.restauration,
-                activites: tpl.activites,
-                assurance: tpl.assurance,
-                divers: tpl.divers,
-                professeur: "",
-                classe: tpl.classe,
-                objectifPedagogique: tpl.objectif_pedagogique,
-                subventionCollectivite: tpl.subvention_collectivite,
-                subventionEtat: tpl.subvention_etat,
-                subventionAutre: tpl.subvention_autre,
-                autofinancement: tpl.autofinancement,
-                eleves: [],
-                accompagnateurs: [],
-                dateVoteCA: "",
-                dateLimiteInscription: "",
-                echeances: [],
-                observations: `Créé depuis le modèle « ${tpl.nom} »`,
-                actesCA: [],
-                conventions: [],
-                subventionsDetail: [],
-                checklist: [],
-                devis: [],
-                lieuDepart: "",
-                horairesDepart: "",
-                horairesRetour: "",
-                moyenTransport: "",
-                typeHebergement: "",
-                contactUrgence: "",
-                telUrgence: "",
-                transportType: (tpl.transport_type as any) || "bus",
-                typeVoyage: (tpl.type_voyage as any) || "pedagogique",
-                intitule: tpl.nom,
-                codeActiviteGFC: tpl.code_activite_gfc,
-              };
-              setVoyages(prev => [...prev, newVoyage]);
-              setActiveTab("tableau-bord");
-              toast.success(`Voyage créé depuis le modèle « ${tpl.nom} »`);
-            }}
-          />
-        </TabsContent>
+        {/* Onglet « Modèles » retiré (chantier 0) — voir bibliothèque /voyages/documents */}
 
         {/* TAB: Marchés publics */}
         <TabsContent value="marches-publics">

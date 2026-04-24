@@ -2042,6 +2042,619 @@ export type Database = {
           },
         ]
       }
+      vs_accompagnateurs: {
+        Row: {
+          created_at: string
+          discipline: string | null
+          email: string | null
+          fonction: string
+          id: string
+          montant_prise_charge: number
+          nom: string
+          ordre_mission_url: string | null
+          prenom: string
+          telephone: string | null
+          voyage_id: string
+        }
+        Insert: {
+          created_at?: string
+          discipline?: string | null
+          email?: string | null
+          fonction?: string
+          id?: string
+          montant_prise_charge?: number
+          nom: string
+          ordre_mission_url?: string | null
+          prenom: string
+          telephone?: string | null
+          voyage_id: string
+        }
+        Update: {
+          created_at?: string
+          discipline?: string | null
+          email?: string | null
+          fonction?: string
+          id?: string
+          montant_prise_charge?: number
+          nom?: string
+          ordre_mission_url?: string | null
+          prenom?: string
+          telephone?: string | null
+          voyage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vs_accompagnateurs_voyage_id_fkey"
+            columns: ["voyage_id"]
+            isOneToOne: false
+            referencedRelation: "vs_voyages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vs_alertes: {
+        Row: {
+          code: string
+          contexte: Json
+          created_at: string
+          id: string
+          message: string
+          niveau: string
+          resolue: boolean
+          resolue_at: string | null
+          voyage_id: string
+        }
+        Insert: {
+          code: string
+          contexte?: Json
+          created_at?: string
+          id?: string
+          message: string
+          niveau?: string
+          resolue?: boolean
+          resolue_at?: string | null
+          voyage_id: string
+        }
+        Update: {
+          code?: string
+          contexte?: Json
+          created_at?: string
+          id?: string
+          message?: string
+          niveau?: string
+          resolue?: boolean
+          resolue_at?: string | null
+          voyage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vs_alertes_voyage_id_fkey"
+            columns: ["voyage_id"]
+            isOneToOne: false
+            referencedRelation: "vs_voyages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vs_bilans: {
+        Row: {
+          bilan_pedagogique: string
+          cloture: boolean
+          created_at: string
+          date_ca_bilan: string | null
+          depenses_realisees: number
+          id: string
+          modalite_traitement: string | null
+          nb_accomp_presents: number
+          nb_eleves_partis: number
+          numero_acte_ca_bilan: string | null
+          pv_url: string | null
+          recettes_realisees: number
+          reliquat_par_famille: number
+          resultat: number
+          updated_at: string
+          version: number
+          voyage_id: string
+        }
+        Insert: {
+          bilan_pedagogique?: string
+          cloture?: boolean
+          created_at?: string
+          date_ca_bilan?: string | null
+          depenses_realisees?: number
+          id?: string
+          modalite_traitement?: string | null
+          nb_accomp_presents?: number
+          nb_eleves_partis?: number
+          numero_acte_ca_bilan?: string | null
+          pv_url?: string | null
+          recettes_realisees?: number
+          reliquat_par_famille?: number
+          resultat?: number
+          updated_at?: string
+          version?: number
+          voyage_id: string
+        }
+        Update: {
+          bilan_pedagogique?: string
+          cloture?: boolean
+          created_at?: string
+          date_ca_bilan?: string | null
+          depenses_realisees?: number
+          id?: string
+          modalite_traitement?: string | null
+          nb_accomp_presents?: number
+          nb_eleves_partis?: number
+          numero_acte_ca_bilan?: string | null
+          pv_url?: string | null
+          recettes_realisees?: number
+          reliquat_par_famille?: number
+          resultat?: number
+          updated_at?: string
+          version?: number
+          voyage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vs_bilans_voyage_id_fkey"
+            columns: ["voyage_id"]
+            isOneToOne: false
+            referencedRelation: "vs_voyages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vs_depenses: {
+        Row: {
+          bon_commande: string | null
+          compte_charge: string
+          created_at: string
+          devis_url: string | null
+          est_accompagnateur: boolean
+          facture_url: string | null
+          fournisseur: string
+          id: string
+          libelle: string
+          montant_ht: number
+          montant_ttc: number
+          poste: string
+          service_fait_date: string | null
+          statut_paiement: string
+          taux_tva: number
+          voyage_id: string
+        }
+        Insert: {
+          bon_commande?: string | null
+          compte_charge?: string
+          created_at?: string
+          devis_url?: string | null
+          est_accompagnateur?: boolean
+          facture_url?: string | null
+          fournisseur?: string
+          id?: string
+          libelle: string
+          montant_ht?: number
+          montant_ttc?: number
+          poste?: string
+          service_fait_date?: string | null
+          statut_paiement?: string
+          taux_tva?: number
+          voyage_id: string
+        }
+        Update: {
+          bon_commande?: string | null
+          compte_charge?: string
+          created_at?: string
+          devis_url?: string | null
+          est_accompagnateur?: boolean
+          facture_url?: string | null
+          fournisseur?: string
+          id?: string
+          libelle?: string
+          montant_ht?: number
+          montant_ttc?: number
+          poste?: string
+          service_fait_date?: string | null
+          statut_paiement?: string
+          taux_tva?: number
+          voyage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vs_depenses_voyage_id_fkey"
+            columns: ["voyage_id"]
+            isOneToOne: false
+            referencedRelation: "vs_voyages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vs_documents_generes: {
+        Row: {
+          docx_url: string | null
+          generated_at: string
+          generated_by: string | null
+          id: string
+          libelle: string
+          metadonnees: Json
+          pdf_url: string | null
+          type_document: string
+          voyage_id: string
+        }
+        Insert: {
+          docx_url?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          libelle: string
+          metadonnees?: Json
+          pdf_url?: string | null
+          type_document: string
+          voyage_id: string
+        }
+        Update: {
+          docx_url?: string | null
+          generated_at?: string
+          generated_by?: string | null
+          id?: string
+          libelle?: string
+          metadonnees?: Json
+          pdf_url?: string | null
+          type_document?: string
+          voyage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vs_documents_generes_voyage_id_fkey"
+            columns: ["voyage_id"]
+            isOneToOne: false
+            referencedRelation: "vs_voyages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vs_jalons: {
+        Row: {
+          created_at: string
+          date_prevue: string | null
+          date_realisee: string | null
+          id: string
+          jours_avant_depart: number
+          libelle: string
+          observations: string
+          ordre: number
+          responsable: string
+          statut: string
+          voyage_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_prevue?: string | null
+          date_realisee?: string | null
+          id?: string
+          jours_avant_depart?: number
+          libelle: string
+          observations?: string
+          ordre?: number
+          responsable?: string
+          statut?: string
+          voyage_id: string
+        }
+        Update: {
+          created_at?: string
+          date_prevue?: string | null
+          date_realisee?: string | null
+          id?: string
+          jours_avant_depart?: number
+          libelle?: string
+          observations?: string
+          ordre?: number
+          responsable?: string
+          statut?: string
+          voyage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vs_jalons_voyage_id_fkey"
+            columns: ["voyage_id"]
+            isOneToOne: false
+            referencedRelation: "vs_voyages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vs_participants: {
+        Row: {
+          aide_fse: number
+          bourse_deduite: number
+          boursier: boolean
+          classe: string
+          created_at: string
+          date_naissance: string | null
+          date_paiement: string | null
+          echelon_bourse: number | null
+          fonds_social: number
+          id: string
+          ine: string | null
+          mef: string | null
+          mode_paiement: string | null
+          nom: string
+          numero_interne: string | null
+          participation_reelle: number
+          participation_theorique: number
+          prenom: string
+          quittance_ref: string | null
+          regime: string | null
+          responsables: Json
+          reste_a_payer: number
+          sexe: string | null
+          statut_inscription: string
+          updated_at: string
+          voyage_id: string
+        }
+        Insert: {
+          aide_fse?: number
+          bourse_deduite?: number
+          boursier?: boolean
+          classe?: string
+          created_at?: string
+          date_naissance?: string | null
+          date_paiement?: string | null
+          echelon_bourse?: number | null
+          fonds_social?: number
+          id?: string
+          ine?: string | null
+          mef?: string | null
+          mode_paiement?: string | null
+          nom: string
+          numero_interne?: string | null
+          participation_reelle?: number
+          participation_theorique?: number
+          prenom: string
+          quittance_ref?: string | null
+          regime?: string | null
+          responsables?: Json
+          reste_a_payer?: number
+          sexe?: string | null
+          statut_inscription?: string
+          updated_at?: string
+          voyage_id: string
+        }
+        Update: {
+          aide_fse?: number
+          bourse_deduite?: number
+          boursier?: boolean
+          classe?: string
+          created_at?: string
+          date_naissance?: string | null
+          date_paiement?: string | null
+          echelon_bourse?: number | null
+          fonds_social?: number
+          id?: string
+          ine?: string | null
+          mef?: string | null
+          mode_paiement?: string | null
+          nom?: string
+          numero_interne?: string | null
+          participation_reelle?: number
+          participation_theorique?: number
+          prenom?: string
+          quittance_ref?: string | null
+          regime?: string | null
+          responsables?: Json
+          reste_a_payer?: number
+          sexe?: string | null
+          statut_inscription?: string
+          updated_at?: string
+          voyage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vs_participants_voyage_id_fkey"
+            columns: ["voyage_id"]
+            isOneToOne: false
+            referencedRelation: "vs_voyages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vs_recettes: {
+        Row: {
+          created_at: string
+          id: string
+          imputation_compte: string
+          libelle: string
+          montant: number
+          nature: string
+          observations: string
+          pj_url: string | null
+          statut_encaissement: string
+          statut_financeur: string
+          titre_recette_num: string | null
+          voyage_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          imputation_compte?: string
+          libelle: string
+          montant?: number
+          nature?: string
+          observations?: string
+          pj_url?: string | null
+          statut_encaissement?: string
+          statut_financeur?: string
+          titre_recette_num?: string | null
+          voyage_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          imputation_compte?: string
+          libelle?: string
+          montant?: number
+          nature?: string
+          observations?: string
+          pj_url?: string | null
+          statut_encaissement?: string
+          statut_financeur?: string
+          titre_recette_num?: string | null
+          voyage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vs_recettes_voyage_id_fkey"
+            columns: ["voyage_id"]
+            isOneToOne: false
+            referencedRelation: "vs_voyages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vs_voyages: {
+        Row: {
+          agence_garantie: string | null
+          agence_nom: string | null
+          agence_siret: string | null
+          caf_dispositif: string | null
+          caractere: string
+          classes_concernees: Json
+          conditions_annulation: Json
+          created_at: string
+          date_ca_autorisation: string | null
+          date_depart: string | null
+          date_retour: string | null
+          destination_pays: string
+          destination_ville: string
+          devise: string
+          erasmus_avance_recue: number
+          erasmus_convention_ref: string | null
+          erasmus_periode_debut: string | null
+          erasmus_periode_fin: string | null
+          erasmus_subvention_notifiee: number
+          erasmus_taux_cofi: number
+          erasmus_type: string | null
+          establishment_id: string
+          id: string
+          libelle: string
+          lien_projet_etablissement: string
+          montant_total_ht: number
+          montant_total_ttc: number
+          nb_accompagnateurs_prevus: number
+          nb_eleves_prevus: number
+          nombre_nuitees: number
+          numero_acte_ca: string | null
+          rattachement_adage: boolean
+          reference_interne: string
+          regie_avances_id: string | null
+          regie_recettes_id: string | null
+          responsable_pedago_id: string | null
+          responsable_pedago_nom: string
+          statut: string
+          tags_pedago: Json
+          type_projet: string
+          type_sortie: string
+          updated_at: string
+          user_id: string
+          wizard_completed: boolean
+          wizard_step: number
+        }
+        Insert: {
+          agence_garantie?: string | null
+          agence_nom?: string | null
+          agence_siret?: string | null
+          caf_dispositif?: string | null
+          caractere?: string
+          classes_concernees?: Json
+          conditions_annulation?: Json
+          created_at?: string
+          date_ca_autorisation?: string | null
+          date_depart?: string | null
+          date_retour?: string | null
+          destination_pays?: string
+          destination_ville?: string
+          devise?: string
+          erasmus_avance_recue?: number
+          erasmus_convention_ref?: string | null
+          erasmus_periode_debut?: string | null
+          erasmus_periode_fin?: string | null
+          erasmus_subvention_notifiee?: number
+          erasmus_taux_cofi?: number
+          erasmus_type?: string | null
+          establishment_id: string
+          id?: string
+          libelle: string
+          lien_projet_etablissement?: string
+          montant_total_ht?: number
+          montant_total_ttc?: number
+          nb_accompagnateurs_prevus?: number
+          nb_eleves_prevus?: number
+          nombre_nuitees?: number
+          numero_acte_ca?: string | null
+          rattachement_adage?: boolean
+          reference_interne?: string
+          regie_avances_id?: string | null
+          regie_recettes_id?: string | null
+          responsable_pedago_id?: string | null
+          responsable_pedago_nom?: string
+          statut?: string
+          tags_pedago?: Json
+          type_projet?: string
+          type_sortie?: string
+          updated_at?: string
+          user_id: string
+          wizard_completed?: boolean
+          wizard_step?: number
+        }
+        Update: {
+          agence_garantie?: string | null
+          agence_nom?: string | null
+          agence_siret?: string | null
+          caf_dispositif?: string | null
+          caractere?: string
+          classes_concernees?: Json
+          conditions_annulation?: Json
+          created_at?: string
+          date_ca_autorisation?: string | null
+          date_depart?: string | null
+          date_retour?: string | null
+          destination_pays?: string
+          destination_ville?: string
+          devise?: string
+          erasmus_avance_recue?: number
+          erasmus_convention_ref?: string | null
+          erasmus_periode_debut?: string | null
+          erasmus_periode_fin?: string | null
+          erasmus_subvention_notifiee?: number
+          erasmus_taux_cofi?: number
+          erasmus_type?: string | null
+          establishment_id?: string
+          id?: string
+          libelle?: string
+          lien_projet_etablissement?: string
+          montant_total_ht?: number
+          montant_total_ttc?: number
+          nb_accompagnateurs_prevus?: number
+          nb_eleves_prevus?: number
+          nombre_nuitees?: number
+          numero_acte_ca?: string | null
+          rattachement_adage?: boolean
+          reference_interne?: string
+          regie_avances_id?: string | null
+          regie_recettes_id?: string | null
+          responsable_pedago_id?: string | null
+          responsable_pedago_nom?: string
+          statut?: string
+          tags_pedago?: Json
+          type_projet?: string
+          type_sortie?: string
+          updated_at?: string
+          user_id?: string
+          wizard_completed?: boolean
+          wizard_step?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       v_enquete_q10: {
