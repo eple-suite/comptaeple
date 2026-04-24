@@ -75,3 +75,66 @@ et 2025-1383), Loi de finances 66-948 art. 21, Règlement UE 2021/817
 - **Règle accompagnateurs** : prévoir blocage à l'étape 3 du wizard si une
   ligne de dépense `poste='accompagnateurs'` n'est pas couverte par une
   recette explicite hors `nature='famille'`.
+
+## Lot 2 — livré (chantier 2 : Wizard Voyage v2)
+
+### Architecture
+- **Hook `useVoyageDraft`** + fonction `saveVoyage` (`src/pages/voyages-v2/hooks/useVoyageV2.ts`)
+  - draft local + persistance Supabase à chaque étape (UPSERT sur `vs_voyages`)
+  - remplacement intégral des collections `vs_recettes` et `vs_depenses` (delete+insert)
+  - validation défensive : `Number(...) || 0`, `?? null`, fallback `autoReference()`
+- **Hook `useVoyagesList`** : chargement par établissement, cache local, `refresh()`.
+
+### Moteur financier (`lib/financialEngine.ts`)
+- `snapshotVoyage(voyage, recettes, dépenses)` → `BudgetSnapshot` :
+  totalRecettes, recettes sécurisées (statut = notifiée), dépenses HT/TTC, solde,
+  part familles / subventions, coût/élève, participation/élève, point mort élèves,
+  équilibre (excédent/équilibré/déficit), liste d'alertes typées.
+- 5 alertes natives : `BUDGET_DEFICIT`, `RECETTES_NON_SECURISEES`, `FAMILLES_DOMINANT`
+  (>80%), `EFFECTIF_INCONNU`, `TICKET_FAMILLE_ELEVE` (>800€).
+- Helpers : `compteSuggereDepense`, `compteSuggereRecette` (mapping M9-6 fallback safe).
+
+### Wizard 8 étapes (`wizard/VoyageWizard.tsx` + `wizard/steps.tsx`)
+1. **Identification** — libellé, destination, responsable pédago, lien projet établissement,
+   ADAGE, caractère obligatoire/facultatif (avec rappel loi 66-948 art. 21 si obligatoire).
+2. **Type de projet** — 4 cartes : clé en main / prestataires séparés / Erasmus+ porteur /
+   Erasmus+ partenaire ; bloc agence (SIRET, garantie Atout France) ou bloc Erasmus+
+   (convention, subvention notifiée, avance) selon le choix.
+3. **Dates & effectifs** — calcul auto des nuitées, validation date retour ≥ départ,
+   contrôle taux d'encadrement temps réel (alerte si < 1/12, MENE2407159C).
+4. **Recettes** — tableau dynamique, suggestion automatique du compte M9-6 selon nature,
+   badge couleur statut financeur, total temps réel.
+5. **Dépenses** — tableau dynamique, calcul TTC = HT × (1+TVA/100) auto, mapping
+   compte de charge automatique (transport→C/6245, hébergement→C/6258, etc.).
+6. **Accompagnateurs** — visualisation taux d'encadrement vs cible 1/12, rappel
+   règle d'or « frais accompagnateurs à la charge de l'EPLE ».
+7. **Validation CA** — date délibération, n° d'acte, statut (projet / autorisé / en cours).
+8. **Récapitulatif** — 4 KPI cards (recettes, dépenses, solde, coût/élève) + identité
+   du voyage + toutes les alertes du moteur financier.
+
+### Persistance par étape
+- Sauvegarde à chaque clic « Suivant » (champ `wizard_step` mis à jour).
+- Bouton « Sauvegarder le brouillon » à toute étape (sortie sans perte).
+- Validation bloquante par étape (`validateStep`) avec message ciblé.
+- Stepper cliquable pour revenir aux étapes complétées.
+
+### Sécurité (fallbacks anti-blocage)
+- `saveVoyage` : try/catch global, toast d'erreur propre, retour `null` si échec.
+- Toutes les conversions numériques wrappées : `Number(x) || 0`.
+- `nb_eleves_prevus = 0` → coût/élève = 0 (pas de NaN).
+- Effectif manquant déclenche alerte `EFFECTIF_INCONNU` (info, pas blocant).
+- Date retour < départ → `computeNuitees` renvoie 0 et validateStep bloque.
+- Recettes/dépenses sans libellé filtrées avant insert (préserve l'intégrité DB).
+
+### Vérification
+- `npx tsc --noEmit` : 0 erreur.
+- Aucun import cassé, le wizard est isolé sous `voyages-v2/`, n'interfère pas
+  avec le module legacy `Voyages.tsx`.
+
+### Points de vigilance pour les tests
+- Le wizard n'est pas encore branché dans une route — l'écran liste/dashboard
+  arrive en chantier 2bis (relance « continue voyages chantier 3 »).
+- Les recettes/dépenses sont remplacées intégralement à chaque sauvegarde
+  (acceptable en mode wizard ; en mode édition fine, prévoir un PATCH ligne à ligne).
+- Le champ `note_accomp` est stocké en local seulement (pas encore en colonne DB) —
+  à promouvoir dans `vs_voyages` au chantier 3 si requis.
