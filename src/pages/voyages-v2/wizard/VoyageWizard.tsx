@@ -28,6 +28,7 @@ import { snapshotVoyage } from "../lib/financialEngine";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { ShieldAlert, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { logRegle8Event, getEtablissementUai } from "../lib/voyageLogs";
 
 const STEPS = [
   { n: 1, key: "identification", label: "Identification" },
@@ -59,10 +60,16 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
   const [voyageId, setVoyageId] = useState<string | undefined>(initial?.id);
   const [userId, setUserId] = useState<string | null>(null);
   const [donTaciteAccepte, setDonTaciteAccepte] = useState(false);
+  const [uai, setUai] = useState<string | null>(null);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data?.user?.id || null));
   }, []);
+
+  // Récupère l'UAI de l'établissement (utilisé pour la traçabilité logs)
+  useEffect(() => {
+    getEtablissementUai(establishmentId).then(setUai);
+  }, [establishmentId]);
 
   // Reset à l'ouverture
   useEffect(() => {
@@ -144,6 +151,23 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
 
   const handleFinish = async () => {
     if (regle8.bloquant) {
+      // Journalisation de la tentative de finalisation bloquée
+      if (userId) {
+        void logRegle8Event({
+          action: "voyage_regle8_bloquant",
+          user_id: userId,
+          uai,
+          voyage_id: voyageId ?? null,
+          voyage_libelle: draft.libelle || undefined,
+          reste_a_charge_par_eleve: regle8.resteAChargeParEleve,
+          cout_par_eleve: regle8.coutParEleve,
+          participation_par_eleve: regle8.participationFamilleParEleve,
+          nb_eleves: Number(draft.nb_eleves_prevus) || 0,
+          step,
+          contexte: "tentative_finalisation",
+          reference_legale: regle8.reference,
+        });
+      }
       toast.error("Règle des 8 € non respectée — voyage non enregistrable.", {
         description: regle8.recommandation,
       });
@@ -153,6 +177,27 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
     if (id) {
       onSaved?.(id);
       onOpenChange(false);
+    }
+  };
+
+  // Handler du toggle "don tacite assumé" : log à chaque changement
+  const handleToggleDonTacite = (v: boolean) => {
+    setDonTaciteAccepte(v);
+    if (userId) {
+      void logRegle8Event({
+        action: v ? "voyage_regle8_don_tacite_assume" : "voyage_regle8_don_tacite_retire",
+        user_id: userId,
+        uai,
+        voyage_id: voyageId ?? null,
+        voyage_libelle: draft.libelle || undefined,
+        reste_a_charge_par_eleve: regle8.resteAChargeParEleve,
+        cout_par_eleve: regle8.coutParEleve,
+        participation_par_eleve: regle8.participationFamilleParEleve,
+        nb_eleves: Number(draft.nb_eleves_prevus) || 0,
+        step,
+        contexte: "toggle_checkbox",
+        reference_legale: regle8.reference,
+      });
     }
   };
 
@@ -210,7 +255,7 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
           <Regle8Banner
             result={regle8}
             donTaciteAccepte={donTaciteAccepte}
-            onToggleDon={setDonTaciteAccepte}
+            onToggleDon={handleToggleDonTacite}
           />
         )}
 
