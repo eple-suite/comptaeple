@@ -1188,6 +1188,23 @@ export function generateRapportACPdf(data: RapportACData) {
   }
 
   // ════════════════════════════════════════════════════════════
+  // PAGE DEDIEE — DIAGNOSTIC REPROFI 4.6 (10 indicateurs + reserves)
+  // ════════════════════════════════════════════════════════════
+  if (data.panierReprofi) {
+    try {
+      ajouterPageReprofi(doc, data.panierReprofi, {
+        margin,
+        width: contentWidth,
+        synthese: data.syntheseCommentaires,
+        inclureReserves: true,
+        titre: `Diagnostic REPROFI 4.6 - Exercice ${etab.exercice}`,
+      });
+    } catch (e) {
+      console.warn('[pdfRapportAC] page REPROFI : fallback', e);
+    }
+  }
+
+  // ════════════════════════════════════════════════════════════
   // SIGNATURE
   // ════════════════════════════════════════════════════════════
   ys = checkNewPage(ys, 45);
