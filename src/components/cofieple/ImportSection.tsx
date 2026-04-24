@@ -303,6 +303,41 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
     }
   }
 
+  // ── Fast path SDE/SDR : sélecteur canonique « Donnees » (Chantier 1) ──
+  // Rejette automatiquement les onglets TCD (« Situation… ») et choisit
+  // l'onglet brut Op@le. Si la sélection est concluante, on convertit la
+  // matrice en rows clé/valeur compatibles avec le parser CSV existant.
+  if (expectedType === 'sde' || expectedType === 'sdr') {
+    const selection = selectOpaleSdeSdrSheet(wb, expectedType);
+    if (selection) {
+      const headerRow = selection.matrix[selection.headerRowIndex] ?? [];
+      const headers = headerRow.map((c, i) => {
+        const v = String(c ?? '').trim();
+        return v || `__empty_${i}`;
+      });
+      const dataRows: Record<string, string>[] = [];
+      for (let i = selection.headerRowIndex + 1; i < selection.matrix.length; i += 1) {
+        const r = selection.matrix[i] ?? [];
+        const obj: Record<string, string> = {};
+        let hasContent = false;
+        for (let c = 0; c < headers.length; c += 1) {
+          const v = r[c] == null ? '' : String(r[c]);
+          obj[headers[c]] = v;
+          if (v.trim()) hasContent = true;
+        }
+        if (hasContent) dataRows.push(obj);
+      }
+      if (dataRows.length > 0) {
+        console.log(
+          `[IMPORT-CANONIQUE] ${expectedType.toUpperCase()} → onglet « ${selection.sheetName} » ` +
+          `(score ${selection.score}, ligne d'en-tête ${selection.headerRowIndex + 1}, ${dataRows.length} lignes)`
+        );
+        return { rows: normalizeRowsForOpaleImport(dataRows), title: title || selection.sheetName, meta };
+      }
+    }
+    // sinon → fallback sur la logique de scoring historique ci-dessous
+  }
+
   let bestRows: Record<string, string>[] = [];
   let bestScore = -Infinity;
 
