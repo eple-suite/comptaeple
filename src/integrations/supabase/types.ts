@@ -2313,6 +2313,54 @@ export type Database = {
           },
         ]
       }
+      vs_enquetes_rectorat: {
+        Row: {
+          annee_scolaire: string
+          commentaires_rectorat: string
+          created_at: string
+          date_soumission: string | null
+          date_validation: string | null
+          donnees: Json
+          establishment_id: string
+          id: string
+          periode: string
+          soumis_par_user_id: string | null
+          statut: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annee_scolaire?: string
+          commentaires_rectorat?: string
+          created_at?: string
+          date_soumission?: string | null
+          date_validation?: string | null
+          donnees?: Json
+          establishment_id: string
+          id?: string
+          periode?: string
+          soumis_par_user_id?: string | null
+          statut?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annee_scolaire?: string
+          commentaires_rectorat?: string
+          created_at?: string
+          date_soumission?: string | null
+          date_validation?: string | null
+          donnees?: Json
+          establishment_id?: string
+          id?: string
+          periode?: string
+          soumis_par_user_id?: string | null
+          statut?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       vs_jalons: {
         Row: {
           created_at: string
