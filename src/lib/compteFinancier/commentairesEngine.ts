@@ -115,7 +115,7 @@ export interface SyntheseCommentaires {
   resultat: string;
   /** Paragraphe 2 — Bilan, FR, BFR, Trésorerie. */
   bilan: string;
-  /** Paragraphe 3 — Diagnostic REPROFI (synthèse des 10 indicateurs). */
+  /** Paragraphe 3 — Diagnostic Financier (synthèse des 10 indicateurs). */
   reprofi: string;
   /** Verdict global concis (1 phrase) destiné au CA. */
   verdict: string;
@@ -126,7 +126,7 @@ function fmtEur(n: number): string {
 }
 
 /**
- * Synthèse rédigée à partir du bilan + des indicateurs REPROFI.
+ * Synthèse rédigée à partir du bilan + des 10 indicateurs réglementaires.
  * Utilisé en fallback ou en complément des observations IA.
  */
 export function synthetiserCommentaires(
@@ -163,27 +163,27 @@ export function synthetiserCommentaires(
     `Les deux méthodes de calcul du FR convergent à ${fmtEur(bilan.fr.ecart)} près` +
     `${bilan.fr.coherent ? ' (cohérence vérifiée)' : ' — un contrôle complémentaire est recommandé'}.`;
 
-  // Paragraphe 3 — Diagnostic REPROFI
+  // Paragraphe 3 — Diagnostic Financier (synthèse 10 indicateurs)
   let synthReprofi: string;
   if (nbCritique === 0 && nbFragile === 0) {
-    synthReprofi = `Le diagnostic REPROFI 4.6 est entièrement favorable : aucun indicateur n'est en alerte, et ${nbExcellent} indicateur(s) sont au niveau excellent.`;
+    synthReprofi = `Le diagnostic financier est entièrement favorable : aucun indicateur n'est en alerte, et ${nbExcellent} indicateur(s) sont au niveau excellent.`;
   } else if (nbCritique === 0) {
-    synthReprofi = `Le diagnostic REPROFI 4.6 fait apparaître ${nbFragile} indicateur(s) en vigilance, sans alerte critique. Une surveillance ciblée est recommandée.`;
+    synthReprofi = `Le diagnostic financier fait apparaître ${nbFragile} indicateur(s) en vigilance, sans alerte critique. Une surveillance ciblée est recommandée.`;
   } else {
     const codesCrit = panier.indicateurs.filter(i => i.niveau === 'critique').map(i => i.code).join(', ');
-    synthReprofi = `Le diagnostic REPROFI 4.6 identifie ${nbCritique} indicateur(s) en alerte critique (${codesCrit}) et ${nbFragile} en vigilance. Un plan d'action est requis.`;
+    synthReprofi = `Le diagnostic financier identifie ${nbCritique} indicateur(s) en alerte critique (${codesCrit}) et ${nbFragile} en vigilance. Un plan d'action est requis.`;
   }
 
   // Verdict
   let verdict: string;
   if (nbCritique > 0) {
-    verdict = `⚠️ Situation à risque : ${nbCritique} indicateur(s) REPROFI en alerte critique nécessitent une décision du conseil.`;
+    verdict = `⚠️ Situation à risque : ${nbCritique} indicateur(s) réglementaire(s) en alerte critique nécessitent une décision du conseil.`;
   } else if (nbFragile > 1) {
-    verdict = `🟠 Situation sous vigilance : ${nbFragile} indicateurs REPROFI fragiles ; ajustements à prévoir.`;
+    verdict = `🟠 Situation sous vigilance : ${nbFragile} indicateurs fragiles ; ajustements à prévoir.`;
   } else if (resultat < 0 && caf < 0) {
     verdict = `🟠 Situation déficitaire : résultat et CAF négatifs — examen des leviers d'équilibre nécessaire.`;
   } else {
-    verdict = `🟢 Situation financière saine et conforme aux normes REPROFI 4.6 / M9-6.`;
+    verdict = `🟢 Situation financière saine et conforme à l'instruction M9-6.`;
   }
 
   return { resultat: para1, bilan: para2, reprofi: synthReprofi, verdict };
