@@ -2,7 +2,7 @@
 // Moteur de commentaires automatiques — Compte financier EPLE
 // ---------------------------------------------------------------------
 // Génère des commentaires contextualisés à partir :
-//   • des 10 indicateurs REPROFI 4.6 (niveau + valeur)
+//   • des 10 indicateurs réglementaires (niveau + valeur)
 //   • du bilan financier (FR / BFR / TN / CAF / Réserves)
 //   • des seuils M9-6 tome 4 art. 43231
 //
@@ -22,13 +22,13 @@ import type {
 } from './reprofiIndicateursEngine';
 
 // ---------------------------------------------------------------------
-// 1. Templates par indicateur × niveau (REPROFI 4.6)
+// 1. Templates par indicateur × niveau (M9-6 / pratiques EPLE)
 // ---------------------------------------------------------------------
 
 const TEMPLATES: Record<string, Partial<Record<Niveau, string>>> = {
   NR: {
     excellent: "Le taux de non-recouvrement (<2 %) traduit une excellente discipline de recouvrement et un suivi rigoureux des familles.",
-    normal: "Le taux de non-recouvrement (2-5 %) reste conforme aux usages REPROFI ; aucune alerte particulière à ce stade.",
+    normal: "Le taux de non-recouvrement (2-5 %) reste conforme aux usages EPLE ; aucune alerte particulière à ce stade.",
     fragile: "Le taux de non-recouvrement (5-10 %) appelle un renforcement des relances et une coordination accrue avec l'agent comptable.",
     critique: "Le taux de non-recouvrement dépasse 10 % : un plan d'apurement immédiat (SATD, admissions en non-valeur) doit être engagé.",
   },
