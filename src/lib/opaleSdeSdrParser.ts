@@ -498,3 +498,95 @@ export function verifierCoherenceOuvertures(rows: SdeRow[]): { ok: boolean; ecar
   }
   return { ok: ecarts.length === 0, ecarts };
 }
+
+// ─── Adaptateur pour rows déjà normalisés (clé/valeur) ────────────────
+//
+// Permet de brancher le moteur de taux sur l'import existant
+// (ImportSection) sans avoir besoin de retraiter le workbook XLSX.
+// Les rows passés ici proviennent de Papa.parse / sheet_to_json après
+// normalizeRowsForOpaleImport — leurs clés sont les en-têtes Op@le.
+
+function pickField(row: Record<string, unknown>, normHeaders: string[], aliasKey: keyof typeof HEADER_ALIASES): number {
+  const idx = findHeaderIndex(normHeaders, aliasKey);
+  if (idx === -1) return 0;
+  const key = Object.keys(row)[idx];
+  if (!key) return 0;
+  const raw = String(row[key] ?? '').trim().replace(/\s/g, '').replace(',', '.');
+  const n = Number(raw.replace(/[^0-9.\-]/g, ''));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function pickFieldStr(row: Record<string, unknown>, normHeaders: string[], aliasKey: keyof typeof HEADER_ALIASES): string {
+  const idx = findHeaderIndex(normHeaders, aliasKey);
+  if (idx === -1) return '';
+  const key = Object.keys(row)[idx];
+  if (!key) return '';
+  return String(row[key] ?? '').trim();
+}
+
+/** Reconstruit des SdeRow[] à partir des rows normalisés clé/valeur. */
+export function buildSdeRowsFromRecords(rows: Record<string, unknown>[]): SdeRow[] {
+  if (!rows.length) return [];
+  const normHeaders = Object.keys(rows[0]).map((h) => normalizeColumnName(h));
+  return rows
+    .map((r): SdeRow => {
+      const oi = pickField(r, normHeaders, 'oi');
+      const dbm = pickField(r, normHeaders, 'dbm');
+      const otFile = pickField(r, normHeaders, 'ot');
+      const ec = pickField(r, normHeaders, 'engagements_comptables') || pickField(r, normHeaders, 'engagements_juridiques');
+      const dispoFile = pickField(r, normHeaders, 'disponible');
+      const ot = otFile || (oi + dbm);
+      return {
+        service: pickFieldStr(r, normHeaders, 'service'),
+        activite: pickFieldStr(r, normHeaders, 'activite'),
+        natureAnalytique: pickFieldStr(r, normHeaders, 'nature_analytique'),
+        domaine: pickFieldStr(r, normHeaders, 'domaine'),
+        compte: pickFieldStr(r, normHeaders, 'compte').replace(/^C\//i, '').trim(),
+        libelle: pickFieldStr(r, normHeaders, 'libelle'),
+        oi, dbm, ot,
+        engagementsJuridiques: pickField(r, normHeaders, 'engagements_juridiques'),
+        engagementsComptables: ec,
+        liquidations: pickField(r, normHeaders, 'liquidations'),
+        mandats: pickField(r, normHeaders, 'mandats'),
+        disponible: dispoFile || (ot - ec),
+      };
+    })
+    .filter((r) => r.compte && /^\d/.test(r.compte));
+}
+
+/** Reconstruit des SdrRow[] à partir des rows normalisés clé/valeur. */
+export function buildSdrRowsFromRecords(rows: Record<string, unknown>[]): SdrRow[] {
+  if (!rows.length) return [];
+  const normHeaders = Object.keys(rows[0]).map((h) => normalizeColumnName(h));
+  return rows
+    .map((r): SdrRow => {
+      const pi = pickField(r, normHeaders, 'pi');
+      const dbm = pickField(r, normHeaders, 'dbm');
+      const ptFile = pickField(r, normHeaders, 'pt');
+      const ordres = pickField(r, normHeaders, 'ordres_recettes');
+      const enc = pickField(r, normHeaders, 'recettes_encaissees');
+      const rar = pickField(r, normHeaders, 'reste_a_recouvrer');
+      return {
+        service: pickFieldStr(r, normHeaders, 'service'),
+        activite: pickFieldStr(r, normHeaders, 'activite'),
+        compte: pickFieldStr(r, normHeaders, 'compte').replace(/^C\//i, '').trim(),
+        libelle: pickFieldStr(r, normHeaders, 'libelle'),
+        pi, dbm,
+        pt: ptFile || (pi + dbm),
+        ordresRecettes: ordres,
+        recettesNotifiees: pickField(r, normHeaders, 'recettes_notifiees'),
+        recettesEncaissees: enc,
+        resteARecouvrer: rar || (ordres - enc),
+      };
+    })
+    .filter((r) => r.compte && /^\d/.test(r.compte));
+}
+
+/** Calcule directement les taux depuis des rows clé/valeur (fast path import). */
+export function computeTauxDepensesFromRecords(rows: Record<string, unknown>[]) {
+  return calculerTauxDepenses(buildSdeRowsFromRecords(rows));
+}
+
+export function computeTauxRecettesFromRecords(rows: Record<string, unknown>[]) {
+  return calculerTauxRecettes(buildSdrRowsFromRecords(rows));
+}
