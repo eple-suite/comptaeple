@@ -760,7 +760,7 @@ export function generateDocumentCA(data: DocumentCAData): void {
         width: pw - 2 * margin,
         synthese: data.syntheseCommentaires,
         inclureReserves: true,
-        titre: `Diagnostic REPROFI 4.6 - Exercice ${ex}`,
+        titre: `Diagnostic Financier EPLE - Exercice ${ex}`,
       });
     } catch (e) {
       console.warn('[pdfDocumentCA] page REPROFI : fallback', e);
