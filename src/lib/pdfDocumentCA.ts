@@ -750,6 +750,23 @@ export function generateDocumentCA(data: DocumentCAData): void {
   doc.setTextColor(60);
   doc.text(sanitize(etab.agentComptable || '(Nom et signature)'), margin + sigWidth + 14, yh + 13);
 
+  // ═══════════════════════════════════════════════════════════
+  // PAGE DEDIEE — DIAGNOSTIC REPROFI 4.6
+  // ═══════════════════════════════════════════════════════════
+  if (data.panierReprofi) {
+    try {
+      ajouterPageReprofi(doc, data.panierReprofi, {
+        margin,
+        width: pw - 2 * margin,
+        synthese: data.syntheseCommentaires,
+        inclureReserves: true,
+        titre: `Diagnostic REPROFI 4.6 - Exercice ${ex}`,
+      });
+    } catch (e) {
+      console.warn('[pdfDocumentCA] page REPROFI : fallback', e);
+    }
+  }
+
   // Add footers to all pages
   addPDFFooters(doc, `Document CA - ${sanitize(etab.nom)} - Exercice ${ex}`);
 
