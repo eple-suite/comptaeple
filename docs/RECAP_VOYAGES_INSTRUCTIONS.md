@@ -26,7 +26,7 @@
 | A.3 | Alerte CA manquant | ✅ FAIT (cette livraison) | `alertesEngine.ts` | Test vitest exit 0 |
 | A.3 | Sidebar alertes permanente | ❌ NON FAIT | UI à brancher | Le moteur retourne les alertes, l'affichage sidebar reste à connecter |
 | A.3 | Persistance `voyage_alertes` | 🟧 PARTIEL | table `vs_alertes` créée, écriture pas encore branchée | |
-| A.4 | Génération 32 documents Word | ✅ FAIT | `voyages-v2/lib/documentsCatalogue.ts`, `docxBuilder.ts`, `zipGenerator.ts`, `DocumentsGenerator.tsx` | 32 builders DOCX, ZIP organisé en 5 dossiers, sélection obligatoires/tout/aucun, manifest inclus |
+| A.4 | Génération 32 documents Word | ✅ FAIT | `documentsCatalogue.ts`, `docxBuilder.ts`, `zipGenerator.ts`, `DocumentsGenerator.tsx`, `DocumentsGeneratorReal.tsx`, `lib/contextLoader.ts` | 32 builders DOCX, ZIP en 5 dossiers, manifest. **Branché voyages réels** : sélecteur de voyage enregistré, chargement parallèle vs_voyages/recettes/depenses/participants, mapping vers `DocxBuildContext`, fallback démo conservé. Refresh auto après save wizard. |
 | A.5 | Bilan financier modèle Créteil | 🟧 PARTIEL | `VoyageBilanTab.tsx` existe en v1 | À porter en v2 avec règle 8 € |
 | A.5 | Règle des 8 € (LF 66-948 art. 21) | ✅ FAIT | `regle8Euros.ts` + bandeau wizard (étape 5+) + blocage `Suivant`/`Finaliser` + 7 tests unitaires | Bandeau permanent ROUGE/AMBRE/VERT ; checkbox don tacite assumé pour débloquer |
 | A.6 | Mode d'emploi SGEPLE débutant | ❌ NON FAIT | Aucune page guide | |
