@@ -1055,6 +1055,482 @@ export type Database = {
         }
         Relationships: []
       }
+      mp_familles_achat: {
+        Row: {
+          actif: boolean
+          code: string
+          created_at: string
+          groupe: string
+          id: string
+          libelle: string
+          ordre: number
+          type_marche: string
+        }
+        Insert: {
+          actif?: boolean
+          code: string
+          created_at?: string
+          groupe?: string
+          id?: string
+          libelle: string
+          ordre?: number
+          type_marche: string
+        }
+        Update: {
+          actif?: boolean
+          code?: string
+          created_at?: string
+          groupe?: string
+          id?: string
+          libelle?: string
+          ordre?: number
+          type_marche?: string
+        }
+        Relationships: []
+      }
+      mp_fournisseurs: {
+        Row: {
+          actif: boolean
+          adresse: string
+          code_postal: string
+          contact_email: string
+          contact_nom: string
+          contact_tel: string
+          created_at: string
+          establishment_id: string
+          familles_principales: Json
+          id: string
+          notes: string
+          raison_sociale: string
+          siret: string | null
+          updated_at: string
+          user_id: string
+          ville: string
+        }
+        Insert: {
+          actif?: boolean
+          adresse?: string
+          code_postal?: string
+          contact_email?: string
+          contact_nom?: string
+          contact_tel?: string
+          created_at?: string
+          establishment_id: string
+          familles_principales?: Json
+          id?: string
+          notes?: string
+          raison_sociale: string
+          siret?: string | null
+          updated_at?: string
+          user_id: string
+          ville?: string
+        }
+        Update: {
+          actif?: boolean
+          adresse?: string
+          code_postal?: string
+          contact_email?: string
+          contact_nom?: string
+          contact_tel?: string
+          created_at?: string
+          establishment_id?: string
+          familles_principales?: Json
+          id?: string
+          notes?: string
+          raison_sociale?: string
+          siret?: string | null
+          updated_at?: string
+          user_id?: string
+          ville?: string
+        }
+        Relationships: []
+      }
+      mp_marches: {
+        Row: {
+          allotissement: boolean
+          base_legale: string
+          chapitre_budgetaire: string
+          checklist_validation: Json
+          clauses_sociales: string
+          code_activite: string
+          compte_imputation: string
+          contraintes: string
+          created_at: string
+          criteres: Json
+          cumul_meme_famille_12m: number
+          cumul_total_12m: number
+          date_attribution: string | null
+          date_emission_besoin: string
+          date_engagement: string | null
+          date_fin_execution: string | null
+          date_livraison_souhaitee: string | null
+          date_notification: string | null
+          date_notification_cible: string | null
+          demandeur: string
+          description: string
+          duree_mois: number
+          establishment_id: string
+          exigences_environnementales: string
+          famille_code: string
+          fournisseur_attributaire_id: string | null
+          historique: Json
+          id: string
+          justification_lot_unique: string
+          libelle: string
+          methode_estimation: string
+          methode_notation_prix: string
+          montant_estime_ht: number
+          montant_estime_ttc: number
+          montant_realise: number
+          montant_total_ht: number
+          previsionnel_12m_suivants: number
+          procedure_calculee: string
+          quantites: string
+          reconductions_duree_mois: number
+          reconductions_nb: number
+          reference_interne: string
+          service_demandeur: string
+          specifications: string
+          statut: string
+          taux_tva: number
+          type_marche: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          allotissement?: boolean
+          base_legale?: string
+          chapitre_budgetaire?: string
+          checklist_validation?: Json
+          clauses_sociales?: string
+          code_activite?: string
+          compte_imputation?: string
+          contraintes?: string
+          created_at?: string
+          criteres?: Json
+          cumul_meme_famille_12m?: number
+          cumul_total_12m?: number
+          date_attribution?: string | null
+          date_emission_besoin: string
+          date_engagement?: string | null
+          date_fin_execution?: string | null
+          date_livraison_souhaitee?: string | null
+          date_notification?: string | null
+          date_notification_cible?: string | null
+          demandeur?: string
+          description?: string
+          duree_mois?: number
+          establishment_id: string
+          exigences_environnementales?: string
+          famille_code?: string
+          fournisseur_attributaire_id?: string | null
+          historique?: Json
+          id?: string
+          justification_lot_unique?: string
+          libelle: string
+          methode_estimation?: string
+          methode_notation_prix?: string
+          montant_estime_ht?: number
+          montant_estime_ttc?: number
+          montant_realise?: number
+          montant_total_ht?: number
+          previsionnel_12m_suivants?: number
+          procedure_calculee?: string
+          quantites?: string
+          reconductions_duree_mois?: number
+          reconductions_nb?: number
+          reference_interne: string
+          service_demandeur?: string
+          specifications?: string
+          statut?: string
+          taux_tva?: number
+          type_marche: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          allotissement?: boolean
+          base_legale?: string
+          chapitre_budgetaire?: string
+          checklist_validation?: Json
+          clauses_sociales?: string
+          code_activite?: string
+          compte_imputation?: string
+          contraintes?: string
+          created_at?: string
+          criteres?: Json
+          cumul_meme_famille_12m?: number
+          cumul_total_12m?: number
+          date_attribution?: string | null
+          date_emission_besoin?: string
+          date_engagement?: string | null
+          date_fin_execution?: string | null
+          date_livraison_souhaitee?: string | null
+          date_notification?: string | null
+          date_notification_cible?: string | null
+          demandeur?: string
+          description?: string
+          duree_mois?: number
+          establishment_id?: string
+          exigences_environnementales?: string
+          famille_code?: string
+          fournisseur_attributaire_id?: string | null
+          historique?: Json
+          id?: string
+          justification_lot_unique?: string
+          libelle?: string
+          methode_estimation?: string
+          methode_notation_prix?: string
+          montant_estime_ht?: number
+          montant_estime_ttc?: number
+          montant_realise?: number
+          montant_total_ht?: number
+          previsionnel_12m_suivants?: number
+          procedure_calculee?: string
+          quantites?: string
+          reconductions_duree_mois?: number
+          reconductions_nb?: number
+          reference_interne?: string
+          service_demandeur?: string
+          specifications?: string
+          statut?: string
+          taux_tva?: number
+          type_marche?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      mp_marches_bdc: {
+        Row: {
+          created_at: string
+          date_emission: string
+          fournisseur_id: string | null
+          id: string
+          marche_id: string
+          montant_ht: number
+          montant_ttc: number
+          numero: string
+          observations: string
+          statut: string
+        }
+        Insert: {
+          created_at?: string
+          date_emission: string
+          fournisseur_id?: string | null
+          id?: string
+          marche_id: string
+          montant_ht?: number
+          montant_ttc?: number
+          numero: string
+          observations?: string
+          statut?: string
+        }
+        Update: {
+          created_at?: string
+          date_emission?: string
+          fournisseur_id?: string | null
+          id?: string
+          marche_id?: string
+          montant_ht?: number
+          montant_ttc?: number
+          numero?: string
+          observations?: string
+          statut?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_marches_bdc_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "mp_marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mp_marches_jalons: {
+        Row: {
+          created_at: string
+          date_prevue: string
+          date_realisee: string | null
+          id: string
+          libelle: string
+          marche_id: string
+          observations: string
+          ordre: number
+          responsable: string
+          statut: string
+        }
+        Insert: {
+          created_at?: string
+          date_prevue: string
+          date_realisee?: string | null
+          id?: string
+          libelle: string
+          marche_id: string
+          observations?: string
+          ordre?: number
+          responsable?: string
+          statut?: string
+        }
+        Update: {
+          created_at?: string
+          date_prevue?: string
+          date_realisee?: string | null
+          id?: string
+          libelle?: string
+          marche_id?: string
+          observations?: string
+          ordre?: number
+          responsable?: string
+          statut?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_marches_jalons_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "mp_marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mp_marches_lots: {
+        Row: {
+          created_at: string
+          criteres: Json
+          description: string
+          fournisseur_attributaire_id: string | null
+          id: string
+          marche_id: string
+          montant_attribue: number
+          montant_estime_ht: number
+          numero: number
+          titre: string
+        }
+        Insert: {
+          created_at?: string
+          criteres?: Json
+          description?: string
+          fournisseur_attributaire_id?: string | null
+          id?: string
+          marche_id: string
+          montant_attribue?: number
+          montant_estime_ht?: number
+          numero: number
+          titre: string
+        }
+        Update: {
+          created_at?: string
+          criteres?: Json
+          description?: string
+          fournisseur_attributaire_id?: string | null
+          id?: string
+          marche_id?: string
+          montant_attribue?: number
+          montant_estime_ht?: number
+          numero?: number
+          titre?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_marches_lots_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "mp_marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mp_marches_pieces: {
+        Row: {
+          created_by: string | null
+          generated_at: string
+          id: string
+          marche_id: string
+          nom_fichier: string
+          type_piece: string
+          url_fichier: string | null
+        }
+        Insert: {
+          created_by?: string | null
+          generated_at?: string
+          id?: string
+          marche_id: string
+          nom_fichier: string
+          type_piece: string
+          url_fichier?: string | null
+        }
+        Update: {
+          created_by?: string | null
+          generated_at?: string
+          id?: string
+          marche_id?: string
+          nom_fichier?: string
+          type_piece?: string
+          url_fichier?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_marches_pieces_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "mp_marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mp_seuils_ccp: {
+        Row: {
+          base_legale: string
+          commentaire: string
+          created_at: string
+          created_by: string | null
+          date_debut: string
+          date_fin: string | null
+          id: string
+          seuil_dispense: number
+          seuil_formalisee: number
+          seuil_mapa_publicite: number | null
+          seuil_petits_lots: number | null
+          seuil_profil_acheteur: number | null
+          type_marche: string
+          updated_at: string
+        }
+        Insert: {
+          base_legale?: string
+          commentaire?: string
+          created_at?: string
+          created_by?: string | null
+          date_debut: string
+          date_fin?: string | null
+          id?: string
+          seuil_dispense: number
+          seuil_formalisee: number
+          seuil_mapa_publicite?: number | null
+          seuil_petits_lots?: number | null
+          seuil_profil_acheteur?: number | null
+          type_marche: string
+          updated_at?: string
+        }
+        Update: {
+          base_legale?: string
+          commentaire?: string
+          created_at?: string
+          created_by?: string | null
+          date_debut?: string
+          date_fin?: string | null
+          id?: string
+          seuil_dispense?: number
+          seuil_formalisee?: number
+          seuil_mapa_publicite?: number | null
+          seuil_petits_lots?: number | null
+          seuil_profil_acheteur?: number | null
+          type_marche?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           academy: string | null
