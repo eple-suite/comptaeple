@@ -20,6 +20,8 @@ import {
   Step7ValidationCA,
   Step8Recap,
 } from "./steps";
+import { StepRetroplanning } from "./StepRetroplanning";
+import type { JalonStatut } from "../lib/retroplanningEngine";
 import type { Voyage, VoyageRecette, VoyageDepense } from "../types";
 
 const STEPS = [
@@ -30,7 +32,8 @@ const STEPS = [
   { n: 5, key: "depenses", label: "Dépenses" },
   { n: 6, key: "accomp", label: "Accompagnateurs" },
   { n: 7, key: "ca", label: "Validation CA" },
-  { n: 8, key: "recap", label: "Récapitulatif" },
+  { n: 8, key: "retroplanning", label: "Rétroplanning" },
+  { n: 9, key: "recap", label: "Récapitulatif" },
 ] as const;
 
 interface Props {
@@ -45,6 +48,7 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
   const { draft, update, updateMany, reset } = useVoyageDraft(initial);
   const [recettes, setRecettes] = useState<Partial<VoyageRecette>[]>([]);
   const [depenses, setDepenses] = useState<Partial<VoyageDepense>[]>([]);
+  const [jalonsState, setJalonsState] = useState<Record<string, { statut: JalonStatut }>>({});
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
   const [voyageId, setVoyageId] = useState<string | undefined>(initial?.id);
@@ -60,6 +64,7 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
       reset();
       setRecettes([]);
       setDepenses([]);
+      setJalonsState({});
       setStep(1);
       setVoyageId(undefined);
     }
@@ -162,7 +167,10 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
           {step === 5 && <Step5Depenses depenses={depenses} setDepenses={setDepenses} />}
           {step === 6 && <Step6Accompagnateurs draft={draft} update={update} />}
           {step === 7 && <Step7ValidationCA draft={draft} update={update} />}
-          {step === 8 && <Step8Recap draft={draft} recettes={recettes} depenses={depenses} />}
+          {step === 8 && (
+            <StepRetroplanning draft={draft} jalonsState={jalonsState} setJalonsState={setJalonsState} />
+          )}
+          {step === 9 && <Step8Recap draft={draft} recettes={recettes} depenses={depenses} />}
         </div>
 
         <div className="flex items-center justify-between pt-3 border-t">
