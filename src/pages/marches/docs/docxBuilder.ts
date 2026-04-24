@@ -41,7 +41,8 @@ export const fmtDate = (d?: string | null) => {
 export const fmtEur = (n: number) =>
   Number(n || 0).toLocaleString("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: 2 });
 
-export function P(text: string, opts: Partial<{ bold: boolean; size: number; align: AlignmentType; color: string }> = {}) {
+type AlignType = (typeof AlignmentType)[keyof typeof AlignmentType];
+export function P(text: string, opts: Partial<{ bold: boolean; size: number; align: AlignType; color: string }> = {}) {
   return new Paragraph({
     alignment: opts.align,
     children: [new TextRun({ text, bold: opts.bold, size: opts.size ?? 22, color: opts.color, font: "Arial" })],
