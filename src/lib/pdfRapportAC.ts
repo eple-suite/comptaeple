@@ -1197,7 +1197,7 @@ export function generateRapportACPdf(data: RapportACData) {
         width: contentWidth,
         synthese: data.syntheseCommentaires,
         inclureReserves: true,
-        titre: `Diagnostic REPROFI 4.6 - Exercice ${etab.exercice}`,
+        titre: `Diagnostic Financier EPLE - Exercice ${etab.exercice}`,
       });
       // Force la signature sur une page propre apres le diagnostic REPROFI.
       doc.addPage();

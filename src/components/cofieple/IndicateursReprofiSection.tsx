@@ -1,9 +1,9 @@
 // =====================================================================
-// Section « Indicateurs REPROFI 4.6 » — Compte financier
+// Section « Diagnostic Financier EPLE » — Compte financier
 // ---------------------------------------------------------------------
-// Affiche les 10 indicateurs REPROFI calculés par le moteur
-// `reprofiIndicateursEngine` à partir de la balance active du store
-// COFIEPLE, plus le bloc des 5 réserves (M9-6 tome 4 art. 43231).
+// Affiche les 10 indicateurs réglementaires calculés par le moteur
+// d'analyse à partir de la balance active du store COFIEPLE,
+// plus le bloc des 5 réserves (M9-6 tome 4 art. 43231).
 // Chaque indicateur : code couleur par niveau + explication contextuelle.
 // =====================================================================
 
@@ -77,11 +77,12 @@ const NIVEAU_STYLE: Record<Niveau, {
 };
 
 // ─── Explication contextuelle par indicateur × niveau ────────────────
-// Les textes proviennent des seuils REPROFI 4.6 et de l'instruction M9-6.
+// Les textes proviennent des seuils réglementaires (M9-6 tome 4
+// art. 43231 et grilles d'analyse usuelles des EPLE).
 const EXPLICATIONS: Record<string, Partial<Record<Niveau, string>>> = {
   NR: {
     excellent: "Recouvrement quasi-parfait : moins de 2 % des créances sont douteuses. Bonne santé du suivi des familles.",
-    normal: "Taux de non-recouvrement contenu (2-5 %). Pratique conforme aux usages REPROFI.",
+    normal: "Taux de non-recouvrement contenu (2-5 %). Pratique conforme aux usages EPLE.",
     fragile: "Entre 5 et 10 % de créances douteuses : intensifier les relances et la coordination avec l'AC.",
     critique: "Plus de 10 % de créances douteuses : risque de provisionnement massif. Action SATD prioritaire.",
   },
@@ -177,7 +178,7 @@ function IndicateurCard({ ind }: { ind: IndicateurReprofi }) {
           </Badge>
         </div>
         <CardDescription className="text-[11px] font-mono uppercase opacity-70 mt-1">
-          Code REPROFI : {ind.code}
+          Code indicateur : {ind.code}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -263,7 +264,7 @@ export function IndicateursReprofiSection() {
       <div className="p-8 text-center text-muted-foreground">
         <Info className="h-10 w-10 mx-auto mb-3 opacity-50" />
         <p className="font-semibold">Aucune balance disponible</p>
-        <p className="text-sm mt-1">Importez une balance générale Op@le pour calculer les 10 indicateurs REPROFI.</p>
+        <p className="text-sm mt-1">Importez une balance générale Op@le pour calculer les 10 indicateurs de diagnostic.</p>
       </div>
     );
   }
@@ -284,12 +285,12 @@ export function IndicateursReprofiSection() {
           <div className="min-w-0">
             <h2 className="text-2xl font-extrabold tracking-tight flex items-center gap-2">
               <Sparkles className="h-6 w-6 text-primary" />
-              Indicateurs REPROFI 4.6
+              Diagnostic Financier EPLE — 10 indicateurs réglementaires
             </h2>
             <p className="text-sm text-muted-foreground mt-1">
-              10 indicateurs additionnels à la triade FR / BFR / TN — calculés à partir de la balance et de la CAF
+              Analyse exhaustive en complément du triptyque FR / BFR / Trésorerie — calculée à partir de la balance générale et de la CAF
               ({new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(caf)}).
-              Source : REPROFI 4.6, M9-6 tome 4 art. 43231, pièce 14 du compte financier.
+              Sources réglementaires : Instruction M9-6 (tomes 3 & 4, art. 43231) et pièce 14 du compte financier.
             </p>
           </div>
           <div className="flex flex-wrap gap-1.5">
@@ -311,7 +312,7 @@ export function IndicateursReprofiSection() {
       <div>
         <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-2">
           <ShieldCheck className="h-4 w-4" />
-          Indicateurs de pilotage REPROFI ({panier.indicateurs.length})
+          Indicateurs de pilotage ({panier.indicateurs.length})
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {panier.indicateurs.map(ind => (
@@ -325,7 +326,7 @@ export function IndicateursReprofiSection() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
             <Info className="h-4 w-4" />
-            Lecture des niveaux REPROFI
+            Lecture des niveaux de diagnostic
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -337,7 +338,7 @@ export function IndicateursReprofiSection() {
                 <p className="text-[11px] text-muted-foreground leading-tight">
                   {n === 'critique' && 'Action immédiate requise — risque structurel.'}
                   {n === 'fragile' && 'Vigilance — anticiper les actions correctrices.'}
-                  {n === 'normal' && 'Conforme aux pratiques EPLE — surveiller la tendance.'}
+                  {n === 'normal' && 'Conforme aux pratiques M9-6 — surveiller la tendance.'}
                   {n === 'confortable' && 'Bonne santé — marge de manœuvre disponible.'}
                   {n === 'excellent' && 'Profil exemplaire — référence à valoriser.'}
                 </p>

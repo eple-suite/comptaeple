@@ -5,7 +5,6 @@ import {
   BarChart3,
   Building2,
   Bus,
-  Heart,
   Gavel,
   HandHeart,
   UtensilsCrossed,
@@ -61,8 +60,6 @@ const analysisItems: NavItem[] = [
 
 const toolItems: NavItem[] = [
   { title: "Voyages scolaires", url: "/voyages-v2", icon: Bus, hot: true },
-  { title: "Voyages (ancien)", url: "/voyages", icon: Bus },
-  { title: "Fonds sociaux (ancien)", url: "/fonds-sociaux", icon: Heart },
   { title: "Fonds sociaux", url: "/fonds-sociaux/v2", icon: HandHeart, hot: true },
   { title: "SATD", url: "/satd", icon: Gavel },
   { title: "Crédit nourriture", url: "/credit-nourriture", icon: UtensilsCrossed },

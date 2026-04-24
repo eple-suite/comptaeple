@@ -2,7 +2,7 @@
 // Moteur de commentaires automatiques — Compte financier EPLE
 // ---------------------------------------------------------------------
 // Génère des commentaires contextualisés à partir :
-//   • des 10 indicateurs REPROFI 4.6 (niveau + valeur)
+//   • des 10 indicateurs réglementaires (niveau + valeur)
 //   • du bilan financier (FR / BFR / TN / CAF / Réserves)
 //   • des seuils M9-6 tome 4 art. 43231
 //
@@ -22,13 +22,13 @@ import type {
 } from './reprofiIndicateursEngine';
 
 // ---------------------------------------------------------------------
-// 1. Templates par indicateur × niveau (REPROFI 4.6)
+// 1. Templates par indicateur × niveau (M9-6 / pratiques EPLE)
 // ---------------------------------------------------------------------
 
 const TEMPLATES: Record<string, Partial<Record<Niveau, string>>> = {
   NR: {
     excellent: "Le taux de non-recouvrement (<2 %) traduit une excellente discipline de recouvrement et un suivi rigoureux des familles.",
-    normal: "Le taux de non-recouvrement (2-5 %) reste conforme aux usages REPROFI ; aucune alerte particulière à ce stade.",
+    normal: "Le taux de non-recouvrement (2-5 %) reste conforme aux usages EPLE ; aucune alerte particulière à ce stade.",
     fragile: "Le taux de non-recouvrement (5-10 %) appelle un renforcement des relances et une coordination accrue avec l'agent comptable.",
     critique: "Le taux de non-recouvrement dépasse 10 % : un plan d'apurement immédiat (SATD, admissions en non-valeur) doit être engagé.",
   },
@@ -115,7 +115,7 @@ export interface SyntheseCommentaires {
   resultat: string;
   /** Paragraphe 2 — Bilan, FR, BFR, Trésorerie. */
   bilan: string;
-  /** Paragraphe 3 — Diagnostic REPROFI (synthèse des 10 indicateurs). */
+  /** Paragraphe 3 — Diagnostic Financier (synthèse des 10 indicateurs). */
   reprofi: string;
   /** Verdict global concis (1 phrase) destiné au CA. */
   verdict: string;
@@ -126,7 +126,7 @@ function fmtEur(n: number): string {
 }
 
 /**
- * Synthèse rédigée à partir du bilan + des indicateurs REPROFI.
+ * Synthèse rédigée à partir du bilan + des 10 indicateurs réglementaires.
  * Utilisé en fallback ou en complément des observations IA.
  */
 export function synthetiserCommentaires(
@@ -163,27 +163,27 @@ export function synthetiserCommentaires(
     `Les deux méthodes de calcul du FR convergent à ${fmtEur(bilan.fr.ecart)} près` +
     `${bilan.fr.coherent ? ' (cohérence vérifiée)' : ' — un contrôle complémentaire est recommandé'}.`;
 
-  // Paragraphe 3 — Diagnostic REPROFI
+  // Paragraphe 3 — Diagnostic Financier (synthèse 10 indicateurs)
   let synthReprofi: string;
   if (nbCritique === 0 && nbFragile === 0) {
-    synthReprofi = `Le diagnostic REPROFI 4.6 est entièrement favorable : aucun indicateur n'est en alerte, et ${nbExcellent} indicateur(s) sont au niveau excellent.`;
+    synthReprofi = `Le diagnostic financier est entièrement favorable : aucun indicateur n'est en alerte, et ${nbExcellent} indicateur(s) sont au niveau excellent.`;
   } else if (nbCritique === 0) {
-    synthReprofi = `Le diagnostic REPROFI 4.6 fait apparaître ${nbFragile} indicateur(s) en vigilance, sans alerte critique. Une surveillance ciblée est recommandée.`;
+    synthReprofi = `Le diagnostic financier fait apparaître ${nbFragile} indicateur(s) en vigilance, sans alerte critique. Une surveillance ciblée est recommandée.`;
   } else {
     const codesCrit = panier.indicateurs.filter(i => i.niveau === 'critique').map(i => i.code).join(', ');
-    synthReprofi = `Le diagnostic REPROFI 4.6 identifie ${nbCritique} indicateur(s) en alerte critique (${codesCrit}) et ${nbFragile} en vigilance. Un plan d'action est requis.`;
+    synthReprofi = `Le diagnostic financier identifie ${nbCritique} indicateur(s) en alerte critique (${codesCrit}) et ${nbFragile} en vigilance. Un plan d'action est requis.`;
   }
 
   // Verdict
   let verdict: string;
   if (nbCritique > 0) {
-    verdict = `⚠️ Situation à risque : ${nbCritique} indicateur(s) REPROFI en alerte critique nécessitent une décision du conseil.`;
+    verdict = `⚠️ Situation à risque : ${nbCritique} indicateur(s) réglementaire(s) en alerte critique nécessitent une décision du conseil.`;
   } else if (nbFragile > 1) {
-    verdict = `🟠 Situation sous vigilance : ${nbFragile} indicateurs REPROFI fragiles ; ajustements à prévoir.`;
+    verdict = `🟠 Situation sous vigilance : ${nbFragile} indicateurs fragiles ; ajustements à prévoir.`;
   } else if (resultat < 0 && caf < 0) {
     verdict = `🟠 Situation déficitaire : résultat et CAF négatifs — examen des leviers d'équilibre nécessaire.`;
   } else {
-    verdict = `🟢 Situation financière saine et conforme aux normes REPROFI 4.6 / M9-6.`;
+    verdict = `🟢 Situation financière saine et conforme à l'instruction M9-6.`;
   }
 
   return { resultat: para1, bilan: para2, reprofi: synthReprofi, verdict };
