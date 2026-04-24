@@ -20,6 +20,7 @@ import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { VoyageWizard } from "./wizard/VoyageWizard";
 import { DocumentsGenerator } from "./DocumentsGenerator";
 import { DocumentsGeneratorReal } from "./DocumentsGeneratorReal";
+import { SidebarAlertes } from "./SidebarAlertes";
 import type { DocxBuildContext } from "./lib/docxBuilder";
 import {
   evaluerAlertesVoyage,
@@ -135,8 +136,11 @@ export default function VoyagesV2Page() {
   }, [demoAlertes]);
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="container mx-auto p-6">
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        {/* Colonne principale */}
+        <div className="space-y-6 min-w-0">
+          <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -152,7 +156,7 @@ export default function VoyagesV2Page() {
             <Wand2 className="h-4 w-4 mr-2" /> Lancer le wizard
           </Button>
         </div>
-      </div>
+          </div>
 
       <Alert>
         <ShieldCheck className="h-4 w-4" />
@@ -321,6 +325,16 @@ export default function VoyagesV2Page() {
           onSaved={() => setDocsRefreshKey((k) => k + 1)}
         />
       )}
+        </div>
+
+        {/* Sidebar alertes permanente */}
+        <aside className="lg:sticky lg:top-4 lg:self-start">
+          <SidebarAlertes
+            establishmentId={selectedEstablishment?.id || null}
+            refreshKey={docsRefreshKey}
+          />
+        </aside>
+      </div>
     </div>
   );
 }
