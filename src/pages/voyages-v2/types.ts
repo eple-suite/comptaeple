@@ -44,6 +44,13 @@ export interface Voyage {
   statut: StatutVoyage;
   date_ca_autorisation: string | null;
   numero_acte_ca: string | null;
+  // Deux délibérations CA distinctes (R.421-20 Code éducation)
+  // Vote n°1 : autorisation de principe (programmation, contributions)
+  date_ca_principe: string | null;
+  numero_acte_ca_principe: string | null;
+  // Vote n°2 : approbation du budget définitif (post mise en concurrence)
+  date_ca_budget: string | null;
+  numero_acte_ca_budget: string | null;
   montant_total_ht: number;
   montant_total_ttc: number;
   devise: string;
