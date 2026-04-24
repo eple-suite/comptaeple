@@ -49,6 +49,79 @@ exit 0
   pour ne pas risquer une régression non testée)
 - TypeScript compile sans erreur (`bunx tsc --noEmit` exit 0)
 
+## ✅ Livré et testé — Chantiers 2 & 3 (bilan M9-6 + REPROFI)
+
+### Fichiers créés
+- `src/lib/compteFinancier/bilanFinancierEngine.ts` — module pur
+  (sans React/Supabase) implémentant les formules canoniques M9-6 :
+  * FR par le haut (cap. permanents − immo nettes) et par le bas
+    (AC − DCT) avec contrôle de cohérence et écart explicite ;
+  * BFR EPLE (AC d'exploitation − dettes d'exploitation) ;
+  * Trésorerie nette en double approche (FR−BFR vs observée 51+53+54−519) ;
+  * Charges décaissables (classe 6 net − dotations 681/686/687) ;
+  * Jours de FR & TN base 360 + qualification REPROFI
+    (critique <30j, fragile 30-60, confortable 60-120, surdimensionné >120) ;
+  * Autonomie financière (cap propres / ressources stables) ;
+  * FR mobilisable (déduction réserves grevées 10681/10683/10687,
+    art. 43231 tome 4) ;
+  * CAF méthode additive et soustractive avec contrôle d'écart ;
+  * Variation de FR triple (calc, par CAF, observée) ;
+  * Agrégateur `calculerBilanComplet` pour appel unique.
+- `src/lib/compteFinancier/reprofiIndicateursEngine.ts` — 10 indicateurs
+  REPROFI 4.6 avec seuils :
+  réserves 5 rubriques détaillées, taux de non-recouvrement,
+  provisions contentieux, comptes d'attente provisoires anormaux,
+  vétusté du parc immobilier, dépendance générale aux subventions (DGP),
+  poids des charges fixes, capacité d'endettement (années de CAF),
+  liquidité immédiate, indépendance financière.
+- `scripts/verify-bilan-reprofi.mjs` — recette synthétique sur balance
+  EPLE fictive cohérente couvrant les 7 formules bilancielles + les
+  10 indicateurs REPROFI.
+
+### Sources réglementaires explicites dans le code
+- M9-6 tome 3 (plan comptable) — classes 10, 13, 16, 21, 28, 41, 51…
+- M9-6 tome 4 art. 43231 — réserves grevées, FR mobilisable
+- Op@le pièce 14 — situation patrimoniale
+- REPROFI 4.6 — seuils de qualification
+
+### Résultat de la recette
+```
+RECETTE bilan + REPROFI — TESTS SYNTHÉTIQUES
+✓ FR_haut = 84 000 € (cap 204k − immo 120k)
+✓ FR_haut/FR_bas cohérents (écart = provisions 15)
+✓ BFR = 10 000 € ; TN_calc = 74 000 €
+✓ Charges décaissables = 380 000 €
+✓ Jours FR = 79,6 (bande confortable REPROFI)
+✓ Autonomie = 73,5 % (normale)
+✓ FR mobilisable = 54 000 € après réserves grevées
+✓ CAF additive = 40 000 €
+✓ Tx non-recouvrement = 6,25 %, vétusté = 40 %
+✓ DGP = 81,4 % (dépendance forte)
+✓ Endettement = 1,25 année de CAF (excellent)
+✓ Liquidité = 2,00 (excellent), indépendance = 75 %
+exit 0
+```
+
+### Aucune régression
+- Aucune modification de `src/utils/calcsBudgetaires.ts` (l'existant
+  reste actif, le nouveau moteur est offert comme couche additionnelle).
+- Aucune modification d'UI (chantiers 4-6 : intégration visuelle et
+  PDF restent à faire en passes suivantes ciblées).
+- TypeScript compile sans erreur (`bunx tsc --noEmit` exit 0).
+
+## 🟡 Reste à faire — Chantiers 4 à 8
+
+- **Chantier 4** — Composant `IndicateurAvecVisuel` consommant
+  `BilanComplet` + `PanierReprofi` ; intégration page `CompteFinancier`.
+- **Chantier 5** — Moteur de commentaires hybride (templates par
+  niveau + Lovable AI Gateway pour synthèse).
+- **Chantier 6** — Refonte des 3 rapports PDF avec visuels intégrés
+  (Ordonnateur, Agent Comptable, Annexe).
+- **Chantier 7** — Scripts de recette restants (CAF réelle Op@le,
+  variation FR, contrôles cohérence DBM).
+- **Chantier 8** — Livrables markdown (`FORMULES_BILANCIELLES.md`,
+  `COMMENTAIRES_TYPES.md`, `VIDEO_TOUR_COFI.md`).
+
 ## 🟡 Reste à faire — Chantiers 2 à 8
 
 Ces chantiers nécessitent chacun plusieurs cycles
