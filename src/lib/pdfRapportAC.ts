@@ -6,6 +6,9 @@
 
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import type { PanierReprofi } from './compteFinancier/reprofiIndicateursEngine';
+import type { SyntheseCommentaires } from './compteFinancier/commentairesEngine';
+import { ajouterPageReprofi } from './compteFinancier/pdfReprofiBlock';
 
 const BLEU = [0, 35, 149] as const;
 const BLEU_CLAIR = [41, 98, 255] as const;
@@ -79,6 +82,10 @@ interface RapportACData {
   aiText: string;
   history: { exercice: number; fdr: number; bfr: number; tresorerie: number; caf: number; reserves: number; jours_autonomie: number; jours_tresorerie?: number; tmcap?: number; tmnr?: number; resultat?: number }[];
   nbAnom: number; nbBloq: number;
+  /** Panier REPROFI 4.6 (10 indicateurs + 5 réserves) — optionnel. */
+  panierReprofi?: PanierReprofi;
+  /** Synthèse rédigée (verdict + paragraphes) à insérer avec le bloc REPROFI. */
+  syntheseCommentaires?: SyntheseCommentaires;
 }
 
 /** Strip exotic Unicode that jsPDF cannot render */
