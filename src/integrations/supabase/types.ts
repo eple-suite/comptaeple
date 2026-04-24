@@ -2522,6 +2522,8 @@ export type Database = {
           conditions_annulation: Json
           created_at: string
           date_ca_autorisation: string | null
+          date_ca_budget: string | null
+          date_ca_principe: string | null
           date_depart: string | null
           date_retour: string | null
           destination_pays: string
@@ -2544,6 +2546,8 @@ export type Database = {
           nb_eleves_prevus: number
           nombre_nuitees: number
           numero_acte_ca: string | null
+          numero_acte_ca_budget: string | null
+          numero_acte_ca_principe: string | null
           rattachement_adage: boolean
           reference_interne: string
           regie_avances_id: string | null
@@ -2569,6 +2573,8 @@ export type Database = {
           conditions_annulation?: Json
           created_at?: string
           date_ca_autorisation?: string | null
+          date_ca_budget?: string | null
+          date_ca_principe?: string | null
           date_depart?: string | null
           date_retour?: string | null
           destination_pays?: string
@@ -2591,6 +2597,8 @@ export type Database = {
           nb_eleves_prevus?: number
           nombre_nuitees?: number
           numero_acte_ca?: string | null
+          numero_acte_ca_budget?: string | null
+          numero_acte_ca_principe?: string | null
           rattachement_adage?: boolean
           reference_interne?: string
           regie_avances_id?: string | null
@@ -2616,6 +2624,8 @@ export type Database = {
           conditions_annulation?: Json
           created_at?: string
           date_ca_autorisation?: string | null
+          date_ca_budget?: string | null
+          date_ca_principe?: string | null
           date_depart?: string | null
           date_retour?: string | null
           destination_pays?: string
@@ -2638,6 +2648,8 @@ export type Database = {
           nb_eleves_prevus?: number
           nombre_nuitees?: number
           numero_acte_ca?: string | null
+          numero_acte_ca_budget?: string | null
+          numero_acte_ca_principe?: string | null
           rattachement_adage?: boolean
           reference_interne?: string
           regie_avances_id?: string | null
