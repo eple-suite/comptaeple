@@ -18,7 +18,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, FileDown, FileText, Save, Send, Loader2, Plus, Trash2, RefreshCw, ClipboardCheck } from "lucide-react";
+import { ArrowLeft, FileDown, FileText, Save, Send, Loader2, Plus, Trash2, RefreshCw, ClipboardCheck, Lock } from "lucide-react";
 import { toast } from "sonner";
 import jsPDF from "jspdf";
 
@@ -114,6 +114,24 @@ export default function EnquetesRectoratPage() {
 
   const isFinal = editing && (editing.statut === "soumise" || editing.statut === "validee");
 
+  const formatLockError = (raw: string | undefined): { title: string; description: string } => {
+    const msg = raw || "";
+    if (/Enquête verrouillée/i.test(msg) || /check_violation/i.test(msg)) {
+      return {
+        title: "Enquête verrouillée",
+        description:
+          "Cette enquête est soumise ou validée : son contenu ne peut plus être modifié ni supprimée. Demandez une réouverture à un administrateur.",
+      };
+    }
+    if (/insufficient_privilege/i.test(msg) || /seul un administrateur/i.test(msg)) {
+      return {
+        title: "Action réservée à l'administrateur",
+        description: "Seul un administrateur peut valider ou rejeter une enquête déjà soumise.",
+      };
+    }
+    return { title: "Échec d'enregistrement", description: msg || "Erreur inconnue" };
+  };
+
   const refresh = async () => {
     if (!selectedEstablishment?.id) return;
     setLoading(true);
@@ -194,7 +212,8 @@ export default function EnquetesRectoratPage() {
     }
     setSaving(false);
     if (error) {
-      toast.error("Échec d'enregistrement", { description: error.message });
+      const f = formatLockError(error.message);
+      toast.error(f.title, { description: f.description });
       return;
     }
     toast.success(
@@ -215,7 +234,8 @@ export default function EnquetesRectoratPage() {
       .delete()
       .eq("id", row.id);
     if (error) {
-      toast.error("Suppression refusée", { description: error.message });
+      const f = formatLockError(error.message);
+      toast.error(f.title, { description: f.description });
       return;
     }
     toast.success("Enquête supprimée");
