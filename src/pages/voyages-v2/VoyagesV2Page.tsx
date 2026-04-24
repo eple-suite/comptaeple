@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { VoyageWizard } from "./wizard/VoyageWizard";
+import { DocumentsGenerator } from "./DocumentsGenerator";
+import type { DocxBuildContext } from "./lib/docxBuilder";
 import {
   evaluerAlertesVoyage,
   trierAlertes,
@@ -42,6 +44,52 @@ export default function VoyagesV2Page() {
   const { selectedEstablishment } = useEstablishment();
   const [wizardOpen, setWizardOpen] = useState(false);
   const [demoAlertes, setDemoAlertes] = useState<AlerteVoyage[] | null>(null);
+  const [showDocs, setShowDocs] = useState(false);
+
+  const demoContext: DocxBuildContext = {
+    voyage: {
+      libelle: "Voyage de démonstration — Madrid",
+      reference_interne: "VS-DEMO-001",
+      destination_ville: "Madrid",
+      destination_pays: "Espagne",
+      date_depart: dateOffset(60),
+      date_retour: dateOffset(65),
+      nombre_nuitees: 5,
+      type_projet: "cle_en_main",
+      classes_concernees: ["3A", "3B"],
+      nb_eleves_prevus: 45,
+      nb_accompagnateurs_prevus: 4,
+      responsable_pedago_nom: "Mme Dupont",
+      lien_projet_etablissement: "Axe 2 — Ouverture européenne",
+      montant_total_ttc: 18000,
+      devise: "EUR",
+      agence_nom: "EuroVoyages SAS",
+      agence_siret: "12345678900012",
+      agence_garantie: "APST n°123",
+    },
+    etablissement: {
+      nom: selectedEstablishment?.name || "Établissement",
+      uai: (selectedEstablishment as any)?.uai,
+      chef_etab: "Le chef d'établissement",
+      agent_comptable: "L'agent comptable",
+    },
+    recettes: [
+      { libelle: "Participation des familles", nature: "famille", montant: 13500, statut_financeur: "demandee", imputation_compte: "C/70881" },
+      { libelle: "Subvention Région", nature: "subv_region", montant: 3000, statut_financeur: "notifiee", imputation_compte: "C/7442" },
+      { libelle: "FSE / coopérative", nature: "don_fse", montant: 1500, statut_financeur: "promesse", imputation_compte: "C/7588" },
+    ],
+    depenses: [
+      { libelle: "Transport bus AR", poste: "transport", fournisseur: "TransAuto SARL", montant_ttc: 7000, compte_charge: "C/6245" },
+      { libelle: "Hébergement 5 nuits", poste: "hebergement", fournisseur: "EuroVoyages SAS", montant_ttc: 8000, compte_charge: "C/6258" },
+      { libelle: "Activités/visites", poste: "activites", fournisseur: "EuroVoyages SAS", montant_ttc: 2500, compte_charge: "C/6257" },
+      { libelle: "Assurance assistance", poste: "assurance", fournisseur: "Mutuelle XYZ", montant_ttc: 500, compte_charge: "C/616" },
+    ],
+    participants: [],
+    meta: {
+      date_generation: new Date().toLocaleDateString("fr-FR"),
+      auteur: "ComptaEPLE",
+    },
+  };
 
   const lancerDemo = () => {
     // Voyage volontairement fautif : départ dans 15 j, CA aujourd'hui, engagement antérieur,
@@ -160,12 +208,17 @@ export default function VoyagesV2Page() {
           <CardContent className="text-sm space-y-1">
             <div>✅ Moteur d'alertes + tests vitest</div>
             <div>✅ Wizard 9 étapes accessible</div>
-            <div>❌ 32 documents .docx (chantier dédié)</div>
+            <div>✅ 32 documents .docx (générateur ZIP)</div>
             <div>❌ Règle 8 € + bilan Créteil v2</div>
             <div>❌ Sidebar alertes permanente</div>
+            <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => setShowDocs(v => !v)}>
+              {showDocs ? "Masquer" : "Ouvrir"} le générateur 32 docs
+            </Button>
           </CardContent>
         </Card>
       </div>
+
+      {showDocs && <DocumentsGenerator context={demoContext} />}
 
       {demoAlertes && (
         <Card>
