@@ -23,6 +23,13 @@ import { parserSDE, parserSDR, parserBalance } from '@/lib/cofieple_calculations
 import { findColumnIndex, normalizeColumnName, normalizeRowsForOpaleImport } from '@/lib/opaleImportUtils';
 import { getWorkbookSheetCandidates, selectWorkbookSheetByHeaders } from '@/lib/opaleWorkbook';
 import { detectBudgetType } from '@/lib/cofieple_csvParser';
+import {
+  selectOpaleSdeSdrSheet,
+  computeTauxDepensesFromRecords,
+  computeTauxRecettesFromRecords,
+  buildSdeRowsFromRecords,
+  verifierCoherenceOuvertures,
+} from '@/lib/opaleSdeSdrParser';
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import { toast } from 'sonner';
 import { ImportDebug } from './ImportDebug';
@@ -294,6 +301,41 @@ function pickBestWorkbookRows(wb: XLSX.WorkBook, slotType: string): { rows: Reco
     if (balanceSheet) {
       return { rows: normalizeRowsForOpaleImport(balanceSheet.records), title, meta };
     }
+  }
+
+  // ── Fast path SDE/SDR : sélecteur canonique « Donnees » (Chantier 1) ──
+  // Rejette automatiquement les onglets TCD (« Situation… ») et choisit
+  // l'onglet brut Op@le. Si la sélection est concluante, on convertit la
+  // matrice en rows clé/valeur compatibles avec le parser CSV existant.
+  if (expectedType === 'sde' || expectedType === 'sdr') {
+    const selection = selectOpaleSdeSdrSheet(wb, expectedType);
+    if (selection) {
+      const headerRow = selection.matrix[selection.headerRowIndex] ?? [];
+      const headers = headerRow.map((c, i) => {
+        const v = String(c ?? '').trim();
+        return v || `__empty_${i}`;
+      });
+      const dataRows: Record<string, string>[] = [];
+      for (let i = selection.headerRowIndex + 1; i < selection.matrix.length; i += 1) {
+        const r = selection.matrix[i] ?? [];
+        const obj: Record<string, string> = {};
+        let hasContent = false;
+        for (let c = 0; c < headers.length; c += 1) {
+          const v = r[c] == null ? '' : String(r[c]);
+          obj[headers[c]] = v;
+          if (v.trim()) hasContent = true;
+        }
+        if (hasContent) dataRows.push(obj);
+      }
+      if (dataRows.length > 0) {
+        console.log(
+          `[IMPORT-CANONIQUE] ${expectedType.toUpperCase()} → onglet « ${selection.sheetName} » ` +
+          `(score ${selection.score}, ligne d'en-tête ${selection.headerRowIndex + 1}, ${dataRows.length} lignes)`
+        );
+        return { rows: normalizeRowsForOpaleImport(dataRows), title: title || selection.sheetName, meta };
+      }
+    }
+    // sinon → fallback sur la logique de scoring historique ci-dessous
   }
 
   let bestRows: Record<string, string>[] = [];
@@ -625,6 +667,55 @@ export function ImportSection() {
         }
       }
       else if (slot.type === 'bal1') setBalance1(parserBalance(rows, slot.typeBudget), slot.typeBudget);
+
+      // ── Calcul des taux d'exécution réglementaires (M9-6 / GBCP) ──
+      // Affiche immédiatement à l'utilisateur les taux consolidés,
+      // sans attendre l'analyse complète. Sécurisé par try/catch :
+      // un échec ici ne doit pas faire échouer l'import lui-même.
+      try {
+        if (slot.type === 'sde' || slot.type === 'sde1') {
+          const taux = computeTauxDepensesFromRecords(rows);
+          const c = taux.consolide;
+          const fmt = (n: number) => `${n.toFixed(1)} %`;
+          const exerciceLabel = slot.type === 'sde1' ? `${exerciceTravail - 1} (N-1)` : `${exerciceTravail}`;
+          toast.success(`📊 Taux d'exécution dépenses ${exerciceLabel} — ${slot.label}`, {
+            description:
+              `Engagement : ${fmt(c.tauxEngagement)} · ` +
+              `Liquidation : ${fmt(c.tauxLiquidation)} · ` +
+              `Mandatement : ${fmt(c.tauxMandatement)} · ` +
+              `Disponible : ${fmt(c.tauxDisponibilite)} ` +
+              `(OT consolidées : ${c.ot.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €)`,
+            duration: 9000,
+          });
+          // Cohérence OI + DBM = OT
+          const sdeRows = buildSdeRowsFromRecords(rows);
+          const coh = verifierCoherenceOuvertures(sdeRows);
+          if (!coh.ok && coh.ecarts.length > 0) {
+            toast.warning(`⚠️ Cohérence OI + DBM ≠ OT (${coh.ecarts.length} ligne(s))`, {
+              description: `Premier écart : compte ${coh.ecarts[0].compte} → ${coh.ecarts[0].ecart.toFixed(2)} €.`,
+              duration: 10000,
+            });
+          }
+          console.log(`[TAUX-SDE] ${slot.label}`, c, `services:`, taux.parService.length);
+        } else if (slot.type === 'sdr' || slot.type === 'sdr1') {
+          const taux = computeTauxRecettesFromRecords(rows);
+          const c = taux.consolide;
+          const fmt = (n: number) => `${n.toFixed(1)} %`;
+          const exerciceLabel = slot.type === 'sdr1' ? `${exerciceTravail - 1} (N-1)` : `${exerciceTravail}`;
+          toast.success(`📈 Taux d'exécution recettes ${exerciceLabel} — ${slot.label}`, {
+            description:
+              `Exécution recettes : ${fmt(c.tauxExecutionRecettes)} · ` +
+              `Recouvrement : ${fmt(c.tauxRecouvrement)} ` +
+              `(PT consolidées : ${c.pt.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} € · ` +
+              `Reste à recouvrer : ${c.resteARecouvrer.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} €)`,
+            duration: 9000,
+          });
+          console.log(`[TAUX-SDR] ${slot.label}`, c, `services:`, taux.parService.length);
+        }
+      } catch (tauxErr) {
+        console.warn('[TAUX] Calcul des taux indisponible :', tauxErr);
+      }
+
       logImport({ fileName, fileType: slot.type, budgetType: slot.typeBudget, rowsCount: rows.length, result: 'success', fileUai: csvUai, fileOpale: csvOpale, fileExercice: csvExercice, fileTypeDetected: csvDocType });
     } catch (err: any) {
       setErrors(prev => ({ ...prev, [slot.key]: err.message || 'Erreur de parsing' }));
