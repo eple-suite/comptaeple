@@ -1,9 +1,9 @@
 // =====================================================================
-// Section « Indicateurs REPROFI 4.6 » — Compte financier
+// Section « Diagnostic Financier EPLE » — Compte financier
 // ---------------------------------------------------------------------
-// Affiche les 10 indicateurs REPROFI calculés par le moteur
-// `reprofiIndicateursEngine` à partir de la balance active du store
-// COFIEPLE, plus le bloc des 5 réserves (M9-6 tome 4 art. 43231).
+// Affiche les 10 indicateurs réglementaires calculés par le moteur
+// d'analyse à partir de la balance active du store COFIEPLE,
+// plus le bloc des 5 réserves (M9-6 tome 4 art. 43231).
 // Chaque indicateur : code couleur par niveau + explication contextuelle.
 // =====================================================================
 
@@ -77,11 +77,12 @@ const NIVEAU_STYLE: Record<Niveau, {
 };
 
 // ─── Explication contextuelle par indicateur × niveau ────────────────
-// Les textes proviennent des seuils REPROFI 4.6 et de l'instruction M9-6.
+// Les textes proviennent des seuils réglementaires (M9-6 tome 4
+// art. 43231 et grilles d'analyse usuelles des EPLE).
 const EXPLICATIONS: Record<string, Partial<Record<Niveau, string>>> = {
   NR: {
     excellent: "Recouvrement quasi-parfait : moins de 2 % des créances sont douteuses. Bonne santé du suivi des familles.",
-    normal: "Taux de non-recouvrement contenu (2-5 %). Pratique conforme aux usages REPROFI.",
+    normal: "Taux de non-recouvrement contenu (2-5 %). Pratique conforme aux usages EPLE.",
     fragile: "Entre 5 et 10 % de créances douteuses : intensifier les relances et la coordination avec l'AC.",
     critique: "Plus de 10 % de créances douteuses : risque de provisionnement massif. Action SATD prioritaire.",
   },
