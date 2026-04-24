@@ -24,6 +24,7 @@ import { PointsBloquantsSection } from '@/components/cofieple/PointsBloquantsSec
 import { AnalyseIASection } from '@/components/cofieple/AnalyseIASection';
 import { IndicateursHorsComptables } from '@/components/cofieple/IndicateursHorsComptables';
 import { PluriannuelSection } from '@/components/cofieple/PluriannuelSection';
+import { IndicateursReprofiSection } from '@/components/cofieple/IndicateursReprofiSection';
 import { AnnexeComptableSection } from '@/components/cofieple/AnnexeComptableSection';
 import { ImportHistorySection } from '@/components/cofieple/ImportHistorySection';
 import { DocumentCASection } from '@/components/cofieple/DocumentCASection';
@@ -47,7 +48,7 @@ import {
   Home, Upload, ScrollText, Eye, ShieldCheck, AlertTriangle,
   History, PenTool, Bot, Gauge, Link2, GraduationCap, UtensilsCrossed,
   Layers, Landmark, BookOpen, Monitor, Building2, FileText, Shield,
-  Search, ClipboardList, BarChart3, Printer,
+  Search, ClipboardList, BarChart3, Printer, Sparkles,
 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────
@@ -117,6 +118,8 @@ const CompteFinancier = () => {
     { id: 'points_bloquants', label: 'Bloquants', icon: <AlertTriangle className="h-4 w-4" />, requiresData: true,
       badge: hasData ? (nbBloq > 0 ? `${nbBloq}` : '0') : undefined, badgeType: nbBloq > 0 ? 'error' : 'success' },
     { id: 'ratios', label: 'Ratios', icon: <Gauge className="h-4 w-4" />, requiresData: true },
+    { id: 'reprofi', label: 'REPROFI', icon: <Sparkles className="h-4 w-4" />, requiresData: true,
+      badge: '10', badgeType: 'info' },
     { id: 'pluriannuel', label: 'N à N-4', icon: <History className="h-4 w-4" /> },
     { id: 'indicateurs', label: 'Indicateurs', icon: <PenTool className="h-4 w-4" /> },
     { id: 'analyse_ia', label: 'Analyse IA', icon: <Bot className="h-4 w-4" />, requiresData: true },
@@ -172,6 +175,7 @@ const CompteFinancier = () => {
       case 'tableaux': return <TableauxSection />;
       case 'controles': return <AuditControlesSection />;
       case 'ratios': return <RatiosGestionSection />;
+      case 'reprofi': return <IndicateursReprofiSection />;
       case 'points_bloquants': return <PointsBloquantsSection />;
       case 'pluriannuel': return <PluriannuelSection />;
       case 'indicateurs': return <IndicateursHorsComptables />;
