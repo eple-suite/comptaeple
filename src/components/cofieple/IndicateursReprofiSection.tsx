@@ -312,7 +312,7 @@ export function IndicateursReprofiSection() {
       <div>
         <h3 className="text-sm font-bold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-2">
           <ShieldCheck className="h-4 w-4" />
-          Indicateurs de pilotage REPROFI ({panier.indicateurs.length})
+          Indicateurs de pilotage ({panier.indicateurs.length})
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
           {panier.indicateurs.map(ind => (
@@ -326,7 +326,7 @@ export function IndicateursReprofiSection() {
         <CardHeader className="pb-3">
           <CardTitle className="text-sm font-bold flex items-center gap-2">
             <Info className="h-4 w-4" />
-            Lecture des niveaux REPROFI
+            Lecture des niveaux de diagnostic
           </CardTitle>
         </CardHeader>
         <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-3">
@@ -338,7 +338,7 @@ export function IndicateursReprofiSection() {
                 <p className="text-[11px] text-muted-foreground leading-tight">
                   {n === 'critique' && 'Action immédiate requise — risque structurel.'}
                   {n === 'fragile' && 'Vigilance — anticiper les actions correctrices.'}
-                  {n === 'normal' && 'Conforme aux pratiques EPLE — surveiller la tendance.'}
+                  {n === 'normal' && 'Conforme aux pratiques M9-6 — surveiller la tendance.'}
                   {n === 'confortable' && 'Bonne santé — marge de manœuvre disponible.'}
                   {n === 'excellent' && 'Profil exemplaire — référence à valoriser.'}
                 </p>
