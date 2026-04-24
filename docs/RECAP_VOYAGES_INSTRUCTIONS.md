@@ -28,7 +28,7 @@
 | A.3 | Persistance `voyage_alertes` | 🟧 PARTIEL | table `vs_alertes` créée, écriture pas encore branchée | |
 | A.4 | Génération 32 documents Word | ✅ FAIT | `voyages-v2/lib/documentsCatalogue.ts`, `docxBuilder.ts`, `zipGenerator.ts`, `DocumentsGenerator.tsx` | 32 builders DOCX, ZIP organisé en 5 dossiers, sélection obligatoires/tout/aucun, manifest inclus |
 | A.5 | Bilan financier modèle Créteil | 🟧 PARTIEL | `VoyageBilanTab.tsx` existe en v1 | À porter en v2 avec règle 8 € |
-| A.5 | Règle des 8 € (LF 66-948 art. 21) | ❌ NON FAIT | Aucun calcul de reliquat ≤ 8 € | À implémenter |
+| A.5 | Règle des 8 € (LF 66-948 art. 21) | ✅ FAIT | `regle8Euros.ts` + bandeau wizard (étape 5+) + blocage `Suivant`/`Finaliser` + 7 tests unitaires | Bandeau permanent ROUGE/AMBRE/VERT ; checkbox don tacite assumé pour débloquer |
 | A.6 | Mode d'emploi SGEPLE débutant | ❌ NON FAIT | Aucune page guide | |
 | A.6 | Assistant IA contextuel voyages | ❌ NON FAIT | ChatEple existe mais pas de contexte voyage injecté | |
 | A.7 | Dashboard prédictif "wow" | ❌ NON FAIT | Dashboard v2 absent | |
