@@ -144,8 +144,15 @@ export async function loadVoyageContext(
       agence_nom: sNullable(voyage.agence_nom),
       agence_siret: sNullable(voyage.agence_siret),
       agence_garantie: sNullable(voyage.agence_garantie),
-      date_ca_autorisation: voyage.date_ca_autorisation || null,
-      numero_acte_ca: sNullable(voyage.numero_acte_ca),
+      // La date opposable au contrôle de légalité est celle du vote n°2
+      // (approbation du budget). Fallback sur l'ancien champ unique.
+      date_ca_autorisation:
+        voyage.date_ca_budget ||
+        voyage.date_ca_autorisation ||
+        null,
+      numero_acte_ca: sNullable(
+        voyage.numero_acte_ca_budget || voyage.numero_acte_ca,
+      ),
       erasmus_convention_ref: sNullable(voyage.erasmus_convention_ref),
       erasmus_subvention_notifiee: num(voyage.erasmus_subvention_notifiee),
     },
