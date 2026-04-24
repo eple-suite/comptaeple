@@ -409,6 +409,17 @@ export default function EnquetesRectoratPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
+          {isFinal && (
+            <Alert variant="destructive">
+              <Lock className="h-4 w-4" />
+              <AlertTitle>Enquête verrouillée — lecture seule</AlertTitle>
+              <AlertDescription>
+                Statut « {STATUT_LABEL[editing!.statut]} » : le contenu est figé côté base
+                de données (déclencheur PostgreSQL). Aucune modification ni suppression
+                n'est possible. Pour rouvrir cette enquête, contactez un administrateur.
+              </AlertDescription>
+            </Alert>
+          )}
           <div className="grid gap-3 md:grid-cols-3">
             <div>
               <Label>Année scolaire</Label>
