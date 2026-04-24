@@ -19,6 +19,7 @@ import {
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { VoyageWizard } from "./wizard/VoyageWizard";
 import { DocumentsGenerator } from "./DocumentsGenerator";
+import { DocumentsGeneratorReal } from "./DocumentsGeneratorReal";
 import type { DocxBuildContext } from "./lib/docxBuilder";
 import {
   evaluerAlertesVoyage,
@@ -45,6 +46,8 @@ export default function VoyagesV2Page() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [demoAlertes, setDemoAlertes] = useState<AlerteVoyage[] | null>(null);
   const [showDocs, setShowDocs] = useState(false);
+  const [docsMode, setDocsMode] = useState<"reel" | "demo">("reel");
+  const [docsRefreshKey, setDocsRefreshKey] = useState(0);
 
   const demoContext: DocxBuildContext = {
     voyage: {
@@ -208,7 +211,7 @@ export default function VoyagesV2Page() {
           <CardContent className="text-sm space-y-1">
             <div>✅ Moteur d'alertes + tests vitest</div>
             <div>✅ Wizard 9 étapes accessible</div>
-            <div>✅ 32 documents .docx (générateur ZIP)</div>
+            <div>✅ 32 documents — branchés voyages réels</div>
             <div>❌ Règle 8 € + bilan Créteil v2</div>
             <div>❌ Sidebar alertes permanente</div>
             <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => setShowDocs(v => !v)}>
@@ -218,7 +221,46 @@ export default function VoyagesV2Page() {
         </Card>
       </div>
 
-      {showDocs && <DocumentsGenerator context={demoContext} />}
+      {showDocs && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Badge variant="outline">Source de données</Badge>
+            <Button
+              size="sm"
+              variant={docsMode === "reel" ? "default" : "outline"}
+              onClick={() => setDocsMode("reel")}
+            >
+              Voyage réel (base)
+            </Button>
+            <Button
+              size="sm"
+              variant={docsMode === "demo" ? "default" : "outline"}
+              onClick={() => setDocsMode("demo")}
+            >
+              Démo (Madrid fictif)
+            </Button>
+          </div>
+          {docsMode === "reel" ? (
+            <DocumentsGeneratorReal
+              key={docsRefreshKey}
+              etablissement={
+                selectedEstablishment
+                  ? {
+                      id: selectedEstablishment.id,
+                      name: selectedEstablishment.name,
+                      uai: (selectedEstablishment as any)?.uai,
+                      address: (selectedEstablishment as any)?.address,
+                      city: (selectedEstablishment as any)?.city,
+                      zip_code: (selectedEstablishment as any)?.zip_code,
+                    }
+                  : null
+              }
+            />
+          ) : (
+            <DocumentsGenerator context={demoContext} />
+          )}
+        </div>
+      )}
 
       {demoAlertes && (
         <Card>
@@ -276,6 +318,7 @@ export default function VoyagesV2Page() {
           open={wizardOpen}
           onOpenChange={setWizardOpen}
           establishmentId={selectedEstablishment.id}
+          onSaved={() => setDocsRefreshKey((k) => k + 1)}
         />
       )}
     </div>
