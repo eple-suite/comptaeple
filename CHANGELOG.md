@@ -1,5 +1,51 @@
 # CHANGELOG — Refonte Compte financier (rectorat Guadeloupe)
 
+## ✅ Chantier 6 — Refonte PDF (REPROFI + Réserves) + Chantier 5 light (commentaires auto)
+
+### Fichiers créés
+- `src/lib/compteFinancier/commentairesEngine.ts` — moteur PUR de
+  commentaires automatiques :
+  • `commenterIndicateur()` : template par indicateur × niveau
+    (critique/fragile/normal/confortable/excellent),
+  • `commenterReserves()` : narration des 5 rubriques M9-6 art. 43231,
+  • `synthetiserCommentaires()` : 3 paragraphes (résultat + bilan +
+    diagnostic REPROFI) + verdict global (1 phrase pour le CA).
+- `src/lib/compteFinancier/pdfReprofiBlock.ts` — bloc PDF jsPDF
+  réutilisable :
+  • `dessinerBlocReprofi()` : verdict + bandeau Réserves (5 rubriques)
+    + tableau des 9 indicateurs avec colonnes Valeur/Niveau colorées
+    selon REPROFI (rouge/orange/jaune/vert/vert foncé),
+  • `ajouterPageReprofi()` : page autonome avec bandeau institutionnel
+    bleu, paramétrable via `ReprofiBlockOptions`.
+- `scripts/verify-commentaires-engine.mjs` — script Node validant
+  bilan + 9 indicateurs + commentaires sur balance fictive (exit 0).
+
+### Fichiers modifiés
+- `src/lib/pdfRapportAC.ts` (Ordonnateur, A4 paysage) — ajoute
+  une page « Diagnostic REPROFI 4.6 » avant la signature, alimentée
+  par `data.panierReprofi` et `data.syntheseCommentaires` (optionnels,
+  fallback silencieux).
+- `src/lib/pdfDocumentCA.ts` (Document CA, A4 portrait) — même
+  injection avant le footer final.
+- `src/components/cofieple/RapportSections.tsx` — calcule le panier
+  REPROFI à partir de la balance active du store via les moteurs
+  `bilanFinancierEngine` + `reprofiIndicateursEngine` + `commentairesEngine`
+  et le passe à `generateRapportACPdf`.
+- `src/components/cofieple/DocumentCASection.tsx` — même chaîne
+  d'alimentation pour `generateDocumentCA`.
+
+### Vérifications
+- `npx tsc --noEmit` : exit 0.
+- `node scripts/verify-commentaires-engine.mjs` : tous les niveaux
+  REPROFI sont correctement attribués (NR critique à 10,6 %, VETU
+  critique à 120 %, ENDET excellent à 1,12 ans, etc.). Verdict et
+  paragraphes générés conformément aux templates M9-6.
+
+### Reste à faire (Chantiers 7, 8, A.9)
+- Tests de recette automatisés sur jeu de balance réel Op@le.
+- Industrialisation enquêtes rectorat multi-établissements.
+- Documentation `FORMULES_BILANCIELLES.md` exhaustive + guide PDF.
+
 ## ✅ UI — Onglet « REPROFI » (10 indicateurs sur Compte financier)
 
 - `src/lib/compteFinancier/balanceAdapter.ts` — adapter

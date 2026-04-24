@@ -8,6 +8,9 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { addPDFFooters } from '@/lib/pdfUtils';
+import type { PanierReprofi } from './compteFinancier/reprofiIndicateursEngine';
+import type { SyntheseCommentaires } from './compteFinancier/commentairesEngine';
+import { ajouterPageReprofi } from './compteFinancier/pdfReprofiBlock';
 
 const BLEU: [number, number, number] = [37, 68, 120];
 const BLEU_CLAIR: [number, number, number] = [220, 230, 245];
@@ -67,6 +70,10 @@ export interface DocumentCAData {
   };
   commentaireOrdonnateur?: string;
   historique?: HistoriqueRow[];
+  /** Panier REPROFI 4.6 (10 indicateurs + 5 réserves) — optionnel. */
+  panierReprofi?: PanierReprofi;
+  /** Synthèse rédigée (verdict + paragraphes) à insérer avec le bloc REPROFI. */
+  syntheseCommentaires?: SyntheseCommentaires;
 }
 
 function fmt(n: number): string {
@@ -742,6 +749,23 @@ export function generateDocumentCA(data: DocumentCAData): void {
   doc.setFontSize(7.5);
   doc.setTextColor(60);
   doc.text(sanitize(etab.agentComptable || '(Nom et signature)'), margin + sigWidth + 14, yh + 13);
+
+  // ═══════════════════════════════════════════════════════════
+  // PAGE DEDIEE — DIAGNOSTIC REPROFI 4.6
+  // ═══════════════════════════════════════════════════════════
+  if (data.panierReprofi) {
+    try {
+      ajouterPageReprofi(doc, data.panierReprofi, {
+        margin,
+        width: pw - 2 * margin,
+        synthese: data.syntheseCommentaires,
+        inclureReserves: true,
+        titre: `Diagnostic REPROFI 4.6 - Exercice ${ex}`,
+      });
+    } catch (e) {
+      console.warn('[pdfDocumentCA] page REPROFI : fallback', e);
+    }
+  }
 
   // Add footers to all pages
   addPDFFooters(doc, `Document CA - ${sanitize(etab.nom)} - Exercice ${ex}`);

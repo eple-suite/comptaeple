@@ -27,6 +27,10 @@ import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
 import { supabase } from '@/integrations/supabase/client';
 import { generateRapportACPdf } from '@/lib/pdfRapportAC';
+import { adapterBalanceVersEngine } from '@/lib/compteFinancier/balanceAdapter';
+import { calculerBilanComplet } from '@/lib/compteFinancier/bilanFinancierEngine';
+import { calculerTousIndicateursReprofi } from '@/lib/compteFinancier/reprofiIndicateursEngine';
+import { synthetiserCommentaires } from '@/lib/compteFinancier/commentairesEngine';
 
 import { toast } from 'sonner';
 
@@ -1216,6 +1220,23 @@ export function RapportACSection() {
   function handleExportPdf() {
     try {
       const etabWithName = { ...etab, agentComptable: nomAgentComptable || etab.agentComptable };
+      // Calcul du panier REPROFI 4.6 a partir de la balance active.
+      let panierReprofi: ReturnType<typeof calculerTousIndicateursReprofi> | undefined;
+      let syntheseCommentaires: ReturnType<typeof synthetiserCommentaires> | undefined;
+      try {
+        const balanceState = (useCofiepleStore.getState().balance as any) ?? {};
+        const activeB = useCofiepleStore.getState().activeBudget;
+        const rows = (balanceState[activeB] || balanceState.principal || []) as any[];
+        if (rows && rows.length > 0) {
+          const balEngine = adapterBalanceVersEngine(rows);
+          const bilan = calculerBilanComplet(balEngine);
+          panierReprofi = calculerTousIndicateursReprofi(balEngine, bilan.caf.caf_additive);
+          syntheseCommentaires = synthetiserCommentaires(bilan, panierReprofi);
+        }
+      } catch (e) {
+        console.warn('[RapportAC] panier REPROFI indisponible :', e);
+      }
+
       generateRapportACPdf({
         etab: etabWithName, R: { ...R, ...safe } as any,
         saisieComplementaire: {
@@ -1235,6 +1256,8 @@ export function RapportACSection() {
         aiText: aiObs,
         history,
         nbAnom, nbBloq,
+        panierReprofi,
+        syntheseCommentaires,
       });
       toast.success('Rapport PDF généré avec succès');
     } catch (e) {

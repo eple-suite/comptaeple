@@ -16,6 +16,10 @@ import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import { EmptyState, KPICard } from './SharedComponents';
 import { generateDocumentCA } from '@/lib/pdfDocumentCA';
+import { adapterBalanceVersEngine } from '@/lib/compteFinancier/balanceAdapter';
+import { calculerBilanComplet } from '@/lib/compteFinancier/bilanFinancierEngine';
+import { calculerTousIndicateursReprofi } from '@/lib/compteFinancier/reprofiIndicateursEngine';
+import { synthetiserCommentaires } from '@/lib/compteFinancier/commentairesEngine';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
@@ -98,7 +102,25 @@ export function DocumentCASection() {
 
   const handleExportPdf = () => {
     try {
-      generateDocumentCA({ etab, R: R as any, indicateurs: ind, commentaireOrdonnateur, historique });
+      // Calcul du panier REPROFI 4.6 a partir de la balance active.
+      let panierReprofi: ReturnType<typeof calculerTousIndicateursReprofi> | undefined;
+      let syntheseCommentaires: ReturnType<typeof synthetiserCommentaires> | undefined;
+      try {
+        const st = useCofiepleStore.getState();
+        const rows = ((st.balance as any)?.[st.activeBudget] || (st.balance as any)?.principal || []) as any[];
+        if (rows && rows.length > 0) {
+          const balEngine = adapterBalanceVersEngine(rows);
+          const bilan = calculerBilanComplet(balEngine);
+          panierReprofi = calculerTousIndicateursReprofi(balEngine, bilan.caf.caf_additive);
+          syntheseCommentaires = synthetiserCommentaires(bilan, panierReprofi);
+        }
+      } catch (e) {
+        console.warn('[DocumentCA] panier REPROFI indisponible :', e);
+      }
+      generateDocumentCA({
+        etab, R: R as any, indicateurs: ind, commentaireOrdonnateur, historique,
+        panierReprofi, syntheseCommentaires,
+      });
       toast.success('Document CA exporté en PDF', { description: `Document_CA_${etab.uai}_${etab.exercice}.pdf` });
     } catch (e) {
       toast.error('Erreur lors de la génération du PDF');
