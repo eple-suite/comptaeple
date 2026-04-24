@@ -30,6 +30,9 @@ import { ShieldAlert, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { logRegle8Event, getEtablissementUai } from "../lib/voyageLogs";
 import { Regle8History } from "./Regle8History";
+import { evaluerAlertesVoyage } from "../lib/alertesEngine";
+import { buildAlertesInputFromDraft } from "./AlertesPanel";
+import { syncVoyageAlertes } from "../lib/alertesPersistence";
 
 const STEPS = [
   { n: 1, key: "identification", label: "Identification" },
@@ -131,6 +134,20 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
     setSaving(false);
     if (id) {
       setVoyageId(id);
+      // Synchronisation best-effort des alertes en base (vs_alertes)
+      void (async () => {
+        try {
+          const input = buildAlertesInputFromDraft(
+            { ...draft, wizard_step: targetStep },
+            recettes,
+            depenses,
+          );
+          const alertes = evaluerAlertesVoyage(input);
+          await syncVoyageAlertes(id, alertes);
+        } catch (e) {
+          // Silencieux : ne bloque jamais la sauvegarde fonctionnelle
+        }
+      })();
       if (nextStep) setStep(nextStep);
       toast.success(nextStep ? "Étape sauvegardée" : "Voyage sauvegardé");
       return id;
