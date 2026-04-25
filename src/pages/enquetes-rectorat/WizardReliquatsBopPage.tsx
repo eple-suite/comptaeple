@@ -139,23 +139,25 @@ export default function WizardReliquatsBopPage() {
         .single();
       if (errCamp) throw errCamp;
 
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: authData } = await supabase.auth.getUser();
+      const userId = authData.user?.id;
       const { data: ue } = await supabase
         .from("user_establishments")
         .select("establishment_id")
-        .eq("user_id", user?.id ?? "")
+        .eq("user_id", userId ?? "")
         .limit(1)
         .maybeSingle();
 
       if (ue?.establishment_id) {
-        await supabase.from("enquetes_reponses_eple").insert({
-          campagne_id: campagne.id,
-          establishment_id: ue.establishment_id,
+        const reponse = {
+          campagne_id: campagne.id as string,
+          establishment_id: ue.establishment_id as string,
           statut: "soumise",
-          donnees: data as unknown as Record<string, unknown>,
+          donnees: JSON.parse(JSON.stringify(data)),
           soumise_le: new Date().toISOString(),
           signataire_ordo: data.signataireOrdo,
-        });
+        };
+        await supabase.from("enquetes_reponses_eple").insert(reponse);
       }
 
       downloadPdf(pdf, `enquete-reliquats-${data.programme}-${data.exercice}.pdf`);
