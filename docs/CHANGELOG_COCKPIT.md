@@ -42,5 +42,25 @@
 - Méthode AUDITAC AJI (score CICF)
 
 ## Hors-périmètre (non livré dans cette itération)
-- Branchement rétroactif des modules existants vers `alertes_transverses` (table prête, RLS prête, seeds des modules à brancher itérativement par module)
 - Assistant Claude contextuel : ChatEple existant déjà disponible (chantier 8 reposant dessus)
+
+## Branchement rétroactif des modules — `alertes_transverses` ✅
+
+### `src/lib/cockpit/alertesSync.ts`
+5 scanners purs + orchestration upsert/clôture :
+- **balance** : comptes 47x non apurés (orange), 511 sens anormal (rouge), 531 caisse négative (rouge) — M9-6 tome 4
+- **voyages** : autorisation CA manquante (rouge, L.421-14/R.421-20), bilan > 30/60 j (orange/rouge, MENE2407159C)
+- **marches** : saucissonnage > 40 k€ HT (rouge, CCP R.2123-1), procédure formalisée requise > 143 k€ HT (rouge, R.2124-1)
+- **delegations** : expirée (rouge), expire ≤ 30 j (orange), ≤ 60 j (jaune) — Code éducation R.421-13
+- **entretiens** : entretien tenu non finalisé > 60 j orange / > 90 j rouge — Décret 2010-888
+
+### Idempotence
+Index unique `(module_origine, establishment_id, dedup_key)` exploité via `upsert(onConflict)`. Les alertes dont la condition disparaît sont automatiquement clôturées (statut `close`, `closed_at`).
+
+### Intégration UI (`Cockpit.tsx`)
+- Auto-sync silencieux au premier chargement (hors démo)
+- Bouton **« Resync alertes »** (toast récapitulatif : N actives · M clôturées · K erreurs)
+- Désactivé en mode démo
+
+### Recette
+`scripts/verify-alertes-sync.mjs` — **23 / 23 OK** (règles, niveaux, dedup, agrégation, couverture)
