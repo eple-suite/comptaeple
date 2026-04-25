@@ -12,8 +12,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
 import {
   Shield, Eye, Pencil, Download, Trash2, Lock, Calendar, Search, AlertTriangle, Loader2,
+  Building2, User as UserIcon, FilterX,
 } from "lucide-react";
 import type { FsJournalAccesEntry } from "./fsv2Types";
 
@@ -40,19 +42,37 @@ function fmtDate(iso: string) {
 }
 
 export default function RgpdJournalPage() {
-  const { selectedEstablishment } = useEstablishment();
+  const { selectedEstablishment, establishments } = useEstablishment();
+  const multiEtab = establishments.length > 1;
+  const [filterEtab, setFilterEtab] = useState<string>("current"); // "current" | "all" | <id>
   const [filterAction, setFilterAction] = useState<string>("all");
   const [filterResource, setFilterResource] = useState<string>("all");
+  const [filterUser, setFilterUser] = useState<string>("all");
   const [search, setSearch] = useState("");
 
+  // Détermine le périmètre d'établissements interrogés
+  const scopeEtabIds = useMemo<string[]>(() => {
+    if (!multiEtab || filterEtab === "current") {
+      return selectedEstablishment?.id ? [selectedEstablishment.id] : [];
+    }
+    if (filterEtab === "all") return establishments.map(e => e.id);
+    return [filterEtab];
+  }, [multiEtab, filterEtab, selectedEstablishment?.id, establishments]);
+
+  const etabLabelById = useMemo(() => {
+    const m = new Map<string, string>();
+    establishments.forEach(e => m.set(e.id, e.name ?? e.uai ?? e.id));
+    return m;
+  }, [establishments]);
+
   const { data: entries = [], isLoading } = useQuery({
-    queryKey: ["fs_journal_acces", selectedEstablishment?.id],
-    enabled: !!selectedEstablishment?.id,
+    queryKey: ["fs_journal_acces", scopeEtabIds.join(",")],
+    enabled: scopeEtabIds.length > 0,
     queryFn: async (): Promise<FsJournalAccesEntry[]> => {
       const { data, error } = await supabase
         .from("fs_journal_acces")
         .select("*")
-        .eq("establishment_id", selectedEstablishment!.id)
+        .in("establishment_id", scopeEtabIds)
         .order("created_at", { ascending: false })
         .limit(500);
       if (error) throw error;
@@ -60,10 +80,27 @@ export default function RgpdJournalPage() {
     },
   });
 
+  // Liste des utilisateurs distincts présents dans le journal courant
+  const userOptions = useMemo(() => {
+    const map = new Map<string, string>();
+    entries.forEach(e => {
+      const key = e.user_id ?? `name:${e.user_name ?? "inconnu"}`;
+      const label = e.user_name ?? "Utilisateur inconnu";
+      if (!map.has(key)) map.set(key, label);
+    });
+    return Array.from(map.entries())
+      .map(([value, label]) => ({ value, label }))
+      .sort((a, b) => a.label.localeCompare(b.label, "fr"));
+  }, [entries]);
+
   const filtered = useMemo(() => {
     return entries.filter(e => {
       if (filterAction !== "all" && e.action !== filterAction) return false;
       if (filterResource !== "all" && e.type_ressource !== filterResource) return false;
+      if (filterUser !== "all") {
+        const key = e.user_id ?? `name:${e.user_name ?? "inconnu"}`;
+        if (key !== filterUser) return false;
+      }
       if (search) {
         const q = search.toLowerCase();
         const hay = `${e.user_name ?? ""} ${e.ressource_id} ${JSON.stringify(e.details)}`.toLowerCase();
@@ -71,7 +108,22 @@ export default function RgpdJournalPage() {
       }
       return true;
     });
-  }, [entries, filterAction, filterResource, search]);
+  }, [entries, filterAction, filterResource, filterUser, search]);
+
+  const hasActiveFilters =
+    filterAction !== "all" ||
+    filterResource !== "all" ||
+    filterUser !== "all" ||
+    (multiEtab && filterEtab !== "current") ||
+    search.trim() !== "";
+
+  const resetFilters = () => {
+    setFilterAction("all");
+    setFilterResource("all");
+    setFilterUser("all");
+    setSearch("");
+    if (multiEtab) setFilterEtab("current");
+  };
 
   // KPIs
   const k = useMemo(() => ({
@@ -123,19 +175,64 @@ export default function RgpdJournalPage() {
 
       {/* Filtres */}
       <Card>
-        <CardHeader className="pb-2">
+        <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
           <CardTitle className="text-base">Filtres</CardTitle>
+          {hasActiveFilters && (
+            <Button variant="ghost" size="sm" onClick={resetFilters} className="h-7 text-xs">
+              <FilterX className="h-3.5 w-3.5 mr-1" /> Réinitialiser
+            </Button>
+          )}
         </CardHeader>
-        <CardContent className="grid md:grid-cols-3 gap-3">
+        <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-3">
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher (utilisateur, id…)"
+              placeholder="Rechercher (nom, id, détail…)"
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-8"
             />
           </div>
+
+          {multiEtab && (
+            <Select value={filterEtab} onValueChange={setFilterEtab}>
+              <SelectTrigger>
+                <div className="flex items-center gap-2 truncate">
+                  <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <SelectValue placeholder="Établissement" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="current">
+                  Établissement courant {selectedEstablishment?.name ? `— ${selectedEstablishment.name}` : ""}
+                </SelectItem>
+                <SelectItem value="all">Tous mes établissements ({establishments.length})</SelectItem>
+                {establishments.map(e => (
+                  <SelectItem key={e.id} value={e.id}>{e.name ?? e.uai ?? e.id}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          <Select value={filterUser} onValueChange={setFilterUser}>
+            <SelectTrigger>
+              <div className="flex items-center gap-2 truncate">
+                <UserIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                <SelectValue placeholder="Utilisateur" />
+              </div>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Tous les utilisateurs</SelectItem>
+              {userOptions.length === 0 ? (
+                <SelectItem value="__none" disabled>Aucun utilisateur dans le journal</SelectItem>
+              ) : (
+                userOptions.map(u => (
+                  <SelectItem key={u.value} value={u.value}>{u.label}</SelectItem>
+                ))
+              )}
+            </SelectContent>
+          </Select>
+
           <Select value={filterAction} onValueChange={setFilterAction}>
             <SelectTrigger><SelectValue placeholder="Action" /></SelectTrigger>
             <SelectContent>
@@ -189,6 +286,9 @@ export default function RgpdJournalPage() {
                   <tr className="border-b">
                     <th className="p-3">Horodatage</th>
                     <th className="p-3">Utilisateur</th>
+                    {multiEtab && filterEtab !== "current" && filterEtab !== selectedEstablishment?.id && (
+                      <th className="p-3">Établissement</th>
+                    )}
                     <th className="p-3">Action</th>
                     <th className="p-3">Ressource</th>
                     <th className="p-3">Identifiant</th>
@@ -203,6 +303,13 @@ export default function RgpdJournalPage() {
                       <tr key={e.id} className="hover:bg-muted/30">
                         <td className="p-3 font-mono text-xs whitespace-nowrap">{fmtDate(e.created_at)}</td>
                         <td className="p-3">{e.user_name ?? <span className="text-muted-foreground italic">inconnu</span>}</td>
+                        {multiEtab && filterEtab !== "current" && filterEtab !== selectedEstablishment?.id && (
+                          <td className="p-3 text-xs">
+                            <Badge variant="secondary" className="text-[10px]">
+                              {etabLabelById.get(e.establishment_id) ?? e.establishment_id.slice(0, 8) + "…"}
+                            </Badge>
+                          </td>
+                        )}
                         <td className="p-3">
                           <div className={`flex items-center gap-1.5 ${meta.color}`}>
                             <Icon className="h-3.5 w-3.5" />
