@@ -15,6 +15,7 @@ import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { currentAnneeScolaire } from "@/lib/entretiens/wizard";
 import { STATUT_LABELS, type EntretienStatut } from "@/lib/entretiens/types";
 import { buildActionsAFaire, URGENCE_LABELS, ACTEUR_COLORS, type Urgence, type ActionAgent } from "@/lib/entretiens/actionsAFaire";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface Etablissement {
   id: string;
@@ -95,9 +96,10 @@ export default function CampagneDashboard() {
   const [filtreCampagne, setFiltreCampagne] = useState<string>(currentAnneeScolaire());
   const [filtreStatut, setFiltreStatut] = useState<StatutGlobal | "all">("all");
   const [search, setSearch] = useState("");
-  const [vue, setVue] = useState<"liste" | "actions">("actions");
-  const [filtreUrgence, setFiltreUrgence] = useState<Urgence | "all">("all");
-  const [filtreActeur, setFiltreActeur] = useState<ActionAgent["acteur"] | "all">("all");
+  const [vue, setVue] = usePersistedState<"liste" | "actions">("camp_vue", "actions", { urlParam: "vue" });
+  const [filtreUrgence, setFiltreUrgence] = usePersistedState<Urgence | "all">("camp_act_urgence", "all", { urlParam: "urg" });
+  const [filtreActeur, setFiltreActeur] = usePersistedState<ActionAgent["acteur"] | "all">("camp_act_acteur", "all", { urlParam: "acteur" });
+  const [searchActions, setSearchActions] = usePersistedState<string>("camp_act_search", "", { urlParam: "qa" });
 
   /* Tous les établissements accessibles */
   const { data: etablissements = [] } = useQuery({
@@ -217,17 +219,17 @@ export default function CampagneDashboard() {
   );
 
   const actionsFiltrees = useMemo(() => {
+    const q = searchActions.trim().toLowerCase();
     return actions.filter((a) => {
       if (filtreUrgence !== "all" && a.urgence !== filtreUrgence) return false;
       if (filtreActeur !== "all" && a.acteur !== filtreActeur) return false;
-      if (search.trim()) {
-        const q = search.trim().toLowerCase();
+      if (q) {
         const txt = `${a.agentNom} ${a.agentPrenom} ${a.libelle}`.toLowerCase();
         if (!txt.includes(q)) return false;
       }
       return true;
     });
-  }, [actions, filtreUrgence, filtreActeur, search]);
+  }, [actions, filtreUrgence, filtreActeur, searchActions]);
 
   const actionsParUrgence = useMemo(() => {
     const acc: Record<Urgence, number> = { critique: 0, haute: 0, moyenne: 0, basse: 0 };
@@ -384,20 +386,59 @@ export default function CampagneDashboard() {
                 ))}
               </div>
             </div>
-            <div className="p-4 border-b flex flex-wrap gap-2 items-center bg-muted/20">
-              <span className="text-xs text-muted-foreground">Filtrer par acteur :</span>
-              {(["all", "SG", "N+1", "N+2", "Agent"] as const).map((act) => (
-                <Badge key={act} variant={filtreActeur === act ? "default" : "outline"}
-                  className="cursor-pointer text-[11px]"
-                  onClick={() => setFiltreActeur(act as any)}>
-                  {act === "all" ? "Tous" : act}
-                </Badge>
-              ))}
-              {(filtreUrgence !== "all" || filtreActeur !== "all") && (
-                <Button variant="ghost" size="sm" className="h-6 text-xs"
-                  onClick={() => { setFiltreUrgence("all"); setFiltreActeur("all"); }}>
-                  Réinitialiser
-                </Button>
+            <div className="p-3 border-b bg-muted/20 space-y-2">
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-xs text-muted-foreground">Acteur :</span>
+                {(["all", "SG", "N+1", "N+2", "Agent"] as const).map((act) => {
+                  const count = act === "all" ? actions.length : actions.filter((a) => a.acteur === act).length;
+                  const isActive = filtreActeur === act;
+                  return (
+                    <Badge
+                      key={act}
+                      variant={isActive ? "default" : "outline"}
+                      className={`cursor-pointer text-[11px] ${!isActive && act !== "all" ? ACTEUR_COLORS[act as ActionAgent["acteur"]] : ""}`}
+                      onClick={() => setFiltreActeur(act as ActionAgent["acteur"] | "all")}
+                      title={`${count} action${count > 1 ? "s" : ""}`}
+                    >
+                      {act === "all" ? "Tous" : act} <span className="ml-1 opacity-70">({count})</span>
+                    </Badge>
+                  );
+                })}
+                {(filtreUrgence !== "all" || filtreActeur !== "all" || searchActions !== "") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs ml-auto"
+                    onClick={() => { setFiltreUrgence("all"); setFiltreActeur("all"); setSearchActions(""); }}
+                  >
+                    Réinitialiser
+                  </Button>
+                )}
+              </div>
+              <div className="relative">
+                <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={searchActions}
+                  onChange={(e) => setSearchActions(e.target.value)}
+                  placeholder="Rechercher un agent (nom, prénom, action)…"
+                  className="pl-7 h-8 text-sm"
+                />
+                {searchActions && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchActions("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                    aria-label="Effacer la recherche"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {(filtreUrgence !== "all" || filtreActeur !== "all" || searchActions !== "") && (
+                <div className="text-[11px] text-muted-foreground">
+                  {actionsFiltrees.length} / {actions.length} action{actions.length > 1 ? "s" : ""} affichée{actionsFiltrees.length > 1 ? "s" : ""}
+                  {searchActions && <> · recherche : « <span className="font-medium text-foreground">{searchActions}</span> »</>}
+                </div>
               )}
             </div>
             <ul className="divide-y">
