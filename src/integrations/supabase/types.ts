@@ -14,6 +14,111 @@ export type Database = {
   }
   public: {
     Tables: {
+      agents: {
+        Row: {
+          actif: boolean
+          administration_origine: string | null
+          categorie: Database["public"]["Enums"]["agent_categorie"] | null
+          corps: string | null
+          created_at: string
+          date_derniere_promotion: string | null
+          date_entree_corps: string | null
+          date_entree_etablissement: string | null
+          date_naissance: string | null
+          echelon: number | null
+          email: string | null
+          establishment_id: string
+          fiche_poste_id: string | null
+          filiere: Database["public"]["Enums"]["agent_filiere"] | null
+          fonction: string | null
+          grade: string | null
+          id: string
+          indice: number | null
+          n1_user_id: string | null
+          n2_user_id: string | null
+          nom: string
+          notes_rh: string | null
+          prenom: string
+          quotite_travail: number | null
+          service: string | null
+          statut: Database["public"]["Enums"]["agent_statut"]
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          administration_origine?: string | null
+          categorie?: Database["public"]["Enums"]["agent_categorie"] | null
+          corps?: string | null
+          created_at?: string
+          date_derniere_promotion?: string | null
+          date_entree_corps?: string | null
+          date_entree_etablissement?: string | null
+          date_naissance?: string | null
+          echelon?: number | null
+          email?: string | null
+          establishment_id: string
+          fiche_poste_id?: string | null
+          filiere?: Database["public"]["Enums"]["agent_filiere"] | null
+          fonction?: string | null
+          grade?: string | null
+          id?: string
+          indice?: number | null
+          n1_user_id?: string | null
+          n2_user_id?: string | null
+          nom: string
+          notes_rh?: string | null
+          prenom: string
+          quotite_travail?: number | null
+          service?: string | null
+          statut?: Database["public"]["Enums"]["agent_statut"]
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          administration_origine?: string | null
+          categorie?: Database["public"]["Enums"]["agent_categorie"] | null
+          corps?: string | null
+          created_at?: string
+          date_derniere_promotion?: string | null
+          date_entree_corps?: string | null
+          date_entree_etablissement?: string | null
+          date_naissance?: string | null
+          echelon?: number | null
+          email?: string | null
+          establishment_id?: string
+          fiche_poste_id?: string | null
+          filiere?: Database["public"]["Enums"]["agent_filiere"] | null
+          fonction?: string | null
+          grade?: string | null
+          id?: string
+          indice?: number | null
+          n1_user_id?: string | null
+          n2_user_id?: string | null
+          nom?: string
+          notes_rh?: string | null
+          prenom?: string
+          quotite_travail?: number | null
+          service?: string | null
+          statut?: Database["public"]["Enums"]["agent_statut"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agents_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_agents_fiche_poste"
+            columns: ["fiche_poste_id"]
+            isOneToOne: false
+            referencedRelation: "entretiens_fiches_poste"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       balances: {
         Row: {
           account_label: string
@@ -477,6 +582,508 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      entretiens_competences: {
+        Row: {
+          commentaire: string | null
+          confiance_ia: string | null
+          created_at: string
+          entretien_id: string
+          extrait_source: string | null
+          id: string
+          niveau: Database["public"]["Enums"]["competence_niveau"] | null
+          ordre: number
+          rubrique: string
+          sous_critere: string
+        }
+        Insert: {
+          commentaire?: string | null
+          confiance_ia?: string | null
+          created_at?: string
+          entretien_id: string
+          extrait_source?: string | null
+          id?: string
+          niveau?: Database["public"]["Enums"]["competence_niveau"] | null
+          ordre?: number
+          rubrique: string
+          sous_critere: string
+        }
+        Update: {
+          commentaire?: string | null
+          confiance_ia?: string | null
+          created_at?: string
+          entretien_id?: string
+          extrait_source?: string | null
+          id?: string
+          niveau?: Database["public"]["Enums"]["competence_niveau"] | null
+          ordre?: number
+          rubrique?: string
+          sous_critere?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_competences_entretien_id_fkey"
+            columns: ["entretien_id"]
+            isOneToOne: false
+            referencedRelation: "entretiens_professionnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entretiens_fiches_poste: {
+        Row: {
+          activites: string | null
+          categorie: Database["public"]["Enums"]["agent_categorie"] | null
+          competences_requises: string | null
+          conditions_exercice: string | null
+          created_at: string
+          created_by: string | null
+          establishment_id: string | null
+          filiere: Database["public"]["Enums"]["agent_filiere"] | null
+          id: string
+          intitule: string
+          missions_principales: string | null
+          partagee_groupement: boolean
+          service: string | null
+          updated_at: string
+        }
+        Insert: {
+          activites?: string | null
+          categorie?: Database["public"]["Enums"]["agent_categorie"] | null
+          competences_requises?: string | null
+          conditions_exercice?: string | null
+          created_at?: string
+          created_by?: string | null
+          establishment_id?: string | null
+          filiere?: Database["public"]["Enums"]["agent_filiere"] | null
+          id?: string
+          intitule: string
+          missions_principales?: string | null
+          partagee_groupement?: boolean
+          service?: string | null
+          updated_at?: string
+        }
+        Update: {
+          activites?: string | null
+          categorie?: Database["public"]["Enums"]["agent_categorie"] | null
+          competences_requises?: string | null
+          conditions_exercice?: string | null
+          created_at?: string
+          created_by?: string | null
+          establishment_id?: string | null
+          filiere?: Database["public"]["Enums"]["agent_filiere"] | null
+          id?: string
+          intitule?: string
+          missions_principales?: string | null
+          partagee_groupement?: boolean
+          service?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_fiches_poste_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entretiens_formation_bilan: {
+        Row: {
+          created_at: string
+          date_debut: string | null
+          date_fin: string | null
+          duree_heures: number | null
+          entretien_id: string
+          evaluation: string | null
+          id: string
+          intitule: string
+          organisme: string | null
+          reinvestissement: string | null
+        }
+        Insert: {
+          created_at?: string
+          date_debut?: string | null
+          date_fin?: string | null
+          duree_heures?: number | null
+          entretien_id: string
+          evaluation?: string | null
+          id?: string
+          intitule: string
+          organisme?: string | null
+          reinvestissement?: string | null
+        }
+        Update: {
+          created_at?: string
+          date_debut?: string | null
+          date_fin?: string | null
+          duree_heures?: number | null
+          entretien_id?: string
+          evaluation?: string | null
+          id?: string
+          intitule?: string
+          organisme?: string | null
+          reinvestissement?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_formation_bilan_entretien_id_fkey"
+            columns: ["entretien_id"]
+            isOneToOne: false
+            referencedRelation: "entretiens_professionnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entretiens_formation_demandes: {
+        Row: {
+          categorie: Database["public"]["Enums"]["formation_categorie"]
+          created_at: string
+          entretien_id: string
+          extrait_source: string | null
+          fondement: Database["public"]["Enums"]["formation_fondement"]
+          id: string
+          intitule: string
+          lien_pafac: string | null
+          priorite: Database["public"]["Enums"]["formation_priorite"]
+          statut: string | null
+        }
+        Insert: {
+          categorie?: Database["public"]["Enums"]["formation_categorie"]
+          created_at?: string
+          entretien_id: string
+          extrait_source?: string | null
+          fondement?: Database["public"]["Enums"]["formation_fondement"]
+          id?: string
+          intitule: string
+          lien_pafac?: string | null
+          priorite?: Database["public"]["Enums"]["formation_priorite"]
+          statut?: string | null
+        }
+        Update: {
+          categorie?: Database["public"]["Enums"]["formation_categorie"]
+          created_at?: string
+          entretien_id?: string
+          extrait_source?: string | null
+          fondement?: Database["public"]["Enums"]["formation_fondement"]
+          id?: string
+          intitule?: string
+          lien_pafac?: string | null
+          priorite?: Database["public"]["Enums"]["formation_priorite"]
+          statut?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_formation_demandes_entretien_id_fkey"
+            columns: ["entretien_id"]
+            isOneToOne: false
+            referencedRelation: "entretiens_professionnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entretiens_objectifs_futurs: {
+        Row: {
+          created_at: string
+          echeance: string | null
+          entretien_id: string
+          id: string
+          indicateur: string | null
+          libelle: string
+          ordre: number
+        }
+        Insert: {
+          created_at?: string
+          echeance?: string | null
+          entretien_id: string
+          id?: string
+          indicateur?: string | null
+          libelle: string
+          ordre?: number
+        }
+        Update: {
+          created_at?: string
+          echeance?: string | null
+          entretien_id?: string
+          id?: string
+          indicateur?: string | null
+          libelle?: string
+          ordre?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_objectifs_futurs_entretien_id_fkey"
+            columns: ["entretien_id"]
+            isOneToOne: false
+            referencedRelation: "entretiens_professionnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entretiens_objectifs_passes: {
+        Row: {
+          atteinte: Database["public"]["Enums"]["objectif_atteinte"] | null
+          commentaire: string | null
+          created_at: string
+          entretien_id: string
+          id: string
+          libelle: string
+          ordre: number
+        }
+        Insert: {
+          atteinte?: Database["public"]["Enums"]["objectif_atteinte"] | null
+          commentaire?: string | null
+          created_at?: string
+          entretien_id: string
+          id?: string
+          libelle: string
+          ordre?: number
+        }
+        Update: {
+          atteinte?: Database["public"]["Enums"]["objectif_atteinte"] | null
+          commentaire?: string | null
+          created_at?: string
+          entretien_id?: string
+          id?: string
+          libelle?: string
+          ordre?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_objectifs_passes_entretien_id_fkey"
+            columns: ["entretien_id"]
+            isOneToOne: false
+            referencedRelation: "entretiens_professionnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entretiens_professionnels: {
+        Row: {
+          agent_evalue_id: string
+          appreciation_generale: string | null
+          autorite_n2_user_id: string | null
+          campagne_annee: string
+          created_at: string
+          date_convocation: string | null
+          date_entretien: string | null
+          duree_entretien_min: number | null
+          establishment_id: string
+          evaluateur_user_id: string
+          finalise_at: string | null
+          ia_response_json: Json | null
+          ia_score_completude: number | null
+          id: string
+          lieu: string | null
+          mode: Database["public"]["Enums"]["entretien_mode"] | null
+          notification_agent_at: string | null
+          observations_agent: string | null
+          observations_n2: string | null
+          pdf_cref_hash: string | null
+          pdf_cref_url: string | null
+          pdf_crep_hash: string | null
+          pdf_crep_url: string | null
+          periode_debut: string | null
+          periode_fin: string | null
+          perspectives: string | null
+          signature_agent_at: string | null
+          signature_agent_hash: string | null
+          signature_n1_at: string | null
+          signature_n1_hash: string | null
+          signature_n2_hash: string | null
+          statut: Database["public"]["Enums"]["entretien_statut"]
+          texte_libre_appreciation: string | null
+          texte_libre_formation: string | null
+          updated_at: string
+          visa_n2_at: string | null
+        }
+        Insert: {
+          agent_evalue_id: string
+          appreciation_generale?: string | null
+          autorite_n2_user_id?: string | null
+          campagne_annee: string
+          created_at?: string
+          date_convocation?: string | null
+          date_entretien?: string | null
+          duree_entretien_min?: number | null
+          establishment_id: string
+          evaluateur_user_id: string
+          finalise_at?: string | null
+          ia_response_json?: Json | null
+          ia_score_completude?: number | null
+          id?: string
+          lieu?: string | null
+          mode?: Database["public"]["Enums"]["entretien_mode"] | null
+          notification_agent_at?: string | null
+          observations_agent?: string | null
+          observations_n2?: string | null
+          pdf_cref_hash?: string | null
+          pdf_cref_url?: string | null
+          pdf_crep_hash?: string | null
+          pdf_crep_url?: string | null
+          periode_debut?: string | null
+          periode_fin?: string | null
+          perspectives?: string | null
+          signature_agent_at?: string | null
+          signature_agent_hash?: string | null
+          signature_n1_at?: string | null
+          signature_n1_hash?: string | null
+          signature_n2_hash?: string | null
+          statut?: Database["public"]["Enums"]["entretien_statut"]
+          texte_libre_appreciation?: string | null
+          texte_libre_formation?: string | null
+          updated_at?: string
+          visa_n2_at?: string | null
+        }
+        Update: {
+          agent_evalue_id?: string
+          appreciation_generale?: string | null
+          autorite_n2_user_id?: string | null
+          campagne_annee?: string
+          created_at?: string
+          date_convocation?: string | null
+          date_entretien?: string | null
+          duree_entretien_min?: number | null
+          establishment_id?: string
+          evaluateur_user_id?: string
+          finalise_at?: string | null
+          ia_response_json?: Json | null
+          ia_score_completude?: number | null
+          id?: string
+          lieu?: string | null
+          mode?: Database["public"]["Enums"]["entretien_mode"] | null
+          notification_agent_at?: string | null
+          observations_agent?: string | null
+          observations_n2?: string | null
+          pdf_cref_hash?: string | null
+          pdf_cref_url?: string | null
+          pdf_crep_hash?: string | null
+          pdf_crep_url?: string | null
+          periode_debut?: string | null
+          periode_fin?: string | null
+          perspectives?: string | null
+          signature_agent_at?: string | null
+          signature_agent_hash?: string | null
+          signature_n1_at?: string | null
+          signature_n1_hash?: string | null
+          signature_n2_hash?: string | null
+          statut?: Database["public"]["Enums"]["entretien_statut"]
+          texte_libre_appreciation?: string | null
+          texte_libre_formation?: string | null
+          updated_at?: string
+          visa_n2_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_professionnels_agent_evalue_id_fkey"
+            columns: ["agent_evalue_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entretiens_professionnels_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entretiens_recours: {
+        Row: {
+          created_at: string
+          date_limite_reponse: string | null
+          date_reponse: string | null
+          date_saisine: string
+          entretien_id: string
+          id: string
+          motif: string
+          reponse: string | null
+          statut: Database["public"]["Enums"]["recours_statut"]
+          type: Database["public"]["Enums"]["recours_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          date_limite_reponse?: string | null
+          date_reponse?: string | null
+          date_saisine: string
+          entretien_id: string
+          id?: string
+          motif: string
+          reponse?: string | null
+          statut?: Database["public"]["Enums"]["recours_statut"]
+          type: Database["public"]["Enums"]["recours_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          date_limite_reponse?: string | null
+          date_reponse?: string | null
+          date_saisine?: string
+          entretien_id?: string
+          id?: string
+          motif?: string
+          reponse?: string | null
+          statut?: Database["public"]["Enums"]["recours_statut"]
+          type?: Database["public"]["Enums"]["recours_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_recours_entretien_id_fkey"
+            columns: ["entretien_id"]
+            isOneToOne: false
+            referencedRelation: "entretiens_professionnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entretiens_signatures: {
+        Row: {
+          created_at: string
+          date_signature: string
+          entretien_id: string
+          hash: string
+          id: string
+          ip_address: string | null
+          signataire_nom: string | null
+          signataire_role: Database["public"]["Enums"]["signature_role"]
+          signataire_user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_signature?: string
+          entretien_id: string
+          hash: string
+          id?: string
+          ip_address?: string | null
+          signataire_nom?: string | null
+          signataire_role: Database["public"]["Enums"]["signature_role"]
+          signataire_user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_signature?: string
+          entretien_id?: string
+          hash?: string
+          id?: string
+          ip_address?: string | null
+          signataire_nom?: string | null
+          signataire_role?: Database["public"]["Enums"]["signature_role"]
+          signataire_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_signatures_entretien_id_fkey"
+            columns: ["entretien_id"]
+            isOneToOne: false
+            referencedRelation: "entretiens_professionnels"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       establishment_annexes: {
         Row: {
@@ -2837,9 +3444,63 @@ export type Database = {
         Args: { _establishment_id: string }
         Returns: boolean
       }
+      user_has_establishment_access: {
+        Args: { _establishment_id: string; _user_id: string }
+        Returns: boolean
+      }
+      user_is_entretien_party: {
+        Args: { _entretien_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
+      agent_categorie: "A" | "B" | "C"
+      agent_filiere:
+        | "AENES"
+        | "ITRF"
+        | "Bibliotheques"
+        | "SAENES"
+        | "Medico_sociale"
+        | "Autre"
+      agent_statut:
+        | "titulaire"
+        | "contractuel_cdd"
+        | "contractuel_cdi"
+        | "detache"
+        | "mis_a_disposition"
       app_role: "admin" | "agent"
+      competence_niveau:
+        | "excellent"
+        | "tres_bon"
+        | "satisfaisant"
+        | "a_developper"
+        | "insuffisant"
+        | "sans_objet"
+      entretien_mode: "presentiel" | "visio" | "hybride"
+      entretien_statut:
+        | "brouillon"
+        | "convocation_envoyee"
+        | "entretien_realise"
+        | "redaction_n1"
+        | "en_attente_signature_n1"
+        | "notifie_agent_pour_observations"
+        | "en_attente_signature_agent"
+        | "en_attente_visa_n2"
+        | "finalise"
+        | "archive"
+        | "recours_en_cours"
+        | "revision_demandee"
+      formation_categorie: "T1" | "T2" | "T3"
+      formation_fondement: "agent" | "evaluateur" | "consensuelle"
+      formation_priorite: "haute" | "moyenne" | "basse"
+      objectif_atteinte:
+        | "atteint"
+        | "partiellement_atteint"
+        | "non_atteint"
+        | "sans_objet"
+      recours_statut: "en_cours" | "accepte" | "rejete" | "silence_vaut_refus"
+      recours_type: "revision_hierarchique" | "saisine_cap" | "saisine_ccp"
+      signature_role: "n1" | "agent" | "n2"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2967,7 +3628,58 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      agent_categorie: ["A", "B", "C"],
+      agent_filiere: [
+        "AENES",
+        "ITRF",
+        "Bibliotheques",
+        "SAENES",
+        "Medico_sociale",
+        "Autre",
+      ],
+      agent_statut: [
+        "titulaire",
+        "contractuel_cdd",
+        "contractuel_cdi",
+        "detache",
+        "mis_a_disposition",
+      ],
       app_role: ["admin", "agent"],
+      competence_niveau: [
+        "excellent",
+        "tres_bon",
+        "satisfaisant",
+        "a_developper",
+        "insuffisant",
+        "sans_objet",
+      ],
+      entretien_mode: ["presentiel", "visio", "hybride"],
+      entretien_statut: [
+        "brouillon",
+        "convocation_envoyee",
+        "entretien_realise",
+        "redaction_n1",
+        "en_attente_signature_n1",
+        "notifie_agent_pour_observations",
+        "en_attente_signature_agent",
+        "en_attente_visa_n2",
+        "finalise",
+        "archive",
+        "recours_en_cours",
+        "revision_demandee",
+      ],
+      formation_categorie: ["T1", "T2", "T3"],
+      formation_fondement: ["agent", "evaluateur", "consensuelle"],
+      formation_priorite: ["haute", "moyenne", "basse"],
+      objectif_atteinte: [
+        "atteint",
+        "partiellement_atteint",
+        "non_atteint",
+        "sans_objet",
+      ],
+      recours_statut: ["en_cours", "accepte", "rejete", "silence_vaut_refus"],
+      recours_type: ["revision_hierarchique", "saisine_cap", "saisine_ccp"],
+      signature_role: ["n1", "agent", "n2"],
     },
   },
 } as const
