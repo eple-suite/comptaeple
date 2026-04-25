@@ -16,6 +16,13 @@ import { formatEur } from "./lib/seuilsEngine";
 import { exportSaucissonnagePdf } from "./lib/exportSaucissonnagePdf";
 import { toast } from "sonner";
 
+const todayIso = new Date().toISOString().slice(0, 10);
+const formatDateFr = (iso: string): string => {
+  if (!iso) return "—";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+};
+
 export default function MarcheAntiSaucissonnage() {
   const { selectedEstablishment } = useEstablishment();
   const { data: marches = [] } = useMarches();
