@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { UserCheck, Sparkles, FileText, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
+import { UserCheck, Sparkles, FileText, AlertTriangle, CheckCircle2, Loader2, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { validateIaResponse, computeCompletenessScore } from "@/lib/entretiens/iaSchema";
@@ -110,6 +111,13 @@ export default function EntretiensHome() {
           <p className="text-sm text-muted-foreground">
             Annexes C9 et C9 bis · Décret 2010-888 · Modèle académie de la Guadeloupe
           </p>
+        </div>
+        <div className="ml-auto">
+          <Button asChild>
+            <Link to="/entretiens/nouveau">
+              <Plus className="h-4 w-4 mr-1" /> Nouvel entretien (assistant 7 étapes)
+            </Link>
+          </Button>
         </div>
       </div>
 
