@@ -422,12 +422,12 @@ export default function CampagneDashboard() {
                     </Badge>
                   );
                 })}
-                {(filtreUrgence !== "all" || filtreActeur !== "all" || searchActions !== "") && (
+                {(filtreUrgence !== "all" || filtreActeur !== "all" || searchActions !== "" || tri !== "urgence") && (
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-6 text-xs ml-auto"
-                    onClick={() => { setFiltreUrgence("all"); setFiltreActeur("all"); setSearchActions(""); }}
+                    onClick={() => { setFiltreUrgence("all"); setFiltreActeur("all"); setSearchActions(""); setTri("urgence"); }}
                   >
                     Réinitialiser
                   </Button>
