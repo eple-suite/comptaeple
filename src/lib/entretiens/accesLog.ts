@@ -14,6 +14,7 @@ export type TypeAccesEntretien =
 export async function logAccesEntretien(
   entretienId: string,
   type: TypeAccesEntretien,
+  note?: string,
 ): Promise<void> {
   try {
     const { data: u } = await supabase.auth.getUser();
@@ -22,6 +23,7 @@ export async function logAccesEntretien(
       entretien_id: entretienId,
       consultant_user_id: u.user.id,
       type_acces: type,
+      notes: note ?? null,
       user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 200) : null,
     });
   } catch (e) {

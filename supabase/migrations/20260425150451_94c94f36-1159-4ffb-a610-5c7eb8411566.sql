@@ -1,0 +1,1 @@
+ALTER TABLE public.entretiens_acces_log ADD COLUMN IF NOT EXISTS notes TEXT;

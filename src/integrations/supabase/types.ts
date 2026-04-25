@@ -1665,6 +1665,7 @@ export type Database = {
           entretien_id: string
           id: string
           ip_address: string | null
+          notes: string | null
           type_acces: string
           user_agent: string | null
         }
@@ -1674,6 +1675,7 @@ export type Database = {
           entretien_id: string
           id?: string
           ip_address?: string | null
+          notes?: string | null
           type_acces: string
           user_agent?: string | null
         }
@@ -1683,6 +1685,7 @@ export type Database = {
           entretien_id?: string
           id?: string
           ip_address?: string | null
+          notes?: string | null
           type_acces?: string
           user_agent?: string | null
         }

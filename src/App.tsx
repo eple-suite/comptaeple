@@ -57,6 +57,8 @@ import NouvelEntretienWizard from "./pages/entretiens/NouvelEntretienWizard";
 import CampagneDashboard from "./pages/entretiens/CampagneDashboard";
 import RecoursPage from "./pages/entretiens/RecoursPage";
 import FichesPostePage from "./pages/entretiens/FichesPostePage";
+import ExportEstevePage from "./pages/entretiens/ExportEstevePage";
+import VueRectoratEntretiensPage from "./pages/entretiens/VueRectoratEntretiensPage";
 import AideAccueil from "./pages/aide/AideAccueil";
 import AideArticle from "./pages/aide/AideArticle";
 import AideModule from "./pages/aide/AideModule";
@@ -161,6 +163,8 @@ const App = () => (
               <Route path="/entretiens/campagne" element={<CampagneDashboard />} />
               <Route path="/entretiens/recours" element={<RecoursPage />} />
               <Route path="/entretiens/fiches-poste" element={<FichesPostePage />} />
+              <Route path="/entretiens/export-esteve" element={<ExportEstevePage />} />
+              <Route path="/entretiens/vue-rectorat" element={<VueRectoratEntretiensPage />} />
               <Route path="/aide" element={<AideAccueil />} />
               <Route path="/aide/article/:slug" element={<AideArticle />} />
               <Route path="/aide/module/:moduleId" element={<AideModule />} />

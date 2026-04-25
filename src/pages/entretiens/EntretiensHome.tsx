@@ -3,12 +3,13 @@ import { Link } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { UserCheck, Sparkles, FileText, AlertTriangle, CheckCircle2, Loader2, Plus, LayoutDashboard } from "lucide-react";
+import { UserCheck, Sparkles, FileText, AlertTriangle, CheckCircle2, Loader2, Plus, LayoutDashboard, Scale, Briefcase, Send, Building2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { validateIaResponse, computeCompletenessScore } from "@/lib/entretiens/iaSchema";
 import { RUBRIQUES_C_LABELS, NIVEAUX_LABELS, type IaRepartitionResponse, type RubriqueC } from "@/lib/entretiens/types";
 import { generateCrepPdf, generateCrefPdf, type CrepPdfPayload } from "@/lib/entretiens/pdfCrep";
+import { ClaudeRhFloatingChat } from "@/components/entretiens/ClaudeRhFloatingChat";
 
 const RUBRIQUES: RubriqueC[] = [
   "C1_resultats",
@@ -113,6 +114,26 @@ export default function EntretiensHome() {
           </p>
         </div>
         <div className="ml-auto flex gap-2">
+          <Button variant="outline" asChild>
+            <Link to="/entretiens/recours">
+              <Scale className="h-4 w-4 mr-1" /> Recours
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/entretiens/fiches-poste">
+              <Briefcase className="h-4 w-4 mr-1" /> Fiches de poste
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/entretiens/export-esteve">
+              <Send className="h-4 w-4 mr-1" /> Export ESTEVE
+            </Link>
+          </Button>
+          <Button variant="outline" asChild>
+            <Link to="/entretiens/vue-rectorat">
+              <Building2 className="h-4 w-4 mr-1" /> Vue AC
+            </Link>
+          </Button>
           <Button variant="outline" asChild>
             <Link to="/entretiens/campagne">
               <LayoutDashboard className="h-4 w-4 mr-1" /> Dashboard campagne
@@ -257,6 +278,7 @@ export default function EntretiensHome() {
           </Card>
         </>
       )}
+      <ClaudeRhFloatingChat />
     </div>
   );
 }
