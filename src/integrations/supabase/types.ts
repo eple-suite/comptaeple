@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      accreditations_chefs_etablissement: {
+        Row: {
+          ac_validateur_id: string | null
+          accreditation_drfip_pdf_url: string | null
+          arrete_affectation_pdf_url: string | null
+          bordereau_drfip_url: string | null
+          chef_etablissement_id: string | null
+          chef_etablissement_nom: string | null
+          coordonnees_pro: Json
+          created_at: string
+          created_by: string | null
+          date_arrete_affectation: string | null
+          date_expiration_conservation: string | null
+          date_prise_fonction: string | null
+          date_transmission_drfip: string | null
+          date_validation_ac: string | null
+          delegations_signature: Json
+          establishment_id: string
+          id: string
+          numero_arrete: string | null
+          observations: string | null
+          piece_identite_chiffree: boolean
+          piece_identite_pdf_url: string | null
+          specimen_signature_url: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          ac_validateur_id?: string | null
+          accreditation_drfip_pdf_url?: string | null
+          arrete_affectation_pdf_url?: string | null
+          bordereau_drfip_url?: string | null
+          chef_etablissement_id?: string | null
+          chef_etablissement_nom?: string | null
+          coordonnees_pro?: Json
+          created_at?: string
+          created_by?: string | null
+          date_arrete_affectation?: string | null
+          date_expiration_conservation?: string | null
+          date_prise_fonction?: string | null
+          date_transmission_drfip?: string | null
+          date_validation_ac?: string | null
+          delegations_signature?: Json
+          establishment_id: string
+          id?: string
+          numero_arrete?: string | null
+          observations?: string | null
+          piece_identite_chiffree?: boolean
+          piece_identite_pdf_url?: string | null
+          specimen_signature_url?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          ac_validateur_id?: string | null
+          accreditation_drfip_pdf_url?: string | null
+          arrete_affectation_pdf_url?: string | null
+          bordereau_drfip_url?: string | null
+          chef_etablissement_id?: string | null
+          chef_etablissement_nom?: string | null
+          coordonnees_pro?: Json
+          created_at?: string
+          created_by?: string | null
+          date_arrete_affectation?: string | null
+          date_expiration_conservation?: string | null
+          date_prise_fonction?: string | null
+          date_transmission_drfip?: string | null
+          date_validation_ac?: string | null
+          delegations_signature?: Json
+          establishment_id?: string
+          id?: string
+          numero_arrete?: string | null
+          observations?: string | null
+          piece_identite_chiffree?: boolean
+          piece_identite_pdf_url?: string | null
+          specimen_signature_url?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       agents: {
         Row: {
           actif: boolean
@@ -2833,6 +2914,153 @@ export type Database = {
           },
         ]
       }
+      habilitations_opale: {
+        Row: {
+          acte_url: string | null
+          agent_id: string | null
+          agent_nom: string | null
+          consulte_par_rectorat: Json
+          created_at: string
+          created_by: string | null
+          date_activation_effective: string | null
+          date_activation_souhaitee: string | null
+          date_demande: string
+          date_revocation_effective: string | null
+          date_revocation_prevue: string | null
+          date_signature_ac: string | null
+          date_signature_ordonnateur: string | null
+          establishment_id: string
+          id: string
+          motif_demande: string | null
+          motif_revocation: string | null
+          notes: string | null
+          perimetre_eple_ids: string[]
+          profil_opale: string
+          signe_par_ac_id: string | null
+          signe_par_ordonnateur_id: string | null
+          sphere: string
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          acte_url?: string | null
+          agent_id?: string | null
+          agent_nom?: string | null
+          consulte_par_rectorat?: Json
+          created_at?: string
+          created_by?: string | null
+          date_activation_effective?: string | null
+          date_activation_souhaitee?: string | null
+          date_demande?: string
+          date_revocation_effective?: string | null
+          date_revocation_prevue?: string | null
+          date_signature_ac?: string | null
+          date_signature_ordonnateur?: string | null
+          establishment_id: string
+          id?: string
+          motif_demande?: string | null
+          motif_revocation?: string | null
+          notes?: string | null
+          perimetre_eple_ids?: string[]
+          profil_opale: string
+          signe_par_ac_id?: string | null
+          signe_par_ordonnateur_id?: string | null
+          sphere: string
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          acte_url?: string | null
+          agent_id?: string | null
+          agent_nom?: string | null
+          consulte_par_rectorat?: Json
+          created_at?: string
+          created_by?: string | null
+          date_activation_effective?: string | null
+          date_activation_souhaitee?: string | null
+          date_demande?: string
+          date_revocation_effective?: string | null
+          date_revocation_prevue?: string | null
+          date_signature_ac?: string | null
+          date_signature_ordonnateur?: string | null
+          establishment_id?: string
+          id?: string
+          motif_demande?: string | null
+          motif_revocation?: string | null
+          notes?: string | null
+          perimetre_eple_ids?: string[]
+          profil_opale?: string
+          signe_par_ac_id?: string | null
+          signe_par_ordonnateur_id?: string | null
+          sphere?: string
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      habilitations_recapitulatif_annuel: {
+        Row: {
+          annee_scolaire: string
+          contenu: Json
+          created_at: string
+          created_by: string | null
+          date_generation: string
+          date_signature_ac: string | null
+          date_transmission_rectorat: string | null
+          groupement_id: string
+          id: string
+          pdf_url: string | null
+          rapport_completude_pct: number | null
+          signe_par_ac: boolean
+          signe_par_ordonnateurs: Json
+          statut: string
+          token_consultation_rectorat: string | null
+          updated_at: string
+          url_consultation_rectorat: string | null
+          xlsx_url: string | null
+        }
+        Insert: {
+          annee_scolaire: string
+          contenu?: Json
+          created_at?: string
+          created_by?: string | null
+          date_generation?: string
+          date_signature_ac?: string | null
+          date_transmission_rectorat?: string | null
+          groupement_id: string
+          id?: string
+          pdf_url?: string | null
+          rapport_completude_pct?: number | null
+          signe_par_ac?: boolean
+          signe_par_ordonnateurs?: Json
+          statut?: string
+          token_consultation_rectorat?: string | null
+          updated_at?: string
+          url_consultation_rectorat?: string | null
+          xlsx_url?: string | null
+        }
+        Update: {
+          annee_scolaire?: string
+          contenu?: Json
+          created_at?: string
+          created_by?: string | null
+          date_generation?: string
+          date_signature_ac?: string | null
+          date_transmission_rectorat?: string | null
+          groupement_id?: string
+          id?: string
+          pdf_url?: string | null
+          rapport_completude_pct?: number | null
+          signe_par_ac?: boolean
+          signe_par_ordonnateurs?: Json
+          statut?: string
+          token_consultation_rectorat?: string | null
+          updated_at?: string
+          url_consultation_rectorat?: string | null
+          xlsx_url?: string | null
+        }
+        Relationships: []
+      }
       historique_fonctions: {
         Row: {
           agent_id: string
@@ -3016,6 +3244,48 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      liens_utiles: {
+        Row: {
+          actif: boolean
+          ajoute_par: string | null
+          categorie: string
+          created_at: string
+          description: string | null
+          id: string
+          nom: string
+          ordre_affichage: number
+          tags: string[]
+          updated_at: string
+          url: string
+        }
+        Insert: {
+          actif?: boolean
+          ajoute_par?: string | null
+          categorie: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom: string
+          ordre_affichage?: number
+          tags?: string[]
+          updated_at?: string
+          url: string
+        }
+        Update: {
+          actif?: boolean
+          ajoute_par?: string | null
+          categorie?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          nom?: string
+          ordre_affichage?: number
+          tags?: string[]
+          updated_at?: string
+          url?: string
+        }
+        Relationships: []
       }
       logs: {
         Row: {
@@ -3862,6 +4132,173 @@ export type Database = {
           seuil_profil_acheteur?: number | null
           type_marche?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      observateur_rectoral_logs: {
+        Row: {
+          action: string
+          cible_id: string | null
+          cible_type: string | null
+          created_at: string
+          id: string
+          meta: Json | null
+          observateur_id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          cible_id?: string | null
+          cible_type?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          observateur_id: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          cible_id?: string | null
+          cible_type?: string | null
+          created_at?: string
+          id?: string
+          meta?: Json | null
+          observateur_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "observateur_rectoral_logs_observateur_id_fkey"
+            columns: ["observateur_id"]
+            isOneToOne: false
+            referencedRelation: "observateurs_rectoraux"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      observateurs_rectoraux: {
+        Row: {
+          actif: boolean
+          created_at: string
+          cree_par: string | null
+          date_activation: string
+          date_expiration: string
+          email: string
+          id: string
+          perimetre_eple_ids: string[]
+          perimetre_groupement_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string
+          cree_par?: string | null
+          date_activation?: string
+          date_expiration?: string
+          email: string
+          id?: string
+          perimetre_eple_ids?: string[]
+          perimetre_groupement_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string
+          cree_par?: string | null
+          date_activation?: string
+          date_expiration?: string
+          email?: string
+          id?: string
+          perimetre_eple_ids?: string[]
+          perimetre_groupement_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      passations_sgeple: {
+        Row: {
+          attestation_remise_url: string | null
+          created_at: string
+          created_by: string | null
+          date_dernier_jour_sortant: string | null
+          date_effective_passation: string | null
+          date_premier_jour_entrant: string | null
+          date_validation_ac: string | null
+          date_validation_ordo: string | null
+          dossiers_en_cours: Json
+          establishment_id: string
+          habilitations_a_creer: Json
+          habilitations_a_revoquer: Json
+          id: string
+          inventaire_dossiers: Json
+          inventaire_outils: Json
+          observations: string | null
+          pv_passation_url: string | null
+          sgeple_entrant_id: string | null
+          sgeple_sortant_id: string | null
+          signature_entrant_at: string | null
+          signature_sortant_at: string | null
+          statut: string
+          updated_at: string
+          validee_par_ac: string | null
+          validee_par_ordo: string | null
+        }
+        Insert: {
+          attestation_remise_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_dernier_jour_sortant?: string | null
+          date_effective_passation?: string | null
+          date_premier_jour_entrant?: string | null
+          date_validation_ac?: string | null
+          date_validation_ordo?: string | null
+          dossiers_en_cours?: Json
+          establishment_id: string
+          habilitations_a_creer?: Json
+          habilitations_a_revoquer?: Json
+          id?: string
+          inventaire_dossiers?: Json
+          inventaire_outils?: Json
+          observations?: string | null
+          pv_passation_url?: string | null
+          sgeple_entrant_id?: string | null
+          sgeple_sortant_id?: string | null
+          signature_entrant_at?: string | null
+          signature_sortant_at?: string | null
+          statut?: string
+          updated_at?: string
+          validee_par_ac?: string | null
+          validee_par_ordo?: string | null
+        }
+        Update: {
+          attestation_remise_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_dernier_jour_sortant?: string | null
+          date_effective_passation?: string | null
+          date_premier_jour_entrant?: string | null
+          date_validation_ac?: string | null
+          date_validation_ordo?: string | null
+          dossiers_en_cours?: Json
+          establishment_id?: string
+          habilitations_a_creer?: Json
+          habilitations_a_revoquer?: Json
+          id?: string
+          inventaire_dossiers?: Json
+          inventaire_outils?: Json
+          observations?: string | null
+          pv_passation_url?: string | null
+          sgeple_entrant_id?: string | null
+          sgeple_sortant_id?: string | null
+          signature_entrant_at?: string | null
+          signature_sortant_at?: string | null
+          statut?: string
+          updated_at?: string
+          validee_par_ac?: string | null
+          validee_par_ordo?: string | null
         }
         Relationships: []
       }
