@@ -21,6 +21,9 @@ import ElevesPage from "./pages/fonds-sociaux-v2/ElevesPage";
 import DecisionsPage from "./pages/fonds-sociaux-v2/DecisionsPage";
 import CommissionsPage from "./pages/fonds-sociaux-v2/CommissionsPage";
 import EnquetePage from "./pages/fonds-sociaux-v2/EnquetePage";
+import TableauBordPage from "./pages/fonds-sociaux-v2/TableauBordPage";
+import GroupementConsolidePage from "./pages/fonds-sociaux-v2/GroupementConsolidePage";
+import RgpdJournalPage from "./pages/fonds-sociaux-v2/RgpdJournalPage";
 import SATD from "./pages/SATD";
 import CreditNourriture from "./pages/CreditNourriture";
 import VeilleJuridique from "./pages/VeilleJuridique";
@@ -102,6 +105,9 @@ const App = () => (
               <Route path="/fonds-sociaux/v2/decisions" element={<DecisionsPage />} />
               <Route path="/fonds-sociaux/v2/commissions" element={<CommissionsPage />} />
               <Route path="/fonds-sociaux/v2/enquete" element={<EnquetePage />} />
+              <Route path="/fonds-sociaux/v2/tableau-bord" element={<TableauBordPage />} />
+              <Route path="/fonds-sociaux/v2/groupement" element={<GroupementConsolidePage />} />
+              <Route path="/fonds-sociaux/v2/rgpd" element={<RgpdJournalPage />} />
               <Route path="/satd" element={<SATD />} />
               <Route path="/credit-nourriture" element={<CreditNourriture />} />
               <Route path="/regies" element={<RegiesCaisse />} />
