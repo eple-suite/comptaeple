@@ -829,6 +829,9 @@ function ApercuInjection({ state, setState }: any) {
 
   const reanalyser = () => {
     if (!state.fiche_poste_snapshot) return;
+    // mémorise l'état courant pour pouvoir annuler
+    setSnapshotAvant(apercu.map((c) => ({ ...c })));
+    setDerniereAction("reanalyser");
     const fresh = analyserFichePoste(state.fiche_poste_snapshot);
     setState((s: WizardState) => ({ ...s, injection_apercu: fresh }));
     toast.success("Analyse de la fiche de poste relancée — toutes les cases ont été réinitialisées.");
@@ -836,6 +839,9 @@ function ApercuInjection({ state, setState }: any) {
 
   const reanalyserEnConservant = () => {
     if (!state.fiche_poste_snapshot) return;
+    // mémorise l'état courant pour pouvoir annuler
+    setSnapshotAvant(apercu.map((c) => ({ ...c })));
+    setDerniereAction("conserver");
     const fresh = analyserFichePoste(state.fiche_poste_snapshot);
     const { fusionnes, conserves, nouveaux, obsoletes } = mergeApercuPreservant(
       state.injection_apercu,
@@ -851,6 +857,15 @@ function ApercuInjection({ state, setState }: any) {
         ? `Choix conservés — ${parts.join(", ")}.`
         : "Aucun changement détecté dans la fiche de poste.",
     );
+  };
+
+  const annulerFusion = () => {
+    if (!snapshotAvant) return;
+    const restore = snapshotAvant.map((c) => ({ ...c }));
+    setState((s: WizardState) => ({ ...s, injection_apercu: restore }));
+    setSnapshotAvant(null);
+    setDerniereAction(null);
+    toast.success("Aperçu précédent restauré.");
   };
 
   return (
