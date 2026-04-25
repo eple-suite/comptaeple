@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import type {
   FsEleve, FsCommission, FsDecision,
   FsSubventionRectorat, FsReliquatOuverture,
+  FsDeliberationCa, FsCommissionConvocation, FsJournalAccesEntry,
 } from "./fsv2Types";
 
 // ─── ÉLÈVES ────────────────────────────────────────────────────
