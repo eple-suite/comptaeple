@@ -1,88 +1,72 @@
-// ⚠️ FICHIER CRITIQUE — NE PAS MODIFIER SANS AUTORISATION EXPLICITE
-import { useState, useCallback, useRef } from 'react';
-import { store } from '../store/persistentStore';
-
-// Hook principal : remplace useState pour toutes les données métier
-export function usePersistedState<T>(key: string, defaultValue: T) {
-  const [state, setState] = useState<T>(
-    () => store.get<T>(key, defaultValue)
-  );
-  const [lastSaved, setLastSaved] = useState<Date | null>(
-    () => store.getLastSaved(key)
-  );
-
-  const setPersistedState = useCallback((
-    value: T | ((prev: T) => T)
-  ) => {
-    setState(prev => {
-      const newValue = typeof value === 'function'
-        ? (value as (prev: T) => T)(prev)
-        : value;
-      store.set(key, newValue);
-      setLastSaved(new Date());
-      return newValue;
-    });
-  }, [key]);
-
-  return [state, setPersistedState, lastSaved] as const;
-}
-
-// Hook pour saisies longues : sauvegarde avec debounce 500ms
-export function usePersistedText(key: string, defaultValue = '') {
-  const [text, setText] = useState(
-    () => store.get<string>(key, defaultValue)
-  );
-  const [status, setStatus] = useState<'saved' | 'saving'>('saved');
-  const [lastSaved, setLastSaved] = useState<Date | null>(
-    () => store.getLastSaved(key)
-  );
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
-
-  const setPersistedText = useCallback((value: string) => {
-    setText(value);
-    setStatus('saving');
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      store.set(key, value);
-      setLastSaved(new Date());
-      setStatus('saved');
-    }, 500);
-  }, [key]);
-
-  return [text, setPersistedText, status, lastSaved] as const;
-}
+import { useEffect, useRef, useState } from "react";
 
 /**
- * Check if any cofieple persisted data exists — for restoration banner.
+ * État synchronisé avec l'URL (search params) et le localStorage.
+ * Priorité de lecture initiale : URL > localStorage > defaultValue.
+ * Sérialisation JSON ; si parse échoue → defaultValue.
+ *
+ * Utilisé pour rendre les filtres "ré-ouvrables" : on retombe sur le même
+ * écran après refresh/partage de lien, mais on peut aussi reset via Réinitialiser.
  */
-export function hasCofieplePersistedData(): boolean {
-  return Object.keys(localStorage).some(k => k.startsWith('cofieple_'));
-}
+export function usePersistedState<T>(
+  key: string,
+  defaultValue: T,
+  options: { urlParam?: string; storage?: "local" | "session" | "none" } = {},
+): [T, (v: T | ((prev: T) => T)) => void] {
+  const { urlParam, storage = "local" } = options;
 
-/**
- * Clear all cofieple persisted data (for reset button).
- */
-export function clearAllCofiepleData() {
-  const keys = Object.keys(localStorage).filter(k => k.startsWith('cofieple_'));
-  keys.forEach(k => localStorage.removeItem(k));
-}
-
-/**
- * Debounced save for textarea / long-text fields (legacy compat).
- */
-export function useDebouncedSave(key: string, delay = 500) {
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
-
-  const save = useCallback((value: unknown) => {
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      try {
-        localStorage.setItem(key, JSON.stringify(value));
-      } catch (e) {
-        console.error('Sauvegarde échouée', e);
+  const read = (): T => {
+    if (typeof window === "undefined") return defaultValue;
+    // 1. URL
+    if (urlParam) {
+      const u = new URL(window.location.href);
+      const raw = u.searchParams.get(urlParam);
+      if (raw !== null) {
+        try { return JSON.parse(raw) as T; } catch { /* fall through */ }
+        // valeurs scalaires non-JSON (ex. "all", "SG") : on accepte la string brute si T est string
+        return raw as unknown as T;
       }
-    }, delay);
-  }, [key, delay]);
+    }
+    // 2. storage
+    if (storage !== "none") {
+      const store = storage === "local" ? window.localStorage : window.sessionStorage;
+      const raw = store.getItem(key);
+      if (raw !== null) {
+        try { return JSON.parse(raw) as T; } catch { /* ignore */ }
+      }
+    }
+    return defaultValue;
+  };
 
-  return save;
+  const [value, setValue] = useState<T>(read);
+  const isFirst = useRef(true);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    // storage
+    if (storage !== "none") {
+      const store = storage === "local" ? window.localStorage : window.sessionStorage;
+      try { store.setItem(key, JSON.stringify(value)); } catch { /* quota */ }
+    }
+    // URL — on ne touche pas l'URL au tout premier render pour éviter de polluer
+    // l'historique si la valeur est le défaut. On le fait dès la 1re modification.
+    if (urlParam) {
+      const u = new URL(window.location.href);
+      const isDefault = JSON.stringify(value) === JSON.stringify(defaultValue);
+      if (isDefault) {
+        u.searchParams.delete(urlParam);
+      } else {
+        const serial = typeof value === "string" ? value : JSON.stringify(value);
+        u.searchParams.set(urlParam, serial);
+      }
+      // pas d'historique : replaceState
+      if (!isFirst.current) {
+        window.history.replaceState({}, "", u.toString());
+      }
+    }
+    isFirst.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  return [value, setValue];
 }
