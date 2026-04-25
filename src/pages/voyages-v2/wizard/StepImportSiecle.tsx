@@ -127,7 +127,7 @@ export function StepImportSiecle({ voyageId, onImported }: Props) {
         const existant = indexExistants.get(key);
 
         if (existant) {
-          if (mode === "update" || mode === "both") {
+          if (mode === "update" || mode === "both" || mode === "dry_run") {
             if (mode !== "dry_run") {
               const { error } = await supabase
                 .from("vs_participants")
@@ -153,7 +153,7 @@ export function StepImportSiecle({ voyageId, onImported }: Props) {
             }
           }
         } else {
-          if (mode === "create" || mode === "both") {
+          if (mode === "create" || mode === "both" || mode === "dry_run") {
             if (mode !== "dry_run") {
               const { error } = await supabase.from("vs_participants").insert({
                 voyage_id: voyageId,
