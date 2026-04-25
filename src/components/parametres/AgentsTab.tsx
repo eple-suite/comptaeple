@@ -36,6 +36,7 @@ interface AgentRow {
   photo_url?: string | null;
   matricule_education_nationale?: string | null;
   notes_rh?: string | null;
+  civilite?: "mme" | "m" | null;
 }
 
 const ROLE_OPTIONS = [
