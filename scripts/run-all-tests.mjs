@@ -7,8 +7,18 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
+
+// Scripts diagnostiques nécessitant des arguments runtime (xlsx) ou un loader TS spécifique :
+// exclus du gating automatique mais conservés comme outils invocables manuellement.
+const SKIP = new Set([
+  "verify-balance-anomalies.mjs",     // imports .ts directs sans loader
+  "verify-balance-import.mjs",        // requiert un fichier .xlsx en argument
+  "verify-commentaires-engine.mjs",   // imports .ts directs sans loader
+]);
+
 const scripts = readdirSync(here)
   .filter((f) => f.startsWith("verify-") && (f.endsWith(".test.ts") || f.endsWith(".test.mjs") || f.endsWith(".mjs")))
+  .filter((f) => !SKIP.has(f))
   .sort();
 
 // Détecte si un fichier .test.ts/.test.mjs est un vrai test vitest (describe/it/test)
