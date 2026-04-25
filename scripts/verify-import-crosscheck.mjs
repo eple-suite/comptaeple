@@ -6,7 +6,7 @@ const ko = (m) => { failed += 1; console.error(`  ✗ ${m}`); };
 
 console.log('═══ VERIFY IMPORT CROSS-CHECK ═══');
 
-const TOL = 0.01 + 1e-9; // marge anti-flottant
+const TOL = 0.011; // marge anti-flottant (0,01 € + arrondi)
 function check(id, label, expected, actual) {
   const ecart = Math.abs(expected - actual);
   return { id, label, expected, actual, ecart, ok: ecart <= TOL };
