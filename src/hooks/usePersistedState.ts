@@ -7,14 +7,14 @@ import { store } from "@/store/persistentStore";
  *  Persistance via le store applicatif (localStorage avec préfixe versionné)
  * ═══════════════════════════════════════════════════════════════════════════ */
 
-export type SaveStatus = "idle" | "saving" | "saved";
+export type SaveStatus = "saving" | "saved";
 
 export function usePersistedText(
   key: string,
   defaultValue: string,
 ): [string, (v: string) => void, SaveStatus, Date | null] {
   const [value, setValueState] = useState<string>(() => store.get<string>(key, defaultValue));
-  const [status, setStatus] = useState<SaveStatus>("idle");
+  const [status, setStatus] = useState<SaveStatus>("saved");
   const [lastSaved, setLastSaved] = useState<Date | null>(() => store.getLastSaved(key));
   const timer = useRef<number | null>(null);
 
@@ -29,7 +29,7 @@ export function usePersistedText(
         setLastSaved(new Date());
       } catch (e) {
         console.error(`[usePersistedText] échec sauvegarde "${key}"`, e);
-        setStatus("idle");
+        setStatus("saved");
       }
     }, 400);
   };
