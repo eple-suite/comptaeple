@@ -26,6 +26,12 @@ import GroupementConsolidePage from "./pages/fonds-sociaux-v2/GroupementConsolid
 import RgpdJournalPage from "./pages/fonds-sociaux-v2/RgpdJournalPage";
 import DeliberationsCAPage from "./pages/fonds-sociaux-v2/DeliberationsCAPage";
 import SATD from "./pages/SATD";
+import PassationSgeplePage from "./pages/rentree/PassationSgeplePage";
+import AccreditationOrdoPage from "./pages/rentree/AccreditationOrdoPage";
+import HabilitationsOpalePage from "./pages/rentree/HabilitationsOpalePage";
+import HabilitationsRecapPage from "./pages/rentree/HabilitationsRecapPage";
+import VueRectoratPage from "./pages/rentree/VueRectoratPage";
+import LiensUtilesPage from "./pages/rentree/LiensUtilesPage";
 import CreditNourriture from "./pages/CreditNourriture";
 import VeilleJuridique from "./pages/VeilleJuridique";
 import ControleInterne from "./pages/ControleInterne";
@@ -111,6 +117,12 @@ const App = () => (
               <Route path="/fonds-sociaux/v2/rgpd" element={<RgpdJournalPage />} />
               <Route path="/fonds-sociaux/v2/deliberations" element={<DeliberationsCAPage />} />
               <Route path="/satd" element={<SATD />} />
+              <Route path="/rentree/passation-sgeple" element={<PassationSgeplePage />} />
+              <Route path="/rentree/accreditation" element={<AccreditationOrdoPage />} />
+              <Route path="/rentree/habilitations-opale" element={<HabilitationsOpalePage />} />
+              <Route path="/rentree/habilitations-recap" element={<HabilitationsRecapPage />} />
+              <Route path="/rentree/vue-rectorat" element={<VueRectoratPage />} />
+              <Route path="/liens-utiles" element={<LiensUtilesPage />} />
               <Route path="/credit-nourriture" element={<CreditNourriture />} />
               <Route path="/regies" element={<RegiesCaisse />} />
               <Route path="/veille-juridique" element={<VeilleJuridique />} />
