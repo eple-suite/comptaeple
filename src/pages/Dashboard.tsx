@@ -402,6 +402,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </motion.div>
+      </>}
     </div>
   );
 };
