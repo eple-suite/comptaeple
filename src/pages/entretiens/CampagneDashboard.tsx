@@ -15,6 +15,7 @@ import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { currentAnneeScolaire } from "@/lib/entretiens/wizard";
 import { STATUT_LABELS, type EntretienStatut } from "@/lib/entretiens/types";
 import { buildActionsAFaire, URGENCE_LABELS, ACTEUR_COLORS, type Urgence, type ActionAgent } from "@/lib/entretiens/actionsAFaire";
+import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface Etablissement {
   id: string;
@@ -95,9 +96,10 @@ export default function CampagneDashboard() {
   const [filtreCampagne, setFiltreCampagne] = useState<string>(currentAnneeScolaire());
   const [filtreStatut, setFiltreStatut] = useState<StatutGlobal | "all">("all");
   const [search, setSearch] = useState("");
-  const [vue, setVue] = useState<"liste" | "actions">("actions");
-  const [filtreUrgence, setFiltreUrgence] = useState<Urgence | "all">("all");
-  const [filtreActeur, setFiltreActeur] = useState<ActionAgent["acteur"] | "all">("all");
+  const [vue, setVue] = usePersistedState<"liste" | "actions">("camp_vue", "actions", { urlParam: "vue" });
+  const [filtreUrgence, setFiltreUrgence] = usePersistedState<Urgence | "all">("camp_act_urgence", "all", { urlParam: "urg" });
+  const [filtreActeur, setFiltreActeur] = usePersistedState<ActionAgent["acteur"] | "all">("camp_act_acteur", "all", { urlParam: "acteur" });
+  const [searchActions, setSearchActions] = usePersistedState<string>("camp_act_search", "", { urlParam: "qa" });
 
   /* Tous les établissements accessibles */
   const { data: etablissements = [] } = useQuery({
