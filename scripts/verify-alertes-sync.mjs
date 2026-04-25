@@ -12,7 +12,14 @@
  * Décret 2010-888.
  */
 
-import {
+// Stub import.meta.env pour permettre le chargement du module client Supabase
+// (les scanners sont purs mais leur fichier importe `supabase` au top-level).
+process.env.VITE_SUPABASE_URL ||= 'https://localhost.invalid';
+process.env.VITE_SUPABASE_PUBLISHABLE_KEY ||= 'anon-test';
+process.env.VITE_SUPABASE_PROJECT_ID ||= 'test';
+
+const mod = await import('../src/lib/cockpit/alertesSync.ts');
+const {
   scannerBalance,
   scannerVoyages,
   scannerMarches,
@@ -20,7 +27,7 @@ import {
   scannerEntretiens,
   aggregerRapports,
   _modulesBranches,
-} from '../src/lib/cockpit/alertesSync.ts';
+} = mod;
 
 let ok = 0;
 let ko = 0;
