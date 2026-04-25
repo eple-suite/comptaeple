@@ -117,7 +117,9 @@ export function parseFrenchDate(value: unknown): Date | null {
  * l'idempotence et le versioning.
  */
 export async function sha256Hex(data: ArrayBuffer | Uint8Array): Promise<string> {
-  const buffer = data instanceof ArrayBuffer ? data : data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+  const bytes = data instanceof Uint8Array ? data : new Uint8Array(data);
+  // Copie défensive pour garantir un ArrayBuffer non partagé.
+  const buffer = new Uint8Array(bytes).buffer;
   const hash = await crypto.subtle.digest('SHA-256', buffer);
   return Array.from(new Uint8Array(hash))
     .map((b) => b.toString(16).padStart(2, '0'))
