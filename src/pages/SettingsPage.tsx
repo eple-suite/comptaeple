@@ -401,6 +401,8 @@ const SettingsPage = () => {
 
       {/* Règles sens normal des comptes (M9-6) */}
       <ComptesSensNormalManager uai={selectedEstablishment?.uai ?? null} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
