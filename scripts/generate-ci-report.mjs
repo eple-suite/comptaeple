@@ -58,6 +58,27 @@ const STEPS = [
     args: ['tsx', 'scripts/verify-sde-sdr-import.mjs'],
     categorie: 'Imports',
   },
+  {
+    id: 'verify-entretiens-circuit',
+    titre: 'Vérification — Circuit signatures entretiens (décret 2010-888)',
+    cmd: 'npx',
+    args: ['tsx', 'scripts/verify-entretiens-circuit.mjs'],
+    categorie: 'Entretiens professionnels',
+  },
+  {
+    id: 'verify-entretiens-ia',
+    titre: 'Vérification — Schéma IA répartition entretiens',
+    cmd: 'npx',
+    args: ['tsx', 'scripts/verify-entretiens-ia-schema.mjs'],
+    categorie: 'Entretiens professionnels',
+  },
+  {
+    id: 'verify-entretiens-wizard',
+    titre: 'Recette — Wizard nouvel entretien (7 étapes)',
+    cmd: 'npx',
+    args: ['tsx', 'scripts/verify-entretiens-wizard.mjs'],
+    categorie: 'Entretiens professionnels',
+  },
 ];
 
 // ---------------------------------------------------------------------
