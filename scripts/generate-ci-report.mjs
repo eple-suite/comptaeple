@@ -93,6 +93,13 @@ const STEPS = [
     args: ['tsx', 'scripts/verify-fiche-poste-parser.mjs'],
     categorie: 'Entretiens professionnels',
   },
+  {
+    id: 'verify-entretiens-actions-a-faire',
+    titre: 'Recette — Vue "Actions à faire" du dashboard entretiens',
+    cmd: 'npx',
+    args: ['tsx', 'scripts/verify-entretiens-actions-a-faire.mjs'],
+    categorie: 'Entretiens professionnels',
+  },
 ];
 
 // ---------------------------------------------------------------------
