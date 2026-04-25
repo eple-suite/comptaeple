@@ -20,7 +20,15 @@ import { suggererPreset } from "./lib/criteresPresets";
 import { PROCEDURE_LABELS, TYPE_MARCHE_LABELS, TVA_GUADELOUPE, type MarcheWizardDraft, type CritereAttribution, nextReference } from "./types";
 
 const DRAFT_KEY = "mp_wizard_draft_v1";
-const STEPS = ["Besoin", "Estimation & procédure", "Planning", "Critères & lots", "Vérifications", "Génération"];
+const STEPS = [
+  "Besoin",
+  "Estimation & procédure",
+  "Planning",
+  "Critères & lots",
+  "Clauses obligatoires 2026",
+  "Vérifications",
+  "Génération",
+];
 
 export default function MarcheNouveau() {
   const navigate = useNavigate();
@@ -107,7 +115,10 @@ export default function MarcheNouveau() {
     retroplanning_realiste: faisab ? faisab.faisable : false,
     allotissement_documente: d.allotissement || (!!d.justification_lot_unique && d.justification_lot_unique.length > 30),
     criteres_100: sumPond === 100,
-    clause_environnementale: !!(d.exigences_environnementales && d.exigences_environnementales.length > 10),
+    clause_environnementale: !!(d.exigences_environnementales && d.exigences_environnementales.length >= 30),
+    capacite_eco_conforme:
+      !((d as any).plafond_ca_exige) ||
+      Number((d as any).plafond_ca_exige) <= 1.5 * (Number(d.montant_estime_ht || 0) || 0),
     inscription_budgetaire: !!d.chapitre_budgetaire || !!d.compte_imputation,
     delegation_signature: true,
   };
