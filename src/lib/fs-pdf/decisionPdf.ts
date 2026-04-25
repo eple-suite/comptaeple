@@ -9,7 +9,7 @@
 // Stack : jsPDF + autoTable (cohérence avec le reste de l'app)
 // ═══════════════════════════════════════════════════════════════
 
-import jsPDF from "jspdf";
+import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatEur, formatDateFr, montantEnLettres } from "./utils";
 import type {
