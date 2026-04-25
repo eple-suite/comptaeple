@@ -141,12 +141,22 @@ export async function buildCockpitDataset(opts: { demo?: boolean } = {}): Promis
     const ano = detecterAnomaliesM96(bal || []).length;
     const score = scoreCICFFromBalance(bal || []);
 
-    const [voyagesRes, marchesRes] = await Promise.all([
-      supabase.from('vs_voyages').select('id', { count: 'exact', head: true })
-        .eq('establishment_id', e.id).in('statut', ['projet', 'autorise', 'en_cours']),
-      supabase.from('mp_marches').select('id', { count: 'exact', head: true })
-        .eq('establishment_id', e.id).in('statut_marche' as any, ['preparation', 'consultation', 'analyse', 'attribue']).then(r => r, () => ({ count: 0 } as any)),
-    ]);
+    let voyagesCount = 0;
+    let marchesCount = 0;
+    try {
+      const vRes: any = await supabase
+        .from('vs_voyages')
+        .select('id', { count: 'exact', head: true })
+        .eq('establishment_id', e.id);
+      voyagesCount = vRes?.count || 0;
+    } catch { voyagesCount = 0; }
+    try {
+      const mRes: any = await supabase
+        .from('mp_marches')
+        .select('id', { count: 'exact', head: true })
+        .eq('establishment_id', e.id);
+      marchesCount = mRes?.count || 0;
+    } catch { marchesCount = 0; }
 
     eplesResume.push({
       id: e.id,
@@ -163,8 +173,8 @@ export async function buildCockpitDataset(opts: { demo?: boolean } = {}): Promis
       creances: ind.creances,
       anomalies: ano,
       echeancesOuvertes: 0,
-      voyagesEnCours: voyagesRes.count || 0,
-      marchesEnCours: (marchesRes as any).count || 0,
+      voyagesEnCours: voyagesCount,
+      marchesEnCours: marchesCount,
     });
     totalFdr += ind.fdr; totalTreso += ind.tresorerie; totalCreances += ind.creances;
     totalCharges += ind.chargesAnnualisees; totalAnomalies += ano;
