@@ -94,7 +94,7 @@ export default function RecoursPage() {
       type === "recours_hierarchique"
         ? delais.dateLimiteRecoursHierarchique
         : delais.dateLimiteSaisineCAP;
-    const { error } = await supabase.from("entretiens_recours").insert({
+    const { error } = await supabase.from("entretiens_recours").insert([{
       entretien_id: selectedEntretienId,
       type,
       date_saisine: new Date().toISOString().slice(0, 10),
@@ -102,7 +102,7 @@ export default function RecoursPage() {
       motif,
       statut: "en_attente_reponse" as any,
       user_saisie_id: user.id,
-    });
+    }] as any);
     if (error) {
       toast.error("Erreur enregistrement : " + error.message);
       setSubmitting(false);
