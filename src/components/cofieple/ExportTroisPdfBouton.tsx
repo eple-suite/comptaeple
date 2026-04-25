@@ -39,7 +39,7 @@ export function ExportTroisPdfBouton() {
   });
 
   const buildPayload = (): CofiExportPayload => {
-    const r = resultats[activeBudget] || resultats.principal || {};
+    const r: any = resultats[activeBudget] || resultats.principal || {};
     return {
       ordo: {
         resultatBudgetaire: r.resultatBudgetaire,
