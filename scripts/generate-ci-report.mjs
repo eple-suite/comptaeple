@@ -100,6 +100,13 @@ const STEPS = [
     args: ['tsx', 'scripts/verify-entretiens-actions-a-faire.mjs'],
     categorie: 'Entretiens professionnels',
   },
+  {
+    id: 'verify-merge-apercu',
+    titre: 'Recette — Fusion d\'aperçu (Conserver mes choix)',
+    cmd: 'npx',
+    args: ['tsx', 'scripts/verify-merge-apercu.mjs'],
+    categorie: 'Entretiens professionnels',
+  },
 ];
 
 // ---------------------------------------------------------------------

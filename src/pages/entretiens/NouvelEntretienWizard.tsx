@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, Sparkles, FileText, Calendar, User, Briefcase, Target, GraduationCap, ClipboardCheck, Wand2, RefreshCw, Eye } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, Sparkles, FileText, Calendar, User, Briefcase, Target, GraduationCap, ClipboardCheck, Wand2, RefreshCw, Eye, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +32,7 @@ import {
   SOURCE_LABELS,
   type CritereInjecte,
 } from "@/lib/entretiens/fichePosteParser";
+import { mergeApercuPreservant } from "@/lib/entretiens/mergeApercu";
 
 const ICONS = [User, Calendar, Briefcase, FileText, Target, GraduationCap, ClipboardCheck];
 
@@ -828,7 +829,26 @@ function ApercuInjection({ state, setState }: any) {
     if (!state.fiche_poste_snapshot) return;
     const fresh = analyserFichePoste(state.fiche_poste_snapshot);
     setState((s: WizardState) => ({ ...s, injection_apercu: fresh }));
-    toast.success("Analyse de la fiche de poste relancée");
+    toast.success("Analyse de la fiche de poste relancée — toutes les cases ont été réinitialisées.");
+  };
+
+  const reanalyserEnConservant = () => {
+    if (!state.fiche_poste_snapshot) return;
+    const fresh = analyserFichePoste(state.fiche_poste_snapshot);
+    const { fusionnes, conserves, nouveaux, obsoletes } = mergeApercuPreservant(
+      state.injection_apercu,
+      fresh,
+    );
+    setState((s: WizardState) => ({ ...s, injection_apercu: fusionnes }));
+    const parts: string[] = [];
+    if (nouveaux > 0) parts.push(`${nouveaux} nouveau${nouveaux > 1 ? "x" : ""}`);
+    if (conserves > 0) parts.push(`${conserves} conservé${conserves > 1 ? "s" : ""}`);
+    if (obsoletes > 0) parts.push(`${obsoletes} retiré${obsoletes > 1 ? "s" : ""}`);
+    toast.success(
+      parts.length > 0
+        ? `Choix conservés — ${parts.join(", ")}.`
+        : "Aucun changement détecté dans la fiche de poste.",
+    );
   };
 
   return (
@@ -843,9 +863,33 @@ function ApercuInjection({ state, setState }: any) {
             </div>
           </div>
         </div>
-        <Button size="sm" variant="ghost" onClick={reanalyser}>
-          <RefreshCw className="h-3.5 w-3.5 mr-1" /> Ré-analyser
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="default" onClick={reanalyserEnConservant}>
+                  <ShieldCheck className="h-3.5 w-3.5 mr-1" /> Conserver mes choix
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs max-w-xs">
+                Relance l'analyse de la fiche de poste sans réinitialiser les cases que vous avez cochées
+                ou décochées. Seules les nouveautés (critères inédits) sont injectées en plus.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button size="sm" variant="ghost" onClick={reanalyser}>
+                  <RefreshCw className="h-3.5 w-3.5 mr-1" /> Ré-analyser
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs max-w-xs">
+                Réanalyse complète : <b>réinitialise toutes les cases</b> selon les défauts heuristiques.
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
       </div>
       <div className="p-3 space-y-3">
         {parRubrique.map(({ rubrique, items }) => {
