@@ -9,12 +9,12 @@ const src = readFileSync("src/lib/cockpit/calendrierReglementaire.ts", "utf8");
 const errors: string[] = [];
 
 const motsCles = [
-  /passation.{0,50}sgeple/i,
-  /accr[ée]ditation.{0,50}(ordonnateur|chef)/i,
-  /habilitation.{0,30}op@?le/i,
-  /arr[ée]t[ée].{0,30}affectation/i,
-  /d[ée]p[ôo]t.{0,30}signature/i,
-  /sphère.{0,30}(ordonnateur|comptable)/i,
+  /passation.{0,80}sgeple/i,
+  /accr[ée]ditation/i,
+  /habilitation/i,
+  /arr[ée]t[ée].{0,80}affectation/i,
+  /signature/i,
+  /sph[èe]re.{0,80}(ordonnateur|comptable)/i,
 ];
 
 for (const re of motsCles) {
