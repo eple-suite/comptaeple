@@ -16,7 +16,6 @@ import Voyages from "./pages/Voyages";
 import VoyagesV2Page from "./pages/voyages-v2/VoyagesV2Page";
 import EnquetesRectoratPage from "./pages/voyages-v2/EnquetesRectoratPage";
 import BilanFinancierPageV2 from "./pages/voyages-v2/BilanFinancierPageV2";
-import FondsSociaux from "./pages/FondsSociaux";
 import FondsSociauxV2Home from "./pages/fonds-sociaux-v2/FondsSociauxV2Home";
 import ElevesPage from "./pages/fonds-sociaux-v2/ElevesPage";
 import DecisionsPage from "./pages/fonds-sociaux-v2/DecisionsPage";
@@ -97,7 +96,7 @@ const App = () => (
               <Route path="/voyages-v2" element={<VoyagesV2Page />} />
               <Route path="/voyages-v2/enquetes-rectorat" element={<EnquetesRectoratPage />} />
               <Route path="/voyages-v2/bilan/:voyageId" element={<BilanFinancierPageV2 />} />
-              <Route path="/fonds-sociaux" element={<FondsSociaux />} />
+              <Route path="/fonds-sociaux" element={<Navigate to="/fonds-sociaux/v2" replace />} />
               <Route path="/fonds-sociaux/v2" element={<FondsSociauxV2Home />} />
               <Route path="/fonds-sociaux/v2/eleves" element={<ElevesPage />} />
               <Route path="/fonds-sociaux/v2/decisions" element={<DecisionsPage />} />

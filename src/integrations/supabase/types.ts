@@ -2237,9 +2237,57 @@ export type Database = {
           },
         ]
       }
+      fs_commission_convocations: {
+        Row: {
+          commission_id: string
+          created_at: string
+          date_envoi: string
+          establishment_id: string
+          id: string
+          membres_convoques: Json
+          ordre_du_jour: string | null
+          pdf_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          commission_id: string
+          created_at?: string
+          date_envoi?: string
+          establishment_id: string
+          id?: string
+          membres_convoques?: Json
+          ordre_du_jour?: string | null
+          pdf_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          commission_id?: string
+          created_at?: string
+          date_envoi?: string
+          establishment_id?: string
+          id?: string
+          membres_convoques?: Json
+          ordre_du_jour?: string | null
+          pdf_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_commission_convocations_commission_id_fkey"
+            columns: ["commission_id"]
+            isOneToOne: false
+            referencedRelation: "fs_commissions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fs_commissions: {
         Row: {
           annee_scolaire: string
+          convocation_envoyee: boolean
           created_at: string
           date_commission: string
           dossiers_examines_count: number
@@ -2248,12 +2296,15 @@ export type Database = {
           membres_presents: Json
           observations: string | null
           proces_verbal_url: string | null
+          pv_anonymise_url: string | null
+          pv_integral_url: string | null
           type: string
           updated_at: string
           user_id: string
         }
         Insert: {
           annee_scolaire?: string
+          convocation_envoyee?: boolean
           created_at?: string
           date_commission: string
           dossiers_examines_count?: number
@@ -2262,12 +2313,15 @@ export type Database = {
           membres_presents?: Json
           observations?: string | null
           proces_verbal_url?: string | null
+          pv_anonymise_url?: string | null
+          pv_integral_url?: string | null
           type?: string
           updated_at?: string
           user_id: string
         }
         Update: {
           annee_scolaire?: string
+          convocation_envoyee?: boolean
           created_at?: string
           date_commission?: string
           dossiers_examines_count?: number
@@ -2276,6 +2330,8 @@ export type Database = {
           membres_presents?: Json
           observations?: string | null
           proces_verbal_url?: string | null
+          pv_anonymise_url?: string | null
+          pv_integral_url?: string | null
           type?: string
           updated_at?: string
           user_id?: string
@@ -2293,15 +2349,21 @@ export type Database = {
       fs_decisions: {
         Row: {
           annee_scolaire: string
+          bordereau_dp_url: string | null
           code_activite_opale: string
           commission_id: string | null
+          compte_creance_famille: string
           compte_imputation_opale: string | null
+          courrier_complement_url: string | null
+          courrier_refus_url: string | null
           created_at: string
           date_decision: string
-          date_mandatement: string | null
+          date_demande_paiement: string | null
           decision_chef_etablissement_pdf_url: string | null
+          deliberation_ca_id: string | null
           eleve_id: string
           establishment_id: string
+          extinction_creance_dp: boolean
           id: string
           modalite_attribution: string
           modalite_versement: string
@@ -2310,7 +2372,7 @@ export type Database = {
           nature_aide: string
           notification_famille_pdf_url: string | null
           numero_decision: string
-          numero_mandat: string | null
+          numero_demande_paiement: string | null
           organisme_tiers_nom: string | null
           organisme_tiers_siret: string | null
           piece_comptable_pdf_url: string | null
@@ -2322,15 +2384,21 @@ export type Database = {
         }
         Insert: {
           annee_scolaire?: string
+          bordereau_dp_url?: string | null
           code_activite_opale?: string
           commission_id?: string | null
+          compte_creance_famille?: string
           compte_imputation_opale?: string | null
+          courrier_complement_url?: string | null
+          courrier_refus_url?: string | null
           created_at?: string
           date_decision: string
-          date_mandatement?: string | null
+          date_demande_paiement?: string | null
           decision_chef_etablissement_pdf_url?: string | null
+          deliberation_ca_id?: string | null
           eleve_id: string
           establishment_id: string
+          extinction_creance_dp?: boolean
           id?: string
           modalite_attribution: string
           modalite_versement: string
@@ -2339,7 +2407,7 @@ export type Database = {
           nature_aide: string
           notification_famille_pdf_url?: string | null
           numero_decision: string
-          numero_mandat?: string | null
+          numero_demande_paiement?: string | null
           organisme_tiers_nom?: string | null
           organisme_tiers_siret?: string | null
           piece_comptable_pdf_url?: string | null
@@ -2351,15 +2419,21 @@ export type Database = {
         }
         Update: {
           annee_scolaire?: string
+          bordereau_dp_url?: string | null
           code_activite_opale?: string
           commission_id?: string | null
+          compte_creance_famille?: string
           compte_imputation_opale?: string | null
+          courrier_complement_url?: string | null
+          courrier_refus_url?: string | null
           created_at?: string
           date_decision?: string
-          date_mandatement?: string | null
+          date_demande_paiement?: string | null
           decision_chef_etablissement_pdf_url?: string | null
+          deliberation_ca_id?: string | null
           eleve_id?: string
           establishment_id?: string
+          extinction_creance_dp?: boolean
           id?: string
           modalite_attribution?: string
           modalite_versement?: string
@@ -2368,7 +2442,7 @@ export type Database = {
           nature_aide?: string
           notification_famille_pdf_url?: string | null
           numero_decision?: string
-          numero_mandat?: string | null
+          numero_demande_paiement?: string | null
           organisme_tiers_nom?: string | null
           organisme_tiers_siret?: string | null
           piece_comptable_pdf_url?: string | null
@@ -2387,6 +2461,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "fs_decisions_deliberation_ca_fk"
+            columns: ["deliberation_ca_id"]
+            isOneToOne: false
+            referencedRelation: "fs_deliberations_ca"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "fs_decisions_eleve_id_fkey"
             columns: ["eleve_id"]
             isOneToOne: false
@@ -2401,6 +2482,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fs_deliberations_ca: {
+        Row: {
+          annee_scolaire: string
+          created_at: string
+          criteres_attribution: string | null
+          date_ca: string
+          establishment_id: string
+          id: string
+          numero: string
+          pdf_url: string | null
+          pieces_obligatoires: string[] | null
+          plafond_aide_individuelle: number | null
+          plafond_cumul_annuel: number | null
+          type_fonds: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          annee_scolaire: string
+          created_at?: string
+          criteres_attribution?: string | null
+          date_ca: string
+          establishment_id: string
+          id?: string
+          numero: string
+          pdf_url?: string | null
+          pieces_obligatoires?: string[] | null
+          plafond_aide_individuelle?: number | null
+          plafond_cumul_annuel?: number | null
+          type_fonds: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          annee_scolaire?: string
+          created_at?: string
+          criteres_attribution?: string | null
+          date_ca?: string
+          establishment_id?: string
+          id?: string
+          numero?: string
+          pdf_url?: string | null
+          pieces_obligatoires?: string[] | null
+          plafond_aide_individuelle?: number | null
+          plafond_cumul_annuel?: number | null
+          type_fonds?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       fs_eleves: {
         Row: {
@@ -2481,6 +2613,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      fs_journal_acces: {
+        Row: {
+          action: string
+          created_at: string
+          details: Json | null
+          establishment_id: string
+          id: string
+          ip_adresse: string | null
+          ressource_id: string
+          type_ressource: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          details?: Json | null
+          establishment_id: string
+          id?: string
+          ip_adresse?: string | null
+          ressource_id: string
+          type_ressource: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          details?: Json | null
+          establishment_id?: string
+          id?: string
+          ip_adresse?: string | null
+          ressource_id?: string
+          type_ressource?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: []
       }
       fs_reliquats_ouverture: {
         Row: {

@@ -14,7 +14,7 @@ import { Link } from "react-router-dom";
 import { useDecisions, useEleves, useUpsertDecision } from "./useFsData";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { useEstablishmentBranding } from "@/hooks/useEstablishmentBranding";
-import { NATURE_AIDE_LABELS, currentAnneeScolaire, type FsDecision } from "./fsv2Types";
+import { NATURE_AIDE_LABELS, STATUT_DECISION_LABELS, currentAnneeScolaire, type FsDecision } from "./fsv2Types";
 import { NouvelleDecisionWizard } from "./NouvelleDecisionWizard";
 import { impactsEnquete } from "./fsEnqueteHelpers";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -30,9 +30,13 @@ import { toast } from "sonner";
 const STATUT_COLORS: Record<string, string> = {
   brouillon: "bg-muted text-muted-foreground",
   decide: "bg-primary/10 text-primary border-primary/30",
-  mandate: "bg-secondary text-secondary-foreground",
+  demande_paiement_emise: "bg-secondary text-secondary-foreground",
+  prise_en_charge: "bg-secondary text-secondary-foreground",
   paye: "bg-primary text-primary-foreground",
+  refusee: "bg-destructive/10 text-destructive",
+  complement_demande: "bg-orange-500/10 text-orange-700 dark:text-orange-300",
   annule: "bg-destructive/10 text-destructive",
+  mandate: "bg-secondary/50 text-secondary-foreground", // legacy
 };
 
 export default function DecisionsPage() {
@@ -67,7 +71,7 @@ export default function DecisionsPage() {
   }), [decisions, elevesById, search, typeFilter, statutFilter, anneeFilter]);
 
   const totalVerse = filtered
-    .filter(d => d.statut === "mandate" || d.statut === "paye")
+    .filter(d => d.statut === "demande_paiement_emise" || d.statut === "prise_en_charge" || d.statut === "paye" || d.statut === "mandate")
     .reduce((s, d) => s + Number(d.montant), 0);
 
   function pdfCtx(): PdfContext {
@@ -93,10 +97,10 @@ export default function DecisionsPage() {
     if (!e) return toast.error("Élève introuvable");
     downloadBlob(generateNotificationFamillePdf(d, e as any, pdfCtx()), `Notification-${d.numero_decision}.pdf`);
   }
-  function handlePdfMandat(d: FsDecision) {
+  function handlePdfDemandePaiement(d: FsDecision) {
     const e = elevesById.get(d.eleve_id);
     if (!e) return toast.error("Élève introuvable");
-    downloadBlob(generatePieceComptablePdf(d, e as any, pdfCtx()), `Mandat-${d.numero_decision}.pdf`);
+    downloadBlob(generatePieceComptablePdf(d, e as any, pdfCtx()), `DP-${d.numero_decision}.pdf`);
   }
 
   async function changeStatut(d: FsDecision, statut: FsDecision["statut"]) {
@@ -143,8 +147,11 @@ export default function DecisionsPage() {
                 <SelectItem value="all">Tous statuts</SelectItem>
                 <SelectItem value="brouillon">Brouillon</SelectItem>
                 <SelectItem value="decide">Décidé</SelectItem>
-                <SelectItem value="mandate">Mandaté</SelectItem>
+                <SelectItem value="demande_paiement_emise">Demande de paiement émise</SelectItem>
+                <SelectItem value="prise_en_charge">Prise en charge</SelectItem>
                 <SelectItem value="paye">Payé</SelectItem>
+                <SelectItem value="refusee">Refusée</SelectItem>
+                <SelectItem value="complement_demande">Complément demandé</SelectItem>
                 <SelectItem value="annule">Annulé</SelectItem>
               </SelectContent>
             </Select>
@@ -192,8 +199,11 @@ export default function DecisionsPage() {
                           <SelectContent>
                             <SelectItem value="brouillon">Brouillon</SelectItem>
                             <SelectItem value="decide">Décidé</SelectItem>
-                            <SelectItem value="mandate">Mandaté</SelectItem>
+                            <SelectItem value="demande_paiement_emise">Demande de paiement émise</SelectItem>
+                            <SelectItem value="prise_en_charge">Prise en charge</SelectItem>
                             <SelectItem value="paye">Payé</SelectItem>
+                            <SelectItem value="refusee">Refusée</SelectItem>
+                            <SelectItem value="complement_demande">Complément demandé</SelectItem>
                             <SelectItem value="annule">Annulé</SelectItem>
                           </SelectContent>
                         </Select>
@@ -202,7 +212,7 @@ export default function DecisionsPage() {
                         <div className="flex gap-1">
                           <Button size="icon" variant="ghost" className="h-7 w-7" title="Décision CE" onClick={() => handlePdfDecision(d)}><FileDown className="h-3.5 w-3.5" /></Button>
                           <Button size="icon" variant="ghost" className="h-7 w-7" title="Notification famille" onClick={() => handlePdfNotification(d)}><FileDown className="h-3.5 w-3.5 text-primary" /></Button>
-                          <Button size="icon" variant="ghost" className="h-7 w-7" title="Pièce comptable" onClick={() => handlePdfMandat(d)}><FileDown className="h-3.5 w-3.5 text-accent-foreground" /></Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7" title="Demande de paiement Op@le" onClick={() => handlePdfDemandePaiement(d)}><FileDown className="h-3.5 w-3.5 text-accent-foreground" /></Button>
                         </div>
                       </TableCell>
                       <TableCell>

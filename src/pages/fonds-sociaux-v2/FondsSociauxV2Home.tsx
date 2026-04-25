@@ -24,7 +24,13 @@ export default function FondsSociauxV2Home() {
   const { data: commissions = [] } = useCommissions();
   const annee = currentAnneeScolaire();
   const decisionsAnnee = decisions.filter(d => d.annee_scolaire === annee);
-  const totalVerse = decisions.filter(d => d.statut === "paye" || d.statut === "mandate" || d.statut === "decide")
+  const totalVerse = decisions.filter(d =>
+    d.statut === "paye" ||
+    d.statut === "demande_paiement_emise" ||
+    d.statut === "prise_en_charge" ||
+    d.statut === "decide" ||
+    d.statut === "mandate" // legacy
+  )
     .reduce((s, d) => s + Number(d.montant), 0);
   const fichesIncompletes = eleves.filter(e => evaluerCompletudeEleve(e).pct < 100).length;
 

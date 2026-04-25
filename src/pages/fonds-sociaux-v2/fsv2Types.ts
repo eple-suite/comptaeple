@@ -4,8 +4,29 @@
 // ═══════════════════════════════════════════════════════════════
 
 export type Voie = "GT" | "PRO" | "1er_degre";
-export type TypeFonds = "FS" | "FSC";
-export type StatutDecision = "brouillon" | "decide" | "mandate" | "paye" | "annule";
+/**
+ * Trois fonds distincts (circulaire 2017-122 + BOP 230) :
+ *  - FSL     : Fonds social lycéen
+ *  - FSC_COL : Fonds social collégien
+ *  - FSC     : Fonds social pour les cantines
+ * "FS" est conservé pour rétro-compatibilité (équivalent FSL).
+ */
+export type TypeFonds = "FS" | "FSL" | "FSC_COL" | "FSC";
+/**
+ * Circuit Op@le : Engagement → Demande de paiement (DP) → Prise en charge → Paiement.
+ * Op@le ne génère plus de mandats — terminologie alignée.
+ * "mandate" et "paye" sont conservés pour rétro-compatibilité du parc existant.
+ */
+export type StatutDecision =
+  | "brouillon"
+  | "decide"
+  | "demande_paiement_emise"
+  | "prise_en_charge"
+  | "paye"
+  | "refusee"
+  | "complement_demande"
+  | "annule"
+  | "mandate"; // legacy
 export type ModaliteAttribution = "commission" | "urgence";
 export type ModaliteVersement = "aide_directe" | "organisme_tiers";
 
@@ -44,13 +65,39 @@ export const NATURES_Q10: NatureAide[] = [
 
 /** Code activité Op@le par défaut selon type de fonds */
 export const CODE_ACTIVITE_DEFAULT: Record<TypeFonds, string> = {
-  FS: "16FS",
+  FS: "16FSL",      // legacy → assimilé FSL
+  FSL: "16FSL",
+  FSC_COL: "16FSCOL",
   FSC: "16FSC",
 };
 
-/** Type de fonds par défaut suggéré pour une nature donnée */
+/** Libellés humains des trois fonds */
+export const TYPE_FONDS_LABELS: Record<TypeFonds, string> = {
+  FS: "FS — Fonds social (legacy)",
+  FSL: "FSL — Fonds social lycéen",
+  FSC_COL: "FSC_COL — Fonds social collégien",
+  FSC: "FSC — Fonds social pour les cantines",
+};
+
+/** Libellés des statuts décision (Op@le DP) */
+export const STATUT_DECISION_LABELS: Record<StatutDecision, string> = {
+  brouillon: "Brouillon",
+  decide: "Décidé",
+  demande_paiement_emise: "Demande de paiement émise",
+  prise_en_charge: "Prise en charge comptable",
+  paye: "Payé",
+  refusee: "Refusée",
+  complement_demande: "Complément demandé",
+  annule: "Annulé",
+  mandate: "Mandaté (legacy)",
+};
+
+/** Compte de créance des familles pour la demi-pension — M9-6 tome 3 */
+export const COMPTE_CREANCE_DP_FAMILLE = "411200" as const;
+
+/** Type de fonds par défaut suggéré pour une nature donnée (FSL adulte par défaut) */
 export function defaultTypeFondsForNature(n: NatureAide): TypeFonds {
-  return n === "restauration" ? "FSC" : "FS";
+  return n === "restauration" ? "FSC" : "FSL";
 }
 
 export interface ResponsableLegal {
@@ -117,8 +164,59 @@ export interface FsDecision {
   notification_famille_pdf_url: string | null;
   piece_comptable_pdf_url: string | null;
   statut: StatutDecision;
-  date_mandatement: string | null;
-  numero_mandat: string | null;
+  /** Renommé depuis date_mandatement — Op@le n'émet plus de mandats */
+  date_demande_paiement: string | null;
+  /** Renommé depuis numero_mandat — n° de la demande de paiement Op@le */
+  numero_demande_paiement: string | null;
+  /** Aide cantine : true si la décision sert à éteindre la créance famille au C/411200 */
+  extinction_creance_dp?: boolean;
+  /** Compte d'imputation de la créance famille (défaut : 411200) */
+  compte_creance_famille?: string;
+  /** Lien vers la délibération CA fixant les modalités d'attribution */
+  deliberation_ca_id?: string | null;
+  bordereau_dp_url?: string | null;
+  courrier_complement_url?: string | null;
+  courrier_refus_url?: string | null;
+}
+
+/** Délibération CA fixant les modalités d'attribution (circulaire 2017-122 § II.2) */
+export interface FsDeliberationCa {
+  id: string;
+  establishment_id: string;
+  numero: string;
+  date_ca: string;
+  annee_scolaire: string;
+  type_fonds: TypeFonds | "TOUS";
+  plafond_aide_individuelle: number | null;
+  plafond_cumul_annuel: number | null;
+  criteres_attribution: string | null;
+  pieces_obligatoires: string[] | null;
+  pdf_url: string | null;
+}
+
+/** Convocation d'une commission */
+export interface FsCommissionConvocation {
+  id: string;
+  establishment_id: string;
+  commission_id: string;
+  date_envoi: string;
+  membres_convoques: { nom: string; prenom?: string; qualite: string; email?: string }[];
+  ordre_du_jour: string | null;
+  pdf_url: string | null;
+}
+
+/** Journal RGPD des accès aux dossiers */
+export interface FsJournalAccesEntry {
+  id: string;
+  establishment_id: string;
+  user_id: string;
+  user_name: string | null;
+  type_ressource: "eleve" | "decision" | "commission" | "pv";
+  ressource_id: string;
+  action: "consultation" | "modification" | "export_pdf" | "suppression";
+  details: Record<string, unknown>;
+  ip_adresse: string | null;
+  created_at: string;
 }
 
 export interface FsSubventionRectorat {
