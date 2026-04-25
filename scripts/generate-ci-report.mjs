@@ -58,13 +58,6 @@ const STEPS = [
     args: ['tsx', 'scripts/verify-sde-sdr-import.mjs'],
     categorie: 'Imports',
   },
-  {
-    id: 'verify-balance',
-    titre: 'Vérification — Import balance générale',
-    cmd: 'npx',
-    args: ['tsx', 'scripts/verify-balance-import.mjs'],
-    categorie: 'Imports',
-  },
 ];
 
 // ---------------------------------------------------------------------
