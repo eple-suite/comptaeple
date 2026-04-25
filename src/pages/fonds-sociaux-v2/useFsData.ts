@@ -191,3 +191,119 @@ export function useReliquats() {
     },
   });
 }
+
+// ─── DÉLIBÉRATIONS CA ──────────────────────────────────────────
+export function useDeliberationsCa() {
+  const { selectedEstablishment } = useEstablishment();
+  const eid = selectedEstablishment?.id;
+  return useQuery({
+    queryKey: ["fs_deliberations_ca", eid],
+    enabled: !!eid,
+    queryFn: async (): Promise<FsDeliberationCa[]> => {
+      const { data, error } = await supabase
+        .from("fs_deliberations_ca")
+        .select("*")
+        .eq("establishment_id", eid!)
+        .order("date_ca", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as FsDeliberationCa[];
+    },
+  });
+}
+
+export function useUpsertDeliberationCa() {
+  const qc = useQueryClient();
+  const { selectedEstablishment } = useEstablishment();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (d: Partial<FsDeliberationCa> & { numero: string; date_ca: string; annee_scolaire: string }) => {
+      if (!selectedEstablishment || !user) throw new Error("Établissement ou utilisateur manquant");
+      const payload: any = {
+        ...d,
+        establishment_id: selectedEstablishment.id,
+        user_id: user.id,
+      };
+      if (d.id) {
+        const { error } = await supabase.from("fs_deliberations_ca").update(payload).eq("id", d.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("fs_deliberations_ca").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fs_deliberations_ca"] }),
+  });
+}
+
+// ─── CONVOCATIONS COMMISSION ───────────────────────────────────
+export function useConvocations(commissionId?: string) {
+  const { selectedEstablishment } = useEstablishment();
+  const eid = selectedEstablishment?.id;
+  return useQuery({
+    queryKey: ["fs_commission_convocations", eid, commissionId ?? "all"],
+    enabled: !!eid,
+    queryFn: async (): Promise<FsCommissionConvocation[]> => {
+      let q = supabase.from("fs_commission_convocations").select("*").eq("establishment_id", eid!);
+      if (commissionId) q = q.eq("commission_id", commissionId);
+      const { data, error } = await q.order("date_envoi", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as unknown as FsCommissionConvocation[];
+    },
+  });
+}
+
+export function useUpsertConvocation() {
+  const qc = useQueryClient();
+  const { selectedEstablishment } = useEstablishment();
+  const { user } = useAuth();
+  return useMutation({
+    mutationFn: async (c: Partial<FsCommissionConvocation> & { commission_id: string; date_envoi: string }) => {
+      if (!selectedEstablishment || !user) throw new Error("Établissement ou utilisateur manquant");
+      const payload: any = {
+        ...c,
+        establishment_id: selectedEstablishment.id,
+        user_id: user.id,
+      };
+      if (c.id) {
+        const { error } = await supabase.from("fs_commission_convocations").update(payload).eq("id", c.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("fs_commission_convocations").insert(payload);
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["fs_commission_convocations"] }),
+  });
+}
+
+// ─── JOURNAL RGPD (insertion automatique) ──────────────────────
+/**
+ * Hook pour journaliser un accès, une modification ou un export PDF.
+ * Append-only : aucune méthode de mise à jour ou suppression exposée.
+ * Conforme RGPD art. 30 — registre des activités de traitement.
+ */
+export function useLogJournalAcces() {
+  const { selectedEstablishment } = useEstablishment();
+  const { user } = useAuth();
+  return async (entry: {
+    type_ressource: FsJournalAccesEntry["type_ressource"];
+    ressource_id: string;
+    action: FsJournalAccesEntry["action"];
+    details?: Record<string, unknown>;
+  }) => {
+    if (!selectedEstablishment || !user) return;
+    try {
+      await supabase.from("fs_journal_acces").insert({
+        establishment_id: selectedEstablishment.id,
+        user_id: user.id,
+        user_name: user.email ?? null,
+        type_ressource: entry.type_ressource,
+        ressource_id: entry.ressource_id,
+        action: entry.action,
+        details: entry.details ?? {},
+      } as any);
+    } catch {
+      // Journal best-effort : ne bloque jamais l'action utilisateur
+    }
+  };
+}
