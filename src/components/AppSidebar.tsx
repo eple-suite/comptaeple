@@ -22,6 +22,7 @@ import {
   UserCheck,
   GraduationCap,
   ClipboardList,
+  Brain,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -80,6 +81,7 @@ const pilotageItems: NavItem[] = [
 ];
 
 const ressourcesItems: NavItem[] = [
+  { title: "Assistant Expert IA", url: "/ressources/assistant-expert", icon: Brain, hot: true },
   { title: "Mode d'emploi", url: "/aide", icon: GraduationCap, hot: true },
   { title: "Liens utiles", url: "/liens-utiles", icon: BookOpen },
 ];
