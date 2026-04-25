@@ -9,7 +9,7 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ArrowLeft, AlertTriangle, CheckCircle2, Clock, Plus, Search, Users, Calendar, ListChecks, ArrowRight, Flame } from "lucide-react";
+import { LayoutDashboard, ArrowLeft, AlertTriangle, CheckCircle2, Clock, Plus, Search, Users, Calendar, ListChecks, ArrowRight, Flame, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { currentAnneeScolaire } from "@/lib/entretiens/wizard";
@@ -379,13 +379,29 @@ export default function CampagneDashboard() {
                 <Flame className="h-4 w-4 text-rose-600" />
                 Actions classées par urgence
               </h2>
-              <div className="flex flex-wrap gap-1">
-                {(["critique", "haute", "moyenne", "basse"] as Urgence[]).map((u) => (
-                  <Badge key={u} variant="outline" className={`${URGENCE_LABELS[u].color} cursor-pointer`}
-                    onClick={() => setFiltreUrgence(filtreUrgence === u ? "all" : u)}>
-                    {URGENCE_LABELS[u].label} : {actionsParUrgence[u]}
-                  </Badge>
-                ))}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap gap-1">
+                  {(["critique", "haute", "moyenne", "basse"] as Urgence[]).map((u) => (
+                    <Badge key={u} variant="outline" className={`${URGENCE_LABELS[u].color} cursor-pointer`}
+                      onClick={() => setFiltreUrgence(filtreUrgence === u ? "all" : u)}>
+                      {URGENCE_LABELS[u].label} : {actionsParUrgence[u]}
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5 pl-2 border-l">
+                  <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  <label htmlFor="tri-actions" className="text-xs text-muted-foreground">Trier par&nbsp;:</label>
+                  <Select value={tri} onValueChange={(v) => setTri(v as SortKey)}>
+                    <SelectTrigger id="tri-actions" className="h-7 w-[200px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                        <SelectItem key={k} value={k} className="text-xs">{SORT_LABELS[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
             <div className="p-3 border-b bg-muted/20 space-y-2">
