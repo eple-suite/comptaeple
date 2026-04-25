@@ -136,10 +136,6 @@ export default function NouvelEntretienWizard() {
           }
         : s.fiche_poste_snapshot,
       autorite_n2_user_id: a.n2_user_id ?? s.autorite_n2_user_id,
-      competences:
-        s.competences.C1_resultats.length === 0
-          ? buildCompetencesFromFichePoste(SOUS_CRITERES_REGLEMENTAIRES, fp?.competences_requises ?? null)
-          : s.competences,
     }));
   }, [state.agent_id, agents, fichesPoste]);
 
