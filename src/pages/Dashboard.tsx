@@ -36,6 +36,8 @@ import {
   Cell,
 } from "recharts";
 import { useCofiepleStore } from "@/store/useCofiepleStore";
+import { Cockpit } from "@/components/cockpit/Cockpit";
+import { useState, useEffect } from "react";
 
 
 const Dashboard = () => {
@@ -45,6 +47,12 @@ const Dashboard = () => {
   const balanceData = balance[activeBudget] || [];
   const resultats = useCofiepleStore(s => s.resultats);
   const r = resultats[activeBudget];
+
+  const [vueCockpit, setVueCockpit] = useState<boolean>(() => {
+    const saved = localStorage.getItem("dashboard_vue_cockpit");
+    return saved === null ? true : saved === "true";
+  });
+  useEffect(() => { localStorage.setItem("dashboard_vue_cockpit", String(vueCockpit)); }, [vueCockpit]);
 
   // Indicateurs réels si analyse lancée, sinon mock
   const liveIndicators = useMemo(() => {
@@ -108,6 +116,12 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-8 max-w-[1400px] mx-auto">
+      <div className="flex items-center justify-end gap-2">
+        <Button size="sm" variant={vueCockpit ? "default" : "outline"} onClick={() => setVueCockpit(true)} className="h-7 text-xs">Cockpit rectoral</Button>
+        <Button size="sm" variant={!vueCockpit ? "default" : "outline"} onClick={() => setVueCockpit(false)} className="h-7 text-xs">Vue classique</Button>
+      </div>
+
+      {vueCockpit ? <Cockpit /> : <>
       {/* HERO premium éditorial */}
       <DashboardHero
         greeting="Agent comptable"
@@ -388,6 +402,7 @@ const Dashboard = () => {
           </CardContent>
         </Card>
       </motion.div>
+      </>}
     </div>
   );
 };

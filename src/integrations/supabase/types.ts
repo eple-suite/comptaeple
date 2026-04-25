@@ -119,6 +119,68 @@ export type Database = {
           },
         ]
       }
+      alertes_transverses: {
+        Row: {
+          action_url: string | null
+          closed_at: string | null
+          closed_by: string | null
+          created_at: string
+          dedup_key: string | null
+          description: string | null
+          echeance: string | null
+          establishment_id: string | null
+          id: string
+          module_origine: string
+          niveau: string
+          reference_reglementaire: string | null
+          statut: string
+          titre: string
+          updated_at: string
+        }
+        Insert: {
+          action_url?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          dedup_key?: string | null
+          description?: string | null
+          echeance?: string | null
+          establishment_id?: string | null
+          id?: string
+          module_origine: string
+          niveau: string
+          reference_reglementaire?: string | null
+          statut?: string
+          titre: string
+          updated_at?: string
+        }
+        Update: {
+          action_url?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
+          created_at?: string
+          dedup_key?: string | null
+          description?: string | null
+          echeance?: string | null
+          establishment_id?: string | null
+          id?: string
+          module_origine?: string
+          niveau?: string
+          reference_reglementaire?: string | null
+          statut?: string
+          titre?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alertes_transverses_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       balances: {
         Row: {
           account_label: string
@@ -156,6 +218,47 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "balances_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cockpit_jalons_perso: {
+        Row: {
+          couleur: string
+          created_at: string
+          date_jalon: string
+          description: string | null
+          establishment_id: string | null
+          id: string
+          titre: string
+          user_id: string
+        }
+        Insert: {
+          couleur?: string
+          created_at?: string
+          date_jalon: string
+          description?: string | null
+          establishment_id?: string | null
+          id?: string
+          titre: string
+          user_id: string
+        }
+        Update: {
+          couleur?: string
+          created_at?: string
+          date_jalon?: string
+          description?: string | null
+          establishment_id?: string | null
+          id?: string
+          titre?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cockpit_jalons_perso_establishment_id_fkey"
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
@@ -1248,6 +1351,7 @@ export type Database = {
           agent_comptable: string
           city: string
           created_at: string
+          groupement_id: string | null
           id: string
           name: string
           opale_number: string
@@ -1262,6 +1366,7 @@ export type Database = {
           agent_comptable?: string
           city?: string
           created_at?: string
+          groupement_id?: string | null
           id?: string
           name: string
           opale_number?: string
@@ -1276,6 +1381,7 @@ export type Database = {
           agent_comptable?: string
           city?: string
           created_at?: string
+          groupement_id?: string | null
           id?: string
           name?: string
           opale_number?: string
@@ -1285,7 +1391,15 @@ export type Database = {
           uai?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "establishments_groupement_id_fkey"
+            columns: ["groupement_id"]
+            isOneToOne: false
+            referencedRelation: "groupements_comptables"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       fs_commissions: {
         Row: {
@@ -1629,6 +1743,65 @@ export type Database = {
           {
             foreignKeyName: "fs_subventions_rectorat_establishment_id_fkey"
             columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groupements_comptables: {
+        Row: {
+          academie: string
+          adresse: string | null
+          agent_comptable_prise_fonction: string | null
+          agent_comptable_titulaire: string | null
+          created_at: string
+          email: string | null
+          fonde_de_pouvoir: string | null
+          id: string
+          lycee_siege_id: string | null
+          nom: string
+          notes: string | null
+          rectorat_libelle: string
+          telephone: string | null
+          updated_at: string
+        }
+        Insert: {
+          academie?: string
+          adresse?: string | null
+          agent_comptable_prise_fonction?: string | null
+          agent_comptable_titulaire?: string | null
+          created_at?: string
+          email?: string | null
+          fonde_de_pouvoir?: string | null
+          id?: string
+          lycee_siege_id?: string | null
+          nom: string
+          notes?: string | null
+          rectorat_libelle?: string
+          telephone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          academie?: string
+          adresse?: string | null
+          agent_comptable_prise_fonction?: string | null
+          agent_comptable_titulaire?: string | null
+          created_at?: string
+          email?: string | null
+          fonde_de_pouvoir?: string | null
+          id?: string
+          lycee_siege_id?: string | null
+          nom?: string
+          notes?: string | null
+          rectorat_libelle?: string
+          telephone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "groupements_comptables_lycee_siege_id_fkey"
+            columns: ["lycee_siege_id"]
             isOneToOne: false
             referencedRelation: "establishments"
             referencedColumns: ["id"]
@@ -2198,6 +2371,8 @@ export type Database = {
           first_name: string
           id: string
           last_name: string
+          profile_role: string
+          tour_complete: boolean
           updated_at: string
           user_id: string
         }
@@ -2207,6 +2382,8 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          profile_role?: string
+          tour_complete?: boolean
           updated_at?: string
           user_id: string
         }
@@ -2216,6 +2393,8 @@ export type Database = {
           first_name?: string
           id?: string
           last_name?: string
+          profile_role?: string
+          tour_complete?: boolean
           updated_at?: string
           user_id?: string
         }
