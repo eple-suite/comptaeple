@@ -37,6 +37,11 @@ import EnquetesHubPage from "./pages/enquetes-rectorat/EnquetesHubPage";
 import NomenclaturePage from "./pages/enquetes-rectorat/NomenclaturePage";
 import CalendrierCampagnesPage from "./pages/enquetes-rectorat/CalendrierCampagnesPage";
 import VueRectoratEnquetesPage from "./pages/enquetes-rectorat/VueRectoratEnquetesPage";
+import BibliothequePage from "./pages/enquetes-rectorat/BibliothequePage";
+import WizardReliquatsBopPage from "./pages/enquetes-rectorat/WizardReliquatsBopPage";
+import WizardBoursesSieclePage from "./pages/enquetes-rectorat/WizardBoursesSieclePage";
+import RelancesPage from "./pages/enquetes-rectorat/RelancesPage";
+import HistoriquePluriannuelPage from "./pages/enquetes-rectorat/HistoriquePluriannuelPage";
 import CreditNourriture from "./pages/CreditNourriture";
 import VeilleJuridique from "./pages/VeilleJuridique";
 import ControleInterne from "./pages/ControleInterne";
@@ -133,6 +138,11 @@ const App = () => (
               <Route path="/enquetes-rectorat/nomenclature" element={<NomenclaturePage />} />
               <Route path="/enquetes-rectorat/calendrier" element={<CalendrierCampagnesPage />} />
               <Route path="/enquetes-rectorat/vue-rectorat" element={<VueRectoratEnquetesPage />} />
+              <Route path="/enquetes-rectorat/bibliotheque" element={<BibliothequePage />} />
+              <Route path="/enquetes-rectorat/wizard-reliquats" element={<WizardReliquatsBopPage />} />
+              <Route path="/enquetes-rectorat/bourses-rapprochement" element={<WizardBoursesSieclePage />} />
+              <Route path="/enquetes-rectorat/relances" element={<RelancesPage />} />
+              <Route path="/enquetes-rectorat/historique" element={<HistoriquePluriannuelPage />} />
               <Route path="/credit-nourriture" element={<CreditNourriture />} />
               <Route path="/regies" element={<RegiesCaisse />} />
               <Route path="/veille-juridique" element={<VeilleJuridique />} />
