@@ -1,0 +1,71 @@
+# =====================================================================
+# CI — Diagnostic financier EPLE (recette de non-régression)
+# ---------------------------------------------------------------------
+# Exécute la recette complète à chaque push et chaque pull request.
+# Garantit qu'aucune modification du code n'introduit de régression sur :
+#   - Les invariants mathématiques (FR_haut = FR_bas, TN_calc ≈ TN_obs)
+#   - Les 9 indicateurs réglementaires (NR, CONT, CAP, VETU, DGP,
+#     CHFIX, ENDET, LIQ, INDEP) + détail des 5 réserves
+#   - La cohérence du moteur de commentaires (synthèse Ordonnateur / CA)
+#   - L'import SDE/SDR Op@le et l'adaptation balance
+#
+# Conformité : M9-6 tomes 3 & 4 art. 43231, Op@le pièce 14.
+# =====================================================================
+
+name: Diagnostic financier — Recette CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: ['**']
+  workflow_dispatch:
+
+concurrency:
+  group: diagnostic-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  recette:
+    name: Recette diagnostic financier (exit 0 attendu)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout du code
+        uses: actions/checkout@v4
+
+      - name: Installation Node.js 20 LTS
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Installation des dépendances
+        run: npm ci
+
+      - name: Vérification TypeScript (tsc --noEmit)
+        run: npx tsc --noEmit
+
+      - name: Recette — Diagnostic financier (3 scénarios + invariants)
+        run: npx tsx scripts/recette-diagnostic-financier.mjs
+
+      - name: Vérification — Bilan & indicateurs réglementaires
+        run: npx tsx scripts/verify-bilan-reprofi.mjs
+
+      - name: Vérification — Moteur de commentaires automatiques
+        run: npx tsx scripts/verify-commentaires-engine.mjs
+
+      - name: Vérification — Import SDE / SDR Op@le
+        run: npx tsx scripts/verify-sde-sdr-import.mjs
+
+      - name: Vérification — Import balance générale
+        run: npx tsx scripts/verify-balance-import.mjs
+
+      - name: Tests unitaires Vitest
+        run: npm test -- --reporter=verbose
+
+      - name: Synthèse — Recette validée
+        if: success()
+        run: |
+          echo "::notice title=Diagnostic financier::Toutes les recettes sont passées (exit 0). Aucune régression détectée."

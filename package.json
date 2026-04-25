@@ -10,7 +10,13 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "recette:diagnostic": "tsx scripts/recette-diagnostic-financier.mjs",
+    "verify:bilan": "tsx scripts/verify-bilan-reprofi.mjs",
+    "verify:commentaires": "tsx scripts/verify-commentaires-engine.mjs",
+    "verify:sde-sdr": "tsx scripts/verify-sde-sdr-import.mjs",
+    "verify:balance": "tsx scripts/verify-balance-import.mjs",
+    "ci:diagnostic": "npm run recette:diagnostic && npm run verify:bilan && npm run verify:commentaires"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -99,6 +105,7 @@
     "lovable-tagger": "^1.1.13",
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.21.0",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
