@@ -1,8 +1,11 @@
 // ═══════════════════════════════════════════════════════════════
-// Génération PDF — 3 documents Fonds Social :
-// 1) Décision du chef d'établissement
+// Génération PDF — Documents Fonds Social :
+// 1) Décision du chef d'établissement (avec visa délibération CA, voies de recours)
 // 2) Notification famille
-// 3) Pièce comptable (mandat)
+// 3) Pièce comptable — Demande de paiement Op@le (anciennement « mandat »)
+// 4) Bordereau de demandes de paiement
+// 5) Courrier complément de pièces
+// 6) Courrier de refus motivé
 // Stack : jsPDF + autoTable (cohérence avec le reste de l'app)
 // ═══════════════════════════════════════════════════════════════
 
@@ -10,7 +13,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatEur, formatDateFr, montantEnLettres } from "./utils";
 import type { FsDecision, FsEleve } from "@/pages/fonds-sociaux-v2/fsv2Types";
-import { NATURE_AIDE_LABELS } from "@/pages/fonds-sociaux-v2/fsv2Types";
+import { NATURE_AIDE_LABELS, TYPE_FONDS_LABELS } from "@/pages/fonds-sociaux-v2/fsv2Types";
 
 export interface PdfContext {
   etablissementNom: string;
@@ -22,6 +25,13 @@ export interface PdfContext {
   signataireAgentComptable?: string;
   ville?: string;
   logoDataUrl?: string | null;
+  /** Tribunal administratif territorialement compétent — défaut : TA Basse-Terre (Académie Guadeloupe) */
+  tribunalAdministratif?: string;
+  /** Référence de la délibération CA fixant les modalités */
+  numeroDeliberationCa?: string;
+  dateDeliberationCa?: string;
+  /** Date de l'avis de la commission */
+  dateAvisCommission?: string;
 }
 
 function header(doc: jsPDF, titre: string, ctx: PdfContext) {
@@ -35,6 +45,21 @@ function header(doc: jsPDF, titre: string, ctx: PdfContext) {
   doc.setFont("helvetica", "bold").setFontSize(14);
   doc.text(titre, 105, 48, { align: "center" });
   doc.setLineWidth(0.3).line(20, 52, 190, 52);
+}
+
+/** Bandeau « voies et délais de recours » — art. R.421-1 CJA */
+function voiesDeRecours(doc: jsPDF, ctx: PdfContext, y: number): number {
+  const tribunal = ctx.tribunalAdministratif ?? "Tribunal administratif de Basse-Terre";
+  doc.setFont("helvetica", "bold").setFontSize(8);
+  doc.text("Voies et délais de recours :", 20, y);
+  doc.setFont("helvetica", "normal").setFontSize(8);
+  const txt =
+    "La présente décision peut faire l'objet, dans un délai de deux mois à compter de sa notification, " +
+    "d'un recours gracieux auprès du chef d'établissement signataire, ou d'un recours contentieux devant le " +
+    `${tribunal} (art. R.421-1 du Code de justice administrative).`;
+  const lines = doc.splitTextToSize(txt, 170);
+  doc.text(lines, 20, y + 4);
+  return y + 4 + lines.length * 4;
 }
 
 function footer(doc: jsPDF, ctx: PdfContext, signataire: string, fonction: string) {
@@ -67,10 +92,13 @@ export function generateDecisionChefEtablissementPdf(
     "Le Code de l'éducation, notamment ses articles L.531-1 à L.531-5 et D.531-7 à D.531-12 ;",
     "La circulaire n° 2017-122 du 22-08-2017 relative aux fonds sociaux ;",
     "L'instruction codificatrice M9-6 ;",
+    ctx.numeroDeliberationCa
+      ? `La délibération du Conseil d'administration n° ${ctx.numeroDeliberationCa}${ctx.dateDeliberationCa ? ` du ${formatDateFr(ctx.dateDeliberationCa)}` : ""} fixant les modalités d'attribution des fonds sociaux ;`
+      : "La délibération du Conseil d'administration fixant les modalités d'attribution des fonds sociaux ;",
     `La demande déposée pour l'élève ${eleve.prenom} ${eleve.nom} (classe ${eleve.classe}) ;`,
     decision.modalite_attribution === "commission"
-      ? "L'avis de la commission fonds social réunie en séance ordinaire ;"
-      : "L'urgence sociale appréciée au cas par cas ;",
+      ? `L'avis de la commission fonds sociaux${ctx.dateAvisCommission ? ` du ${formatDateFr(ctx.dateAvisCommission)}` : ""} ;`
+      : "L'urgence sociale appréciée au cas par cas (procédure d'urgence — circulaire 2017-122 § II.4) ;",
   ];
   vus.forEach(v => {
     const lines = doc.splitTextToSize("• " + v, 170);
@@ -88,11 +116,15 @@ export function generateDecisionChefEtablissementPdf(
     styles: { fontSize: 9 },
     body: [
       ["Bénéficiaire", `${eleve.prenom} ${eleve.nom} — ${eleve.classe}`],
-      ["Type de fonds", decision.type_fonds === "FS" ? "Fonds social lycéen / collégien (FS)" : "Fonds social pour les cantines (FSC)"],
+      ["Type de fonds", TYPE_FONDS_LABELS[decision.type_fonds] ?? decision.type_fonds],
       ["Nature de l'aide", NATURE_AIDE_LABELS[decision.nature_aide as keyof typeof NATURE_AIDE_LABELS] ?? decision.nature_aide],
       ["Montant attribué", formatEur(Number(decision.montant))],
       ["Montant en lettres", montantEnLettres(Number(decision.montant))],
-      ["Modalité de versement", decision.modalite_versement === "aide_directe" ? "Aide directe à la famille" : `Versement à l'organisme tiers : ${decision.organisme_tiers_nom ?? ""}`],
+      ["Modalité de versement", decision.extinction_creance_dp
+        ? `Extinction de la créance famille (compte ${decision.compte_creance_famille ?? "411200"})`
+        : decision.modalite_versement === "aide_directe"
+          ? "Aide directe à la famille (demande de paiement Op@le)"
+          : `Versement à l'organisme tiers : ${decision.organisme_tiers_nom ?? ""}`],
       ["Imputation Op@le", `${decision.code_activite_opale} / ${decision.compte_imputation_opale ?? ""}`],
     ],
     columnStyles: { 0: { fontStyle: "bold", cellWidth: 60 } },
@@ -105,6 +137,9 @@ export function generateDecisionChefEtablissementPdf(
     const lines = doc.splitTextToSize(decision.motif, 170);
     doc.text(lines, 20, finalY + 6);
   }
+
+  // Voies et délais de recours — art. R.421-1 CJA
+  voiesDeRecours(doc, ctx, 230);
 
   footer(doc, ctx, ctx.signataireOrdonnateur ?? "", "L'Ordonnateur,");
   return doc.output("blob");
@@ -140,7 +175,7 @@ export function generateNotificationFamillePdf(
 
   y += 6;
   const modalite = decision.modalite_versement === "aide_directe"
-    ? "Cette aide vous sera versée directement par mandat administratif."
+    ? "Cette aide vous sera versée par demande de paiement Op@le sur votre compte bancaire."
     : `Cette aide sera versée directement à l'organisme : ${decision.organisme_tiers_nom ?? ""}.`;
   doc.splitTextToSize(modalite, 170).forEach((l: string) => { doc.text(l, 20, y); y += 5; });
 
@@ -151,14 +186,14 @@ export function generateNotificationFamillePdf(
   return doc.output("blob");
 }
 
-/** 3) Pièce comptable */
+/** 3) Pièce comptable — Demande de paiement Op@le (remplace l'ex « mandat ») */
 export function generatePieceComptablePdf(
   decision: FsDecision,
   eleve: FsEleve,
   ctx: PdfContext,
 ): Blob {
   const doc = new jsPDF({ unit: "mm", format: "a4" });
-  header(doc, "PIÈCE COMPTABLE — MANDAT", ctx);
+  header(doc, "PIÈCE COMPTABLE — DEMANDE DE PAIEMENT (Op@le)", ctx);
 
   let y = 62;
   doc.setFontSize(10).setFont("helvetica", "normal");
@@ -181,8 +216,11 @@ export function generatePieceComptablePdf(
       ["Montant", formatEur(Number(decision.montant))],
       ["Montant en lettres", montantEnLettres(Number(decision.montant))],
       ["Année scolaire", decision.annee_scolaire],
-      ["N° mandat", decision.numero_mandat ?? "(à attribuer)"],
-      ["Date mandatement", formatDateFr(decision.date_mandatement)],
+      ["N° demande de paiement", decision.numero_demande_paiement ?? "(à attribuer par Op@le)"],
+      ["Date émission DP", decision.date_demande_paiement ? formatDateFr(decision.date_demande_paiement) : "—"],
+      ["Extinction créance DP", decision.extinction_creance_dp
+        ? `Oui — compte ${decision.compte_creance_famille ?? "411200"}`
+        : "Non"],
     ],
   });
 

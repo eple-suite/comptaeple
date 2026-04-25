@@ -68,8 +68,11 @@ export function computeEnqueteKpis(ctx: EnqueteContext): EnqueteKpis {
     repartVoie[v] = (repartVoie[v] ?? 0) + 1;
   });
 
-  const repartType: Record<TypeFonds, number> = { FS: 0, FSC: 0 };
-  accordees.forEach(d => { if (d.type_fonds === "FS" || d.type_fonds === "FSC") repartType[d.type_fonds as TypeFonds] += 1; });
+  const repartType: Record<TypeFonds, number> = { FS: 0, FSL: 0, FSC_COL: 0, FSC: 0 };
+  accordees.forEach(d => {
+    const tf = d.type_fonds as TypeFonds;
+    if (tf in repartType) repartType[tf] += 1;
+  });
 
   const repartModalite: Record<string, number> = {};
   accordees.forEach(d => { repartModalite[d.modalite_versement] = (repartModalite[d.modalite_versement] ?? 0) + 1; });
@@ -190,12 +193,15 @@ export function validateEnquete(ctx: EnqueteContext, kpis: EnqueteKpis): Validat
       count: montantInvalide.length });
   }
 
-  // R8 — Statut payé/mandaté : numéro de mandat requis
-  const sansMandat = decisionsAnnee.filter(d => (d.statut === "mandate" || d.statut === "paye") && !d.numero_mandat);
-  if (sansMandat.length > 0) {
+  // R8 — Statut DP émise / prise en charge / payé : numéro de demande de paiement requis
+  const sansDp = decisionsAnnee.filter(d =>
+    (d.statut === "demande_paiement_emise" || d.statut === "prise_en_charge" || d.statut === "paye" || d.statut === "mandate") &&
+    !d.numero_demande_paiement
+  );
+  if (sansDp.length > 0) {
     issues.push({ code: "R8", severity: "warning",
-      message: `${sansMandat.length} décision(s) mandatée(s)/payée(s) sans n° de mandat.`,
-      count: sansMandat.length });
+      message: `${sansDp.length} décision(s) avec demande de paiement émise/payée sans n° de DP Op@le.`,
+      count: sansDp.length });
   }
 
   // R9 — Élève existant et actif
