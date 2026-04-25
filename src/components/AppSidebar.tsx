@@ -19,6 +19,7 @@ import {
   Search,
   ChevronDown,
   Sparkles,
+  UserCheck,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -64,6 +65,7 @@ const toolItems: NavItem[] = [
   { title: "SATD", url: "/satd", icon: Gavel },
   { title: "Crédit nourriture", url: "/credit-nourriture", icon: UtensilsCrossed },
   { title: "Régies & Caisse", url: "/regies", icon: Landmark },
+  { title: "Entretiens professionnels", url: "/entretiens", icon: UserCheck, hot: true },
 ];
 
 const pilotageItems: NavItem[] = [

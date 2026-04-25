@@ -31,6 +31,7 @@ import ExecutionBudgetaire from "./pages/ExecutionBudgetaire";
 import HyperalePage from "./pages/hyperale/HyperalePage";
 import AgencePage from "./pages/agence/AgencePage";
 import Regle8LogsAdmin from "./pages/admin/Regle8LogsAdmin";
+import EntretiensHome from "./pages/entretiens/EntretiensHome";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { ChatEple } from "@/components/ChatEple";
@@ -99,6 +100,7 @@ const App = () => (
               <Route path="/hyperale/*" element={<HyperalePage />} />
               <Route path="/agence" element={<AgencePage />} />
               <Route path="/admin/logs/regle-8" element={<Regle8LogsAdmin />} />
+              <Route path="/entretiens" element={<EntretiensHome />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
