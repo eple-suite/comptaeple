@@ -583,6 +583,59 @@ export type Database = {
         }
         Relationships: []
       }
+      entretiens_campagnes: {
+        Row: {
+          annee_scolaire: string
+          consignes_locales: string | null
+          created_at: string
+          created_by: string | null
+          date_butoir_signatures: string | null
+          date_cloture: string | null
+          date_ouverture: string | null
+          establishment_id: string
+          id: string
+          libelle: string | null
+          statut: Database["public"]["Enums"]["entretien_campagne_statut"]
+          updated_at: string
+        }
+        Insert: {
+          annee_scolaire: string
+          consignes_locales?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_butoir_signatures?: string | null
+          date_cloture?: string | null
+          date_ouverture?: string | null
+          establishment_id: string
+          id?: string
+          libelle?: string | null
+          statut?: Database["public"]["Enums"]["entretien_campagne_statut"]
+          updated_at?: string
+        }
+        Update: {
+          annee_scolaire?: string
+          consignes_locales?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_butoir_signatures?: string | null
+          date_cloture?: string | null
+          date_ouverture?: string | null
+          establishment_id?: string
+          id?: string
+          libelle?: string | null
+          statut?: Database["public"]["Enums"]["entretien_campagne_statut"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_campagnes_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entretiens_competences: {
         Row: {
           commentaire: string | null
@@ -3476,6 +3529,11 @@ export type Database = {
         | "a_developper"
         | "insuffisant"
         | "sans_objet"
+      entretien_campagne_statut:
+        | "preparation"
+        | "ouverte"
+        | "cloturee"
+        | "archivee"
       entretien_mode: "presentiel" | "visio" | "hybride"
       entretien_statut:
         | "brouillon"
@@ -3652,6 +3710,12 @@ export const Constants = {
         "a_developper",
         "insuffisant",
         "sans_objet",
+      ],
+      entretien_campagne_statut: [
+        "preparation",
+        "ouverte",
+        "cloturee",
+        "archivee",
       ],
       entretien_mode: ["presentiel", "visio", "hybride"],
       entretien_statut: [
