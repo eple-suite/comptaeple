@@ -18,88 +18,175 @@ export type Database = {
         Row: {
           actif: boolean
           administration_origine: string | null
+          bureau: string | null
           categorie: Database["public"]["Enums"]["agent_categorie"] | null
+          cia_dernier_montant: number | null
+          civilite: Database["public"]["Enums"]["civilite"] | null
           corps: string | null
           created_at: string
           date_derniere_promotion: string | null
+          date_effective_fin_fonction: string | null
           date_entree_corps: string | null
           date_entree_etablissement: string | null
           date_naissance: string | null
+          date_prevue_fin_fonction: string | null
+          delegation_signature: boolean | null
+          delegation_signature_acte_url: string | null
           echelon: number | null
           email: string | null
+          email_professionnel: string | null
           establishment_id: string
+          etablissements_affectation: string[] | null
           fiche_poste_id: string | null
           filiere: Database["public"]["Enums"]["agent_filiere"] | null
           fonction: string | null
           grade: string | null
           id: string
           indice: number | null
+          indice_majore: number | null
+          lieu_naissance: string | null
+          matricule_education_nationale: string | null
+          matricule_etablissement: string | null
+          montant_ifse_mensuel: number | null
+          n_plus_deux_id: string | null
+          n_plus_un_id: string | null
           n1_user_id: string | null
           n2_user_id: string | null
+          nationalite: string | null
           nom: string
+          nom_naissance: string | null
+          nom_usage: string | null
           notes_rh: string | null
+          photo_url: string | null
           prenom: string
+          prenoms_secondaires: string | null
+          profil_opale: Database["public"]["Enums"]["profil_opale"] | null
+          profils_autres: Json | null
           quotite_travail: number | null
+          rifseeup_groupe: string | null
+          role_principal:
+            | Database["public"]["Enums"]["agent_role_principal"]
+            | null
+          roles_secondaires: string[] | null
           service: string | null
           statut: Database["public"]["Enums"]["agent_statut"]
+          telephone_professionnel: string | null
           updated_at: string
         }
         Insert: {
           actif?: boolean
           administration_origine?: string | null
+          bureau?: string | null
           categorie?: Database["public"]["Enums"]["agent_categorie"] | null
+          cia_dernier_montant?: number | null
+          civilite?: Database["public"]["Enums"]["civilite"] | null
           corps?: string | null
           created_at?: string
           date_derniere_promotion?: string | null
+          date_effective_fin_fonction?: string | null
           date_entree_corps?: string | null
           date_entree_etablissement?: string | null
           date_naissance?: string | null
+          date_prevue_fin_fonction?: string | null
+          delegation_signature?: boolean | null
+          delegation_signature_acte_url?: string | null
           echelon?: number | null
           email?: string | null
+          email_professionnel?: string | null
           establishment_id: string
+          etablissements_affectation?: string[] | null
           fiche_poste_id?: string | null
           filiere?: Database["public"]["Enums"]["agent_filiere"] | null
           fonction?: string | null
           grade?: string | null
           id?: string
           indice?: number | null
+          indice_majore?: number | null
+          lieu_naissance?: string | null
+          matricule_education_nationale?: string | null
+          matricule_etablissement?: string | null
+          montant_ifse_mensuel?: number | null
+          n_plus_deux_id?: string | null
+          n_plus_un_id?: string | null
           n1_user_id?: string | null
           n2_user_id?: string | null
+          nationalite?: string | null
           nom: string
+          nom_naissance?: string | null
+          nom_usage?: string | null
           notes_rh?: string | null
+          photo_url?: string | null
           prenom: string
+          prenoms_secondaires?: string | null
+          profil_opale?: Database["public"]["Enums"]["profil_opale"] | null
+          profils_autres?: Json | null
           quotite_travail?: number | null
+          rifseeup_groupe?: string | null
+          role_principal?:
+            | Database["public"]["Enums"]["agent_role_principal"]
+            | null
+          roles_secondaires?: string[] | null
           service?: string | null
           statut?: Database["public"]["Enums"]["agent_statut"]
+          telephone_professionnel?: string | null
           updated_at?: string
         }
         Update: {
           actif?: boolean
           administration_origine?: string | null
+          bureau?: string | null
           categorie?: Database["public"]["Enums"]["agent_categorie"] | null
+          cia_dernier_montant?: number | null
+          civilite?: Database["public"]["Enums"]["civilite"] | null
           corps?: string | null
           created_at?: string
           date_derniere_promotion?: string | null
+          date_effective_fin_fonction?: string | null
           date_entree_corps?: string | null
           date_entree_etablissement?: string | null
           date_naissance?: string | null
+          date_prevue_fin_fonction?: string | null
+          delegation_signature?: boolean | null
+          delegation_signature_acte_url?: string | null
           echelon?: number | null
           email?: string | null
+          email_professionnel?: string | null
           establishment_id?: string
+          etablissements_affectation?: string[] | null
           fiche_poste_id?: string | null
           filiere?: Database["public"]["Enums"]["agent_filiere"] | null
           fonction?: string | null
           grade?: string | null
           id?: string
           indice?: number | null
+          indice_majore?: number | null
+          lieu_naissance?: string | null
+          matricule_education_nationale?: string | null
+          matricule_etablissement?: string | null
+          montant_ifse_mensuel?: number | null
+          n_plus_deux_id?: string | null
+          n_plus_un_id?: string | null
           n1_user_id?: string | null
           n2_user_id?: string | null
+          nationalite?: string | null
           nom?: string
+          nom_naissance?: string | null
+          nom_usage?: string | null
           notes_rh?: string | null
+          photo_url?: string | null
           prenom?: string
+          prenoms_secondaires?: string | null
+          profil_opale?: Database["public"]["Enums"]["profil_opale"] | null
+          profils_autres?: Json | null
           quotite_travail?: number | null
+          rifseeup_groupe?: string | null
+          role_principal?:
+            | Database["public"]["Enums"]["agent_role_principal"]
+            | null
+          roles_secondaires?: string[] | null
           service?: string | null
           statut?: Database["public"]["Enums"]["agent_statut"]
+          telephone_professionnel?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -108,6 +195,20 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agents_n_plus_deux_id_fkey"
+            columns: ["n_plus_deux_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agents_n_plus_un_id_fkey"
+            columns: ["n_plus_un_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
             referencedColumns: ["id"]
           },
           {
@@ -181,6 +282,95 @@ export type Database = {
           },
         ]
       }
+      arretes_actes: {
+        Row: {
+          agent_concerne_id: string | null
+          contenu_hash: string | null
+          created_at: string
+          created_by: string | null
+          date_effet: string | null
+          date_fin_effet: string | null
+          date_signature: string
+          establishment_id: string | null
+          groupement_id: string | null
+          id: string
+          payload: Json | null
+          pdf_url: string | null
+          references_reglementaires: string | null
+          signataire_id: string | null
+          statut: string | null
+          type: Database["public"]["Enums"]["acte_type"]
+          updated_at: string
+        }
+        Insert: {
+          agent_concerne_id?: string | null
+          contenu_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_effet?: string | null
+          date_fin_effet?: string | null
+          date_signature: string
+          establishment_id?: string | null
+          groupement_id?: string | null
+          id?: string
+          payload?: Json | null
+          pdf_url?: string | null
+          references_reglementaires?: string | null
+          signataire_id?: string | null
+          statut?: string | null
+          type: Database["public"]["Enums"]["acte_type"]
+          updated_at?: string
+        }
+        Update: {
+          agent_concerne_id?: string | null
+          contenu_hash?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_effet?: string | null
+          date_fin_effet?: string | null
+          date_signature?: string
+          establishment_id?: string | null
+          groupement_id?: string | null
+          id?: string
+          payload?: Json | null
+          pdf_url?: string | null
+          references_reglementaires?: string | null
+          signataire_id?: string | null
+          statut?: string | null
+          type?: Database["public"]["Enums"]["acte_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "arretes_actes_agent_concerne_id_fkey"
+            columns: ["agent_concerne_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arretes_actes_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arretes_actes_groupement_id_fkey"
+            columns: ["groupement_id"]
+            isOneToOne: false
+            referencedRelation: "groupements_comptables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "arretes_actes_signataire_id_fkey"
+            columns: ["signataire_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       balances: {
         Row: {
           account_label: string
@@ -221,6 +411,62 @@ export type Database = {
             columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bottin_institutionnel: {
+        Row: {
+          actif: boolean
+          adresse: string | null
+          categorie: Database["public"]["Enums"]["bottin_categorie"]
+          correspondant_nom: string | null
+          created_at: string
+          email: string | null
+          fonction: string | null
+          groupement_id: string | null
+          id: string
+          notes: string | null
+          organisme: string
+          telephone: string | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          adresse?: string | null
+          categorie: Database["public"]["Enums"]["bottin_categorie"]
+          correspondant_nom?: string | null
+          created_at?: string
+          email?: string | null
+          fonction?: string | null
+          groupement_id?: string | null
+          id?: string
+          notes?: string | null
+          organisme: string
+          telephone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          adresse?: string | null
+          categorie?: Database["public"]["Enums"]["bottin_categorie"]
+          correspondant_nom?: string | null
+          created_at?: string
+          email?: string | null
+          fonction?: string | null
+          groupement_id?: string | null
+          id?: string
+          notes?: string | null
+          organisme?: string
+          telephone?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bottin_institutionnel_groupement_id_fkey"
+            columns: ["groupement_id"]
+            isOneToOne: false
+            referencedRelation: "groupements_comptables"
             referencedColumns: ["id"]
           },
         ]
@@ -685,6 +931,79 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      delegations_signature: {
+        Row: {
+          agent_delegant_id: string
+          agent_delegataire_id: string
+          arrete_url: string | null
+          created_at: string
+          date_debut: string
+          date_fin: string | null
+          establishment_id: string | null
+          id: string
+          montant_max: number | null
+          motif_abrogation: string | null
+          perimetre: string | null
+          statut: Database["public"]["Enums"]["delegation_statut"]
+          type_delegation: Database["public"]["Enums"]["delegation_type"]
+          updated_at: string
+        }
+        Insert: {
+          agent_delegant_id: string
+          agent_delegataire_id: string
+          arrete_url?: string | null
+          created_at?: string
+          date_debut: string
+          date_fin?: string | null
+          establishment_id?: string | null
+          id?: string
+          montant_max?: number | null
+          motif_abrogation?: string | null
+          perimetre?: string | null
+          statut?: Database["public"]["Enums"]["delegation_statut"]
+          type_delegation: Database["public"]["Enums"]["delegation_type"]
+          updated_at?: string
+        }
+        Update: {
+          agent_delegant_id?: string
+          agent_delegataire_id?: string
+          arrete_url?: string | null
+          created_at?: string
+          date_debut?: string
+          date_fin?: string | null
+          establishment_id?: string | null
+          id?: string
+          montant_max?: number | null
+          motif_abrogation?: string | null
+          perimetre?: string | null
+          statut?: Database["public"]["Enums"]["delegation_statut"]
+          type_delegation?: Database["public"]["Enums"]["delegation_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delegations_signature_agent_delegant_id_fkey"
+            columns: ["agent_delegant_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delegations_signature_agent_delegataire_id_fkey"
+            columns: ["agent_delegataire_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delegations_signature_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       entretiens_campagnes: {
         Row: {
@@ -1348,55 +1667,238 @@ export type Database = {
       establishments: {
         Row: {
           academy: string
+          adjoint_id: string | null
+          adresse_ligne_1: string | null
+          adresse_ligne_2: string | null
+          adresse_ligne_3: string | null
           agent_comptable: string
+          annee_construction: number | null
+          annee_derniere_renovation: number | null
+          chef_cuisine_id: string | null
+          chef_etablissement_id: string | null
           city: string
+          classement_ep: Database["public"]["Enums"]["classement_ep"] | null
+          code_postal: string | null
+          collectivite_rattachement:
+            | Database["public"]["Enums"]["collectivite_rattachement"]
+            | null
+          commune: string | null
+          contact_collectivite: string | null
+          contrat_objectifs_en_cours: boolean | null
+          contrat_tripartite_url: string | null
+          cpe_principal_id: string | null
           created_at: string
+          date_rattachement_groupement: string | null
+          departement: string | null
+          email_intendance: string | null
+          email_secretariat: string | null
+          gestionnaire_materiel_id: string | null
           groupement_id: string | null
           id: string
+          indice_position_sociale: number | null
           name: string
+          nb_batiments: number | null
+          nb_eleves_boursiers: number | null
+          nb_eleves_dp: number | null
+          nb_eleves_externes: number | null
+          nb_eleves_internes: number | null
+          nb_eleves_total: number | null
+          nom_collectivite: string | null
+          notes: string | null
           opale_number: string
           ordonnateur: string
           secretaire_general: string
+          secretaire_general_id: string | null
+          siret: string | null
+          site_web: string | null
+          statut_juridique:
+            | Database["public"]["Enums"]["statut_juridique"]
+            | null
+          statut_rattachement:
+            | Database["public"]["Enums"]["statut_rattachement"]
+            | null
+          surface_batie_m2: number | null
+          taux_boursiers: number | null
+          telephone: string | null
           type: string
+          type_etablissement:
+            | Database["public"]["Enums"]["etablissement_type"]
+            | null
           uai: string
           updated_at: string
         }
         Insert: {
           academy?: string
+          adjoint_id?: string | null
+          adresse_ligne_1?: string | null
+          adresse_ligne_2?: string | null
+          adresse_ligne_3?: string | null
           agent_comptable?: string
+          annee_construction?: number | null
+          annee_derniere_renovation?: number | null
+          chef_cuisine_id?: string | null
+          chef_etablissement_id?: string | null
           city?: string
+          classement_ep?: Database["public"]["Enums"]["classement_ep"] | null
+          code_postal?: string | null
+          collectivite_rattachement?:
+            | Database["public"]["Enums"]["collectivite_rattachement"]
+            | null
+          commune?: string | null
+          contact_collectivite?: string | null
+          contrat_objectifs_en_cours?: boolean | null
+          contrat_tripartite_url?: string | null
+          cpe_principal_id?: string | null
           created_at?: string
+          date_rattachement_groupement?: string | null
+          departement?: string | null
+          email_intendance?: string | null
+          email_secretariat?: string | null
+          gestionnaire_materiel_id?: string | null
           groupement_id?: string | null
           id?: string
+          indice_position_sociale?: number | null
           name: string
+          nb_batiments?: number | null
+          nb_eleves_boursiers?: number | null
+          nb_eleves_dp?: number | null
+          nb_eleves_externes?: number | null
+          nb_eleves_internes?: number | null
+          nb_eleves_total?: number | null
+          nom_collectivite?: string | null
+          notes?: string | null
           opale_number?: string
           ordonnateur?: string
           secretaire_general?: string
+          secretaire_general_id?: string | null
+          siret?: string | null
+          site_web?: string | null
+          statut_juridique?:
+            | Database["public"]["Enums"]["statut_juridique"]
+            | null
+          statut_rattachement?:
+            | Database["public"]["Enums"]["statut_rattachement"]
+            | null
+          surface_batie_m2?: number | null
+          taux_boursiers?: number | null
+          telephone?: string | null
           type?: string
+          type_etablissement?:
+            | Database["public"]["Enums"]["etablissement_type"]
+            | null
           uai: string
           updated_at?: string
         }
         Update: {
           academy?: string
+          adjoint_id?: string | null
+          adresse_ligne_1?: string | null
+          adresse_ligne_2?: string | null
+          adresse_ligne_3?: string | null
           agent_comptable?: string
+          annee_construction?: number | null
+          annee_derniere_renovation?: number | null
+          chef_cuisine_id?: string | null
+          chef_etablissement_id?: string | null
           city?: string
+          classement_ep?: Database["public"]["Enums"]["classement_ep"] | null
+          code_postal?: string | null
+          collectivite_rattachement?:
+            | Database["public"]["Enums"]["collectivite_rattachement"]
+            | null
+          commune?: string | null
+          contact_collectivite?: string | null
+          contrat_objectifs_en_cours?: boolean | null
+          contrat_tripartite_url?: string | null
+          cpe_principal_id?: string | null
           created_at?: string
+          date_rattachement_groupement?: string | null
+          departement?: string | null
+          email_intendance?: string | null
+          email_secretariat?: string | null
+          gestionnaire_materiel_id?: string | null
           groupement_id?: string | null
           id?: string
+          indice_position_sociale?: number | null
           name?: string
+          nb_batiments?: number | null
+          nb_eleves_boursiers?: number | null
+          nb_eleves_dp?: number | null
+          nb_eleves_externes?: number | null
+          nb_eleves_internes?: number | null
+          nb_eleves_total?: number | null
+          nom_collectivite?: string | null
+          notes?: string | null
           opale_number?: string
           ordonnateur?: string
           secretaire_general?: string
+          secretaire_general_id?: string | null
+          siret?: string | null
+          site_web?: string | null
+          statut_juridique?:
+            | Database["public"]["Enums"]["statut_juridique"]
+            | null
+          statut_rattachement?:
+            | Database["public"]["Enums"]["statut_rattachement"]
+            | null
+          surface_batie_m2?: number | null
+          taux_boursiers?: number | null
+          telephone?: string | null
           type?: string
+          type_etablissement?:
+            | Database["public"]["Enums"]["etablissement_type"]
+            | null
           uai?: string
           updated_at?: string
         }
         Relationships: [
           {
+            foreignKeyName: "establishments_adjoint_id_fkey"
+            columns: ["adjoint_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishments_chef_cuisine_id_fkey"
+            columns: ["chef_cuisine_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishments_chef_etablissement_id_fkey"
+            columns: ["chef_etablissement_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishments_cpe_principal_id_fkey"
+            columns: ["cpe_principal_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishments_gestionnaire_materiel_id_fkey"
+            columns: ["gestionnaire_materiel_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "establishments_groupement_id_fkey"
             columns: ["groupement_id"]
             isOneToOne: false
             referencedRelation: "groupements_comptables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "establishments_secretaire_general_id_fkey"
+            columns: ["secretaire_general_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
             referencedColumns: ["id"]
           },
         ]
@@ -1755,14 +2257,20 @@ export type Database = {
           adresse: string | null
           agent_comptable_prise_fonction: string | null
           agent_comptable_titulaire: string | null
+          arrete_constitutif_url: string | null
+          code_groupement: string | null
           created_at: string
+          date_creation_arrete: string | null
+          date_derniere_modification: string | null
           email: string | null
           fonde_de_pouvoir: string | null
           id: string
           lycee_siege_id: string | null
           nom: string
           notes: string | null
+          perimetre_actif: boolean | null
           rectorat_libelle: string
+          region_academique: string | null
           telephone: string | null
           updated_at: string
         }
@@ -1771,14 +2279,20 @@ export type Database = {
           adresse?: string | null
           agent_comptable_prise_fonction?: string | null
           agent_comptable_titulaire?: string | null
+          arrete_constitutif_url?: string | null
+          code_groupement?: string | null
           created_at?: string
+          date_creation_arrete?: string | null
+          date_derniere_modification?: string | null
           email?: string | null
           fonde_de_pouvoir?: string | null
           id?: string
           lycee_siege_id?: string | null
           nom: string
           notes?: string | null
+          perimetre_actif?: boolean | null
           rectorat_libelle?: string
+          region_academique?: string | null
           telephone?: string | null
           updated_at?: string
         }
@@ -1787,14 +2301,20 @@ export type Database = {
           adresse?: string | null
           agent_comptable_prise_fonction?: string | null
           agent_comptable_titulaire?: string | null
+          arrete_constitutif_url?: string | null
+          code_groupement?: string | null
           created_at?: string
+          date_creation_arrete?: string | null
+          date_derniere_modification?: string | null
           email?: string | null
           fonde_de_pouvoir?: string | null
           id?: string
           lycee_siege_id?: string | null
           nom?: string
           notes?: string | null
+          perimetre_actif?: boolean | null
           rectorat_libelle?: string
+          region_academique?: string | null
           telephone?: string | null
           updated_at?: string
         }
@@ -1802,6 +2322,63 @@ export type Database = {
           {
             foreignKeyName: "groupements_comptables_lycee_siege_id_fkey"
             columns: ["lycee_siege_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      historique_fonctions: {
+        Row: {
+          agent_id: string
+          archive_at: string
+          arrete_url: string | null
+          date_debut: string | null
+          date_fin: string | null
+          establishment_id: string | null
+          id: string
+          motif_changement: string | null
+          payload_apres: Json | null
+          payload_avant: Json | null
+          role: string | null
+        }
+        Insert: {
+          agent_id: string
+          archive_at?: string
+          arrete_url?: string | null
+          date_debut?: string | null
+          date_fin?: string | null
+          establishment_id?: string | null
+          id?: string
+          motif_changement?: string | null
+          payload_apres?: Json | null
+          payload_avant?: Json | null
+          role?: string | null
+        }
+        Update: {
+          agent_id?: string
+          archive_at?: string
+          arrete_url?: string | null
+          date_debut?: string | null
+          date_fin?: string | null
+          establishment_id?: string | null
+          id?: string
+          motif_changement?: string | null
+          payload_apres?: Json | null
+          payload_avant?: Json | null
+          role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historique_fonctions_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "historique_fonctions_establishment_id_fkey"
+            columns: ["establishment_id"]
             isOneToOne: false
             referencedRelation: "establishments"
             referencedColumns: ["id"]
@@ -2396,6 +2973,36 @@ export type Database = {
           profile_role?: string
           tour_complete?: boolean
           updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      rgpd_acces_logs: {
+        Row: {
+          action: string
+          contexte: Json | null
+          created_at: string
+          fiche_id: string
+          fiche_type: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          action: string
+          contexte?: Json | null
+          created_at?: string
+          fiche_id: string
+          fiche_type: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          action?: string
+          contexte?: Json | null
+          created_at?: string
+          fiche_id?: string
+          fiche_type?: string
+          id?: string
           user_id?: string
         }
         Relationships: []
@@ -3686,6 +4293,21 @@ export type Database = {
       }
     }
     Enums: {
+      acte_type:
+        | "nomination_regisseur_recettes"
+        | "nomination_regisseur_avances"
+        | "nomination_suppleant_regie"
+        | "nomination_mandataire"
+        | "arrete_constitutif_regie"
+        | "arrete_abrogation_regie"
+        | "delegation_signature_ordo"
+        | "delegation_signature_ac"
+        | "abrogation_delegation"
+        | "engagement_ac"
+        | "pv_installation_ac"
+        | "pv_remise_service_ac"
+        | "lettre_mission_cicf"
+        | "autre"
       agent_categorie: "A" | "B" | "C"
       agent_filiere:
         | "AENES"
@@ -3694,6 +4316,26 @@ export type Database = {
         | "SAENES"
         | "Medico_sociale"
         | "Autre"
+      agent_role_principal:
+        | "ac"
+        | "fp"
+        | "ordonnateur"
+        | "ordonnateur_suppleant"
+        | "sg"
+        | "adjoint_gestionnaire"
+        | "assistant_gestion"
+        | "regisseur_recettes"
+        | "regisseur_avances"
+        | "suppleant_regie"
+        | "magasinier"
+        | "chef_cuisine"
+        | "secretaire_intendance"
+        | "gestionnaire_materiel"
+        | "responsable_cfa"
+        | "responsable_greta"
+        | "correspondant_cicf"
+        | "archiviste_comptable"
+        | "autre"
       agent_statut:
         | "titulaire"
         | "contractuel_cdd"
@@ -3701,6 +4343,24 @@ export type Database = {
         | "detache"
         | "mis_a_disposition"
       app_role: "admin" | "agent"
+      bottin_categorie:
+        | "rectorat"
+        | "dsden"
+        | "collectivite"
+        | "dgfip"
+        | "ddfip"
+        | "ars"
+        | "prefecture"
+        | "police"
+        | "gendarmerie"
+        | "pompiers"
+        | "medecine_scolaire"
+        | "dsi"
+        | "eafc"
+        | "autre"
+      civilite: "mme" | "m"
+      classement_ep: "rep" | "rep_plus" | "hors_ep"
+      collectivite_rattachement: "departement" | "region" | "etat"
       competence_niveau:
         | "excellent"
         | "tres_bon"
@@ -3708,6 +4368,13 @@ export type Database = {
         | "a_developper"
         | "insuffisant"
         | "sans_objet"
+      delegation_statut: "active" | "expiree" | "abrogee"
+      delegation_type:
+        | "ordonnateur_general"
+        | "ordonnateur_partiel"
+        | "ac"
+        | "fonde_pouvoir"
+        | "mandataire"
       entretien_campagne_statut:
         | "preparation"
         | "ouverte"
@@ -3727,6 +4394,16 @@ export type Database = {
         | "archive"
         | "recours_en_cours"
         | "revision_demandee"
+      etablissement_type:
+        | "college"
+        | "lycee_general"
+        | "lycee_technologique"
+        | "lycee_professionnel"
+        | "erea"
+        | "segpa"
+        | "cfa"
+        | "greta"
+        | "annexe"
       formation_categorie: "T1" | "T2" | "T3"
       formation_fondement: "agent" | "evaluateur" | "consensuelle"
       formation_priorite: "haute" | "moyenne" | "basse"
@@ -3735,9 +4412,18 @@ export type Database = {
         | "partiellement_atteint"
         | "non_atteint"
         | "sans_objet"
+      profil_opale:
+        | "admin_etab"
+        | "ordonnateur"
+        | "gestionnaire"
+        | "valideur"
+        | "consultation"
+        | "aucun"
       recours_statut: "en_cours" | "accepte" | "rejete" | "silence_vaut_refus"
       recours_type: "revision_hierarchique" | "saisine_cap" | "saisine_ccp"
       signature_role: "n1" | "agent" | "n2"
+      statut_juridique: "eple" | "epla" | "opa" | "autre"
+      statut_rattachement: "actif" | "sortant" | "entrant" | "archive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3865,6 +4551,22 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      acte_type: [
+        "nomination_regisseur_recettes",
+        "nomination_regisseur_avances",
+        "nomination_suppleant_regie",
+        "nomination_mandataire",
+        "arrete_constitutif_regie",
+        "arrete_abrogation_regie",
+        "delegation_signature_ordo",
+        "delegation_signature_ac",
+        "abrogation_delegation",
+        "engagement_ac",
+        "pv_installation_ac",
+        "pv_remise_service_ac",
+        "lettre_mission_cicf",
+        "autre",
+      ],
       agent_categorie: ["A", "B", "C"],
       agent_filiere: [
         "AENES",
@@ -3874,6 +4576,27 @@ export const Constants = {
         "Medico_sociale",
         "Autre",
       ],
+      agent_role_principal: [
+        "ac",
+        "fp",
+        "ordonnateur",
+        "ordonnateur_suppleant",
+        "sg",
+        "adjoint_gestionnaire",
+        "assistant_gestion",
+        "regisseur_recettes",
+        "regisseur_avances",
+        "suppleant_regie",
+        "magasinier",
+        "chef_cuisine",
+        "secretaire_intendance",
+        "gestionnaire_materiel",
+        "responsable_cfa",
+        "responsable_greta",
+        "correspondant_cicf",
+        "archiviste_comptable",
+        "autre",
+      ],
       agent_statut: [
         "titulaire",
         "contractuel_cdd",
@@ -3882,6 +4605,25 @@ export const Constants = {
         "mis_a_disposition",
       ],
       app_role: ["admin", "agent"],
+      bottin_categorie: [
+        "rectorat",
+        "dsden",
+        "collectivite",
+        "dgfip",
+        "ddfip",
+        "ars",
+        "prefecture",
+        "police",
+        "gendarmerie",
+        "pompiers",
+        "medecine_scolaire",
+        "dsi",
+        "eafc",
+        "autre",
+      ],
+      civilite: ["mme", "m"],
+      classement_ep: ["rep", "rep_plus", "hors_ep"],
+      collectivite_rattachement: ["departement", "region", "etat"],
       competence_niveau: [
         "excellent",
         "tres_bon",
@@ -3889,6 +4631,14 @@ export const Constants = {
         "a_developper",
         "insuffisant",
         "sans_objet",
+      ],
+      delegation_statut: ["active", "expiree", "abrogee"],
+      delegation_type: [
+        "ordonnateur_general",
+        "ordonnateur_partiel",
+        "ac",
+        "fonde_pouvoir",
+        "mandataire",
       ],
       entretien_campagne_statut: [
         "preparation",
@@ -3911,6 +4661,17 @@ export const Constants = {
         "recours_en_cours",
         "revision_demandee",
       ],
+      etablissement_type: [
+        "college",
+        "lycee_general",
+        "lycee_technologique",
+        "lycee_professionnel",
+        "erea",
+        "segpa",
+        "cfa",
+        "greta",
+        "annexe",
+      ],
       formation_categorie: ["T1", "T2", "T3"],
       formation_fondement: ["agent", "evaluateur", "consensuelle"],
       formation_priorite: ["haute", "moyenne", "basse"],
@@ -3920,9 +4681,19 @@ export const Constants = {
         "non_atteint",
         "sans_objet",
       ],
+      profil_opale: [
+        "admin_etab",
+        "ordonnateur",
+        "gestionnaire",
+        "valideur",
+        "consultation",
+        "aucun",
+      ],
       recours_statut: ["en_cours", "accepte", "rejete", "silence_vaut_refus"],
       recours_type: ["revision_hierarchique", "saisine_cap", "saisine_ccp"],
       signature_role: ["n1", "agent", "n2"],
+      statut_juridique: ["eple", "epla", "opa", "autre"],
+      statut_rattachement: ["actif", "sortant", "entrant", "archive"],
     },
   },
 } as const

@@ -16,6 +16,8 @@ import { toast } from "sonner";
 import { clearAllCofiepleData } from "@/hooks/usePersistedState";
 import { store } from "@/store/persistentStore";
 import ComptesSensNormalManager from "@/components/settings/ComptesSensNormalManager";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AgentsTab from "@/components/parametres/AgentsTab";
 
 const SettingsPage = () => {
   const { selectedEstablishment, refetch } = useEstablishment();
@@ -147,9 +149,20 @@ const SettingsPage = () => {
     <div className="space-y-6 max-w-5xl">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <h1 className="text-2xl font-bold font-display">Paramètres</h1>
-        <p className="text-sm text-muted-foreground mt-1">Configuration de l'application et de l'établissement</p>
+        <p className="text-sm text-muted-foreground mt-1">Cellule RH et institutionnelle — niveau rectoral (GBCP / Code éducation / instruction 06-031-A-B-M)</p>
       </motion.div>
 
+      <Tabs defaultValue="preferences" className="w-full">
+        <TabsList className="flex flex-wrap">
+          <TabsTrigger value="preferences">Préférences</TabsTrigger>
+          <TabsTrigger value="agents">Agents BIATSS</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="agents" className="mt-4">
+          <AgentsTab />
+        </TabsContent>
+
+        <TabsContent value="preferences" className="mt-4 space-y-6">
       {/* Identité établissement */}
       <Card className="shadow-card">
         <CardHeader className="pb-3">
@@ -388,6 +401,8 @@ const SettingsPage = () => {
 
       {/* Règles sens normal des comptes (M9-6) */}
       <ComptesSensNormalManager uai={selectedEstablishment?.uai ?? null} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
