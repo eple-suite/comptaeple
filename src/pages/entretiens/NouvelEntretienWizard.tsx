@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, Sparkles, FileText, Calendar, User, Briefcase, Target, GraduationCap, ClipboardCheck, Wand2, RefreshCw, Eye, ShieldCheck } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, Sparkles, FileText, Calendar, User, Briefcase, Target, GraduationCap, ClipboardCheck, Wand2, RefreshCw, Eye, ShieldCheck, Undo2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -795,6 +795,8 @@ function RecapRow({ label, value }: { label: string; value: string }) {
 /* ============================================================ */
 function ApercuInjection({ state, setState }: any) {
   const apercu: CritereInjecte[] = state.injection_apercu;
+  const [snapshotAvant, setSnapshotAvant] = useState<CritereInjecte[] | null>(null);
+  const [derniereAction, setDerniereAction] = useState<"conserver" | "reanalyser" | null>(null);
   if (!apercu || apercu.length === 0) {
     return (
       <div className="p-3 border border-dashed rounded-md text-xs text-muted-foreground bg-muted/20">
@@ -827,6 +829,9 @@ function ApercuInjection({ state, setState }: any) {
 
   const reanalyser = () => {
     if (!state.fiche_poste_snapshot) return;
+    // mémorise l'état courant pour pouvoir annuler
+    setSnapshotAvant(apercu.map((c) => ({ ...c })));
+    setDerniereAction("reanalyser");
     const fresh = analyserFichePoste(state.fiche_poste_snapshot);
     setState((s: WizardState) => ({ ...s, injection_apercu: fresh }));
     toast.success("Analyse de la fiche de poste relancée — toutes les cases ont été réinitialisées.");
@@ -834,6 +839,9 @@ function ApercuInjection({ state, setState }: any) {
 
   const reanalyserEnConservant = () => {
     if (!state.fiche_poste_snapshot) return;
+    // mémorise l'état courant pour pouvoir annuler
+    setSnapshotAvant(apercu.map((c) => ({ ...c })));
+    setDerniereAction("conserver");
     const fresh = analyserFichePoste(state.fiche_poste_snapshot);
     const { fusionnes, conserves, nouveaux, obsoletes } = mergeApercuPreservant(
       state.injection_apercu,
@@ -849,6 +857,15 @@ function ApercuInjection({ state, setState }: any) {
         ? `Choix conservés — ${parts.join(", ")}.`
         : "Aucun changement détecté dans la fiche de poste.",
     );
+  };
+
+  const annulerFusion = () => {
+    if (!snapshotAvant) return;
+    const restore = snapshotAvant.map((c) => ({ ...c }));
+    setState((s: WizardState) => ({ ...s, injection_apercu: restore }));
+    setSnapshotAvant(null);
+    setDerniereAction(null);
+    toast.success("Aperçu précédent restauré.");
   };
 
   return (
@@ -877,6 +894,27 @@ function ApercuInjection({ state, setState }: any) {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          {snapshotAvant && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={annulerFusion}
+                    className="border-amber-300 text-amber-800 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-950"
+                  >
+                    <Undo2 className="h-3.5 w-3.5 mr-1" /> Annuler
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs max-w-xs">
+                  Restaure l'aperçu tel qu'il était avant la dernière action
+                  ({derniereAction === "conserver" ? "« Conserver mes choix »" : "« Ré-analyser »"}).
+                  Disponible uniquement jusqu'à la prochaine analyse.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
