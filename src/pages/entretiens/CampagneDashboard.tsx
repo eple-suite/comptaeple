@@ -221,7 +221,7 @@ export default function CampagneDashboard() {
 
   const actionsFiltrees = useMemo(() => {
     const q = searchActions.trim().toLowerCase();
-    return actions.filter((a) => {
+    const filtres = actions.filter((a) => {
       if (filtreUrgence !== "all" && a.urgence !== filtreUrgence) return false;
       if (filtreActeur !== "all" && a.acteur !== filtreActeur) return false;
       if (q) {
@@ -230,7 +230,8 @@ export default function CampagneDashboard() {
       }
       return true;
     });
-  }, [actions, filtreUrgence, filtreActeur, searchActions]);
+    return sortActions(filtres, tri);
+  }, [actions, filtreUrgence, filtreActeur, searchActions, tri]);
 
   const actionsParUrgence = useMemo(() => {
     const acc: Record<Urgence, number> = { critique: 0, haute: 0, moyenne: 0, basse: 0 };
