@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { currentAnneeScolaire } from "@/lib/entretiens/wizard";
 import { STATUT_LABELS, type EntretienStatut } from "@/lib/entretiens/types";
-import { buildActionsAFaire, URGENCE_LABELS, ACTEUR_COLORS, type Urgence, type ActionAgent } from "@/lib/entretiens/actionsAFaire";
+import { buildActionsAFaire, URGENCE_LABELS, ACTEUR_COLORS, sortActions, SORT_LABELS, type Urgence, type ActionAgent, type SortKey } from "@/lib/entretiens/actionsAFaire";
 import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface Etablissement {
@@ -100,6 +100,7 @@ export default function CampagneDashboard() {
   const [filtreUrgence, setFiltreUrgence] = usePersistedState<Urgence | "all">("camp_act_urgence", "all", { urlParam: "urg" });
   const [filtreActeur, setFiltreActeur] = usePersistedState<ActionAgent["acteur"] | "all">("camp_act_acteur", "all", { urlParam: "acteur" });
   const [searchActions, setSearchActions] = usePersistedState<string>("camp_act_search", "", { urlParam: "qa" });
+  const [tri, setTri] = usePersistedState<SortKey>("camp_act_tri", "urgence", { urlParam: "tri" });
 
   /* Tous les établissements accessibles */
   const { data: etablissements = [] } = useQuery({
