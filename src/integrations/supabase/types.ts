@@ -1420,6 +1420,167 @@ export type Database = {
           },
         ]
       }
+      enquetes_campagnes: {
+        Row: {
+          created_at: string
+          cree_par: string | null
+          date_echeance: string
+          date_lancement: string
+          description: string | null
+          id: string
+          intitule: string
+          origine: string
+          perimetre_etablissement_ids: string[]
+          periode_concernee: string | null
+          statut: string
+          type_enquete: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          cree_par?: string | null
+          date_echeance: string
+          date_lancement?: string
+          description?: string | null
+          id?: string
+          intitule: string
+          origine?: string
+          perimetre_etablissement_ids?: string[]
+          periode_concernee?: string | null
+          statut?: string
+          type_enquete: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          cree_par?: string | null
+          date_echeance?: string
+          date_lancement?: string
+          description?: string | null
+          id?: string
+          intitule?: string
+          origine?: string
+          perimetre_etablissement_ids?: string[]
+          periode_concernee?: string | null
+          statut?: string
+          type_enquete?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      enquetes_referentiel_comptes: {
+        Row: {
+          actif: boolean
+          commentaire_reglementaire: string | null
+          compte: string
+          created_at: string
+          despecialisable: boolean
+          financeur_type: string
+          id: string
+          libelle: string
+          niveau_alerte_si_anormal: string
+          programme_bop: string | null
+          racine_famille: string
+          reference_reglementaire: string | null
+          sens_solde_normal: string
+          sous_programme: string | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          commentaire_reglementaire?: string | null
+          compte: string
+          created_at?: string
+          despecialisable?: boolean
+          financeur_type: string
+          id?: string
+          libelle: string
+          niveau_alerte_si_anormal?: string
+          programme_bop?: string | null
+          racine_famille: string
+          reference_reglementaire?: string | null
+          sens_solde_normal: string
+          sous_programme?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          commentaire_reglementaire?: string | null
+          compte?: string
+          created_at?: string
+          despecialisable?: boolean
+          financeur_type?: string
+          id?: string
+          libelle?: string
+          niveau_alerte_si_anormal?: string
+          programme_bop?: string | null
+          racine_famille?: string
+          reference_reglementaire?: string | null
+          sens_solde_normal?: string
+          sous_programme?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      enquetes_reponses_eple: {
+        Row: {
+          campagne_id: string
+          commentaires_ac: string | null
+          commentaires_rectorat: string | null
+          created_at: string
+          created_by: string | null
+          donnees: Json
+          establishment_id: string
+          id: string
+          signataire_ac: string | null
+          signataire_ordo: string | null
+          soumise_le: string | null
+          statut: string
+          updated_at: string
+          validee_le: string | null
+        }
+        Insert: {
+          campagne_id: string
+          commentaires_ac?: string | null
+          commentaires_rectorat?: string | null
+          created_at?: string
+          created_by?: string | null
+          donnees?: Json
+          establishment_id: string
+          id?: string
+          signataire_ac?: string | null
+          signataire_ordo?: string | null
+          soumise_le?: string | null
+          statut?: string
+          updated_at?: string
+          validee_le?: string | null
+        }
+        Update: {
+          campagne_id?: string
+          commentaires_ac?: string | null
+          commentaires_rectorat?: string | null
+          created_at?: string
+          created_by?: string | null
+          donnees?: Json
+          establishment_id?: string
+          id?: string
+          signataire_ac?: string | null
+          signataire_ordo?: string | null
+          soumise_le?: string | null
+          statut?: string
+          updated_at?: string
+          validee_le?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enquetes_reponses_eple_campagne_id_fkey"
+            columns: ["campagne_id"]
+            isOneToOne: false
+            referencedRelation: "enquetes_campagnes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entretiens_campagnes: {
         Row: {
           annee_scolaire: string
