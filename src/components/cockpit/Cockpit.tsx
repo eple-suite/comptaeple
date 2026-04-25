@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Download, RefreshCw } from "lucide-react";
+import { Download, RefreshCw, Zap } from "lucide-react";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
 import { buildCockpitDataset } from "@/lib/cockpit/dataBuilder";
+import { syncAlertesTransverses, aggregerRapports } from "@/lib/cockpit/alertesSync";
+import { useToast } from "@/hooks/use-toast";
 import { EnTeteRepublique } from "./EnTeteRepublique";
 import { CarteIdentiteGroupement } from "./CarteIdentiteGroupement";
 import { KpiCockpitGrid } from "./KpiCockpitGrid";
@@ -22,7 +24,10 @@ const PROFIL_KEY = "cockpit_profil_actif";
 
 export function Cockpit() {
   const { profile, role } = useAuth();
+  const { toast } = useToast();
   const [demo, setDemo] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+  const [autoSyncDone, setAutoSyncDone] = useState(false);
   const [profil, setProfil] = useState<ProfilCockpit>(() => {
     return (localStorage.getItem(PROFIL_KEY) as ProfilCockpit) || 'agent_comptable';
   });
@@ -36,6 +41,42 @@ export function Cockpit() {
     queryFn: () => buildCockpitDataset({ demo }),
     staleTime: 60_000,
   });
+
+  // Synchronisation manuelle (et automatique au premier chargement non-démo)
+  const handleSync = async (silent = false) => {
+    if (demo) {
+      if (!silent) toast({ title: 'Mode démo', description: 'Synchro désactivée en mode démo.' });
+      return;
+    }
+    setSyncing(true);
+    try {
+      const rapports = await syncAlertesTransverses();
+      const agg = aggregerRapports(rapports);
+      const totalUp = Object.values(agg).reduce((s, r) => s + r.upsertees, 0);
+      const totalClose = Object.values(agg).reduce((s, r) => s + r.closes, 0);
+      const erreurs = Object.values(agg).flatMap(r => r.erreurs);
+      await refetch();
+      if (!silent) {
+        toast({
+          title: 'Synchronisation des alertes',
+          description: `${totalUp} active(s) · ${totalClose} clôturée(s)${erreurs.length ? ` · ${erreurs.length} erreur(s)` : ''}`,
+        });
+      }
+    } catch (e: any) {
+      if (!silent) toast({ title: 'Erreur de synchronisation', description: String(e?.message || e), variant: 'destructive' });
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  // Auto-sync silencieux au premier chargement réel (hors démo)
+  useEffect(() => {
+    if (!autoSyncDone && !demo && dataset) {
+      setAutoSyncDone(true);
+      handleSync(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dataset, demo]);
 
   const isAdmin = role === 'admin';
   const greeting = profile?.first_name ? `${profile.first_name}` : 'Agent comptable';
@@ -92,6 +133,9 @@ export function Cockpit() {
           <div className="flex items-center gap-2 flex-wrap">
             <ProfilSwitcher value={profil} onChange={setProfil} />
             <ModeDemoBadge active={demo} onToggle={() => setDemo(d => !d)} isAdmin={isAdmin} />
+            <Button size="sm" variant="outline" onClick={() => handleSync(false)} disabled={syncing || demo} className="h-7 text-xs gap-1.5" title="Resynchroniser les alertes des modules">
+              <Zap className={`h-3 w-3 ${syncing ? 'animate-pulse' : ''}`} /> {syncing ? 'Sync…' : 'Resync alertes'}
+            </Button>
             <Button size="sm" variant="outline" onClick={() => refetch()} className="h-7 text-xs gap-1.5"><RefreshCw className="h-3 w-3" /> Actualiser</Button>
             <Button size="sm" onClick={() => exportCockpitPDF(view, view.groupement.agentComptable)} className="h-7 text-xs gap-1.5"><Download className="h-3 w-3" /> Exporter cockpit</Button>
           </div>
