@@ -1,240 +1,468 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
-import { Upload, FileSpreadsheet, CheckCircle2, AlertCircle, X, FileUp } from "lucide-react";
+import { CheckCircle2, AlertCircle, X, Loader2, FileSpreadsheet, Trash2, History, ScanSearch } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
-import Papa from "papaparse";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
 import * as XLSX from "xlsx";
-import { parseCsvFile, selectLargestWorkbookSheet, selectWorkbookSheetByHeaders } from "@/lib/opaleWorkbook";
+import {
+  parseCsvText,
+  selectLargestWorkbookSheet,
+  detectFileType,
+  IMPORT_TYPE_LABELS,
+  type ImportFileType,
+  findUaiInMatrix,
+  runCrossChecks,
+  type CrossCheckResult,
+  parseGrandLivre,
+  parseEtatTiers,
+  parseSiecleCsv,
+  parseSiecleWorkbook,
+  parseBourses,
+  parseRegies,
+} from "@/lib/import";
+import { selectOpaleBalanceSheet } from "@/lib/opaleWorkbook";
+import { selectOpaleSdeSdrSheet, parseSdeRows, parseSdrRows } from "@/lib/opaleSdeSdrParser";
+import { useEstablishment } from "@/contexts/EstablishmentContext";
+import { persistImport } from "@/lib/import/importService";
+import { DropZoneMulti } from "@/components/import/DropZoneMulti";
+import { CrossValidationPanel } from "@/components/import/CrossValidationPanel";
+import { HistoriqueImports } from "@/components/import/HistoriqueImports";
+import { RgpdSiecleNotice } from "@/components/import/RgpdSiecleNotice";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
-interface ImportResult {
-  fileName: string;
-  type: string;
-  rows: number;
-  columns: string[];
-  data: Record<string, string>[];
-  status: "success" | "error";
+interface ParsedFile {
+  id: string;
+  file: File;
+  detectedType: ImportFileType;
+  manualType?: ImportFileType;
+  uaiDetecte: string | null;
+  rowsCount: number;
+  totaux: Record<string, number>;
+  anomalies: string[];
+  status: 'parsing' | 'ready' | 'error' | 'imported';
   error?: string;
-  date: string;
+  parsedData?: unknown;
 }
 
-const importTypes = [
-  { id: "balance", label: "Balance comptable", description: "Balance générale des comptes (Op@le)", icon: FileSpreadsheet, category: "quotidien" },
-  { id: "budget", label: "Exécution budgétaire", description: "Données d'exécution budgétaire", icon: FileSpreadsheet, category: "quotidien" },
-  { id: "immobilisations", label: "Immobilisations", description: "Inventaire des immobilisations", icon: FileSpreadsheet, category: "quotidien" },
-  { id: "creances", label: "Créances & dettes", description: "État des créances et dettes", icon: FileSpreadsheet, category: "quotidien" },
-  { id: "situation_depenses", label: "Situation des dépenses", description: "Situation des dépenses Op@le (Compte financier)", icon: FileSpreadsheet, category: "compte_financier" },
-  { id: "situation_recettes", label: "Situation des recettes", description: "Situation des recettes Op@le (Compte financier)", icon: FileSpreadsheet, category: "compte_financier" },
-  { id: "balance_cf", label: "Balance (Compte financier)", description: "Balance comptable de clôture Op@le (Compte financier)", icon: FileSpreadsheet, category: "compte_financier" },
+const ALL_TYPES: ImportFileType[] = [
+  'balance', 'sde', 'sdr', 'grand_livre', 'etat_tiers',
+  'siecle_eleves', 'siecle_bourses', 'regies', 'paie', 'inconnu',
 ];
 
+const SIECLE_TYPES: ImportFileType[] = ['siecle_eleves', 'siecle_bourses'];
+
+function fmtBytes(n: number): string {
+  if (n < 1024) return `${n} o`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} Ko`;
+  return `${(n / 1024 / 1024).toFixed(2)} Mo`;
+}
+
 const DataImport = () => {
-  const [imports, setImports] = useState<ImportResult[]>([]);
-  const [selectedType, setSelectedType] = useState("balance");
-  const [dragActive, setDragActive] = useState(false);
-  const [previewData, setPreviewData] = useState<ImportResult | null>(null);
+  const { toast } = useToast();
+  const { selectedEstablishment } = useEstablishment();
+  const [files, setFiles] = useState<ParsedFile[]>([]);
+  const [importing, setImporting] = useState(false);
+  const [pendingRgpd, setPendingRgpd] = useState<ParsedFile | null>(null);
 
-  const parseFile = useCallback(async (file: File) => {
-    const ext = file.name.split(".").pop()?.toLowerCase();
+  // ─── Parsing automatique d'un fichier ───
+  const parseFile = useCallback(async (file: File): Promise<ParsedFile> => {
+    const id = `${file.name}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const ext = file.name.split('.').pop()?.toLowerCase() ?? '';
 
-    const processData = (data: Record<string, string>[]) => {
-      if (data.length === 0) {
-        const result: ImportResult = {
-          fileName: file.name, type: selectedType, rows: 0, columns: [], data: [],
-          status: "error", error: "Fichier vide", date: new Date().toLocaleDateString("fr-FR"),
-        };
-        setImports((prev) => [result, ...prev]);
-        toast({ title: "Erreur", description: "Le fichier est vide.", variant: "destructive" });
-        return;
-      }
-      const columns = Object.keys(data[0]);
-      const result: ImportResult = {
-        fileName: file.name, type: selectedType, rows: data.length, columns,
-        data: data.slice(0, 100), status: "success",
-        date: new Date().toLocaleDateString("fr-FR"),
-      };
-      setImports((prev) => [result, ...prev]);
-      setPreviewData(result);
-      toast({ title: "Import réussi", description: `${data.length} lignes importées depuis ${file.name}` });
-    };
+    try {
+      let parsedData: unknown = null;
+      let totaux: Record<string, number> = {};
+      let rowsCount = 0;
+      let uai: string | null = null;
+      let contentSample = '';
+      const anomalies: string[] = [];
 
-    if (ext === "csv") {
-      try {
-        const data = await parseCsvFile(file);
-        processData(data as Record<string, string>[]);
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "Erreur CSV";
-        setImports((prev) => [{
-          fileName: file.name, type: selectedType, rows: 0, columns: [], data: [],
-          status: "error", error: message, date: new Date().toLocaleDateString("fr-FR"),
-        }, ...prev]);
-        toast({ title: "Erreur de parsing", description: message, variant: "destructive" });
-      }
-    } else if (ext === "xlsx" || ext === "xls") {
-      try {
+      if (ext === 'csv') {
+        const text = await file.text();
+        const records = parseCsvText(text);
+        contentSample = (Object.keys(records[0] ?? {}).join(' ') + ' ' + text.slice(0, 500)).toLowerCase();
+        rowsCount = records.length;
+
+        const detected = detectFileType(file.name, contentSample);
+        if (detected.type === 'siecle_eleves') {
+          const r = parseSiecleCsv(text);
+          parsedData = r;
+          rowsCount = r.eleves.length;
+          totaux = { eleves: r.eleves.length, ineValides: r.ineValides, ineInvalides: r.ineInvalides };
+          if (r.ineInvalides > 0) anomalies.push(`${r.ineInvalides} INE invalides détectés`);
+        } else {
+          parsedData = records;
+        }
+      } else if (ext === 'xlsx' || ext === 'xls') {
         const buffer = await file.arrayBuffer();
-        const wb = XLSX.read(buffer, { type: "array" });
-        const candidate = selectWorkbookSheetByHeaders(wb, {
-          requiredHeaders: [
-            "Compte",
-            "Montant débit antérieur",
-            "Montant crédit antérieur",
-            "Montant débit",
-            "Montant crédit",
-            "Solde débit",
-            "Solde crédit",
-          ],
-          forbiddenHeaderPatterns: [/^__empty/i, /^unnamed:/i, /^somme de/i, /^total general/i, /^total général/i],
-          maxHeaderScanRows: 8,
-          minMatches: 5,
-        }) ?? selectLargestWorkbookSheet(wb);
+        const wb = XLSX.read(buffer, { type: 'array' });
 
-        processData((candidate?.records ?? []) as Record<string, string>[]);
-      } catch (err) {
-        const msg = err instanceof Error ? err.message : "Erreur inconnue";
-        setImports((prev) => [{
-          fileName: file.name, type: selectedType, rows: 0, columns: [], data: [],
-          status: "error", error: msg, date: new Date().toLocaleDateString("fr-FR"),
-        }, ...prev]);
-        toast({ title: "Erreur Excel", description: msg, variant: "destructive" });
+        // Échantillon d'en-têtes pour la détection
+        const sample = selectLargestWorkbookSheet(wb);
+        contentSample = sample
+          ? (sample.matrix.slice(0, 5).flat().map(String).join(' ')).toLowerCase()
+          : '';
+        if (sample) uai = findUaiInMatrix(sample.matrix);
+      } else {
+        throw new Error('Format non supporté (CSV, XLS, XLSX uniquement).');
       }
-    } else {
-      toast({ title: "Format non supporté", description: "Utilisez CSV, XLS ou XLSX.", variant: "destructive" });
+
+      // Détection finale
+      const detected = detectFileType(file.name, contentSample);
+
+      // Parsing typé selon détection (pour les xlsx)
+      if ((ext === 'xlsx' || ext === 'xls') && detected.type !== 'inconnu') {
+        const buffer = await file.arrayBuffer();
+        const wb = XLSX.read(buffer, { type: 'array' });
+
+        switch (detected.type) {
+          case 'balance': {
+            const sel = selectOpaleBalanceSheet(wb);
+            if (sel) {
+              rowsCount = Math.max(0, sel.matrix.length - sel.headerRowIndex - 1);
+              parsedData = sel;
+              uai = uai ?? findUaiInMatrix(sel.matrix);
+              totaux = { lignes: rowsCount };
+            } else {
+              anomalies.push('Aucun onglet balance Op@le détecté.');
+            }
+            break;
+          }
+          case 'sde': {
+            try {
+              const sel = selectOpaleSdeSdrSheet(wb, 'sde');
+              if (sel) {
+                const rows = parseSdeRows(sel);
+                parsedData = rows;
+                rowsCount = rows.length;
+                const mandats = rows.reduce((s, r) => s + (r.mandats || 0), 0);
+                totaux = { lignes: rowsCount, mandatsEmis: Math.round(mandats * 100) / 100 };
+              } else {
+                anomalies.push('SDE : aucun onglet exploitable.');
+              }
+            } catch (e) { anomalies.push(`SDE : ${(e as Error).message}`); }
+            break;
+          }
+          case 'sdr': {
+            try {
+              const sel = selectOpaleSdeSdrSheet(wb, 'sdr');
+              if (sel) {
+                const rows = parseSdrRows(sel);
+                parsedData = rows;
+                rowsCount = rows.length;
+                const ordres = rows.reduce((s, r) => s + (r.ordresRecettes || 0), 0);
+                totaux = { lignes: rowsCount, ordresEmis: Math.round(ordres * 100) / 100 };
+              } else {
+                anomalies.push('SDR : aucun onglet exploitable.');
+              }
+            } catch (e) { anomalies.push(`SDR : ${(e as Error).message}`); }
+            break;
+          }
+          case 'grand_livre': {
+            const r = parseGrandLivre(wb);
+            if (r) {
+              parsedData = r;
+              rowsCount = r.ecritures.length;
+              totaux = { ecritures: rowsCount, totalDebit: r.totalDebit, totalCredit: r.totalCredit };
+              if (Math.abs(r.totalDebit - r.totalCredit) > 0.01) {
+                anomalies.push(`Grand livre déséquilibré : écart ${(r.totalDebit - r.totalCredit).toFixed(2)} €`);
+              }
+            }
+            break;
+          }
+          case 'etat_tiers': {
+            const r = parseEtatTiers(wb);
+            if (r) {
+              parsedData = r;
+              rowsCount = r.lignes.length;
+              totaux = { tiers: rowsCount, totalFamilles: r.totalFamilles, totalFournisseurs: r.totalFournisseurs };
+            }
+            break;
+          }
+          case 'siecle_eleves': {
+            const r = parseSiecleWorkbook(wb);
+            parsedData = r;
+            rowsCount = r.eleves.length;
+            totaux = { eleves: r.eleves.length, ineValides: r.ineValides };
+            if (r.ineInvalides > 0) anomalies.push(`${r.ineInvalides} INE invalides`);
+            break;
+          }
+          case 'siecle_bourses': {
+            const r = parseBourses(wb);
+            if (r) {
+              parsedData = r;
+              rowsCount = r.lignes.length;
+              totaux = { boursiers: rowsCount, totalDu: r.totalDu };
+            }
+            break;
+          }
+          case 'regies': {
+            const r = parseRegies(wb);
+            if (r) {
+              parsedData = r;
+              rowsCount = r.regies.length;
+              totaux = { regies: rowsCount, totalSoldes: r.totalSoldes };
+            }
+            break;
+          }
+          default:
+            break;
+        }
+      }
+
+      return {
+        id, file,
+        detectedType: detected.type,
+        uaiDetecte: uai,
+        rowsCount,
+        totaux,
+        anomalies,
+        status: 'ready',
+        parsedData,
+      };
+    } catch (err) {
+      return {
+        id, file,
+        detectedType: 'inconnu',
+        uaiDetecte: null,
+        rowsCount: 0,
+        totaux: {},
+        anomalies: [],
+        status: 'error',
+        error: (err as Error).message,
+      };
     }
-  }, [selectedType]);
+  }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    setDragActive(false);
-    const files = Array.from(e.dataTransfer.files);
-    files.forEach(parseFile);
+  const handleFilesAdded = useCallback(async (newFiles: File[]) => {
+    // Placeholder en parsing
+    const placeholders: ParsedFile[] = newFiles.map((f) => ({
+      id: `${f.name}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      file: f, detectedType: 'inconnu', uaiDetecte: null, rowsCount: 0,
+      totaux: {}, anomalies: [], status: 'parsing',
+    }));
+    setFiles((prev) => [...prev, ...placeholders]);
+
+    for (let i = 0; i < newFiles.length; i += 1) {
+      const parsed = await parseFile(newFiles[i]);
+      setFiles((prev) => prev.map((p, idx) =>
+        idx === prev.length - placeholders.length + i ? { ...parsed, id: p.id } : p,
+      ));
+    }
   }, [parseFile]);
 
-  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    files.forEach(parseFile);
-    e.target.value = "";
-  }, [parseFile]);
+  const removeFile = (id: string) => setFiles((prev) => prev.filter((f) => f.id !== id));
+
+  const setManualType = (id: string, type: ImportFileType) => {
+    setFiles((prev) => prev.map((f) => f.id === id ? { ...f, manualType: type } : f));
+  };
+
+  // ─── Validation croisée ───
+  const crossChecks: CrossCheckResult[] = useMemo(() => {
+    const ready = files.filter((f) => f.status === 'ready');
+    const find = (t: ImportFileType) => ready.find((f) => (f.manualType ?? f.detectedType) === t);
+    const balance = find('balance');
+    const sde = find('sde');
+    const sdr = find('sdr');
+    const tiers = find('etat_tiers');
+    const bourses = find('siecle_bourses');
+
+    if (!balance && !sde && !sdr && !tiers && !bourses) return [];
+
+    return runCrossChecks({
+      balance: balance ? { classe6: 0, classe7: 0, c411: 0, c443110: 0 } : undefined,
+      sde: sde ? { mandatsEmis: Number(sde.totaux.mandatsEmis ?? 0) } : undefined,
+      sdr: sdr ? { ordresEmis: Number(sdr.totaux.ordresEmis ?? 0) } : undefined,
+      tiers: tiers ? { totalFamilles: Number(tiers.totaux.totalFamilles ?? 0) } : undefined,
+      bourses: bourses ? { totalDu: Number(bourses.totaux.totalDu ?? 0) } : undefined,
+    });
+  }, [files]);
+
+  // ─── Import (persistance) ───
+  const handleImportOne = async (pf: ParsedFile, skipRgpd = false) => {
+    if (!selectedEstablishment) {
+      toast({ title: 'Sélectionnez un établissement', variant: 'destructive' });
+      return;
+    }
+    const type = pf.manualType ?? pf.detectedType;
+
+    if (!skipRgpd && SIECLE_TYPES.includes(type)) {
+      setPendingRgpd(pf);
+      return;
+    }
+
+    setImporting(true);
+    try {
+      const result = await persistImport({
+        establishmentId: selectedEstablishment.id,
+        type,
+        file: pf.file,
+        uaiDetecte: pf.uaiDetecte,
+        totaux: pf.totaux,
+        anomalies: pf.anomalies,
+      });
+      setFiles((prev) => prev.map((f) => f.id === pf.id ? { ...f, status: 'imported' } : f));
+      toast({
+        title: 'Import archivé',
+        description: `${pf.file.name} — ${IMPORT_TYPE_LABELS[type]} • ${result.ecraseCount > 0 ? `${result.ecraseCount} version(s) précédente(s) marquée(s) écrasée(s)` : 'aucune version précédente'}.`,
+      });
+    } catch (err) {
+      toast({
+        title: 'Échec d\'archivage',
+        description: err instanceof Error ? err.message : 'Erreur inconnue',
+        variant: 'destructive',
+      });
+    } finally {
+      setImporting(false);
+    }
+  };
+
+  const handleImportAll = async () => {
+    const ready = files.filter((f) => f.status === 'ready');
+    for (const f of ready) {
+      const type = f.manualType ?? f.detectedType;
+      if (SIECLE_TYPES.includes(type)) {
+        setPendingRgpd(f);
+        return; // bloque jusqu'à acceptation RGPD
+      }
+      // eslint-disable-next-line no-await-in-loop
+      await handleImportOne(f, true);
+    }
+  };
+
+  const readyCount = files.filter((f) => f.status === 'ready').length;
 
   return (
     <div className="space-y-6">
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <h1 className="text-2xl font-bold font-display">Import de données</h1>
-        <p className="text-sm text-muted-foreground mt-1">Importez vos données comptables au format CSV ou Excel</p>
+        <h1 className="text-2xl font-bold font-display">Plateforme d'import</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Détection automatique du type de fichier · Validation croisée · Versioning et archivage 10 ans
+        </p>
       </motion.div>
 
-      <div className="flex items-center gap-4 flex-wrap">
-        <Select value={selectedType} onValueChange={setSelectedType}>
-          <SelectTrigger className="w-72"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <p className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide">Imports quotidiens</p>
-            {importTypes.filter(t => t.category === "quotidien").map((t) => (<SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>))}
-            <p className="px-2 py-1 text-[10px] font-semibold text-muted-foreground uppercase tracking-wide mt-1">Compte financier (Op@le)</p>
-            {importTypes.filter(t => t.category === "compte_financier").map((t) => (<SelectItem key={t.id} value={t.id}>{t.label}</SelectItem>))}
-          </SelectContent>
-        </Select>
-        <Badge variant="outline" className="text-xs">Type : {importTypes.find((t) => t.id === selectedType)?.label}</Badge>
-        {importTypes.find(t => t.id === selectedType)?.category === "compte_financier" && (
-          <Badge className="bg-primary/10 text-primary border-0 text-xs">📊 Compte financier</Badge>
-        )}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
+          <Badge variant="outline" className="text-xs">
+            {selectedEstablishment ? `EPLE : ${selectedEstablishment.uai} — ${selectedEstablishment.name}` : 'Aucun EPLE sélectionné'}
+          </Badge>
+          {readyCount > 0 && (
+            <Badge className="bg-emerald-600 text-white text-xs">{readyCount} fichier{readyCount > 1 ? 's' : ''} prêt{readyCount > 1 ? 's' : ''}</Badge>
+          )}
+        </div>
+        <Button
+          onClick={handleImportAll}
+          disabled={importing || readyCount === 0 || !selectedEstablishment}
+          className="gap-2"
+        >
+          {importing ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+          Importer & archiver {readyCount > 0 ? `(${readyCount})` : ''}
+        </Button>
       </div>
 
-      <Card
-        className={`shadow-card border-dashed border-2 transition-colors ${dragActive ? "border-primary bg-primary/5" : ""}`}
-        onDragOver={(e) => { e.preventDefault(); setDragActive(true); }}
-        onDragLeave={() => setDragActive(false)}
-        onDrop={handleDrop}
-      >
-        <CardContent className="p-10 text-center space-y-4">
-          <div className={`mx-auto h-16 w-16 rounded-full flex items-center justify-center transition-colors ${dragActive ? "bg-primary/20" : "bg-muted"}`}>
-            <FileUp className={`h-8 w-8 ${dragActive ? "text-primary" : "text-muted-foreground"}`} />
-          </div>
-          <div>
-            <p className="font-semibold">{dragActive ? "Déposez le fichier ici" : "Glissez-déposez vos fichiers ici"}</p>
-            <p className="text-sm text-muted-foreground mt-1">CSV, XLS, XLSX acceptés • Max 20 Mo</p>
-          </div>
-          <label>
-            <input type="file" accept=".csv,.xls,.xlsx" multiple onChange={handleFileSelect} className="hidden" />
-            <Button variant="outline" asChild><span>Parcourir les fichiers</span></Button>
-          </label>
-        </CardContent>
-      </Card>
+      <Tabs defaultValue="depot" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="depot"><ScanSearch className="h-4 w-4 mr-1" /> Dépôt & analyse</TabsTrigger>
+          <TabsTrigger value="historique"><History className="h-4 w-4 mr-1" /> Historique</TabsTrigger>
+        </TabsList>
 
-      {previewData && previewData.status === "success" && (
-        <Card className="shadow-card">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm font-semibold">
-                Aperçu : {previewData.fileName} ({previewData.rows} lignes)
-              </CardTitle>
-              <Button size="sm" variant="ghost" onClick={() => setPreviewData(null)}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    {previewData.columns.map((col) => (
-                      <TableHead key={col} className="whitespace-nowrap text-xs">{col}</TableHead>
-                    ))}
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {previewData.data.slice(0, 20).map((row, i) => (
-                    <TableRow key={i}>
-                      {previewData.columns.map((col) => (
-                        <TableCell key={col} className="text-xs whitespace-nowrap">{String(row[col] ?? "")}</TableCell>
-                      ))}
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            {previewData.data.length > 20 && (
-              <p className="text-xs text-muted-foreground mt-2 text-center">
-                Affichage des 20 premières lignes sur {previewData.rows}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+        <TabsContent value="depot" className="space-y-4">
+          {pendingRgpd ? (
+            <RgpdSiecleNotice
+              onAccept={() => { const p = pendingRgpd; setPendingRgpd(null); handleImportOne(p, true); }}
+              onCancel={() => setPendingRgpd(null)}
+            />
+          ) : (
+            <DropZoneMulti onFiles={handleFilesAdded} disabled={!selectedEstablishment} />
+          )}
 
-      {imports.length > 0 && (
-        <Card className="shadow-card">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold">Historique des imports</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {imports.map((imp, i) => (
-              <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div className="flex items-center gap-3">
-                  <FileSpreadsheet className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">{imp.fileName}</p>
-                    <p className="text-xs text-muted-foreground">{imp.date} • {imp.rows} lignes • {importTypes.find((t) => t.id === imp.type)?.label}</p>
-                  </div>
-                </div>
-                {imp.status === "success" ? (
-                  <Badge variant="secondary" className="text-[10px] bg-success/10 text-success border-0">
-                    <CheckCircle2 className="h-3 w-3 mr-1" /> Importé
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="text-[10px] bg-destructive/10 text-destructive border-0">
-                    <AlertCircle className="h-3 w-3 mr-1" /> {imp.error || "Erreur"}
-                  </Badge>
-                )}
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
+          {!selectedEstablishment && (
+            <Card className="border-warning/40 bg-warning/5">
+              <CardContent className="p-3 text-xs flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-warning shrink-0" />
+                Veuillez sélectionner un établissement (sélecteur en haut de page) avant de déposer un fichier.
+              </CardContent>
+            </Card>
+          )}
+
+          {files.length > 0 && (
+            <Card className="shadow-card">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Aperçu pré-import ({files.length})</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {files.map((f) => {
+                  const type = f.manualType ?? f.detectedType;
+                  return (
+                    <div key={f.id} className="border rounded-md p-3 space-y-2">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-start gap-2 flex-1 min-w-0">
+                          <FileSpreadsheet className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate" title={f.file.name}>{f.file.name}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {fmtBytes(f.file.size)} {f.uaiDetecte ? `• UAI ${f.uaiDetecte}` : ''}
+                              {f.rowsCount > 0 ? ` • ${f.rowsCount.toLocaleString('fr-FR')} lignes` : ''}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          {f.status === 'parsing' && <Badge variant="outline" className="text-xs"><Loader2 className="h-3 w-3 mr-1 animate-spin" /> Analyse…</Badge>}
+                          {f.status === 'ready' && (
+                            <Select value={type} onValueChange={(v) => setManualType(f.id, v as ImportFileType)}>
+                              <SelectTrigger className="h-8 w-48 text-xs">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ALL_TYPES.map((t) => (
+                                  <SelectItem key={t} value={t} className="text-xs">{IMPORT_TYPE_LABELS[t]}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          {f.status === 'error' && (
+                            <Badge className="bg-destructive text-destructive-foreground text-xs"><AlertCircle className="h-3 w-3 mr-1" /> Erreur</Badge>
+                          )}
+                          {f.status === 'imported' && (
+                            <Badge className="bg-emerald-600 text-white text-xs"><CheckCircle2 className="h-3 w-3 mr-1" /> Archivé</Badge>
+                          )}
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={() => removeFile(f.id)}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                      {f.error && <p className="text-xs text-destructive">{f.error}</p>}
+                      {f.anomalies.length > 0 && (
+                        <ul className="text-xs text-warning space-y-0.5 pl-4 list-disc">
+                          {f.anomalies.map((a, i) => <li key={i}>{a}</li>)}
+                        </ul>
+                      )}
+                      {Object.keys(f.totaux).length > 0 && (
+                        <div className="flex flex-wrap gap-2 text-[10px] text-muted-foreground">
+                          {Object.entries(f.totaux).map(([k, v]) => (
+                            <span key={k} className="px-2 py-0.5 rounded bg-muted">
+                              {k} : {typeof v === 'number' ? v.toLocaleString('fr-FR') : String(v)}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          <CrossValidationPanel results={crossChecks} />
+        </TabsContent>
+
+        <TabsContent value="historique">
+          <HistoriqueImports establishmentId={selectedEstablishment?.id ?? null} />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
