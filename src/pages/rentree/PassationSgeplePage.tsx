@@ -29,7 +29,7 @@ const STATUT_LABEL: Record<StatutPassation, string> = {
 };
 
 export default function PassationSgeplePage() {
-  const { activeEstablishment } = useEstablishment();
+  const { selectedEstablishment: activeEstablishment } = useEstablishment();
   const qc = useQueryClient();
   const { toast } = useToast();
   const [draft, setDraft] = useState<Partial<PassationSgeple>>({
