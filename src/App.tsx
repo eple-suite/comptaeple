@@ -72,10 +72,13 @@ import OpaleAccueil from "./pages/opale/OpaleAccueil";
 import OpaleBibliotheque from "./pages/opale/OpaleBibliotheque";
 import OpaleWizardFiche from "./pages/opale/OpaleWizardFiche";
 import OpaleFicheDetail from "./pages/opale/OpaleFicheDetail";
-import {
-  OpaleMesFichesPage, OpaleRecherchePage, OpaleForumPage, OpaleTendancesPage,
-  OpaleDashboardPage, OpaleModerationPage, OpaleCguPage,
-} from "./pages/opale/OpaleStubPages";
+import OpaleMesFichesPage from "./pages/opale/OpaleMesFichesPage";
+import OpaleRecherchePage from "./pages/opale/OpaleRecherchePage";
+import OpaleForumPage from "./pages/opale/OpaleForumPage";
+import OpaleTendancesPage from "./pages/opale/OpaleTendancesPage";
+import OpaleDashboardPage from "./pages/opale/OpaleDashboardPage";
+import OpaleModerationPage from "./pages/opale/OpaleModerationPage";
+import OpaleCguPage from "./pages/opale/OpaleCguPage";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { ChatEple } from "@/components/ChatEple";
