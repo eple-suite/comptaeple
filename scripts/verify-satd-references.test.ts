@@ -21,13 +21,23 @@ function walk(dir: string, files: string[] = []): string[] {
 const errors: string[] = [];
 const aideFiles = walk("src/data/aide");
 
-// Règle 1 : aucune association SATD ↔ "1966" dans l'aide
+// Règle 1 : aucune association SATD ↔ "1966" dans l'aide,
+//           SAUF si la fenêtre contient explicitement "2017-1837" ou un marqueur de distinction
+//           ("distinct", "voir aussi", "seuil distinct") qui clarifie que 1966 concerne la règle 8 €.
 for (const f of aideFiles) {
   const src = readFileSync(f, "utf8");
-  // Cherche occurrences proches : SATD et "1966" dans une fenêtre de 200 chars
-  const re = /SATD[\s\S]{0,200}1966|1966[\s\S]{0,200}SATD/i;
-  if (re.test(src)) {
-    errors.push(`${f} : association SATD ↔ "1966" détectée (incorrect — la SATD relève de la loi 2017-1837 art. 73).`);
+  const re = /(SATD[\s\S]{0,300}1966|1966[\s\S]{0,300}SATD)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(src)) !== null) {
+    const window = m[0];
+    const isClarified =
+      /2017[\s-]?1837/.test(window) ||
+      /distinct/i.test(window) ||
+      /règle des 8/i.test(window) && /art\.?\s*21/i.test(window);
+    if (!isClarified) {
+      errors.push(`${f} : association SATD ↔ "1966" non clarifiée (manque référence 2017-1837 ou marqueur "distinct").`);
+      break;
+    }
   }
 }
 
