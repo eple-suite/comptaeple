@@ -21,6 +21,17 @@ check("Hub référence M9-6 tome 3", hub.includes("M9-6"));
 check("Nomenclature affiche sens normal du solde", nomenclature.includes("sens_solde_normal"));
 check("Nomenclature affiche colonne déspécialisation", nomenclature.includes("Déspéc"));
 check("Bandeau non-déspécialisation présent", nomenclature.includes("NON DÉSPÉCIALISABLE"));
+check("Module PDF jsPDF présent", fs.existsSync("src/lib/enquetes-rectorat/pdfExport.ts"));
+const pdfMod = fs.existsSync("src/lib/enquetes-rectorat/pdfExport.ts")
+  ? fs.readFileSync("src/lib/enquetes-rectorat/pdfExport.ts", "utf8") : "";
+check("PDF inclut en-tête République Française", pdfMod.includes("RÉPUBLIQUE FRANÇAISE"));
+check("PDF inclut bloc signatures", pdfMod.includes("signataireOrdo") && pdfMod.includes("Visa AC"));
+check("PDF utilisé par le wizard reliquats",
+  fs.existsSync("src/pages/enquetes-rectorat/WizardReliquatsBopPage.tsx") &&
+  fs.readFileSync("src/pages/enquetes-rectorat/WizardReliquatsBopPage.tsx", "utf8").includes("generateEnquetePdf"));
+check("PDF utilisé par le rapprochement bourses",
+  fs.existsSync("src/pages/enquetes-rectorat/WizardBoursesSieclePage.tsx") &&
+  fs.readFileSync("src/pages/enquetes-rectorat/WizardBoursesSieclePage.tsx", "utf8").includes("generateEnquetePdf"));
 check("Type ControleDespecialisation exposé", types.includes("ControleDespecialisation"));
 check("Référence circulaire MENE1704160C citée dans le hub", hub.includes("MENE1704160C"));
 check("Signataires AC + ordonnateur prévus dans la table",
