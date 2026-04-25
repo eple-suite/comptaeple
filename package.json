@@ -10,7 +10,13 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "recette:diagnostic": "tsx scripts/recette-diagnostic-financier.mjs",
+    "verify:bilan": "tsx scripts/verify-bilan-reprofi.mjs",
+    "verify:commentaires": "tsx scripts/verify-commentaires-engine.mjs",
+    "verify:sde-sdr": "tsx scripts/verify-sde-sdr-import.mjs",
+    "verify:balance": "tsx scripts/verify-balance-import.mjs",
+    "ci:diagnostic": "npm run recette:diagnostic && npm run verify:bilan && npm run verify:commentaires"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
