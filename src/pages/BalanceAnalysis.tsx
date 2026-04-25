@@ -534,6 +534,19 @@ const BalanceAnalysis = () => {
           </Card>
         </TabsContent>
 
+       <TabsContent value="m96-anomalies" className="space-y-4">
+         <AnomaliesPanelM96
+           balance={cartoBalanceN.map(l => ({
+             compte: l.compte,
+             libelle: l.intituleReduit,
+             debit: Number(l.solDbt) || 0,
+             credit: Number(l.solCrd) || 0,
+             solde: (Number(l.solDbt) || 0) - (Number(l.solCrd) || 0),
+           }))}
+           periode="cours"
+         />
+       </TabsContent>
+
         {/* ═══ SOUS-COMPTES M9-6 ═══ */}
         <TabsContent value="sous-comptes" className="space-y-4">
           {/* Filters */}
