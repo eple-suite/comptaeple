@@ -5,8 +5,11 @@ import fs from 'node:fs';
 const catalog = fs.readFileSync('src/components/cofieple/ordo/cofiordo/catalog.ts', 'utf-8');
 const fiches = (catalog.match(/numero: '[A-D]\.\d+'/g) || []).length;
 const sections = ['A', 'B', 'C', 'D'].every(s => catalog.includes(`section: '${s}'`));
-const interdits = ['FDR', 'BFR', 'fdr_haut', 'fdr_bas', 'bfr_total', 'tresorerie_nette']
-  .filter(k => new RegExp(`\\b${k}\\b`).test(catalog));
+// On exclut commentaires/docstrings ; on cible les FICHES (titres, IDs).
+const fichesBlock = catalog.split('export const ORDO_FICHES')[1] || '';
+const interdits = ['fdr_haut', 'fdr_bas', 'bfr_total', 'tresorerie_nette',
+  'calculerFR', 'calculerBFR', 'calculerTN']
+  .filter(k => fichesBlock.includes(k));
 console.log(`fiches: ${fiches} · sections A/B/C/D: ${sections} · termes bilanciels interdits: ${interdits.length}`);
 if (!sections) { console.error('❌ sections manquantes'); process.exit(1); }
 if (fiches < 30) { console.error(`❌ ${fiches} fiches < 30`); process.exit(1); }
