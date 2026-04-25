@@ -68,7 +68,10 @@ export default function ElevesPage() {
           </div>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setOpenImport(true)}><Upload className="h-4 w-4 mr-1" /> Importer CSV</Button>
+          <Button variant="outline" asChild>
+            <Link to="/fonds-sociaux/v2/eleves/import"><Upload className="h-4 w-4 mr-1" /> Import CSV/Excel + IA</Link>
+          </Button>
+          <Button variant="ghost" onClick={() => setOpenImport(true)}><Upload className="h-4 w-4 mr-1" /> Import CSV simple</Button>
           <Button onClick={handleNew} className="gradient-primary border-0"><Plus className="h-4 w-4 mr-1" /> Ajouter un élève</Button>
         </div>
       </div>
