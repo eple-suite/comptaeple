@@ -59,7 +59,7 @@ function parseFile(file: File): Promise<ParsedFile> {
 }
 
 export default function EleveImportPage() {
-  const { establishment } = useEstablishment();
+  const { selectedEstablishment: establishment } = useEstablishment();
   const { user } = useAuth();
   const [step, setStep] = useState<Step>(1);
   const [parsing, setParsing] = useState(false);
