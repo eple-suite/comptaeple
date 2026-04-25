@@ -1,13 +1,8 @@
 # =====================================================================
 # CI — Diagnostic financier EPLE (recette de non-régression)
 # ---------------------------------------------------------------------
-# Exécute la recette complète à chaque push et chaque pull request.
-# Garantit qu'aucune modification du code n'introduit de régression sur :
-#   - Les invariants mathématiques (FR_haut = FR_bas, TN_calc ≈ TN_obs)
-#   - Les 9 indicateurs réglementaires (NR, CONT, CAP, VETU, DGP,
-#     CHFIX, ENDET, LIQ, INDEP) + détail des 5 réserves
-#   - La cohérence du moteur de commentaires (synthèse Ordonnateur / CA)
-#   - L'import SDE/SDR Op@le et l'adaptation balance
+# Exécute la recette complète à chaque push et chaque pull request,
+# génère un rapport HTML + JSON consolidé et l'attache en artefact.
 #
 # Conformité : M9-6 tomes 3 & 4 art. 43231, Op@le pièce 14.
 # =====================================================================
@@ -27,9 +22,9 @@ concurrency:
 
 jobs:
   recette:
-    name: Recette diagnostic financier (exit 0 attendu)
+    name: Recette diagnostic financier (rapport HTML + JSON)
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
 
     steps:
       - name: Checkout du code
@@ -44,28 +39,56 @@ jobs:
       - name: Installation des dépendances
         run: npm ci
 
-      - name: Vérification TypeScript (tsc --noEmit)
-        run: npx tsc --noEmit
+      - name: Génération du rapport de recette (orchestrateur)
+        id: rapport
+        run: npm run report:ci
 
-      - name: Recette — Diagnostic financier (3 scénarios + invariants)
-        run: npx tsx scripts/recette-diagnostic-financier.mjs
-
-      - name: Vérification — Bilan & indicateurs réglementaires
-        run: npx tsx scripts/verify-bilan-reprofi.mjs
-
-      - name: Vérification — Moteur de commentaires automatiques
-        run: npx tsx scripts/verify-commentaires-engine.mjs
-
-      - name: Vérification — Import SDE / SDR Op@le
-        run: npx tsx scripts/verify-sde-sdr-import.mjs
-
-      - name: Vérification — Import balance générale
-        run: npx tsx scripts/verify-balance-import.mjs
-
-      - name: Tests unitaires Vitest
+      - name: Tests unitaires Vitest (complément)
+        if: always()
         run: npm test -- --reporter=verbose
 
-      - name: Synthèse — Recette validée
-        if: success()
+      - name: Upload du rapport (HTML + JSON)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapport-recette-diagnostic-${{ github.run_number }}
+          path: |
+            reports/ci-report.html
+            reports/ci-report.json
+          retention-days: 90
+          if-no-files-found: error
+
+      - name: Résumé du run dans la synthèse GitHub
+        if: always()
         run: |
-          echo "::notice title=Diagnostic financier::Toutes les recettes sont passées (exit 0). Aucune régression détectée."
+          if [ -f reports/ci-report.json ]; then
+            node -e "
+              const r = require('./reports/ci-report.json');
+              const lignes = [
+                '# Rapport de recette — Diagnostic financier EPLE',
+                '',
+                r.success ? '✅ **Recette validée** — aucune régression.' : '❌ **Recette en échec** — voir l\'artefact.',
+                '',
+                '| Indicateur | Valeur |',
+                '|---|---|',
+                '| Étapes OK | ' + r.totaux.etapesOk + ' / ' + r.etapes.length + ' |',
+                '| Assertions OK | ' + r.totaux.assertionsOk + ' / ' + r.totaux.assertions + ' |',
+                '| Durée totale | ' + (r.totaux.dureeMs / 1000).toFixed(1) + ' s |',
+                '| Commit | \`' + (r.git.sha || 'local').slice(0,8) + '\` |',
+                '',
+                '## Détail par étape',
+                '',
+                '| Catégorie | Étape | Statut | Assertions | Exit |',
+                '|---|---|---|---|---|',
+                ...r.etapes.map(e =>
+                  '| ' + e.categorie + ' | ' + e.titre + ' | ' +
+                  (e.success ? '✅' : '❌') + ' | ' +
+                  e.assertions.ok + '/' + (e.assertions.ok + e.assertions.ko) + ' | ' +
+                  e.exitCode + ' |'
+                ),
+                '',
+                '> 📎 Rapport HTML complet disponible en artefact \`rapport-recette-diagnostic-${{ github.run_number }}\`.',
+              ].join('\n');
+              require('fs').appendFileSync(process.env.GITHUB_STEP_SUMMARY, lignes);
+            "
+          fi
