@@ -241,7 +241,7 @@ export const JALONS_MODELES: JalonModele[] = [
     offsetJours: 15, reference: "retour",
     categorie: "compta", priorite: "majeur",
     responsable: "Agent comptable",
-    description: "Vérification du service fait, mandatement des dépenses définitives.",
+    description: "Vérification du service fait, émission des demandes de paiement (DP Op@le) définitives.",
   },
   {
     code: "J+30_BILAN_PEDA",
