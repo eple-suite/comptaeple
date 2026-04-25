@@ -386,20 +386,59 @@ export default function CampagneDashboard() {
                 ))}
               </div>
             </div>
-            <div className="p-4 border-b flex flex-wrap gap-2 items-center bg-muted/20">
-              <span className="text-xs text-muted-foreground">Filtrer par acteur :</span>
-              {(["all", "SG", "N+1", "N+2", "Agent"] as const).map((act) => (
-                <Badge key={act} variant={filtreActeur === act ? "default" : "outline"}
-                  className="cursor-pointer text-[11px]"
-                  onClick={() => setFiltreActeur(act as any)}>
-                  {act === "all" ? "Tous" : act}
-                </Badge>
-              ))}
-              {(filtreUrgence !== "all" || filtreActeur !== "all") && (
-                <Button variant="ghost" size="sm" className="h-6 text-xs"
-                  onClick={() => { setFiltreUrgence("all"); setFiltreActeur("all"); }}>
-                  Réinitialiser
-                </Button>
+            <div className="p-3 border-b bg-muted/20 space-y-2">
+              <div className="flex flex-wrap gap-2 items-center">
+                <span className="text-xs text-muted-foreground">Acteur :</span>
+                {(["all", "SG", "N+1", "N+2", "Agent"] as const).map((act) => {
+                  const count = act === "all" ? actions.length : actions.filter((a) => a.acteur === act).length;
+                  const isActive = filtreActeur === act;
+                  return (
+                    <Badge
+                      key={act}
+                      variant={isActive ? "default" : "outline"}
+                      className={`cursor-pointer text-[11px] ${!isActive && act !== "all" ? ACTEUR_COLORS[act as ActionAgent["acteur"]] : ""}`}
+                      onClick={() => setFiltreActeur(act as ActionAgent["acteur"] | "all")}
+                      title={`${count} action${count > 1 ? "s" : ""}`}
+                    >
+                      {act === "all" ? "Tous" : act} <span className="ml-1 opacity-70">({count})</span>
+                    </Badge>
+                  );
+                })}
+                {(filtreUrgence !== "all" || filtreActeur !== "all" || searchActions !== "") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs ml-auto"
+                    onClick={() => { setFiltreUrgence("all"); setFiltreActeur("all"); setSearchActions(""); }}
+                  >
+                    Réinitialiser
+                  </Button>
+                )}
+              </div>
+              <div className="relative">
+                <Search className="h-3.5 w-3.5 absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none" />
+                <Input
+                  value={searchActions}
+                  onChange={(e) => setSearchActions(e.target.value)}
+                  placeholder="Rechercher un agent (nom, prénom, action)…"
+                  className="pl-7 h-8 text-sm"
+                />
+                {searchActions && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchActions("")}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                    aria-label="Effacer la recherche"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {(filtreUrgence !== "all" || filtreActeur !== "all" || searchActions !== "") && (
+                <div className="text-[11px] text-muted-foreground">
+                  {actionsFiltrees.length} / {actions.length} action{actions.length > 1 ? "s" : ""} affichée{actionsFiltrees.length > 1 ? "s" : ""}
+                  {searchActions && <> · recherche : « <span className="font-medium text-foreground">{searchActions}</span> »</>}
+                </div>
               )}
             </div>
             <ul className="divide-y">
