@@ -63,6 +63,7 @@ import AideFAQ from "./pages/aide/AideFAQ";
 import AideModeles from "./pages/aide/AideModeles";
 import AideOnboarding from "./pages/aide/AideOnboarding";
 import AideReglementation from "./pages/aide/AideReglementation";
+import AssistantExpertPage from "./pages/aide/AssistantExpertPage";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { ChatEple } from "@/components/ChatEple";
@@ -164,6 +165,7 @@ const App = () => (
               <Route path="/aide/modeles" element={<AideModeles />} />
               <Route path="/aide/onboarding/:profilId" element={<AideOnboarding />} />
               <Route path="/aide/reglementation" element={<AideReglementation />} />
+              <Route path="/ressources/assistant-expert" element={<AssistantExpertPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
