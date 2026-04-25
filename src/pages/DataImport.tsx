@@ -24,7 +24,7 @@ import {
   parseRegies,
 } from "@/lib/import";
 import { selectOpaleBalanceSheet } from "@/lib/opaleWorkbook";
-import { parseSdeWorkbook, parseSdrWorkbook } from "@/lib/opaleSdeSdrParser";
+import { selectOpaleSdeSdrSheet, parseSdeRows, parseSdrRows } from "@/lib/opaleSdeSdrParser";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { persistImport } from "@/lib/import/importService";
 import { DropZoneMulti } from "@/components/import/DropZoneMulti";
@@ -133,19 +133,31 @@ const DataImport = () => {
           }
           case 'sde': {
             try {
-              const r = parseSdeWorkbook(wb);
-              parsedData = r;
-              rowsCount = r.records.length;
-              totaux = { lignes: rowsCount, mandatsEmis: r.totals?.mandatsEmis ?? 0 };
+              const sel = selectOpaleSdeSdrSheet(wb, 'sde');
+              if (sel) {
+                const rows = parseSdeRows(sel);
+                parsedData = rows;
+                rowsCount = rows.length;
+                const mandats = rows.reduce((s, r) => s + (Number((r as Record<string, unknown>).mandats) || 0), 0);
+                totaux = { lignes: rowsCount, mandatsEmis: Math.round(mandats * 100) / 100 };
+              } else {
+                anomalies.push('SDE : aucun onglet exploitable.');
+              }
             } catch (e) { anomalies.push(`SDE : ${(e as Error).message}`); }
             break;
           }
           case 'sdr': {
             try {
-              const r = parseSdrWorkbook(wb);
-              parsedData = r;
-              rowsCount = r.records.length;
-              totaux = { lignes: rowsCount, ordresEmis: r.totals?.ordresEmis ?? 0 };
+              const sel = selectOpaleSdeSdrSheet(wb, 'sdr');
+              if (sel) {
+                const rows = parseSdrRows(sel);
+                parsedData = rows;
+                rowsCount = rows.length;
+                const ordres = rows.reduce((s, r) => s + (Number((r as Record<string, unknown>).ordresDeRecettes) || 0), 0);
+                totaux = { lignes: rowsCount, ordresEmis: Math.round(ordres * 100) / 100 };
+              } else {
+                anomalies.push('SDR : aucun onglet exploitable.');
+              }
             } catch (e) { anomalies.push(`SDR : ${(e as Error).message}`); }
             break;
           }
