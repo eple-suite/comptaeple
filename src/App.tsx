@@ -68,6 +68,14 @@ import AideModeles from "./pages/aide/AideModeles";
 import AideOnboarding from "./pages/aide/AideOnboarding";
 import AideReglementation from "./pages/aide/AideReglementation";
 import AssistantExpertPage from "./pages/aide/AssistantExpertPage";
+import OpaleAccueil from "./pages/opale/OpaleAccueil";
+import OpaleBibliotheque from "./pages/opale/OpaleBibliotheque";
+import OpaleWizardFiche from "./pages/opale/OpaleWizardFiche";
+import OpaleFicheDetail from "./pages/opale/OpaleFicheDetail";
+import {
+  OpaleMesFichesPage, OpaleRecherchePage, OpaleForumPage, OpaleTendancesPage,
+  OpaleDashboardPage, OpaleModerationPage, OpaleCguPage,
+} from "./pages/opale/OpaleStubPages";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { ChatEple } from "@/components/ChatEple";
@@ -174,6 +182,18 @@ const App = () => (
               <Route path="/aide/onboarding/:profilId" element={<AideOnboarding />} />
               <Route path="/aide/reglementation" element={<AideReglementation />} />
               <Route path="/ressources/assistant-expert" element={<AssistantExpertPage />} />
+              <Route path="/ressources/opale" element={<OpaleAccueil />} />
+              <Route path="/ressources/opale/bibliotheque" element={<OpaleBibliotheque />} />
+              <Route path="/ressources/opale/nouvelle" element={<OpaleWizardFiche />} />
+              <Route path="/ressources/opale/edition/:id" element={<OpaleWizardFiche />} />
+              <Route path="/ressources/opale/fiche/:slug" element={<OpaleFicheDetail />} />
+              <Route path="/ressources/opale/mes-fiches" element={<OpaleMesFichesPage />} />
+              <Route path="/ressources/opale/recherche" element={<OpaleRecherchePage />} />
+              <Route path="/ressources/opale/forum" element={<OpaleForumPage />} />
+              <Route path="/ressources/opale/tendances" element={<OpaleTendancesPage />} />
+              <Route path="/ressources/opale/dashboard" element={<OpaleDashboardPage />} />
+              <Route path="/ressources/opale/moderation" element={<OpaleModerationPage />} />
+              <Route path="/ressources/opale/cgu" element={<OpaleCguPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

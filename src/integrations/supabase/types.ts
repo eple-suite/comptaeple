@@ -4692,6 +4692,473 @@ export type Database = {
         }
         Relationships: []
       }
+      opale_acces_log: {
+        Row: {
+          action: string
+          cible_id: string | null
+          cible_type: string | null
+          date_action: string
+          id: string
+          metadata: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          cible_id?: string | null
+          cible_type?: string | null
+          date_action?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          cible_id?: string | null
+          cible_type?: string | null
+          date_action?: string
+          id?: string
+          metadata?: Json | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      opale_fiches: {
+        Row: {
+          auteur_id: string
+          cause_identifiee: string | null
+          contexte_apparition: string | null
+          date_constatation: string | null
+          date_creation: string
+          date_derniere_verification: string | null
+          date_maj: string
+          date_moderation: string | null
+          date_publication: string | null
+          groupement_origine_id: string | null
+          id: string
+          liens_fiches_associees: string[]
+          modere_par_id: string | null
+          module_opale: Database["public"]["Enums"]["opale_module"]
+          motif_rejet: string | null
+          nb_consultations: number
+          nb_pas_utiles: number
+          nb_utiles: number
+          notes_internes: string | null
+          periodicite_reverification_mois: number
+          pieces_jointes: Json
+          procedure_resolution: Json
+          references_documentation_officielle: string | null
+          slug: string
+          sous_theme: string | null
+          statut_actualite: Database["public"]["Enums"]["opale_statut_actualite"]
+          statut_publication: Database["public"]["Enums"]["opale_statut_publication"]
+          symptome_observe: string | null
+          tags: string[]
+          taux_utilite_pct: number
+          titre: string
+          type_contenu: Database["public"]["Enums"]["opale_type_contenu"]
+          verifie_par_id: string | null
+          version_opale_concernee: string
+          visibilite: Database["public"]["Enums"]["opale_visibilite"]
+        }
+        Insert: {
+          auteur_id: string
+          cause_identifiee?: string | null
+          contexte_apparition?: string | null
+          date_constatation?: string | null
+          date_creation?: string
+          date_derniere_verification?: string | null
+          date_maj?: string
+          date_moderation?: string | null
+          date_publication?: string | null
+          groupement_origine_id?: string | null
+          id?: string
+          liens_fiches_associees?: string[]
+          modere_par_id?: string | null
+          module_opale?: Database["public"]["Enums"]["opale_module"]
+          motif_rejet?: string | null
+          nb_consultations?: number
+          nb_pas_utiles?: number
+          nb_utiles?: number
+          notes_internes?: string | null
+          periodicite_reverification_mois?: number
+          pieces_jointes?: Json
+          procedure_resolution?: Json
+          references_documentation_officielle?: string | null
+          slug: string
+          sous_theme?: string | null
+          statut_actualite?: Database["public"]["Enums"]["opale_statut_actualite"]
+          statut_publication?: Database["public"]["Enums"]["opale_statut_publication"]
+          symptome_observe?: string | null
+          tags?: string[]
+          taux_utilite_pct?: number
+          titre: string
+          type_contenu?: Database["public"]["Enums"]["opale_type_contenu"]
+          verifie_par_id?: string | null
+          version_opale_concernee?: string
+          visibilite?: Database["public"]["Enums"]["opale_visibilite"]
+        }
+        Update: {
+          auteur_id?: string
+          cause_identifiee?: string | null
+          contexte_apparition?: string | null
+          date_constatation?: string | null
+          date_creation?: string
+          date_derniere_verification?: string | null
+          date_maj?: string
+          date_moderation?: string | null
+          date_publication?: string | null
+          groupement_origine_id?: string | null
+          id?: string
+          liens_fiches_associees?: string[]
+          modere_par_id?: string | null
+          module_opale?: Database["public"]["Enums"]["opale_module"]
+          motif_rejet?: string | null
+          nb_consultations?: number
+          nb_pas_utiles?: number
+          nb_utiles?: number
+          notes_internes?: string | null
+          periodicite_reverification_mois?: number
+          pieces_jointes?: Json
+          procedure_resolution?: Json
+          references_documentation_officielle?: string | null
+          slug?: string
+          sous_theme?: string | null
+          statut_actualite?: Database["public"]["Enums"]["opale_statut_actualite"]
+          statut_publication?: Database["public"]["Enums"]["opale_statut_publication"]
+          symptome_observe?: string | null
+          tags?: string[]
+          taux_utilite_pct?: number
+          titre?: string
+          type_contenu?: Database["public"]["Enums"]["opale_type_contenu"]
+          verifie_par_id?: string | null
+          version_opale_concernee?: string
+          visibilite?: Database["public"]["Enums"]["opale_visibilite"]
+        }
+        Relationships: []
+      }
+      opale_fiches_commentaires: {
+        Row: {
+          auteur_id: string
+          contenu: string
+          date_creation: string
+          date_maj: string
+          fiche_id: string
+          id: string
+          parent_commentaire_id: string | null
+          signale_inapproprie: boolean
+          supprime: boolean
+        }
+        Insert: {
+          auteur_id: string
+          contenu: string
+          date_creation?: string
+          date_maj?: string
+          fiche_id: string
+          id?: string
+          parent_commentaire_id?: string | null
+          signale_inapproprie?: boolean
+          supprime?: boolean
+        }
+        Update: {
+          auteur_id?: string
+          contenu?: string
+          date_creation?: string
+          date_maj?: string
+          fiche_id?: string
+          id?: string
+          parent_commentaire_id?: string | null
+          signale_inapproprie?: boolean
+          supprime?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opale_fiches_commentaires_fiche_id_fkey"
+            columns: ["fiche_id"]
+            isOneToOne: false
+            referencedRelation: "opale_fiches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "opale_fiches_commentaires_parent_commentaire_id_fkey"
+            columns: ["parent_commentaire_id"]
+            isOneToOne: false
+            referencedRelation: "opale_fiches_commentaires"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opale_fiches_consultations: {
+        Row: {
+          date_consultation: string
+          fiche_id: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          date_consultation?: string
+          fiche_id: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          date_consultation?: string
+          fiche_id?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opale_fiches_consultations_fiche_id_fkey"
+            columns: ["fiche_id"]
+            isOneToOne: false
+            referencedRelation: "opale_fiches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opale_fiches_evaluations: {
+        Row: {
+          commentaire: string | null
+          date_evaluation: string
+          evaluateur_id: string
+          fiche_id: string
+          id: string
+          vote: string
+        }
+        Insert: {
+          commentaire?: string | null
+          date_evaluation?: string
+          evaluateur_id: string
+          fiche_id: string
+          id?: string
+          vote: string
+        }
+        Update: {
+          commentaire?: string | null
+          date_evaluation?: string
+          evaluateur_id?: string
+          fiche_id?: string
+          id?: string
+          vote?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opale_fiches_evaluations_fiche_id_fkey"
+            columns: ["fiche_id"]
+            isOneToOne: false
+            referencedRelation: "opale_fiches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opale_fiches_favoris: {
+        Row: {
+          date_creation: string
+          fiche_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          date_creation?: string
+          fiche_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          date_creation?: string
+          fiche_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opale_fiches_favoris_fiche_id_fkey"
+            columns: ["fiche_id"]
+            isOneToOne: false
+            referencedRelation: "opale_fiches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opale_fiches_signalements: {
+        Row: {
+          date_creation: string
+          date_traitement: string | null
+          description: string | null
+          fiche_id: string
+          id: string
+          motif: string
+          signaleur_id: string
+          traite: boolean
+          traite_par_id: string | null
+        }
+        Insert: {
+          date_creation?: string
+          date_traitement?: string | null
+          description?: string | null
+          fiche_id: string
+          id?: string
+          motif: string
+          signaleur_id: string
+          traite?: boolean
+          traite_par_id?: string | null
+        }
+        Update: {
+          date_creation?: string
+          date_traitement?: string | null
+          description?: string | null
+          fiche_id?: string
+          id?: string
+          motif?: string
+          signaleur_id?: string
+          traite?: boolean
+          traite_par_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opale_fiches_signalements_fiche_id_fkey"
+            columns: ["fiche_id"]
+            isOneToOne: false
+            referencedRelation: "opale_fiches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opale_fiches_versions: {
+        Row: {
+          contenu_complet: Json
+          date_modification: string
+          fiche_id: string
+          id: string
+          modifie_par_id: string
+          motif_modification: string | null
+          version: number
+        }
+        Insert: {
+          contenu_complet: Json
+          date_modification?: string
+          fiche_id: string
+          id?: string
+          modifie_par_id: string
+          motif_modification?: string | null
+          version: number
+        }
+        Update: {
+          contenu_complet?: Json
+          date_modification?: string
+          fiche_id?: string
+          id?: string
+          modifie_par_id?: string
+          motif_modification?: string | null
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opale_fiches_versions_fiche_id_fkey"
+            columns: ["fiche_id"]
+            isOneToOne: false
+            referencedRelation: "opale_fiches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opale_questions: {
+        Row: {
+          auteur_id: string
+          captures: Json
+          contexte: string | null
+          date_creation: string
+          date_maj: string
+          date_resolution: string | null
+          fiche_resultante_id: string | null
+          id: string
+          module_concerne: Database["public"]["Enums"]["opale_module"]
+          statut: Database["public"]["Enums"]["opale_question_statut"]
+          titre: string
+          version_opale: string | null
+        }
+        Insert: {
+          auteur_id: string
+          captures?: Json
+          contexte?: string | null
+          date_creation?: string
+          date_maj?: string
+          date_resolution?: string | null
+          fiche_resultante_id?: string | null
+          id?: string
+          module_concerne?: Database["public"]["Enums"]["opale_module"]
+          statut?: Database["public"]["Enums"]["opale_question_statut"]
+          titre: string
+          version_opale?: string | null
+        }
+        Update: {
+          auteur_id?: string
+          captures?: Json
+          contexte?: string | null
+          date_creation?: string
+          date_maj?: string
+          date_resolution?: string | null
+          fiche_resultante_id?: string | null
+          id?: string
+          module_concerne?: Database["public"]["Enums"]["opale_module"]
+          statut?: Database["public"]["Enums"]["opale_question_statut"]
+          titre?: string
+          version_opale?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opale_questions_fiche_resultante_id_fkey"
+            columns: ["fiche_resultante_id"]
+            isOneToOne: false
+            referencedRelation: "opale_fiches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      opale_reponses: {
+        Row: {
+          auteur_id: string
+          contenu: string
+          date_creation: string
+          date_maj: string
+          est_acceptee_par_demandeur: boolean
+          id: string
+          question_id: string
+          votes_contre: number
+          votes_pour: number
+        }
+        Insert: {
+          auteur_id: string
+          contenu: string
+          date_creation?: string
+          date_maj?: string
+          est_acceptee_par_demandeur?: boolean
+          id?: string
+          question_id: string
+          votes_contre?: number
+          votes_pour?: number
+        }
+        Update: {
+          auteur_id?: string
+          contenu?: string
+          date_creation?: string
+          date_maj?: string
+          est_acceptee_par_demandeur?: boolean
+          id?: string
+          question_id?: string
+          votes_contre?: number
+          votes_pour?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "opale_reponses_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "opale_questions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       passations_sgeple: {
         Row: {
           attestation_remise_url: string | null
@@ -6180,6 +6647,10 @@ export type Database = {
         Args: { _establishment_id: string }
         Returns: boolean
       }
+      opale_user_can_view_fiche: {
+        Args: { _fiche_id: string; _user_id: string }
+        Returns: boolean
+      }
       user_has_establishment_access: {
         Args: { _establishment_id: string; _user_id: string }
         Returns: boolean
@@ -6239,7 +6710,7 @@ export type Database = {
         | "contractuel_cdi"
         | "detache"
         | "mis_a_disposition"
-      app_role: "admin" | "agent" | "observateur_rectoral"
+      app_role: "admin" | "agent" | "observateur_rectoral" | "moderateur_opale"
       bottin_categorie:
         | "rectorat"
         | "dsden"
@@ -6321,6 +6792,44 @@ export type Database = {
         | "partiellement_atteint"
         | "non_atteint"
         | "sans_objet"
+      opale_module:
+        | "comptabilite_generale"
+        | "comptabilite_budgetaire"
+        | "depense"
+        | "recette"
+        | "tresorerie"
+        | "paie"
+        | "immobilisations"
+        | "integration_pes"
+        | "inventaire"
+        | "restitutions"
+        | "parametrage"
+        | "habilitations"
+        | "autre"
+      opale_question_statut: "ouverte" | "repondue" | "resolue" | "fermee"
+      opale_statut_actualite:
+        | "valide"
+        | "a_verifier"
+        | "obsolete"
+        | "en_revision"
+      opale_statut_publication:
+        | "brouillon"
+        | "soumise"
+        | "en_validation"
+        | "publiee"
+        | "rejetee"
+        | "archivee"
+      opale_type_contenu:
+        | "procedure"
+        | "blocage_resolu"
+        | "astuce"
+        | "contournement"
+        | "parametrage"
+        | "question_reponse"
+      opale_visibilite:
+        | "prive_groupement"
+        | "academique"
+        | "national_si_partage"
       profil_opale:
         | "admin_etab"
         | "ordonnateur"
@@ -6513,7 +7022,7 @@ export const Constants = {
         "detache",
         "mis_a_disposition",
       ],
-      app_role: ["admin", "agent", "observateur_rectoral"],
+      app_role: ["admin", "agent", "observateur_rectoral", "moderateur_opale"],
       bottin_categorie: [
         "rectorat",
         "dsden",
@@ -6602,6 +7111,49 @@ export const Constants = {
         "partiellement_atteint",
         "non_atteint",
         "sans_objet",
+      ],
+      opale_module: [
+        "comptabilite_generale",
+        "comptabilite_budgetaire",
+        "depense",
+        "recette",
+        "tresorerie",
+        "paie",
+        "immobilisations",
+        "integration_pes",
+        "inventaire",
+        "restitutions",
+        "parametrage",
+        "habilitations",
+        "autre",
+      ],
+      opale_question_statut: ["ouverte", "repondue", "resolue", "fermee"],
+      opale_statut_actualite: [
+        "valide",
+        "a_verifier",
+        "obsolete",
+        "en_revision",
+      ],
+      opale_statut_publication: [
+        "brouillon",
+        "soumise",
+        "en_validation",
+        "publiee",
+        "rejetee",
+        "archivee",
+      ],
+      opale_type_contenu: [
+        "procedure",
+        "blocage_resolu",
+        "astuce",
+        "contournement",
+        "parametrage",
+        "question_reponse",
+      ],
+      opale_visibilite: [
+        "prive_groupement",
+        "academique",
+        "national_si_partage",
       ],
       profil_opale: [
         "admin_etab",
