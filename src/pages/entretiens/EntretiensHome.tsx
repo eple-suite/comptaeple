@@ -278,6 +278,7 @@ export default function EntretiensHome() {
           </Card>
         </>
       )}
+      <ClaudeRhFloatingChat />
     </div>
   );
 }
