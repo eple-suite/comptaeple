@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Scale, Plus, FileText, Users, BookOpen, Settings, AlertTriangle, TrendingUp, Library } from "lucide-react";
+import { Scale, Plus, FileText, Users, BookOpen, Settings, AlertTriangle, TrendingUp, Library, ShieldAlert } from "lucide-react";
 import { useMarches, useSeuilsCcp, useFournisseurs } from "./hooks/useMarchesData";
 import { calculerCumulsParFamille, tauxConcentration } from "./lib/saucissonnageEngine";
 import { formatEur } from "./lib/seuilsEngine";
@@ -152,6 +152,7 @@ export default function MarchesDashboard() {
       <div className="grid gap-3 md:grid-cols-4">
         {[
           { to: "/marches/liste", label: "Tous mes marchés", icon: FileText },
+          { to: "/marches/anti-saucissonnage", label: "Anti-saucissonnage", icon: ShieldAlert },
           { to: "/marches/fournisseurs", label: "Fournisseurs", icon: Users },
           { to: "/marches/bibliotheque", label: "Bibliothèque modèles", icon: Library },
           { to: "/marches/mode-emploi", label: "Mode d'emploi", icon: BookOpen },

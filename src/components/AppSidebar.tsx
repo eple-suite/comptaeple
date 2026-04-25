@@ -73,6 +73,7 @@ const pilotageItems: NavItem[] = [
   { title: "Veille juridique", url: "/veille-juridique", icon: Scale },
   { title: "Contrôle interne", url: "/controle-interne", icon: ShieldCheck },
   { title: "Exécution budgétaire", url: "/execution-budgetaire", icon: TrendingUp },
+  { title: "Marchés publics", url: "/marches", icon: Scale },
 ];
 
 const ressourcesItems: NavItem[] = [

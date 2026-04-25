@@ -31,6 +31,7 @@ import RegiesCaisse from "./pages/RegiesCaisse";
 import ExecutionBudgetaire from "./pages/ExecutionBudgetaire";
 import HyperalePage from "./pages/hyperale/HyperalePage";
 import AgencePage from "./pages/agence/AgencePage";
+import MarchesPage from "./pages/marches/MarchesPage";
 import Regle8LogsAdmin from "./pages/admin/Regle8LogsAdmin";
 import EntretiensHome from "./pages/entretiens/EntretiensHome";
 import NouvelEntretienWizard from "./pages/entretiens/NouvelEntretienWizard";
@@ -111,6 +112,7 @@ const App = () => (
               <Route path="/parametres" element={<SettingsPage />} />
               <Route path="/hyperale/*" element={<HyperalePage />} />
               <Route path="/agence" element={<AgencePage />} />
+              <Route path="/marches/*" element={<MarchesPage />} />
               <Route path="/admin/logs/regle-8" element={<Regle8LogsAdmin />} />
               <Route path="/entretiens" element={<EntretiensHome />} />
               <Route path="/entretiens/nouveau" element={<NouvelEntretienWizard />} />

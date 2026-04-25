@@ -7,6 +7,7 @@ import MarcheBibliotheque from "./MarcheBibliotheque";
 import MarcheFournisseurs from "./MarcheFournisseurs";
 import MarcheModeEmploi from "./MarcheModeEmploi";
 import MarcheParametres from "./MarcheParametres";
+import MarcheAntiSaucissonnage from "./MarcheAntiSaucissonnage";
 
 export default function MarchesPage() {
   return (
@@ -18,6 +19,7 @@ export default function MarchesPage() {
       <Route path="detail/:id" element={<MarcheDetail />} />
       <Route path="bibliotheque" element={<MarcheBibliotheque />} />
       <Route path="fournisseurs" element={<MarcheFournisseurs />} />
+      <Route path="anti-saucissonnage" element={<MarcheAntiSaucissonnage />} />
       <Route path="mode-emploi" element={<MarcheModeEmploi />} />
       <Route path="parametres" element={<MarcheParametres />} />
       <Route path="*" element={<Navigate to="/marches" replace />} />
