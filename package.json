@@ -16,7 +16,8 @@
     "verify:commentaires": "tsx scripts/verify-commentaires-engine.mjs",
     "verify:sde-sdr": "tsx scripts/verify-sde-sdr-import.mjs",
     "verify:balance": "tsx scripts/verify-balance-import.mjs",
-    "ci:diagnostic": "npm run recette:diagnostic && npm run verify:bilan && npm run verify:commentaires"
+    "ci:diagnostic": "npm run recette:diagnostic && npm run verify:bilan && npm run verify:commentaires",
+    "report:ci": "tsx scripts/generate-ci-report.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
