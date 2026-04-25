@@ -79,3 +79,109 @@ export function tauxConcentration(
   const top3Pct = sorted.slice(0, 3).reduce((s, x) => s + x.pct, 0);
   return { top3Pct, total, details: sorted };
 }
+
+// ════════════════════════════════════════════════════════════════
+// Détection présomption de saucissonnage par répétition fournisseur
+// (3+ commandes au même fournisseur même famille en 6 mois)
+// art. L2113-2 CCP, mémo DAJ « computation des seuils »
+// ════════════════════════════════════════════════════════════════
+
+export interface RepetitionFournisseur {
+  fournisseur_id: string;
+  fournisseur_nom: string;
+  famille: string;
+  count: number;
+  total_ht: number;
+  premieres_dates: string[];
+  niveau: "ok" | "alerte" | "critique";
+  motif: string;
+}
+
+/**
+ * Détecte les répétitions de commandes fournisseur×famille sur 6 mois glissants.
+ * Niveau « critique » : ≥ 3 commandes en 6 mois — présomption de saucissonnage.
+ */
+export function detecterRepetitionFournisseur(
+  marches: Marche[],
+  fournisseurNoms: Record<string, string>,
+  ref: Date = new Date()
+): RepetitionFournisseur[] {
+  const debut = new Date(ref);
+  debut.setMonth(debut.getMonth() - 6);
+
+  const cles: Record<string, { count: number; total: number; dates: string[]; fId: string; fam: string }> = {};
+  for (const m of marches) {
+    if (!m.fournisseur_attributaire_id || !m.famille_code) continue;
+    const dEng = m.date_engagement ? new Date(m.date_engagement) : new Date(m.date_emission_besoin);
+    if (dEng < debut || dEng > ref) continue;
+    const key = `${m.fournisseur_attributaire_id}::${m.famille_code}`;
+    if (!cles[key]) cles[key] = { count: 0, total: 0, dates: [], fId: m.fournisseur_attributaire_id, fam: m.famille_code };
+    cles[key].count += 1;
+    cles[key].total += Number(m.montant_total_ht || 0);
+    cles[key].dates.push(dEng.toISOString().slice(0, 10));
+  }
+
+  return Object.values(cles)
+    .filter((v) => v.count >= 2)
+    .map<RepetitionFournisseur>((v) => {
+      let niveau: RepetitionFournisseur["niveau"] = "ok";
+      let motif = "";
+      if (v.count >= 3) {
+        niveau = "critique";
+        motif = `Présomption de saucissonnage : ${v.count} commandes / 6 mois au même fournisseur dans la même famille (art. L2113-2 CCP).`;
+      } else if (v.count === 2) {
+        niveau = "alerte";
+        motif = "2 commandes même fournisseur même famille en 6 mois — vigilance.";
+      }
+      return {
+        fournisseur_id: v.fId,
+        fournisseur_nom: fournisseurNoms[v.fId] || "Fournisseur inconnu",
+        famille: v.fam,
+        count: v.count,
+        total_ht: v.total,
+        premieres_dates: v.dates.sort(),
+        niveau,
+        motif,
+      };
+    })
+    .sort((a, b) => b.count - a.count || b.total_ht - a.total_ht);
+}
+
+/**
+ * Heatmap fournisseur × famille : matrice creuse exploitable côté UI.
+ */
+export interface CelluleHeatmap {
+  fournisseur_id: string;
+  fournisseur_nom: string;
+  famille: string;
+  total_12m: number;
+  count: number;
+}
+
+export function heatmapFournisseurFamille(
+  marches: Marche[],
+  fournisseurNoms: Record<string, string>,
+  ref: Date = new Date()
+): CelluleHeatmap[] {
+  const debut = new Date(ref);
+  debut.setMonth(debut.getMonth() - 12);
+  const par: Record<string, CelluleHeatmap> = {};
+  for (const m of marches) {
+    if (!m.fournisseur_attributaire_id || !m.famille_code) continue;
+    const dEng = m.date_engagement ? new Date(m.date_engagement) : new Date(m.date_emission_besoin);
+    if (dEng < debut || dEng > ref) continue;
+    const key = `${m.fournisseur_attributaire_id}::${m.famille_code}`;
+    if (!par[key]) {
+      par[key] = {
+        fournisseur_id: m.fournisseur_attributaire_id,
+        fournisseur_nom: fournisseurNoms[m.fournisseur_attributaire_id] || "Inconnu",
+        famille: m.famille_code,
+        total_12m: 0,
+        count: 0,
+      };
+    }
+    par[key].total_12m += Number(m.montant_total_ht || 0);
+    par[key].count += 1;
+  }
+  return Object.values(par).sort((a, b) => b.total_12m - a.total_12m);
+}
