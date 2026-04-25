@@ -7,7 +7,7 @@ import { store } from "@/store/persistentStore";
  *  Persistance via le store applicatif (localStorage avec préfixe versionné)
  * ═══════════════════════════════════════════════════════════════════════════ */
 
-export type SaveStatus = "idle" | "saving" | "saved" | "error";
+export type SaveStatus = "idle" | "saving" | "saved";
 
 export function usePersistedText(
   key: string,
@@ -27,8 +27,9 @@ export function usePersistedText(
         store.set(key, v);
         setStatus("saved");
         setLastSaved(new Date());
-      } catch {
-        setStatus("error");
+      } catch (e) {
+        console.error(`[usePersistedText] échec sauvegarde "${key}"`, e);
+        setStatus("idle");
       }
     }, 400);
   };
