@@ -82,6 +82,7 @@ const pilotageItems: NavItem[] = [
 
 const ressourcesItems: NavItem[] = [
   { title: "Assistant Expert IA", url: "/ressources/assistant-expert", icon: Brain, hot: true },
+  { title: "AIDE Op@le académique", url: "/ressources/opale", icon: BookOpen, hot: true },
   { title: "Mode d'emploi", url: "/aide", icon: GraduationCap, hot: true },
   { title: "Liens utiles", url: "/liens-utiles", icon: BookOpen },
 ];
