@@ -9,11 +9,12 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ArrowLeft, AlertTriangle, CheckCircle2, Clock, Plus, Search, Users, Calendar } from "lucide-react";
+import { LayoutDashboard, ArrowLeft, AlertTriangle, CheckCircle2, Clock, Plus, Search, Users, Calendar, ListChecks, ArrowRight, Flame } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { currentAnneeScolaire } from "@/lib/entretiens/wizard";
 import { STATUT_LABELS, type EntretienStatut } from "@/lib/entretiens/types";
+import { buildActionsAFaire, URGENCE_LABELS, ACTEUR_COLORS, type Urgence, type ActionAgent } from "@/lib/entretiens/actionsAFaire";
 
 interface Etablissement {
   id: string;
@@ -94,6 +95,9 @@ export default function CampagneDashboard() {
   const [filtreCampagne, setFiltreCampagne] = useState<string>(currentAnneeScolaire());
   const [filtreStatut, setFiltreStatut] = useState<StatutGlobal | "all">("all");
   const [search, setSearch] = useState("");
+  const [vue, setVue] = useState<"liste" | "actions">("actions");
+  const [filtreUrgence, setFiltreUrgence] = useState<Urgence | "all">("all");
+  const [filtreActeur, setFiltreActeur] = useState<ActionAgent["acteur"] | "all">("all");
 
   /* Tous les établissements accessibles */
   const { data: etablissements = [] } = useQuery({
@@ -199,6 +203,37 @@ export default function CampagneDashboard() {
 
   const total = lignes.length;
   const tauxFinalise = total > 0 ? (compteurs.finalise / total) * 100 : 0;
+
+  /* Actions à faire — moteur pur */
+  const uaiByEtabId = useMemo(() => {
+    const m: Record<string, string> = {};
+    etablissements.forEach((e) => { m[e.id] = e.uai; });
+    return m;
+  }, [etablissements]);
+
+  const actions = useMemo(
+    () => buildActionsAFaire({ agents, entretiens, campagnes, uaiByEtabId }),
+    [agents, entretiens, campagnes, uaiByEtabId]
+  );
+
+  const actionsFiltrees = useMemo(() => {
+    return actions.filter((a) => {
+      if (filtreUrgence !== "all" && a.urgence !== filtreUrgence) return false;
+      if (filtreActeur !== "all" && a.acteur !== filtreActeur) return false;
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        const txt = `${a.agentNom} ${a.agentPrenom} ${a.libelle}`.toLowerCase();
+        if (!txt.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [actions, filtreUrgence, filtreActeur, search]);
+
+  const actionsParUrgence = useMemo(() => {
+    const acc: Record<Urgence, number> = { critique: 0, haute: 0, moyenne: 0, basse: 0 };
+    actions.forEach((a) => acc[a.urgence]++);
+    return acc;
+  }, [actions]);
 
   /* Échéances à venir (≤ 30 jours) */
   const echeances = useMemo(() => {
@@ -315,6 +350,124 @@ export default function CampagneDashboard() {
         </div>
       </Card>
 
+      {/* Onglets de vue */}
+      <Tabs value={vue} onValueChange={(v) => setVue(v as "liste" | "actions")}>
+        <TabsList>
+          <TabsTrigger value="actions" className="gap-2">
+            <ListChecks className="h-4 w-4" />
+            Actions à faire
+            {actions.length > 0 && (
+              <Badge variant="secondary" className="ml-1">{actions.length}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="liste" className="gap-2">
+            <Users className="h-4 w-4" />
+            Liste des agents
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
+      {vue === "actions" ? (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <Card className="p-0 overflow-hidden lg:col-span-2">
+            <div className="p-4 border-b flex items-center justify-between flex-wrap gap-2">
+              <h2 className="font-semibold flex items-center gap-2">
+                <Flame className="h-4 w-4 text-rose-600" />
+                Actions classées par urgence
+              </h2>
+              <div className="flex flex-wrap gap-1">
+                {(["critique", "haute", "moyenne", "basse"] as Urgence[]).map((u) => (
+                  <Badge key={u} variant="outline" className={`${URGENCE_LABELS[u].color} cursor-pointer`}
+                    onClick={() => setFiltreUrgence(filtreUrgence === u ? "all" : u)}>
+                    {URGENCE_LABELS[u].label} : {actionsParUrgence[u]}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+            <div className="p-4 border-b flex flex-wrap gap-2 items-center bg-muted/20">
+              <span className="text-xs text-muted-foreground">Filtrer par acteur :</span>
+              {(["all", "SG", "N+1", "N+2", "Agent"] as const).map((act) => (
+                <Badge key={act} variant={filtreActeur === act ? "default" : "outline"}
+                  className="cursor-pointer text-[11px]"
+                  onClick={() => setFiltreActeur(act as any)}>
+                  {act === "all" ? "Tous" : act}
+                </Badge>
+              ))}
+              {(filtreUrgence !== "all" || filtreActeur !== "all") && (
+                <Button variant="ghost" size="sm" className="h-6 text-xs"
+                  onClick={() => { setFiltreUrgence("all"); setFiltreActeur("all"); }}>
+                  Réinitialiser
+                </Button>
+              )}
+            </div>
+            <ul className="divide-y">
+              {actionsFiltrees.length === 0 && (
+                <li className="p-8 text-center text-sm text-muted-foreground">
+                  {actions.length === 0
+                    ? "🎉 Aucune action en attente — la campagne est à jour."
+                    : "Aucune action ne correspond aux filtres."}
+                </li>
+              )}
+              {actionsFiltrees.map((a, i) => (
+                <li key={`${a.agentId}-${a.type}-${i}`} className="p-3 flex items-start gap-3 hover:bg-muted/30 transition-colors">
+                  <div className="flex-shrink-0 flex flex-col items-center gap-1 w-20">
+                    <Badge variant="outline" className={URGENCE_LABELS[a.urgence].color}>
+                      {URGENCE_LABELS[a.urgence].label}
+                    </Badge>
+                    {a.joursRestants !== null && (
+                      <span className={`text-[10px] font-medium ${a.joursRestants < 0 ? "text-rose-600" : a.joursRestants <= 7 ? "text-amber-600" : "text-muted-foreground"}`}>
+                        {a.joursRestants < 0 ? `Retard ${-a.joursRestants} j` : a.joursRestants === 0 ? "Aujourd'hui" : `J-${a.joursRestants}`}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium">{a.agentNom.toUpperCase()} {a.agentPrenom}</span>
+                      <Badge variant="outline" className="text-[10px]">{a.etabUai}</Badge>
+                      <Badge variant="outline" className={`text-[10px] ${ACTEUR_COLORS[a.acteur]}`}>{a.acteur}</Badge>
+                    </div>
+                    <div className="text-sm mt-0.5">{a.libelle}</div>
+                    {a.detail && <div className="text-xs text-muted-foreground mt-0.5">{a.detail}</div>}
+                    {a.butoirISO && (
+                      <div className="text-[10px] text-muted-foreground mt-1">
+                        Butoir : {a.butoirISO}
+                      </div>
+                    )}
+                  </div>
+                  <Button size="sm" variant="default" asChild className="flex-shrink-0">
+                    <Link to={a.href}>
+                      Aller à l'agent
+                      <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                    </Link>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          {/* Échéances colonne droite */}
+          <Card className="p-4">
+            <h2 className="font-semibold mb-3 flex items-center gap-2"><Calendar className="h-4 w-4" />Échéances à venir</h2>
+            {echeances.length === 0 && (
+              <p className="text-sm text-muted-foreground">Aucune échéance dans les 30 prochains jours.</p>
+            )}
+            <ul className="space-y-2">
+              {echeances.map((e, i) => (
+                <li key={i} className="border rounded-md p-2 text-sm">
+                  <div className="flex items-center justify-between">
+                    <Badge variant="outline" className="text-[10px]">{e.etab}</Badge>
+                    <span className={`text-xs font-medium ${e.jours < 0 ? "text-rose-600" : e.jours <= 7 ? "text-amber-600" : "text-muted-foreground"}`}>
+                      {e.jours < 0 ? `Retard ${-e.jours} j` : e.jours === 0 ? "Aujourd'hui" : `J-${e.jours}`}
+                    </span>
+                  </div>
+                  <div className="font-medium mt-1">{e.label}</div>
+                  <div className="text-xs text-muted-foreground">{e.date}</div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+      ) : (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Tableau principal */}
         <Card className="p-0 overflow-hidden lg:col-span-2">
@@ -411,6 +564,7 @@ export default function CampagneDashboard() {
           </ul>
         </Card>
       </div>
+      )}
     </div>
   );
 }
