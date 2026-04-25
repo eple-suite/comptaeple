@@ -2695,6 +2695,71 @@ export type Database = {
           },
         ]
       }
+      fs_imports_eleves: {
+        Row: {
+          annee_scolaire: string
+          created_at: string
+          establishment_id: string
+          fichier_nom: string
+          fichier_type: string
+          id: string
+          lignes_importees: number
+          lignes_rejetees: number
+          mapping_source: string
+          mapping_utilise: Json
+          rapport_erreurs: Json
+          statut: string
+          total_lignes: number
+          updated_at: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          annee_scolaire: string
+          created_at?: string
+          establishment_id: string
+          fichier_nom: string
+          fichier_type: string
+          id?: string
+          lignes_importees?: number
+          lignes_rejetees?: number
+          mapping_source?: string
+          mapping_utilise?: Json
+          rapport_erreurs?: Json
+          statut?: string
+          total_lignes?: number
+          updated_at?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          annee_scolaire?: string
+          created_at?: string
+          establishment_id?: string
+          fichier_nom?: string
+          fichier_type?: string
+          id?: string
+          lignes_importees?: number
+          lignes_rejetees?: number
+          mapping_source?: string
+          mapping_utilise?: Json
+          rapport_erreurs?: Json
+          statut?: string
+          total_lignes?: number
+          updated_at?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "fs_imports_eleves_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fs_journal_acces: {
         Row: {
           action: string
