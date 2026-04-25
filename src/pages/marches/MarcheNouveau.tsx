@@ -332,7 +332,125 @@ export default function MarcheNouveau() {
 
       {step === 4 && (
         <Card>
-          <CardHeader><CardTitle className="text-base">Étape 5 — Vérifications préalables</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">Étape 5 — Clauses obligatoires 2026</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="rounded-lg border-2 border-emerald-300 bg-emerald-50 dark:bg-emerald-950/20 p-4 space-y-3">
+              <div className="flex items-start gap-2">
+                <Badge variant="destructive">BLOQUANT</Badge>
+                <div className="flex-1">
+                  <Label className="text-sm font-semibold">
+                    Clause environnementale (loi Climat &amp; résilience — art. L2112-2 CCP)
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Obligatoire pour tout marché passé depuis le 21/08/2026. Sélectionnez au moins un
+                    levier et précisez la traduction opérationnelle (critère ou condition d&apos;exécution).
+                  </p>
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-2">
+                {[
+                  "Produits labellisés (Écolabel UE, NF Environnement)",
+                  "Recyclabilité des emballages",
+                  "Empreinte carbone (transport / production)",
+                  "Circuit court de proximité",
+                  "Réemploi / matériaux recyclés",
+                  "Produits issus de l'agriculture biologique (denrées)",
+                ].map((opt) => {
+                  const sel: string[] = (d as any).leviers_environnementaux || [];
+                  const checked = sel.includes(opt);
+                  return (
+                    <label key={opt} className="flex items-center gap-2 text-sm">
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(c) => {
+                          const next = c ? [...sel, opt] : sel.filter((x) => x !== opt);
+                          upd({ ...({ leviers_environnementaux: next } as any) });
+                        }}
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <div>
+                <Label className="text-xs">Description précise et critère / condition d&apos;exécution (≥ 30 car.)</Label>
+                <Textarea
+                  rows={3}
+                  value={d.exigences_environnementales || ""}
+                  onChange={(e) => upd({ exigences_environnementales: e.target.value })}
+                  placeholder="Ex. : tous les produits livrés porteront le label NF Environnement ou équivalent ; pénalité de 1% par fourniture non conforme."
+                />
+                <p className={`text-xs mt-1 ${checklist.clause_environnementale ? "text-emerald-700" : "text-amber-700"}`}>
+                  {(d.exigences_environnementales || "").length} car. — minimum 30
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <Label className="text-sm font-semibold">
+                Clause sociale (recommandée ; obligatoire au-delà du seuil européen)
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Insertion (PLIE / IAE / ESS), entreprises adaptées (handicap), achat responsable.
+              </p>
+              <Textarea
+                rows={3}
+                value={d.clauses_sociales || ""}
+                onChange={(e) => upd({ clauses_sociales: e.target.value })}
+                placeholder="Ex. : 5% des heures d'exécution réservées à l'insertion via une SIAE."
+              />
+            </div>
+
+            <div className="rounded-lg border bg-muted/30 p-4 space-y-3">
+              <Label className="text-sm font-semibold">
+                Critères de sélection des candidatures (décret 2025-1383)
+              </Label>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-xs">Capacités professionnelles exigées</Label>
+                  <Textarea
+                    rows={2}
+                    value={(d as any).capacites_professionnelles || ""}
+                    onChange={(e) => upd({ ...({ capacites_professionnelles: e.target.value } as any) })}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Capacités techniques exigées</Label>
+                  <Textarea
+                    rows={2}
+                    value={(d as any).capacites_techniques || ""}
+                    onChange={(e) => upd({ ...({ capacites_techniques: e.target.value } as any) })}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">
+                  Plafond de chiffre d&apos;affaires annuel exigé (€ HT) — max légal 1,5 × montant marché
+                </Label>
+                <Input
+                  type="number"
+                  value={(d as any).plafond_ca_exige || 0}
+                  onChange={(e) =>
+                    upd({ ...({ plafond_ca_exige: parseFloat(e.target.value) || 0 } as any) })
+                  }
+                />
+                {!checklist.capacite_eco_conforme && (
+                  <p className="text-xs text-destructive mt-1">
+                    ⚠ Le plafond saisi dépasse 1,5 × {formatEur(Number(d.montant_estime_ht || 0))} ={" "}
+                    {formatEur(1.5 * Number(d.montant_estime_ht || 0))} (décret 2025-1383). Bloquant.
+                  </p>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {step === 5 && (
+        <Card>
+          <CardHeader><CardTitle className="text-base">Étape 6 — Vérifications préalables</CardTitle></CardHeader>
           <CardContent>
             <ul className="space-y-2">
               {[
@@ -343,7 +461,8 @@ export default function MarcheNouveau() {
                 ["retroplanning_realiste", "Rétroplanning réaliste"],
                 ["allotissement_documente", "Allotissement documenté (ou justification)"],
                 ["criteres_100", "Critères d'attribution = 100 %"],
-                ["clause_environnementale", "Clause environnementale prévue (loi Climat)"],
+                ["clause_environnementale", "Clause environnementale décrite (≥ 30 car., loi Climat)"],
+                ["capacite_eco_conforme", "Plafond de CA exigé ≤ 1,5 × montant marché (décret 2025-1383)"],
                 ["inscription_budgetaire", "Inscription budgétaire identifiée"],
                 ["delegation_signature", "Délégation de signature à jour"],
               ].map(([k, label]) => (
@@ -357,15 +476,15 @@ export default function MarcheNouveau() {
         </Card>
       )}
 
-      {step === 5 && (
+      {step === 6 && (
         <Card>
-          <CardHeader><CardTitle className="text-base">Étape 6 — Création du marché et génération du dossier</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">Étape 7 — Création du marché et génération du dossier</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             <p className="text-sm">Une fois créé, le marché apparaîtra dans la liste avec accès aux générations de pièces (RC, AE, CCAP, CCTP, fiche besoin, rapport d'analyse, décision d'attribution, lettres, PV de réception…) depuis sa fiche détail.</p>
             <Button onClick={onCreate} disabled={!allOk || create.isPending} size="lg" className="w-full">
               {create.isPending ? "Création…" : allOk ? "✓ Créer le marché" : "Toutes les vérifications doivent être OK"}
             </Button>
-            {!allOk && <p className="text-xs text-amber-700">Revenez à l'étape 5 pour corriger les points manquants.</p>}
+            {!allOk && <p className="text-xs text-amber-700">Revenez aux étapes 5/6 pour corriger les points manquants.</p>}
           </CardContent>
         </Card>
       )}
