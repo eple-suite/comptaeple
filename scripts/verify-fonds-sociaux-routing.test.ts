@@ -55,7 +55,7 @@ const TUILES = [
   { route: "/fonds-sociaux/v2/decisions",    libellePart: "Décisions" },
   { route: "/fonds-sociaux/v2/commissions",  libellePart: "Commission" },
   { route: "/fonds-sociaux/v2/enquete",      libellePart: "Enquête" },
-  { route: "/fonds-sociaux/v2/tableau-bord", libellePart: "Tableau" },
+  { route: "/fonds-sociaux/v2/tableau-bord", libellePart: "Pilotage|Bilan|Tableau" },
   { route: "/fonds-sociaux/v2/groupement",   libellePart: "Groupement" },
   { route: "/fonds-sociaux/v2/rgpd",         libellePart: "RGPD" },
 ];
