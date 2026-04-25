@@ -309,3 +309,47 @@ export const ACTEUR_COLORS: Record<ActionAgent["acteur"], string> = {
   "N+2": "bg-purple-100 text-purple-900 dark:bg-purple-950 dark:text-purple-200",
   Agent: "bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-200",
 };
+
+/* ───────────────────────────────────────────────────────────────────────── */
+/*  Tri configurable de la liste Actions à faire                              */
+/* ───────────────────────────────────────────────────────────────────────── */
+
+export type SortKey = "urgence" | "butoir" | "nom";
+
+export const SORT_LABELS: Record<SortKey, string> = {
+  urgence: "Urgence (par défaut)",
+  butoir: "Date de butoir (proche → loin)",
+  nom: "Nom de l'agent (A → Z)",
+};
+
+/**
+ * Tri immuable des actions selon la clé choisie.
+ * - urgence : score décroissant (déjà calculé) puis nom
+ * - butoir  : date butoir croissante (les retards EN PREMIER, puis les nulls EN DERNIER), tie-break = score
+ * - nom     : nom asc (locale fr), prénom asc, tie-break = score décroissant
+ */
+export function sortActions(actions: ActionAgent[], key: SortKey): ActionAgent[] {
+  const arr = [...actions];
+  if (key === "urgence") {
+    arr.sort((a, b) => b.score - a.score || a.agentNom.localeCompare(b.agentNom, "fr"));
+    return arr;
+  }
+  if (key === "nom") {
+    arr.sort((a, b) =>
+      a.agentNom.localeCompare(b.agentNom, "fr", { sensitivity: "base" }) ||
+      a.agentPrenom.localeCompare(b.agentPrenom, "fr", { sensitivity: "base" }) ||
+      b.score - a.score,
+    );
+    return arr;
+  }
+  // butoir : nulls en dernier ; sinon date asc (timestamp), retards (négatifs) restent en tête
+  arr.sort((a, b) => {
+    const ta = a.butoirISO ? new Date(a.butoirISO + "T00:00:00").getTime() : null;
+    const tb = b.butoirISO ? new Date(b.butoirISO + "T00:00:00").getTime() : null;
+    if (ta === null && tb === null) return b.score - a.score;
+    if (ta === null) return 1;
+    if (tb === null) return -1;
+    return ta - tb || b.score - a.score;
+  });
+  return arr;
+}
