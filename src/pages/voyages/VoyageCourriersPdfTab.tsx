@@ -555,14 +555,14 @@ export const VoyageCourriersPdfTab = ({ voyage }: Props) => {
     });
     y = (doc as any).lastAutoTable.finalY + 6;
 
-    // Phase 3 : Mandatement des dépenses
-    doc.setFont("helvetica", "bold"); doc.text("PHASE 3 — MANDATEMENT DES DÉPENSES", 14, y); y += 5;
+    // Phase 3 : Demandes de paiement (DP) Op@le
+    doc.setFont("helvetica", "bold"); doc.text("PHASE 3 — DEMANDES DE PAIEMENT (DP Op@le)", 14, y); y += 5;
     doc.setFont("helvetica", "normal");
     autoTable(doc, {
       startY: y, head: [["N°", "Opération", "Compte débit", "Compte crédit", "Montant"]],
       body: CATEGORIES_PRESTATIONS.filter(c => v[c.key] > 0).map((c, i) => {
         const comptes: Record<string, string> = { transport: "6245", hebergement: "6256", restauration: "6257", activites: "6288", assurance: "616", divers: "618" };
-        return [String(7 + i), `Mandat — ${c.label}`, `${comptes[c.key] || "62xx"} — ${c.label}`, "401 — Fournisseurs", formatCurrency(v[c.key])];
+        return [String(7 + i), `DP — ${c.label}`, `${comptes[c.key] || "62xx"} — ${c.label}`, "401 — Fournisseurs", formatCurrency(v[c.key])];
       }),
       headStyles: { fillColor: [180, 40, 40], textColor: 255, fontSize: 7 },
       margin: { left: 8, right: 8 }, styles: { fontSize: 7 },

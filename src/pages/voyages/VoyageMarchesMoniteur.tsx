@@ -256,7 +256,8 @@ export const VoyageMarchesMoniteur = ({ voyages, exercice, mobilitesErasmus, onM
                   <p className="font-semibold">{v.destination} — {formatCurrency(v.totalTTC)} TTC (prestation globale)</p>
                   <p className="text-muted-foreground">
                     Procédure de publicité obligatoire (MAPA). L'Agent Comptable vérifiera la validité de la mise en concurrence
-                    avant tout mandatement. <strong>Une fiche « Marché » doit être créée dans Op@le.</strong>
+                    avant toute prise en charge de la <strong>demande de paiement (DP)</strong>.
+                    <strong> Une fiche « Marché » doit être créée dans Op@le.</strong>
                   </p>
                   <p className="text-[10px] italic text-muted-foreground flex items-center gap-1">
                     <Info className="h-3 w-3" /> Instruction M9-6 §4.3.2 — Contrôle de la régularité des engagements juridiques

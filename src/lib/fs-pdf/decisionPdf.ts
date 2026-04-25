@@ -12,7 +12,9 @@
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { formatEur, formatDateFr, montantEnLettres } from "./utils";
-import type { FsDecision, FsEleve } from "@/pages/fonds-sociaux-v2/fsv2Types";
+import type {
+  FsDecision, FsEleve, FsCommission, FsCommissionConvocation,
+} from "@/pages/fonds-sociaux-v2/fsv2Types";
 import { NATURE_AIDE_LABELS, TYPE_FONDS_LABELS } from "@/pages/fonds-sociaux-v2/fsv2Types";
 
 export interface PdfContext {
@@ -236,4 +238,170 @@ export function downloadBlob(blob: Blob, filename: string) {
   document.body.appendChild(a); a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** 4) Bordereau de demandes de paiement — récapitulatif d'un lot envoyé à l'agent comptable */
+export function generateBordereauDpPdf(
+  decisions: Array<{ decision: FsDecision; eleve: FsEleve }>,
+  ctx: PdfContext,
+  numeroBordereau: string,
+): Blob {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  header(doc, "BORDEREAU DE DEMANDES DE PAIEMENT — FONDS SOCIAL", ctx);
+
+  let y = 62;
+  doc.setFontSize(10).setFont("helvetica", "normal");
+  doc.text(`Bordereau n° : ${numeroBordereau}`, 20, y); y += 6;
+  doc.text(`Date d'émission : ${formatDateFr(new Date().toISOString())}`, 20, y); y += 6;
+  doc.text(`Nombre de demandes : ${decisions.length}`, 20, y); y += 8;
+
+  const total = decisions.reduce((s, d) => s + Number(d.decision.montant || 0), 0);
+
+  autoTable(doc, {
+    startY: y,
+    theme: "grid",
+    styles: { fontSize: 8 },
+    headStyles: { fillColor: [40, 40, 80] },
+    head: [["N° décision", "Bénéficiaire", "Classe", "Type", "Imputation", "Montant"]],
+    body: decisions.map(({ decision, eleve }) => [
+      decision.numero_decision,
+      `${eleve.nom} ${eleve.prenom}`,
+      eleve.classe,
+      decision.type_fonds,
+      `${decision.code_activite_opale}/${decision.compte_imputation_opale ?? "—"}`,
+      formatEur(Number(decision.montant)),
+    ]),
+    foot: [["", "", "", "", "TOTAL", formatEur(total)]],
+    footStyles: { fontStyle: "bold", fillColor: [220, 220, 230], textColor: 0 },
+  });
+
+  footer(doc, ctx, ctx.signataireOrdonnateur ?? "", "L'Ordonnateur,");
+  return doc.output("blob");
+}
+
+/** 5) Courrier de complément de pièces — demande de pièces justificatives manquantes */
+export function generateCourrierComplementPdf(
+  decision: FsDecision,
+  eleve: FsEleve,
+  ctx: PdfContext,
+  piecesManquantes: string[],
+  delaiJours: number = 15,
+): Blob {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  header(doc, "DEMANDE DE COMPLÉMENT DE PIÈCES", ctx);
+
+  let y = 62;
+  doc.setFontSize(10).setFont("helvetica", "normal");
+  const resp = (eleve.responsables_legaux ?? [])[0];
+  if (resp) {
+    doc.text(`${resp.prenom ?? ""} ${resp.nom ?? ""}`, 130, y); y += 5;
+    if (resp.adresse) {
+      doc.splitTextToSize(resp.adresse, 60).forEach((l: string) => { doc.text(l, 130, y); y += 5; });
+    }
+  }
+
+  y = 95;
+  doc.text("Madame, Monsieur,", 20, y); y += 8;
+  const corps = `Suite à votre demande d'aide au titre du fonds social pour ${eleve.prenom} ${eleve.nom} ` +
+    `(classe ${eleve.classe}), réf. ${decision.numero_decision}, l'instruction de votre dossier nécessite les pièces complémentaires suivantes :`;
+  doc.splitTextToSize(corps, 170).forEach((l: string) => { doc.text(l, 20, y); y += 5; });
+
+  y += 4;
+  doc.setFont("helvetica", "bold").text("Pièces à fournir :", 20, y); y += 6;
+  doc.setFont("helvetica", "normal");
+  piecesManquantes.forEach(p => {
+    const lines = doc.splitTextToSize("• " + p, 170);
+    doc.text(lines, 22, y); y += lines.length * 5;
+  });
+
+  y += 6;
+  const delai = `Merci de nous transmettre ces éléments dans un délai de ${delaiJours} jours ` +
+    `à compter de la réception de ce courrier. Sans réponse de votre part, votre dossier sera classé sans suite.`;
+  doc.splitTextToSize(delai, 170).forEach((l: string) => { doc.text(l, 20, y); y += 5; });
+
+  y += 8;
+  doc.text("Je vous prie d'agréer, Madame, Monsieur, l'expression de mes salutations distinguées.", 20, y);
+
+  footer(doc, ctx, ctx.signataireOrdonnateur ?? "", "Le Chef d'établissement,");
+  return doc.output("blob");
+}
+
+/** 6) Courrier de refus motivé — avec voies et délais de recours */
+export function generateCourrierRefusPdf(
+  decision: FsDecision,
+  eleve: FsEleve,
+  ctx: PdfContext,
+  motifRefus: string,
+): Blob {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  header(doc, "DÉCISION DE REFUS — FONDS SOCIAL", ctx);
+
+  let y = 62;
+  doc.setFontSize(10).setFont("helvetica", "normal");
+  const resp = (eleve.responsables_legaux ?? [])[0];
+  if (resp) {
+    doc.text(`${resp.prenom ?? ""} ${resp.nom ?? ""}`, 130, y); y += 5;
+    if (resp.adresse) {
+      doc.splitTextToSize(resp.adresse, 60).forEach((l: string) => { doc.text(l, 130, y); y += 5; });
+    }
+  }
+
+  y = 95;
+  doc.text("Madame, Monsieur,", 20, y); y += 8;
+  const corps = `Après examen ${decision.modalite_attribution === "commission" ? "par la commission fonds sociaux" : "au titre de la procédure d'urgence"} ` +
+    `de votre demande d'aide concernant ${eleve.prenom} ${eleve.nom} (classe ${eleve.classe}), réf. ${decision.numero_decision}, ` +
+    `j'ai le regret de vous informer que celle-ci ne peut être satisfaite favorablement.`;
+  doc.splitTextToSize(corps, 170).forEach((l: string) => { doc.text(l, 20, y); y += 5; });
+
+  y += 6;
+  doc.setFont("helvetica", "bold").text("Motif du refus :", 20, y); y += 6;
+  doc.setFont("helvetica", "normal");
+  doc.splitTextToSize(motifRefus || "—", 170).forEach((l: string) => { doc.text(l, 20, y); y += 5; });
+
+  // Voies et délais de recours en bas
+  voiesDeRecours(doc, ctx, 220);
+
+  footer(doc, ctx, ctx.signataireOrdonnateur ?? "", "Le Chef d'établissement,");
+  return doc.output("blob");
+}
+
+/** 7) Convocation à une commission fonds sociaux */
+export function generateConvocationCommissionPdf(
+  commission: FsCommission,
+  convocation: FsCommissionConvocation,
+  ctx: PdfContext,
+): Blob {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  header(doc, "CONVOCATION — COMMISSION FONDS SOCIAUX", ctx);
+
+  let y = 62;
+  doc.setFontSize(10).setFont("helvetica", "normal");
+  doc.text(`Date de la commission : ${formatDateFr(commission.date_commission)}`, 20, y); y += 6;
+  doc.text(`Type : ${commission.type}`, 20, y); y += 6;
+  doc.text(`Année scolaire : ${commission.annee_scolaire}`, 20, y); y += 10;
+
+  doc.setFont("helvetica", "bold").text("Membres convoqués :", 20, y); y += 6;
+  doc.setFont("helvetica", "normal");
+
+  autoTable(doc, {
+    startY: y,
+    theme: "grid",
+    styles: { fontSize: 9 },
+    head: [["Nom", "Prénom", "Qualité", "Email"]],
+    body: (convocation.membres_convoques ?? []).map(m => [
+      m.nom, m.prenom ?? "", m.qualite, m.email ?? "—",
+    ]),
+  });
+
+  let yAfter = (doc as any).lastAutoTable.finalY + 8;
+  if (convocation.ordre_du_jour) {
+    doc.setFont("helvetica", "bold").text("Ordre du jour :", 20, yAfter); yAfter += 6;
+    doc.setFont("helvetica", "normal");
+    doc.splitTextToSize(convocation.ordre_du_jour, 170).forEach((l: string) => {
+      doc.text(l, 20, yAfter); yAfter += 5;
+    });
+  }
+
+  footer(doc, ctx, ctx.signataireOrdonnateur ?? "", "Le Chef d'établissement,");
+  return doc.output("blob");
 }
