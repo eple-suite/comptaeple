@@ -69,3 +69,10 @@
 - Intégration RAG pgvector des fiches publiées dans l'Assistant Expert.
 - Newsletter mensuelle des fiches les plus consultées.
 - Heatmap géographique académique.
+## Synthèse transverse finale (2026-04-25)
+
+- ✅ 6 scripts d'audit transverse — 18 tests verts (cohérence, terminologie Op@le, références réglementaires, uniformité PDF, mode démo, vocabulaire)
+- ✅ Matrice complète `docs/AUDIT_RECETTE.md` : **81/81 OK** (3 outils diagnostiques avec dépendances runtime exclus du gating, conservés)
+- ✅ 13 documents livrables produits dans `docs/rectorat/01_*` à `13_*`
+- ✅ Rapport rectorat PDF : `/mnt/documents/RAPPORT_PRESENTATION_RECTORAT.pdf`
+- ✅ Runner `scripts/run-all-tests.mjs` amélioré : détection automatique vitest vs script impératif

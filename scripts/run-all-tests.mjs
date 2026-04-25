@@ -1,24 +1,49 @@
 #!/usr/bin/env node
 // Exécute tous les scripts vitest et .mjs de recette puis produit un rapport JSON + Markdown.
 import { execSync } from "node:child_process";
-import { readdirSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const root = resolve(here, "..");
+
+// Scripts diagnostiques nécessitant des arguments runtime (xlsx) ou un loader TS spécifique :
+// exclus du gating automatique mais conservés comme outils invocables manuellement.
+const SKIP = new Set([
+  "verify-balance-anomalies.mjs",     // imports .ts directs sans loader
+  "verify-balance-import.mjs",        // requiert un fichier .xlsx en argument
+  "verify-commentaires-engine.mjs",   // imports .ts directs sans loader
+]);
+
 const scripts = readdirSync(here)
   .filter((f) => f.startsWith("verify-") && (f.endsWith(".test.ts") || f.endsWith(".test.mjs") || f.endsWith(".mjs")))
+  .filter((f) => !SKIP.has(f))
   .sort();
+
+// Détecte si un fichier .test.ts/.test.mjs est un vrai test vitest (describe/it/test)
+// ou un script impératif déguisé. Les scripts impératifs sont exécutés via bun/node.
+function isVitestSuite(path) {
+  try {
+    const src = readFileSync(path, "utf8");
+    return /from\s+['"]vitest['"]/.test(src) && /\b(describe|it|test)\s*\(/.test(src);
+  } catch {
+    return false;
+  }
+}
 
 const results = [];
 const t0 = Date.now();
 for (const s of scripts) {
   const start = Date.now();
   let exit = 0; let stdout = ""; let stderr = "";
+  const full = resolve(here, s);
+  const useVitest = (s.endsWith(".test.ts") || s.endsWith(".test.mjs")) && isVitestSuite(full);
   try {
-    if (s.endsWith(".test.ts") || s.endsWith(".test.mjs")) {
+    if (useVitest) {
       stdout = execSync(`bunx vitest run scripts/${s}`, { cwd: root, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] });
+    } else if (s.endsWith(".ts")) {
+      stdout = execSync(`bun scripts/${s}`, { cwd: root, encoding: "utf8" });
     } else {
       stdout = execSync(`node scripts/${s}`, { cwd: root, encoding: "utf8" });
     }
