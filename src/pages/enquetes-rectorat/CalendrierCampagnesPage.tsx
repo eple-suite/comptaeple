@@ -2,7 +2,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { CALENDRIER_CAMPAGNES_RECTORAT, MOIS_LABELS, groupCampagnesParMois } from "@/lib/enquetes-rectorat/calendrierCampagnes";
-import { CalendarClock, AlertCircle } from "lucide-react";
+import { CalendarClock, AlertCircle, CalendarDays } from "lucide-react";
 
 export default function CalendrierCampagnesPage() {
   const grouped = groupCampagnesParMois();
@@ -11,6 +11,7 @@ export default function CalendrierCampagnesPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <PageHeader
+        icon={CalendarDays}
         title="Calendrier des campagnes Rectorat"
         description={`${CALENDRIER_CAMPAGNES_RECTORAT.length} échéances types pré-chargées — déclenchables par le rectorat ou l'AC du groupement.`}
       />

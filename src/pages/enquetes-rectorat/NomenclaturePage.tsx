@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, Lock, ShieldCheck } from "lucide-react";
+import { AlertTriangle, Lock, ShieldCheck, Library } from "lucide-react";
 import type { CompteEnqueteRef } from "@/lib/enquetes-rectorat/types";
 
 const FAMILLE_LABELS: Record<string, string> = {
@@ -61,6 +61,7 @@ export default function NomenclaturePage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <PageHeader
+        icon={Library}
         title="Nomenclature M9-6 — Référentiel comptes enquêtes"
         description="Comptes 4411X, 44191X, 443110, 4412X, 4413X, 4416X, 4417X, 44181X — sens normal du solde et règles de déspécialisation (DAF A3)."
       />

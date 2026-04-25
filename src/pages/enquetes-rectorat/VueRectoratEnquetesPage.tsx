@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Eye, Download, Send } from "lucide-react";
+import { Eye as EyeIcon } from "lucide-react";
 import type { EnqueteCampagne, EnqueteReponseEple } from "@/lib/enquetes-rectorat/types";
 
 export default function VueRectoratEnquetesPage() {
@@ -38,6 +39,7 @@ export default function VueRectoratEnquetesPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <PageHeader
+        icon={EyeIcon}
         title="Vue Rectorat — Tableau de bord enquêtes"
         description="Consultation académique en lecture seule. Rôle observateur_rectoral. Toute consultation est tracée."
       />

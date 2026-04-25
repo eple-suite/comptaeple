@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { PageHeader } from "@/components/PageHeader";
 import {
   BookOpen, CalendarDays, FileBarChart, GraduationCap,
-  Eye, Library, Send, History,
+  Eye, Library, Send, History, ClipboardList,
 } from "lucide-react";
 
 const SOUS_PAGES = [
@@ -29,6 +29,7 @@ export default function EnquetesHubPage() {
   return (
     <div className="container mx-auto p-6 space-y-6">
       <PageHeader
+        icon={ClipboardList}
         title="Enquêtes Rectorat"
         description="Plateforme académique de pilotage des enquêtes — M9-6 tome 3, note DAF A3, circulaire MENE1704160C 17/02/2017."
       />
