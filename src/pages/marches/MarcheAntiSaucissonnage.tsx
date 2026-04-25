@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { AlertTriangle, ArrowLeft, Download, Flame, ShieldAlert, TrendingUp } from "lucide-react";
+import { AlertTriangle, ArrowLeft, Download, Flame, ShieldAlert, TrendingUp, Settings2, BookOpen } from "lucide-react";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { useMarches, useSeuilsCcp, useFournisseurs, useFamilles } from "./hooks/useMarchesData";
 import {
@@ -308,6 +308,150 @@ export default function MarcheAntiSaucissonnage() {
               </div>
             ))
           )}
+        </CardContent>
+      </Card>
+
+      {/* Seuils CCP utilisés */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Settings2 className="h-4 w-4 text-primary" /> Seuils CCP utilisés
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Paramètres réglementaires appliqués au calcul (familles homogènes, montants, règles de gradation rouge/orange) avec leur source juridique et la date de versionnement.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-5">
+          {/* Règles rouge / orange */}
+          <div>
+            <h4 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">
+              Règles d'alerte appliquées
+            </h4>
+            <div className="grid gap-2 md:grid-cols-2">
+              <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge variant="destructive">ROUGE</Badge>
+                  <span className="font-medium text-sm">Critique</span>
+                </div>
+                <ul className="text-xs space-y-1 text-muted-foreground">
+                  <li>• Cumul famille ≥ <strong className="text-foreground">100 %</strong> du seuil de dispense (12 mois glissants)</li>
+                  <li>• OU ≥ <strong className="text-foreground">3 commandes</strong> au même fournisseur dans la même famille en 6 mois</li>
+                </ul>
+                <p className="text-[11px] text-destructive/80 mt-2 font-medium">art. L2113-2 CCP — présomption de saucissonnage</p>
+              </div>
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                <div className="flex items-center gap-2 mb-1">
+                  <Badge variant="secondary" className="bg-amber-500/15 text-amber-700 border-amber-500/30">ORANGE</Badge>
+                  <span className="font-medium text-sm">Vigilance</span>
+                </div>
+                <ul className="text-xs space-y-1 text-muted-foreground">
+                  <li>• Cumul famille ≥ <strong className="text-foreground">70 %</strong> du seuil de dispense</li>
+                  <li>• OU <strong className="text-foreground">2 commandes</strong> même fournisseur même famille en 6 mois</li>
+                </ul>
+                <p className="text-[11px] text-amber-700 mt-2 font-medium">mémo DAJ — computation des seuils par famille homogène</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Tableau des seuils CCP versionnés */}
+          <div>
+            <h4 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">
+              Seuils CCP versionnés
+            </h4>
+            {seuils.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucun seuil paramétré.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="w-full text-xs">
+                  <thead className="bg-muted/40">
+                    <tr className="text-left">
+                      <th className="px-3 py-2 font-semibold">Type marché</th>
+                      <th className="px-3 py-2 font-semibold text-right">Dispense</th>
+                      <th className="px-3 py-2 font-semibold text-right">MAPA pub.</th>
+                      <th className="px-3 py-2 font-semibold text-right">Formalisée</th>
+                      <th className="px-3 py-2 font-semibold">Période d'application</th>
+                      <th className="px-3 py-2 font-semibold">Source / base légale</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...seuils]
+                      .sort((a, b) => (b.date_debut || "").localeCompare(a.date_debut || ""))
+                      .map((s) => {
+                        const enVigueur =
+                          s.date_debut <= todayIso && (!s.date_fin || s.date_fin >= todayIso);
+                        return (
+                          <tr key={s.id} className="border-t hover:bg-accent/30">
+                            <td className="px-3 py-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium capitalize">
+                                  {s.type_marche.replace(/_/g, " ")}
+                                </span>
+                                {enVigueur && (
+                                  <Badge variant="outline" className="bg-emerald-500/10 text-emerald-700 border-emerald-500/30 text-[10px] h-5">
+                                    en vigueur
+                                  </Badge>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums font-medium">
+                              {formatEur(s.seuil_dispense)}
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums text-muted-foreground">
+                              {s.seuil_mapa_publicite ? formatEur(s.seuil_mapa_publicite) : "—"}
+                            </td>
+                            <td className="px-3 py-2 text-right tabular-nums">
+                              {formatEur(s.seuil_formalisee)}
+                            </td>
+                            <td className="px-3 py-2 whitespace-nowrap">
+                              <div className="text-foreground">{formatDateFr(s.date_debut)}</div>
+                              <div className="text-[11px] text-muted-foreground">
+                                → {s.date_fin ? formatDateFr(s.date_fin) : "indéterminée"}
+                              </div>
+                            </td>
+                            <td className="px-3 py-2 max-w-[420px]">
+                              <div className="flex items-start gap-1.5">
+                                <BookOpen className="h-3 w-3 text-muted-foreground mt-0.5 shrink-0" />
+                                <span className="text-muted-foreground leading-snug">
+                                  {s.base_legale || "—"}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+
+          {/* Familles homogènes */}
+          <div>
+            <h4 className="text-xs uppercase tracking-wider font-semibold text-muted-foreground mb-2">
+              Familles homogènes d'achat actives ({familles.length})
+            </h4>
+            {familles.length === 0 ? (
+              <p className="text-sm text-muted-foreground">Aucune famille paramétrée.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {familles.map((f) => (
+                  <Badge
+                    key={f.id}
+                    variant="outline"
+                    className="font-mono text-[11px] py-0.5"
+                    title={`${f.libelle} — ${f.type_marche} (${f.groupe})`}
+                  >
+                    <span className="text-primary mr-1.5">{f.code}</span>
+                    <span className="text-foreground/80">{f.libelle}</span>
+                  </Badge>
+                ))}
+              </div>
+            )}
+            <p className="text-[11px] text-muted-foreground mt-2">
+              Mémo DAJ — la computation des seuils s'effectue par <em>famille homogène</em> sur 12 mois glissants
+              (besoins répondant à une même finalité économique).
+            </p>
+          </div>
         </CardContent>
       </Card>
     </div>
