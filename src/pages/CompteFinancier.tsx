@@ -38,6 +38,7 @@ import { VueGroupement } from '@/components/cofieple/VueGroupement';
 import { RapportImpression } from '@/components/rapport/RapportImpression';
 import { CofiepleHero } from '@/components/cofieple/premium/CofiepleHero';
 import { MagazineExportButton } from '@/components/cofieple/premium/MagazineExportButton';
+import { ExportTroisPdfBouton } from '@/components/cofieple/ExportTroisPdfBouton';
 import {
   OrdoS1Presentation, OrdoS2TableauBord, OrdoS3ExecFonctionnement,
   OrdoS4ExecRecettes, OrdoS5Pilotage, OrdoS6SRH, OrdoS7VieEleve,
@@ -310,6 +311,7 @@ const CompteFinancier = () => {
         {/* Export bar — Rapport Ordonnateur */}
         {mainTab === 'ordo' && hasData && (
           <div className="flex justify-end gap-2 px-5 pt-4 pb-0">
+            <ExportTroisPdfBouton />
             <button
               onClick={() => window.print()}
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-muted hover:bg-muted/70 text-foreground transition-all duration-200"
