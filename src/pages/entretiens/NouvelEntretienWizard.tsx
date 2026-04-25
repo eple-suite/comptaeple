@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, Sparkles, FileText, Calendar, User, Briefcase, Target, GraduationCap, ClipboardCheck, Wand2, RefreshCw, Eye } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, Sparkles, FileText, Calendar, User, Briefcase, Target, GraduationCap, ClipboardCheck, Wand2, RefreshCw, Eye, ShieldCheck } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,6 +32,7 @@ import {
   SOURCE_LABELS,
   type CritereInjecte,
 } from "@/lib/entretiens/fichePosteParser";
+import { mergeApercuPreservant } from "@/lib/entretiens/mergeApercu";
 
 const ICONS = [User, Calendar, Briefcase, FileText, Target, GraduationCap, ClipboardCheck];
 
