@@ -79,6 +79,13 @@ const STEPS = [
     args: ['tsx', 'scripts/verify-entretiens-wizard.mjs'],
     categorie: 'Entretiens professionnels',
   },
+  {
+    id: 'verify-entretiens-dashboard',
+    titre: 'Recette — Dashboard campagne entretiens',
+    cmd: 'node',
+    args: ['scripts/verify-entretiens-dashboard.mjs'],
+    categorie: 'Entretiens professionnels',
+  },
 ];
 
 // ---------------------------------------------------------------------
