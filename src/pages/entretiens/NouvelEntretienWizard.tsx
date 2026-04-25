@@ -795,6 +795,8 @@ function RecapRow({ label, value }: { label: string; value: string }) {
 /* ============================================================ */
 function ApercuInjection({ state, setState }: any) {
   const apercu: CritereInjecte[] = state.injection_apercu;
+  const [snapshotAvant, setSnapshotAvant] = useState<CritereInjecte[] | null>(null);
+  const [derniereAction, setDerniereAction] = useState<"conserver" | "reanalyser" | null>(null);
   if (!apercu || apercu.length === 0) {
     return (
       <div className="p-3 border border-dashed rounded-md text-xs text-muted-foreground bg-muted/20">
