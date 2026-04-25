@@ -438,6 +438,7 @@ const BalanceAnalysis = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="vue-globale" className="gap-1 text-xs"><BarChart className="h-3 w-3" />Vue globale</TabsTrigger>
+          <TabsTrigger value="m96-anomalies" className="gap-1 text-xs"><AlertTriangle className="h-3 w-3" />Anomalies M9-6</TabsTrigger>
           <TabsTrigger value="sous-comptes" className="gap-1 text-xs"><Search className="h-3 w-3" />Sous-comptes M9-6</TabsTrigger>
           <TabsTrigger value="anomalies" className="gap-1 text-xs"><AlertTriangle className="h-3 w-3" />Anomalies</TabsTrigger>
           <TabsTrigger value="subventions" className="gap-1 text-xs"><Filter className="h-3 w-3" />Subventions</TabsTrigger>
