@@ -33,6 +33,10 @@ import HabilitationsOpalePage from "./pages/rentree/HabilitationsOpalePage";
 import HabilitationsRecapPage from "./pages/rentree/HabilitationsRecapPage";
 import VueRectoratPage from "./pages/rentree/VueRectoratPage";
 import LiensUtilesPage from "./pages/rentree/LiensUtilesPage";
+import EnquetesHubPage from "./pages/enquetes-rectorat/EnquetesHubPage";
+import NomenclaturePage from "./pages/enquetes-rectorat/NomenclaturePage";
+import CalendrierCampagnesPage from "./pages/enquetes-rectorat/CalendrierCampagnesPage";
+import VueRectoratEnquetesPage from "./pages/enquetes-rectorat/VueRectoratEnquetesPage";
 import CreditNourriture from "./pages/CreditNourriture";
 import VeilleJuridique from "./pages/VeilleJuridique";
 import ControleInterne from "./pages/ControleInterne";
@@ -125,6 +129,10 @@ const App = () => (
               <Route path="/rentree/habilitations-recap" element={<HabilitationsRecapPage />} />
               <Route path="/rentree/vue-rectorat" element={<VueRectoratPage />} />
               <Route path="/liens-utiles" element={<LiensUtilesPage />} />
+              <Route path="/enquetes-rectorat" element={<EnquetesHubPage />} />
+              <Route path="/enquetes-rectorat/nomenclature" element={<NomenclaturePage />} />
+              <Route path="/enquetes-rectorat/calendrier" element={<CalendrierCampagnesPage />} />
+              <Route path="/enquetes-rectorat/vue-rectorat" element={<VueRectoratEnquetesPage />} />
               <Route path="/credit-nourriture" element={<CreditNourriture />} />
               <Route path="/regies" element={<RegiesCaisse />} />
               <Route path="/veille-juridique" element={<VeilleJuridique />} />

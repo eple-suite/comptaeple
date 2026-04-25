@@ -21,6 +21,7 @@ import {
   Sparkles,
   UserCheck,
   GraduationCap,
+  ClipboardList,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -75,6 +76,7 @@ const pilotageItems: NavItem[] = [
   { title: "Exécution budgétaire", url: "/execution-budgetaire", icon: TrendingUp },
   { title: "Marchés publics", url: "/marches", icon: Scale },
   { title: "Habilitations Op@le", url: "/habilitations", icon: ShieldCheck, hot: true },
+  { title: "Enquêtes Rectorat", url: "/enquetes-rectorat", icon: ClipboardList, hot: true },
 ];
 
 const ressourcesItems: NavItem[] = [
