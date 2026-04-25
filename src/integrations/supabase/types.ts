@@ -220,6 +220,201 @@ export type Database = {
           },
         ]
       }
+      aide_articles: {
+        Row: {
+          contenu_md: string
+          created_at: string
+          date_maj: string
+          id: string
+          module: string
+          niveau: string
+          ordre: number
+          references_legales: Json
+          resume: string | null
+          slug: string
+          source_canonique: boolean
+          tags: string[]
+          titre: string
+          version: string
+        }
+        Insert: {
+          contenu_md: string
+          created_at?: string
+          date_maj?: string
+          id?: string
+          module: string
+          niveau: string
+          ordre?: number
+          references_legales?: Json
+          resume?: string | null
+          slug: string
+          source_canonique?: boolean
+          tags?: string[]
+          titre: string
+          version?: string
+        }
+        Update: {
+          contenu_md?: string
+          created_at?: string
+          date_maj?: string
+          id?: string
+          module?: string
+          niveau?: string
+          ordre?: number
+          references_legales?: Json
+          resume?: string | null
+          slug?: string
+          source_canonique?: boolean
+          tags?: string[]
+          titre?: string
+          version?: string
+        }
+        Relationships: []
+      }
+      aide_faq: {
+        Row: {
+          created_at: string
+          frequence: number
+          id: string
+          module: string
+          question: string
+          reponse: string
+          tags: string[]
+        }
+        Insert: {
+          created_at?: string
+          frequence?: number
+          id?: string
+          module: string
+          question: string
+          reponse: string
+          tags?: string[]
+        }
+        Update: {
+          created_at?: string
+          frequence?: number
+          id?: string
+          module?: string
+          question?: string
+          reponse?: string
+          tags?: string[]
+        }
+        Relationships: []
+      }
+      aide_glossaire: {
+        Row: {
+          acronyme: string | null
+          created_at: string
+          definition: string
+          id: string
+          modules: string[]
+          references_legales: Json
+          terme: string
+          updated_at: string
+          voir_aussi: string[]
+        }
+        Insert: {
+          acronyme?: string | null
+          created_at?: string
+          definition: string
+          id?: string
+          modules?: string[]
+          references_legales?: Json
+          terme: string
+          updated_at?: string
+          voir_aussi?: string[]
+        }
+        Update: {
+          acronyme?: string | null
+          created_at?: string
+          definition?: string
+          id?: string
+          modules?: string[]
+          references_legales?: Json
+          terme?: string
+          updated_at?: string
+          voir_aussi?: string[]
+        }
+        Relationships: []
+      }
+      aide_modeles: {
+        Row: {
+          created_at: string
+          description: string | null
+          destinataire: string | null
+          fichier_url: string | null
+          id: string
+          module: string
+          nom: string
+          references_legales: Json
+          tags: string[]
+          type_doc: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          destinataire?: string | null
+          fichier_url?: string | null
+          id?: string
+          module: string
+          nom: string
+          references_legales?: Json
+          tags?: string[]
+          type_doc: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          destinataire?: string | null
+          fichier_url?: string | null
+          id?: string
+          module?: string
+          nom?: string
+          references_legales?: Json
+          tags?: string[]
+          type_doc?: string
+        }
+        Relationships: []
+      }
+      aide_onboarding_progress: {
+        Row: {
+          created_at: string
+          date_debut: string
+          date_fin: string | null
+          etape_courante: number
+          etapes_completes: number[]
+          id: string
+          parcours: string
+          termine: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_debut?: string
+          date_fin?: string | null
+          etape_courante?: number
+          etapes_completes?: number[]
+          id?: string
+          parcours: string
+          termine?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_debut?: string
+          date_fin?: string | null
+          etape_courante?: number
+          etapes_completes?: number[]
+          id?: string
+          parcours?: string
+          termine?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       alertes_transverses: {
         Row: {
           action_url: string | null
