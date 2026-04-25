@@ -5328,7 +5328,7 @@ export type Database = {
         | "contractuel_cdi"
         | "detache"
         | "mis_a_disposition"
-      app_role: "admin" | "agent"
+      app_role: "admin" | "agent" | "observateur_rectoral"
       bottin_categorie:
         | "rectorat"
         | "dsden"
@@ -5602,7 +5602,7 @@ export const Constants = {
         "detache",
         "mis_a_disposition",
       ],
-      app_role: ["admin", "agent"],
+      app_role: ["admin", "agent", "observateur_rectoral"],
       bottin_categorie: [
         "rectorat",
         "dsden",
