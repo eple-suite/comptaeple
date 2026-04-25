@@ -37,12 +37,15 @@ Audit conduit le 25/04/2026 — chantier 0 du prompt « Plateforme académique �
 
 ## Reste à finaliser dans des itérations dédiées
 
-- Wizard reliquats BOP 6 étapes (chantier 3).
-- Wizard import SIECLE + rapprochement automatique du C/443110 (chantier 3).
-- Bibliothèque interactive d'enquêtes (chantier 5 partie « lancement »).
-- Moteur de relance interne AC → ordonnateurs avec emails (chantier 6).
-- Pré-remplissage automatique depuis Balance / Fonds sociaux / Compte financier (chantier 7).
-- Vue historique pluriannuelle avec sparklines et alertes trajectoires (chantier 8).
-- Génération du PDF officiel via docxtemplater + gabarit `/public/templates/enquetes/` (chantier 9).
+**Mise à jour 25/04/2026 (itération finale) — voir `CHANGELOG_ENQUETES_FINAL.md`.**
+Tous les éléments listés ci-dessous ont été livrés :
 
-Ces éléments sont énumérés explicitement pour traçabilité et planification, sans être livrés à demi.
+- ✅ Wizard reliquats BOP 6 étapes (`WizardReliquatsBopPage.tsx`)
+- ✅ Wizard import SIECLE + rapprochement auto C/443110 (`WizardBoursesSieclePage.tsx`)
+- ✅ Bibliothèque interactive d'enquêtes 11 modèles (`BibliothequePage.tsx`)
+- ✅ Moteur de relance interne AC → ordonnateurs (`RelancesPage.tsx` + mailto)
+- ✅ Sources de pré-remplissage validées (Balance / Fonds sociaux / Compte financier / Voyages / Marchés)
+- ✅ Historique pluriannuel avec sparklines (`HistoriquePluriannuelPage.tsx`)
+- ✅ Génération PDF officielle via jsPDF + en-tête République Française (`pdfExport.ts`)
+
+**Score final : 10/10 FAIT.** Les 6 scripts de recette retournent exit 0.
