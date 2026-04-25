@@ -4403,6 +4403,68 @@ export type Database = {
           },
         ]
       }
+      vs_coupons_8eur: {
+        Row: {
+          created_at: string
+          date_envoi: string
+          date_limite_reponse: string
+          date_reponse: string | null
+          id: string
+          ine: string | null
+          metadata: Json
+          montant_concerne: number
+          nom: string
+          participant_id: string | null
+          prenom: string
+          reponse: string | null
+          source: string
+          updated_at: string
+          voyage_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_envoi?: string
+          date_limite_reponse: string
+          date_reponse?: string | null
+          id?: string
+          ine?: string | null
+          metadata?: Json
+          montant_concerne?: number
+          nom: string
+          participant_id?: string | null
+          prenom: string
+          reponse?: string | null
+          source?: string
+          updated_at?: string
+          voyage_id: string
+        }
+        Update: {
+          created_at?: string
+          date_envoi?: string
+          date_limite_reponse?: string
+          date_reponse?: string | null
+          id?: string
+          ine?: string | null
+          metadata?: Json
+          montant_concerne?: number
+          nom?: string
+          participant_id?: string | null
+          prenom?: string
+          reponse?: string | null
+          source?: string
+          updated_at?: string
+          voyage_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vs_coupons_8eur_voyage_id_fkey"
+            columns: ["voyage_id"]
+            isOneToOne: false
+            referencedRelation: "vs_voyages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vs_depenses: {
         Row: {
           bon_commande: string | null
