@@ -59,8 +59,8 @@ export default function CommissionsPage() {
   function buildPdfCtx() {
     return {
       etablissementNom: selectedEstablishment?.name ?? "Établissement",
-      etablissementAdresse: selectedEstablishment?.address ?? "",
-      etablissementCp: selectedEstablishment?.postal_code ?? "",
+      etablissementAdresse: "",
+      etablissementCp: "",
       etablissementVille: selectedEstablishment?.city ?? "",
       uai: selectedEstablishment?.uai ?? "",
       ville: selectedEstablishment?.city ?? "",
