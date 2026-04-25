@@ -18,6 +18,14 @@ import { store } from "@/store/persistentStore";
 import ComptesSensNormalManager from "@/components/settings/ComptesSensNormalManager";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AgentsTab from "@/components/parametres/AgentsTab";
+import GroupementTab from "@/components/parametres/GroupementTab";
+import EtablissementsTab from "@/components/parametres/EtablissementsTab";
+import DelegationsTab from "@/components/parametres/DelegationsTab";
+import BottinTab from "@/components/parametres/BottinTab";
+import ArretesTab from "@/components/parametres/ArretesTab";
+import RgpdTab from "@/components/parametres/RgpdTab";
+import TableauBordTab from "@/components/parametres/TableauBordTab";
+import ModeEmploiParametres from "@/components/parametres/ModeEmploiParametres";
 
 const SettingsPage = () => {
   const { selectedEstablishment, refetch } = useEstablishment();
@@ -152,15 +160,29 @@ const SettingsPage = () => {
         <p className="text-sm text-muted-foreground mt-1">Cellule RH et institutionnelle — niveau rectoral (GBCP / Code éducation / instruction 06-031-A-B-M)</p>
       </motion.div>
 
-      <Tabs defaultValue="preferences" className="w-full">
-        <TabsList className="flex flex-wrap">
-          <TabsTrigger value="preferences">Préférences</TabsTrigger>
+      <Tabs defaultValue="tableau" className="w-full">
+        <TabsList className="flex flex-wrap h-auto">
+          <TabsTrigger value="tableau">Tableau de bord</TabsTrigger>
+          <TabsTrigger value="groupement">Groupement</TabsTrigger>
+          <TabsTrigger value="etablissements">Établissements</TabsTrigger>
           <TabsTrigger value="agents">Agents BIATSS</TabsTrigger>
+          <TabsTrigger value="delegations">Délégations</TabsTrigger>
+          <TabsTrigger value="bottin">Bottin</TabsTrigger>
+          <TabsTrigger value="arretes">Arrêtés</TabsTrigger>
+          <TabsTrigger value="rgpd">RGPD</TabsTrigger>
+          <TabsTrigger value="aide">Mode d'emploi</TabsTrigger>
+          <TabsTrigger value="preferences">Préférences</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="agents" className="mt-4">
-          <AgentsTab />
-        </TabsContent>
+        <TabsContent value="tableau" className="mt-4"><TableauBordTab /></TabsContent>
+        <TabsContent value="groupement" className="mt-4"><GroupementTab /></TabsContent>
+        <TabsContent value="etablissements" className="mt-4"><EtablissementsTab /></TabsContent>
+        <TabsContent value="agents" className="mt-4"><AgentsTab /></TabsContent>
+        <TabsContent value="delegations" className="mt-4"><DelegationsTab /></TabsContent>
+        <TabsContent value="bottin" className="mt-4"><BottinTab /></TabsContent>
+        <TabsContent value="arretes" className="mt-4"><ArretesTab /></TabsContent>
+        <TabsContent value="rgpd" className="mt-4"><RgpdTab /></TabsContent>
+        <TabsContent value="aide" className="mt-4"><ModeEmploiParametres /></TabsContent>
 
         <TabsContent value="preferences" className="mt-4 space-y-6">
       {/* Identité établissement */}
