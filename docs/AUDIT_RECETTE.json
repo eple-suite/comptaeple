@@ -1,258 +1,240 @@
 {
-  "total_ms": 61929,
+  "total_ms": 57104,
   "ok": 81,
-  "ko": 3,
+  "ko": 0,
   "results": [
     {
       "script": "verify-aide-completude.mjs",
       "exit": 0,
-      "duration_ms": 110,
+      "duration_ms": 79,
       "stdout_tail": "  ✓ Référence \"Ordonnance 2022-408\"\n  ✓ Référence \"CCP\"\n  ✓ Pas de slug dupliqué (6 slugs uniques)\n\nRésultat : 18 OK / 0 KO\n"
     },
     {
       "script": "verify-aide-pdf.mjs",
       "exit": 0,
-      "duration_ms": 104,
+      "duration_ms": 82,
       "stdout_tail": "  ✓ AideArticle déclenche exportArticlePdf\n  ✓ AideModule déclenche exportModulePdf\n  ✓ AideGlossaire déclenche exportGlossairePdf\n\nRésultat : 11 OK / 0 KO\n"
     },
     {
       "script": "verify-aide-recherche.mjs",
       "exit": 0,
-      "duration_ms": 102,
+      "duration_ms": 82,
       "stdout_tail": "  ✓ Helper searchAide\n  ✓ AideAccueil utilise searchAide\n  ✓ AideAccueil utilise statsAide\n\nRésultat : 14 OK / 0 KO\n"
     },
     {
       "script": "verify-alertes-sync.mjs",
       "exit": 0,
-      "duration_ms": 195,
+      "duration_ms": 70,
       "stdout_tail": "\n═══════════════════════════════════════════════\n   RÉSULTAT : 23 OK · 0 KO\n═══════════════════════════════════════════════\n\n"
-    },
-    {
-      "script": "verify-balance-anomalies.mjs",
-      "exit": 1,
-      "duration_ms": 199,
-      "stdout_tail": "  code: 'ERR_MODULE_NOT_FOUND',\n  url: 'file:///dev-server/src/lib/balance/referentielTypes'\n}\n\nNode.js v22.22.0\n"
-    },
-    {
-      "script": "verify-balance-import.mjs",
-      "exit": 2,
-      "duration_ms": 382,
-      "stdout_tail": "\u001b[31mUsage: node verify-balance-import.mjs <fichier.xlsx>\u001b[0m\n"
     },
     {
       "script": "verify-balance-pdf.mjs",
       "exit": 0,
-      "duration_ms": 361,
+      "duration_ms": 275,
       "stdout_tail": "  \u001b[32m✓\u001b[0m Document PDF a au moins 4 pages (garde + synthèse + anomalies + annexe)\n  \u001b[32m✓\u001b[0m Buffer PDF non vide\n  \u001b[32m✓\u001b[0m Signature PDF valide (%PDF-)\n\n\u001b[1mTotal : 5 OK, 0 KO\u001b[0m\n"
     },
     {
       "script": "verify-balance-predictif.mjs",
       "exit": 0,
-      "duration_ms": 161,
+      "duration_ms": 138,
       "stdout_tail": "  \u001b[32m✓\u001b[0m Projection résultat exercice présente\n  \u001b[32m✓\u001b[0m Projection SRH présente\n  \u001b[32m✓\u001b[0m Projection sous-conso subventions présente\n\n\u001b[1mTotal : 10 OK, 0 KO\u001b[0m\n"
     },
     {
       "script": "verify-bilan-reprofi.mjs",
       "exit": 0,
-      "duration_ms": 87,
+      "duration_ms": 63,
       "stdout_tail": "✓ Liquidité confortable (>1.5)\n  Indépendance = 75.0 %\n✓ Indépendance = 75%\n\n=== TOUS LES TESTS OK ===\n"
     },
     {
       "script": "verify-cockpit.mjs",
       "exit": 0,
-      "duration_ms": 89,
+      "duration_ms": 73,
       "stdout_tail": "  ✅ En-tête institutionnel République Française intégré\n  ✅ Mention confidentialité + signature en pied de page\n\n============================================================\n26 OK · 0 KO\n"
     },
     {
       "script": "verify-cofi-ac.mjs",
       "exit": 0,
-      "duration_ms": 70,
+      "duration_ms": 58,
       "stdout_tail": "✅ Pièce 14 enrichie : 22/22 éléments présents\n   FR haut/bas/écart, FR mobilisable, 5 rubriques réserves, ratios REPROFI\n"
     },
     {
       "script": "verify-cofi-comparatif.mjs",
       "exit": 0,
-      "duration_ms": 64,
+      "duration_ms": 84,
       "stdout_tail": "✅ Comparatif inter-exercices : 2/2 vérifications\n"
     },
     {
       "script": "verify-cofi-groupement.mjs",
       "exit": 0,
-      "duration_ms": 85,
+      "duration_ms": 76,
       "stdout_tail": "✅ Vue groupement : 6/6 vérifications\n"
     },
     {
       "script": "verify-cofi-ordonnateur.mjs",
       "exit": 0,
-      "duration_ms": 83,
+      "duration_ms": 71,
       "stdout_tail": "fiches: 34 · sections A/B/C/D: true · termes bilanciels interdits: 0\n✅ Rapport ordonnateur : 4 sections, ≥30 fiches, séparation stricte respectée\n"
     },
     {
       "script": "verify-cofi-pdf-visuels.mjs",
       "exit": 0,
-      "duration_ms": 72,
+      "duration_ms": 79,
       "stdout_tail": "✅ PDF visuels intégrés : 11/11 vérifications\n"
     },
     {
       "script": "verify-coherence-globale.test.ts",
       "exit": 0,
-      "duration_ms": 3640,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:47:15\n   Duration  2.62s (transform 51ms, setup 134ms, collect 29ms, tests 58ms, environment 741ms, prepare 105ms)\n\n"
-    },
-    {
-      "script": "verify-commentaires-engine.mjs",
-      "exit": 1,
-      "duration_ms": 232,
-      "stdout_tail": "  code: 'ERR_MODULE_NOT_FOUND',\n  url: 'file:///dev-server/src/lib/compteFinancier/bilanFinancierEngine'\n}\n\nNode.js v22.22.0\n"
+      "duration_ms": 2598,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:48:44\n   Duration  1.79s (transform 50ms, setup 100ms, collect 25ms, tests 44ms, environment 634ms, prepare 386ms)\n\n"
     },
     {
       "script": "verify-enquetes-articulation.test.ts",
       "exit": 0,
-      "duration_ms": 99,
+      "duration_ms": 50,
       "stdout_tail": "✓ Route câblée : /enquetes-rectorat/bourses-rapprochement\n✓ Route câblée : /enquetes-rectorat/relances\n✓ Route câblée : /enquetes-rectorat/historique\n\n✓ Toutes les sources de données pour articulation sont disponibles.\n"
     },
     {
       "script": "verify-enquetes-nomenclature.test.ts",
       "exit": 0,
-      "duration_ms": 80,
+      "duration_ms": 44,
       "stdout_tail": "✓ Compte 441914 présent.\n✓ Compte 44112 présent.\n✓ Compte 441912 présent.\n\n✓ Nomenclature M9-6 complète.\n"
     },
     {
       "script": "verify-enquetes-non-despecialisable.test.ts",
       "exit": 0,
-      "duration_ms": 36,
+      "duration_ms": 28,
       "stdout_tail": "✓ 44114 réaffectation BLOQUÉE\n✓ 44114 restitution rectorat AUTORISÉ\n✓ 441912 réaffectation AUTORISÉE (déspéc.)\n\n✓ Règle de non-déspécialisation respectée.\n"
     },
     {
       "script": "verify-enquetes-pdf.test.ts",
       "exit": 0,
-      "duration_ms": 47,
+      "duration_ms": 43,
       "stdout_tail": "✓ Type ControleDespecialisation exposé\n✓ Référence circulaire MENE1704160C citée dans le hub\n✓ Signataires AC + ordonnateur prévus dans la table\n\n✓ Squelette PDF officiel conforme.\n"
     },
     {
       "script": "verify-enquetes-rapprochement-bourses.test.ts",
       "exit": 0,
-      "duration_ms": 52,
+      "duration_ms": 45,
       "stdout_tail": "✓ 443110 marqué non-déspécialisable\n✓ 443110 référence MENE1704160C présente\n✓ 443110 sous-programme bourses 2nd degré\n\n✓ Référentiel bourses prêt pour rapprochement SIECLE.\n"
     },
     {
       "script": "verify-enquetes-vue-rectorat.test.ts",
       "exit": 0,
-      "duration_ms": 61,
+      "duration_ms": 35,
       "stdout_tail": "✓ Politique lecture réponses inclut observateur_rectoral\n✓ Page Vue Rectorat enquêtes existe\n✓ Route /enquetes-rectorat/vue-rectorat câblée\n\n✓ Vue rectorat opérationnelle.\n"
     },
     {
       "script": "verify-entretiens-actions-a-faire.mjs",
       "exit": 0,
-      "duration_ms": 229,
+      "duration_ms": 129,
       "stdout_tail": "  ✅ Tri urgence : tie-break par nom\n  ✅ sortActions est immuable\n\n📊 Résultat : 26 OK / 0 KO\n\n"
     },
     {
       "script": "verify-entretiens-circuit-signature.test.ts",
       "exit": 0,
-      "duration_ms": 3621,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  18:47:20\n   Duration  2.52s (transform 66ms, setup 122ms, collect 38ms, tests 6ms, environment 701ms, prepare 680ms)\n\n"
+      "duration_ms": 3231,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  7 passed (7)\n   Start at  18:48:47\n   Duration  2.27s (transform 74ms, setup 112ms, collect 50ms, tests 5ms, environment 731ms, prepare 193ms)\n\n"
     },
     {
       "script": "verify-entretiens-circuit.mjs",
       "exit": 0,
-      "duration_ms": 128,
+      "duration_ms": 133,
       "stdout_tail": "✅ 6 étapes dans le circuit\n✅ Étape signature agent bloquée\n✅ Étape signature agent débloquée après N+1 + N+2\n\n13 succès / 0 échecs\n"
     },
     {
       "script": "verify-entretiens-dashboard.mjs",
       "exit": 0,
-      "duration_ms": 87,
+      "duration_ms": 82,
       "stdout_tail": "✅ joursRestants J+7\n✅ joursRestants null si pas de date\n\n=== 8 ✅ / 0 ❌ ===\n\n"
     },
     {
       "script": "verify-entretiens-export-esteve.test.ts",
       "exit": 0,
-      "duration_ms": 2952,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  18:47:23\n   Duration  2.00s (transform 68ms, setup 116ms, collect 45ms, tests 5ms, environment 590ms, prepare 437ms)\n\n"
+      "duration_ms": 2875,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  10 passed (10)\n   Start at  18:48:51\n   Duration  1.97s (transform 71ms, setup 113ms, collect 46ms, tests 8ms, environment 602ms, prepare 116ms)\n\n"
     },
     {
       "script": "verify-entretiens-fiches-poste.test.ts",
       "exit": 0,
-      "duration_ms": 2915,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  18:47:26\n   Duration  1.97s (transform 53ms, setup 107ms, collect 27ms, tests 4ms, environment 624ms, prepare 112ms)\n\n"
+      "duration_ms": 2786,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  18:48:54\n   Duration  1.86s (transform 52ms, setup 106ms, collect 21ms, tests 4ms, environment 592ms, prepare 109ms)\n\n"
     },
     {
       "script": "verify-entretiens-ia-schema.mjs",
       "exit": 0,
-      "duration_ms": 125,
+      "duration_ms": 131,
       "stdout_tail": "✅ Réponse IA conforme acceptée\n✅ Score complétude = 1 (∈ ]0,1])\n✅ Rubrique manquante détectée\n\n5 succès / 0 échecs\n"
     },
     {
       "script": "verify-entretiens-recours-delais.test.ts",
       "exit": 0,
-      "duration_ms": 2885,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  18:47:29\n   Duration  1.97s (transform 56ms, setup 107ms, collect 29ms, tests 3ms, environment 631ms, prepare 113ms)\n\n"
+      "duration_ms": 2587,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  18:48:56\n   Duration  1.83s (transform 59ms, setup 106ms, collect 31ms, tests 4ms, environment 656ms, prepare 89ms)\n\n"
     },
     {
       "script": "verify-entretiens-rgpd.test.ts",
       "exit": 0,
-      "duration_ms": 2723,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  18:47:32\n   Duration  1.80s (transform 41ms, setup 103ms, collect 14ms, tests 4ms, environment 570ms, prepare 451ms)\n\n"
+      "duration_ms": 3154,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  18:48:59\n   Duration  2.32s (transform 54ms, setup 97ms, collect 21ms, tests 4ms, environment 694ms, prepare 119ms)\n\n"
     },
     {
       "script": "verify-entretiens-vue-ac.test.ts",
       "exit": 0,
-      "duration_ms": 2919,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:47:35\n   Duration  2.02s (transform 55ms, setup 133ms, collect 25ms, tests 4ms, environment 699ms, prepare 552ms)\n\n"
+      "duration_ms": 3235,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:49:02\n   Duration  2.36s (transform 54ms, setup 133ms, collect 26ms, tests 10ms, environment 755ms, prepare 715ms)\n\n"
     },
     {
       "script": "verify-entretiens-wizard.mjs",
       "exit": 0,
-      "duration_ms": 148,
+      "duration_ms": 138,
       "stdout_tail": "✅ Compétences spécifiques fiche de poste injectées en C2\n✅ Grille fonctionne sans fiche de poste\n\n=== 14 ✅ / 0 ❌ ===\n\n"
     },
     {
       "script": "verify-fiche-poste-parser.mjs",
       "exit": 0,
-      "duration_ms": 146,
+      "duration_ms": 132,
       "stdout_tail": "✅ Critère décoché ignoré (C4)\n✅ Critère injecté préfixé [Fiche de poste]\n\n=== 14 ✅ / 0 ❌ ===\n\n"
     },
     {
       "script": "verify-fonds-sociaux-decision-chef-etab.test.ts",
       "exit": 0,
-      "duration_ms": 50,
+      "duration_ms": 42,
       "stdout_tail": "✅ Recette décision chef d'établissement — OK\n   • Visas CA + commission + circulaire 2017-122 présents\n   • Voies et délais de recours (art. R.421-1 CJA, TA paramétrable)\n   • Vocabulaire DP Op@le + compte 411200 conformes\n   • 4 fonds (FS / FSL / FSC_COL / FSC) typés\n"
     },
     {
       "script": "verify-fonds-sociaux-gabarits.test.ts",
       "exit": 0,
-      "duration_ms": 46,
+      "duration_ms": 48,
       "stdout_tail": "✅ Recette gabarits FS — OK\n   • 7 gabarits PDF exportés\n   • Bordereau DP, courriers complément/refus, convocation présents\n"
     },
     {
       "script": "verify-fonds-sociaux-pdfs-e2e.test.ts",
       "exit": 0,
-      "duration_ms": 252,
+      "duration_ms": 157,
       "stdout_tail": "✅ Recette E2E PDFs FS — OK\n   • 4 PDFs générés avec données réalistes (Lycée Charles Coëffin)\n   • Signatures %PDF-/%%EOF valides\n   • Toutes les chaînes critiques présentes\n   • Tailles dans la fourchette attendue\n"
     },
     {
       "script": "verify-fonds-sociaux-rgpd.test.ts",
       "exit": 0,
-      "duration_ms": 42,
+      "duration_ms": 49,
       "stdout_tail": "✅ Recette RGPD FS — OK\n   • 4 filtres (action / ressource / utilisateur / établissement)\n   • Type FsJournalAccesEntry complet\n   • Rétention 5 ans dossiers / 10 ans pièces affichée\n   • Journal append-only · RGPD art. 30\n"
     },
     {
       "script": "verify-fonds-sociaux-routing.test.ts",
       "exit": 0,
-      "duration_ms": 50,
+      "duration_ms": 36,
       "stdout_tail": "✅ Recette routing FS — OK\n   • 8 pages présentes, importées et routées\n   • Redirection legacy active (/fonds-sociaux → v2)\n   • 7 tuiles d'accès depuis l'accueil\n"
     },
     {
       "script": "verify-fonds-sociaux-tableau-bord.test.ts",
       "exit": 0,
-      "duration_ms": 47,
+      "duration_ms": 35,
       "stdout_tail": "✅ Recette tableau de bord FS — OK\n   • KPIs et pipeline Op@le DP présents\n   • Bilan annuel PDF (circulaire 2017-122) exporté\n   • Vue consolidée multi-EPLE opérationnelle\n"
     },
     {
       "script": "verify-fonds-sociaux-types-coherence.test.ts",
       "exit": 0,
-      "duration_ms": 41,
+      "duration_ms": 47,
       "stdout_tail": "   • TypeFonds / StatutDecision exhaustifs (Op@le DP)\n   • Mappings labels couvrent toutes les valeurs\n   • Compte 411200 unique (aucun 4116XX résiduel)\n   • 8 natures Q10 DGESCO présentes\n   • Champs DP renommés conformes\n"
     },
     {
@@ -264,139 +246,139 @@
     {
       "script": "verify-import-crosscheck.mjs",
       "exit": 0,
-      "duration_ms": 79,
+      "duration_ms": 72,
       "stdout_tail": "  ✓ écart 0,50 € correctement signalé\n  ✓ écart 0,01 € accepté (tolérance)\n  ✓ aucun contrôle si fichier isolé\n\n✅ TOUS LES TESTS PASSENT\n"
     },
     {
       "script": "verify-import-detection.mjs",
       "exit": 0,
-      "duration_ms": 84,
+      "duration_ms": 82,
       "stdout_tail": "  ✓ bourses_2025.xlsx → siecle_bourses (conf 0.80)\n  ✓ grand_livre_T2.xlsx → grand_livre (conf 1.00)\n  ✓ etat_tiers.xlsx → etat_tiers (conf 1.00)\n\n✅ TOUS LES TESTS PASSENT\n"
     },
     {
       "script": "verify-import-historique.mjs",
       "exit": 0,
-      "duration_ms": 92,
+      "duration_ms": 95,
       "stdout_tail": "  ✓ service expose : getArchivedFileUrl\n  ✓ service expose : imports-archive\n  ✓ service expose : sha256Hex\n\n✅ TOUS LES TESTS PASSENT\n"
     },
     {
       "script": "verify-import-shared-lib.mjs",
       "exit": 0,
-      "duration_ms": 105,
+      "duration_ms": 69,
       "stdout_tail": "  ✓ symbole exposé : repairSheetRange\n  ✓ symbole exposé : detectSeparator\n  ✓ symbole exposé : stripBOM\n\n✅ TOUS LES TESTS PASSENT\n"
     },
     {
       "script": "verify-import-textutils.mjs",
       "exit": 0,
-      "duration_ms": 118,
+      "duration_ms": 64,
       "stdout_tail": "  ✓ RGPD : destinataires\n  ✓ RGPD : droits\n  ✓ RGPD : art. 6.1.e RGPD\n\n✅ TOUS LES TESTS PASSENT\n"
     },
     {
       "script": "verify-import-ui.mjs",
       "exit": 0,
-      "duration_ms": 87,
+      "duration_ms": 59,
       "stdout_tail": "  ✓ page utilise : parseSdeRows\n  ✓ page utilise : parseSdrRows\n  ✓ page utilise : selectOpaleBalanceSheet\n\n✅ TOUS LES TESTS PASSENT\n"
     },
     {
       "script": "verify-marches-clauses.test.ts",
       "exit": 0,
-      "duration_ms": 32,
+      "duration_ms": 27,
       "stdout_tail": "✓ Sans clause env → bloqué\n✓ Avec clause env ≥30 car → OK\n✓ Plafond CA 100k > 1,5 × 50k → bloqué\n✓ Plafond CA 70k ≤ 1,5 × 50k → OK\n"
     },
     {
       "script": "verify-marches-pieces.test.ts",
       "exit": 0,
-      "duration_ms": 51,
+      "duration_ms": 47,
       "stdout_tail": "✓ Présent : generateNoteTracabilite\n✓ Présent : generateDUME\n✓ Présent : generateDC4\n✓ Présent : generateConventionGroupement\n✓ Présent : generateRAR\n"
     },
     {
       "script": "verify-marches-rar.test.ts",
       "exit": 0,
-      "duration_ms": 50,
+      "duration_ms": 36,
       "stdout_tail": "✓ RarLigne exportée\n✓ generateRAR signature avec lignes & annee\n✓ Référence DAJ-REAP présente\n✓ Mention 25 000 € HT (seuil de recensement)\n✓ Référence R2196-1 CCP\n"
     },
     {
       "script": "verify-marches-saucissonnage.test.ts",
       "exit": 0,
-      "duration_ms": 48,
+      "duration_ms": 37,
       "stdout_tail": "✓ 3 commandes/6 mois F1 → critique\n✓ Cumul ≥ 70% seuil → alerte\n"
     },
     {
       "script": "verify-marches-seuils.test.ts",
       "exit": 0,
-      "duration_ms": 47,
+      "duration_ms": 37,
       "stdout_tail": "✓ 15/01/2026 formalisée travaux = 5 382 000\n✓ 35k au 15/02/2026 → dispense\n✓ 50k au 15/06/2026 → dispense (seuil rehaussé)\n✓ 100k au 15/06/2026 → MAPA publicité\n✓ 250k au 15/06/2026 → formalisée\n"
     },
     {
       "script": "verify-merge-apercu.mjs",
       "exit": 0,
-      "duration_ms": 157,
+      "duration_ms": 119,
       "stdout_tail": "  ✅ Pilotage budgétaire reste coché\n  ✅ Premier passage : tout est nouveau\n\n📊 Résultat : 16 OK / 0 KO\n\n"
     },
     {
       "script": "verify-mode-demo.test.ts",
       "exit": 0,
-      "duration_ms": 2981,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  18:47:40\n   Duration  2.05s (transform 44ms, setup 106ms, collect 17ms, tests 3ms, environment 606ms, prepare 454ms)\n\n"
+      "duration_ms": 2915,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  18:49:07\n   Duration  2.06s (transform 62ms, setup 123ms, collect 24ms, tests 3ms, environment 673ms, prepare 196ms)\n\n"
     },
     {
       "script": "verify-opale-anonymisation.test.ts",
       "exit": 0,
-      "duration_ms": 3337,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  18:47:42\n   Duration  2.42s (transform 73ms, setup 149ms, collect 45ms, tests 5ms, environment 737ms, prepare 588ms)\n\n"
+      "duration_ms": 2992,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  8 passed (8)\n   Start at  18:49:10\n   Duration  2.13s (transform 60ms, setup 120ms, collect 34ms, tests 5ms, environment 662ms, prepare 541ms)\n\n"
     },
     {
       "script": "verify-opale-gamification.test.ts",
       "exit": 0,
-      "duration_ms": 3750,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  18:47:46\n   Duration  2.75s (transform 116ms, setup 163ms, collect 50ms, tests 8ms, environment 923ms, prepare 271ms)\n\n"
+      "duration_ms": 2917,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  6 passed (6)\n   Start at  18:49:13\n   Duration  2.01s (transform 56ms, setup 97ms, collect 33ms, tests 6ms, environment 597ms, prepare 99ms)\n\n"
     },
     {
       "script": "verify-opale-rappel-officiel.test.ts",
       "exit": 0,
-      "duration_ms": 3332,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:47:50\n   Duration  2.34s (transform 54ms, setup 141ms, collect 28ms, tests 4ms, environment 770ms, prepare 122ms)\n\n"
+      "duration_ms": 2553,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:49:16\n   Duration  1.76s (transform 43ms, setup 106ms, collect 19ms, tests 3ms, environment 558ms, prepare 92ms)\n\n"
     },
     {
       "script": "verify-opale-routing.test.ts",
       "exit": 0,
-      "duration_ms": 3164,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  14 passed (14)\n   Start at  18:47:53\n   Duration  2.25s (transform 55ms, setup 130ms, collect 27ms, tests 5ms, environment 745ms, prepare 110ms)\n\n"
+      "duration_ms": 3140,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  14 passed (14)\n   Start at  18:49:18\n   Duration  2.18s (transform 56ms, setup 153ms, collect 32ms, tests 11ms, environment 657ms, prepare 103ms)\n\n"
     },
     {
       "script": "verify-opale-types.test.ts",
       "exit": 0,
-      "duration_ms": 3228,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  18:47:56\n   Duration  2.27s (transform 54ms, setup 98ms, collect 29ms, tests 7ms, environment 726ms, prepare 115ms)\n\n"
+      "duration_ms": 2991,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  18:49:21\n   Duration  2.07s (transform 58ms, setup 104ms, collect 29ms, tests 8ms, environment 734ms, prepare 530ms)\n\n"
     },
     {
       "script": "verify-opale-wizard-rgpd.test.ts",
       "exit": 0,
-      "duration_ms": 2864,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  18:47:59\n   Duration  1.99s (transform 50ms, setup 121ms, collect 39ms, tests 4ms, environment 655ms, prepare 115ms)\n\n"
+      "duration_ms": 3217,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  5 passed (5)\n   Start at  18:49:24\n   Duration  2.24s (transform 51ms, setup 125ms, collect 20ms, tests 6ms, environment 692ms, prepare 127ms)\n\n"
     },
     {
       "script": "verify-parametres-actes.mjs",
       "exit": 0,
-      "duration_ms": 81,
+      "duration_ms": 80,
       "stdout_tail": "  ✓ Hash SHA-256 stable et de longueur 64\n  ✓ Type inconnu lève une erreur\n  ✓ Tous les types peuvent être générés\n\nRésultat ACTES : 8 OK / 0 KO\n"
     },
     {
       "script": "verify-parametres-csv.mjs",
       "exit": 0,
-      "duration_ms": 66,
+      "duration_ms": 78,
       "stdout_tail": "  ✓ Déduplication par nom + prénom + DDN\n  ✓ Pas de clé si données insuffisantes\n  ✓ Normalisation insensible aux accents\n\nRésultat CSV : 10 OK / 0 KO\n"
     },
     {
       "script": "verify-parametres-organigramme.mjs",
       "exit": 0,
-      "duration_ms": 70,
+      "duration_ms": 81,
       "stdout_tail": "  ✓ SVG généré contient le nom du groupement et chaque agent\n  ✓ Aucun agent → SVG construit sans erreur\n  ✓ Conformité GBCP : un AC + un Ordonnateur sur deux sphères distinctes\n\nRésultat ORGANIGRAMME : 7 OK / 0 KO\n"
     },
     {
       "script": "verify-parametres-rgpd.mjs",
       "exit": 0,
-      "duration_ms": 75,
+      "duration_ms": 92,
       "stdout_tail": "  ✓ Demande d'accès Art. 15 contient l'identité de l'agent\n  ✓ Demande Art. 15 inclut actes et historique\n  ✓ Toute demande Art. 15 doit être traçable (rgpd_acces_logs)\n\nRésultat RGPD : 8 OK / 0 KO\n"
     },
     {
@@ -408,103 +390,103 @@
     {
       "script": "verify-pdf-uniformite.test.ts",
       "exit": 0,
-      "duration_ms": 2881,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:48:03\n   Duration  2.02s (transform 50ms, setup 114ms, collect 20ms, tests 5ms, environment 664ms, prepare 94ms)\n\n"
+      "duration_ms": 3276,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  4 passed (4)\n   Start at  18:49:28\n   Duration  2.27s (transform 61ms, setup 130ms, collect 24ms, tests 7ms, environment 658ms, prepare 90ms)\n\n"
     },
     {
       "script": "verify-references-reglementaires.test.ts",
       "exit": 0,
-      "duration_ms": 2526,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  18:48:05\n   Duration  1.77s (transform 44ms, setup 103ms, collect 23ms, tests 4ms, environment 556ms, prepare 489ms)\n\n"
+      "duration_ms": 2713,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  18:49:31\n   Duration  1.86s (transform 59ms, setup 103ms, collect 29ms, tests 4ms, environment 630ms, prepare 110ms)\n\n"
     },
     {
       "script": "verify-rentree-accreditation.test.ts",
       "exit": 0,
-      "duration_ms": 37,
+      "duration_ms": 36,
       "stdout_tail": "✅ Accréditation chefs d'établissement — OK\n"
     },
     {
       "script": "verify-rentree-calendrier.test.ts",
       "exit": 0,
-      "duration_ms": 38,
+      "duration_ms": 34,
       "stdout_tail": "✅ Calendrier rentrée — OK\n"
     },
     {
       "script": "verify-rentree-habilitations.test.ts",
       "exit": 0,
-      "duration_ms": 43,
+      "duration_ms": 34,
       "stdout_tail": "✅ Habilitations Op@le — OK (séparation des sphères respectée)\n"
     },
     {
       "script": "verify-rentree-liens.test.ts",
       "exit": 0,
-      "duration_ms": 36,
+      "duration_ms": 27,
       "stdout_tail": "✅ Liens utiles — OK (47 liens, 10 catégories)\n"
     },
     {
       "script": "verify-rentree-routing.test.ts",
       "exit": 0,
-      "duration_ms": 49,
+      "duration_ms": 34,
       "stdout_tail": "✅ Routing rentrée — OK (6 routes, 6 imports)\n"
     },
     {
       "script": "verify-satd-references.test.ts",
       "exit": 0,
-      "duration_ms": 60,
+      "duration_ms": 42,
       "stdout_tail": "✅ Audit SATD — OK\n   • Aucune mention SATD ↔ 1966 dans l'aide\n   • Référence 2017-1837 présente où SATD mentionnée (ou aide ne mentionne pas SATD)\n"
     },
     {
       "script": "verify-sde-sdr-import.mjs",
       "exit": 0,
-      "duration_ms": 309,
+      "duration_ms": 304,
       "stdout_tail": "\u001b[1m\u001b[34m━━━ RÉSULTAT ━━━\u001b[0m\n\u001b[1m\u001b[32m╔══════════════════════════════════════════════════════════╗\u001b[0m\n\u001b[1m\u001b[32m║  ✓ RECETTE SDE/SDR RÉUSSIE — 0 critère échoué            ║\u001b[0m\n\u001b[1m\u001b[32m╚══════════════════════════════════════════════════════════╝\u001b[0m\n\n"
     },
     {
       "script": "verify-terminologie-opale.test.ts",
       "exit": 0,
-      "duration_ms": 2852,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  18:48:08\n   Duration  2.06s (transform 50ms, setup 147ms, collect 23ms, tests 4ms, environment 714ms, prepare 99ms)\n\n"
+      "duration_ms": 2586,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  3 passed (3)\n   Start at  18:49:34\n   Duration  1.78s (transform 45ms, setup 96ms, collect 22ms, tests 4ms, environment 593ms, prepare 99ms)\n\n"
     },
     {
       "script": "verify-vocabulaire-transverse.test.ts",
       "exit": 0,
-      "duration_ms": 2801,
-      "stdout_tail": " Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  18:48:11\n   Duration  1.99s (transform 52ms, setup 111ms, collect 24ms, tests 11ms, environment 729ms, prepare 132ms)\n\n"
+      "duration_ms": 2612,
+      "stdout_tail": " Test Files  1 passed (1)\n      Tests  2 passed (2)\n   Start at  18:49:37\n   Duration  1.82s (transform 47ms, setup 95ms, collect 25ms, tests 9ms, environment 586ms, prepare 101ms)\n\n"
     },
     {
       "script": "verify-voyages-alertes-ca.test.mjs",
       "exit": 0,
-      "duration_ms": 68,
+      "duration_ms": 59,
       "stdout_tail": "  ✓ Cas 4: J+120 → 🟢 OK\n  ✓ Cas 5: départ sans CA → 🔴 ca_manquant\n  ✓ Cas 6: engagement < CA → 🔴 gestion de fait\n\nRésultat : 6 OK / 0 KO\n"
     },
     {
       "script": "verify-voyages-bilan-creteil.test.mjs",
       "exit": 0,
-      "duration_ms": 78,
+      "duration_ms": 64,
       "stdout_tail": "  ✓ Checklist clôture comptable complète (7 items)\n  ✓ Module regle8EurosBilan.ts présent\n  ✓ Module sync alertes_transverses présent\n\nRésultat : 13 OK / 0 KO\n"
     },
     {
       "script": "verify-voyages-cout-accompagnateurs.test.mjs",
       "exit": 0,
-      "duration_ms": 63,
+      "duration_ms": 64,
       "stdout_tail": "═══ Recette — Coût accompagnateurs ════════════════════\n  ✓ Tentative imputation accompagnateurs sur familles → bloquante\n  ✓ Ligne accompagnateurs sur poste dédié → OK\n\nRésultat : 2 OK / 0 KO\n"
     },
     {
       "script": "verify-voyages-documents.test.mjs",
       "exit": 0,
-      "duration_ms": 83,
+      "duration_ms": 64,
       "stdout_tail": "  ✓ Courrier remboursement (règle 8 €) présent\n  ✓ État remboursements présent\n  ✓ Arborescence : 5 catégories (Préparation/Familles/Concurrence/Budget-CA/Bilan) couvrent les 6 sections demandées\n\nRésultat : 12 OK / 0 KO\n"
     },
     {
       "script": "verify-voyages-import-siecle.test.mjs",
       "exit": 0,
-      "duration_ms": 85,
+      "duration_ms": 60,
       "stdout_tail": "  ✓ Import CSV Windows-1252 → accents OK (Pénélope)\n  ✓ Doublon INE → MAJ (1 créé, 1 doublon écarté)\n  ✓ Élève absent du nouvel import → marqué sorti (pas supprimé)\n\nRésultat : 6 OK / 0 KO\n"
     },
     {
       "script": "verify-voyages-regle-8eur.test.mjs",
       "exit": 0,
-      "duration_ms": 74,
+      "duration_ms": 68,
       "stdout_tail": "  ✓ S4: cas = deficit\n  ✓ S4: délibération d'équilibre générée\n  ✓ S4: aucun courrier famille\n\nRésultat : 13 OK / 0 KO\n"
     }
   ]
