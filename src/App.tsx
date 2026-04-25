@@ -25,6 +25,7 @@ import TableauBordPage from "./pages/fonds-sociaux-v2/TableauBordPage";
 import GroupementConsolidePage from "./pages/fonds-sociaux-v2/GroupementConsolidePage";
 import RgpdJournalPage from "./pages/fonds-sociaux-v2/RgpdJournalPage";
 import DeliberationsCAPage from "./pages/fonds-sociaux-v2/DeliberationsCAPage";
+import EleveImportPage from "./pages/fonds-sociaux-v2/EleveImportPage";
 import SATD from "./pages/SATD";
 import PassationSgeplePage from "./pages/rentree/PassationSgeplePage";
 import AccreditationOrdoPage from "./pages/rentree/AccreditationOrdoPage";
@@ -109,6 +110,7 @@ const App = () => (
               <Route path="/fonds-sociaux" element={<Navigate to="/fonds-sociaux/v2" replace />} />
               <Route path="/fonds-sociaux/v2" element={<FondsSociauxV2Home />} />
               <Route path="/fonds-sociaux/v2/eleves" element={<ElevesPage />} />
+              <Route path="/fonds-sociaux/v2/eleves/import" element={<EleveImportPage />} />
               <Route path="/fonds-sociaux/v2/decisions" element={<DecisionsPage />} />
               <Route path="/fonds-sociaux/v2/commissions" element={<CommissionsPage />} />
               <Route path="/fonds-sociaux/v2/enquete" element={<EnquetePage />} />
