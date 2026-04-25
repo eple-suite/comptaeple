@@ -33,6 +33,7 @@ import AgencePage from "./pages/agence/AgencePage";
 import Regle8LogsAdmin from "./pages/admin/Regle8LogsAdmin";
 import EntretiensHome from "./pages/entretiens/EntretiensHome";
 import NouvelEntretienWizard from "./pages/entretiens/NouvelEntretienWizard";
+import CampagneDashboard from "./pages/entretiens/CampagneDashboard";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { ChatEple } from "@/components/ChatEple";
@@ -103,6 +104,7 @@ const App = () => (
               <Route path="/admin/logs/regle-8" element={<Regle8LogsAdmin />} />
               <Route path="/entretiens" element={<EntretiensHome />} />
               <Route path="/entretiens/nouveau" element={<NouvelEntretienWizard />} />
+              <Route path="/entretiens/campagne" element={<CampagneDashboard />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
