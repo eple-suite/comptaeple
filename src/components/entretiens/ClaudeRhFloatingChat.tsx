@@ -4,7 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Bot, Send, X, Sparkles } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 interface Msg {
@@ -44,12 +43,47 @@ export function ClaudeRhFloatingChat() {
     setMsgs(newMsgs);
     setBusy(true);
     try {
-      const { data, error } = await supabase.functions.invoke("entretiens-claude-rh", {
-        body: { messages: newMsgs },
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/entretiens-claude-rh`;
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ messages: newMsgs }),
       });
-      if (error) throw error;
-      const reply = data?.reply ?? data?.content ?? "Réponse indisponible.";
-      setMsgs([...newMsgs, { role: "assistant", content: reply }]);
+      if (!resp.ok || !resp.body) throw new Error(`HTTP ${resp.status}`);
+      const reader = resp.body.getReader();
+      const decoder = new TextDecoder();
+      let acc = "";
+      let buffer = "";
+      setMsgs([...newMsgs, { role: "assistant", content: "" }]);
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split("\n\n");
+        buffer = parts.pop() ?? "";
+        for (const part of parts) {
+          for (const line of part.split("\n")) {
+            if (!line.startsWith("data:")) continue;
+            const payload = line.slice(5).trim();
+            if (payload === "[DONE]") continue;
+            try {
+              const j = JSON.parse(payload);
+              const delta = j?.choices?.[0]?.delta?.content ?? "";
+              if (delta) {
+                acc += delta;
+                setMsgs((prev) => {
+                  const copy = [...prev];
+                  copy[copy.length - 1] = { role: "assistant", content: acc };
+                  return copy;
+                });
+              }
+            } catch { /* ignore */ }
+          }
+        }
+      }
     } catch (e: any) {
       setMsgs([...newMsgs, { role: "assistant", content: `Erreur : ${e.message ?? "service indisponible"}` }]);
     } finally {
