@@ -2719,6 +2719,80 @@ export type Database = {
           },
         ]
       }
+      imports_historique: {
+        Row: {
+          anomalies_json: Json | null
+          commentaire: string | null
+          created_at: string
+          date_edition_fichier: string | null
+          date_import: string
+          ecart_vs_precedent_json: Json | null
+          establishment_id: string
+          fichier_original_path: string | null
+          filename: string
+          hash_sha256: string | null
+          id: string
+          importe_par: string
+          periode_debut: string | null
+          periode_fin: string | null
+          statut: Database["public"]["Enums"]["import_status"]
+          taille_octets: number
+          totaux_json: Json | null
+          type_import: Database["public"]["Enums"]["import_file_type"]
+          uai_detecte: string | null
+        }
+        Insert: {
+          anomalies_json?: Json | null
+          commentaire?: string | null
+          created_at?: string
+          date_edition_fichier?: string | null
+          date_import?: string
+          ecart_vs_precedent_json?: Json | null
+          establishment_id: string
+          fichier_original_path?: string | null
+          filename: string
+          hash_sha256?: string | null
+          id?: string
+          importe_par: string
+          periode_debut?: string | null
+          periode_fin?: string | null
+          statut?: Database["public"]["Enums"]["import_status"]
+          taille_octets?: number
+          totaux_json?: Json | null
+          type_import: Database["public"]["Enums"]["import_file_type"]
+          uai_detecte?: string | null
+        }
+        Update: {
+          anomalies_json?: Json | null
+          commentaire?: string | null
+          created_at?: string
+          date_edition_fichier?: string | null
+          date_import?: string
+          ecart_vs_precedent_json?: Json | null
+          establishment_id?: string
+          fichier_original_path?: string | null
+          filename?: string
+          hash_sha256?: string | null
+          id?: string
+          importe_par?: string
+          periode_debut?: string | null
+          periode_fin?: string | null
+          statut?: Database["public"]["Enums"]["import_status"]
+          taille_octets?: number
+          totaux_json?: Json | null
+          type_import?: Database["public"]["Enums"]["import_file_type"]
+          uai_detecte?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "imports_historique_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       indicators: {
         Row: {
           bfr: number | null
@@ -4741,6 +4815,18 @@ export type Database = {
       formation_categorie: "T1" | "T2" | "T3"
       formation_fondement: "agent" | "evaluateur" | "consensuelle"
       formation_priorite: "haute" | "moyenne" | "basse"
+      import_file_type:
+        | "balance"
+        | "sde"
+        | "sdr"
+        | "grand_livre"
+        | "etat_tiers"
+        | "siecle_eleves"
+        | "siecle_bourses"
+        | "regies"
+        | "paie"
+        | "inconnu"
+      import_status: "succes" | "ecrase" | "echec"
       objectif_atteinte:
         | "atteint"
         | "partiellement_atteint"
@@ -5009,6 +5095,19 @@ export const Constants = {
       formation_categorie: ["T1", "T2", "T3"],
       formation_fondement: ["agent", "evaluateur", "consensuelle"],
       formation_priorite: ["haute", "moyenne", "basse"],
+      import_file_type: [
+        "balance",
+        "sde",
+        "sdr",
+        "grand_livre",
+        "etat_tiers",
+        "siecle_eleves",
+        "siecle_bourses",
+        "regies",
+        "paie",
+        "inconnu",
+      ],
+      import_status: ["succes", "ecrase", "echec"],
       objectif_atteinte: [
         "atteint",
         "partiellement_atteint",
