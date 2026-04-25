@@ -211,3 +211,133 @@ export async function generateNoteTracabilite(ctx: DocContext): Promise<Blob> {
   ];
   return buildDocxBuffer(ctx, body);
 }
+
+// ════════════════════════════════════════════════════════════════
+// Pièces nouvelles — itération CCP 2026
+// ════════════════════════════════════════════════════════════════
+
+/** DUME — Document Unique de Marché Européen pré-rempli (formalisée). */
+export async function generateDUME(ctx: DocContext): Promise<Blob> {
+  const body = [
+    ...titleBlock(ctx, "DUME — Document Unique de Marché Européen", "Règlement (UE) 2016/7 ; CCP art. R2143-4"),
+    H1("Partie I — Informations sur la procédure"),
+    commonInfo(ctx),
+    H1("Partie II — Informations sur l'opérateur économique"),
+    P("À renseigner par l'opérateur : raison sociale, SIRET, représentant légal, adresse, code TVA, taille (PME/ETI/GE)."),
+    H1("Partie III — Motifs d'exclusion"),
+    bullet("A — Motifs liés à des condamnations pénales (art. L2141-1 à L2141-3 CCP)"),
+    bullet("B — Motifs liés au paiement d'impôts ou de cotisations sociales (art. L2141-4)"),
+    bullet("C — Motifs liés à l'insolvabilité, aux conflits d'intérêts ou à la faute professionnelle"),
+    P("L'opérateur déclare ne pas se trouver dans l'un des cas d'exclusion ci-dessus."),
+    H1("Partie IV — Critères de sélection"),
+    bullet("A — Aptitude à exercer l'activité professionnelle (immatriculation registre du commerce)"),
+    bullet("B — Capacité économique et financière (chiffre d'affaires, ratios)"),
+    bullet("C — Capacités techniques et professionnelles (références, moyens humains et matériels)"),
+    H1("Partie V — Réduction du nombre de candidats"),
+    P("Sans objet pour la procédure ouverte."),
+    H1("Partie VI — Déclarations finales"),
+    P("Le soussigné déclare sur l'honneur l'exactitude des informations fournies, en pleine connaissance des sanctions prévues à l'article 441-1 du Code pénal."),
+    ...signatureBlock(ctx.branding, "titulaire"),
+  ];
+  return buildDocxBuffer(ctx, body);
+}
+
+/** DC4 — Acte spécial de sous-traitance. */
+export async function generateDC4(ctx: DocContext): Promise<Blob> {
+  const body = [
+    ...titleBlock(ctx, "DC4 — Acte spécial de sous-traitance", "Loi n° 75-1334 du 31/12/1975 ; CCP art. L2193-1 et suivants"),
+    H1("Article 1 — Marché support"),
+    commonInfo(ctx),
+    H1("Article 2 — Identification du sous-traitant"),
+    infoTable([
+      { label: "Raison sociale", value: "__________________" },
+      { label: "SIRET", value: "__________________" },
+      { label: "Adresse", value: "__________________" },
+      { label: "Représentant légal", value: "__________________" },
+    ]),
+    H1("Article 3 — Nature et étendue des prestations sous-traitées"),
+    P("Description précise des prestations confiées : __________________"),
+    H1("Article 4 — Montant maximum HT des prestations sous-traitées"),
+    P("Montant : __________________ € HT"),
+    H1("Article 5 — Modalités de paiement"),
+    P("☐ Paiement direct (obligatoire si prestations > 600 € TTC, art. L2193-10 CCP)"),
+    P("☐ Paiement par le titulaire"),
+    H1("Article 6 — Capacités du sous-traitant"),
+    P("Pièces justificatives jointes (KBIS, attestations URSSAF / fiscales, références)."),
+    H1("Article 7 — Conditions de paiement"),
+    P("Délai global : 30 jours (GBCP). Compte bancaire : __________________"),
+    ...signatureBlock(ctx.branding, "double"),
+  ];
+  return buildDocxBuffer(ctx, body);
+}
+
+/** Convention constitutive de groupement de commandes. */
+export async function generateConventionGroupement(ctx: DocContext): Promise<Blob> {
+  const body = [
+    ...titleBlock(ctx, "Convention constitutive de groupement de commandes", "CCP art. L2113-6 à L2113-8"),
+    H1("Article 1 — Membres du groupement"),
+    P("Les EPLE soussignés, représentés par leur ordonnateur respectif, constituent un groupement de commandes."),
+    P("(Annexer la liste des établissements membres et leur représentant.)"),
+    H1("Article 2 — Objet et périmètre"),
+    P(ctx.marche.libelle || ctx.marche.description || "Mutualisation des achats relatifs à la famille concernée."),
+    H1("Article 3 — Désignation du coordonnateur"),
+    P("Le coordonnateur est désigné parmi les membres. Il est chargé de la passation et de la signature du marché pour le compte de l'ensemble du groupement."),
+    H1("Article 4 — Mission du coordonnateur"),
+    bullet("Recensement des besoins"),
+    bullet("Élaboration et publication du dossier de consultation"),
+    bullet("Analyse des offres et attribution"),
+    bullet("Notification du marché"),
+    bullet("Suivi de l'exécution dans la limite définie à l'article 5"),
+    H1("Article 5 — Exécution par chaque membre"),
+    P("Chaque membre exécute le marché pour ses propres besoins, signe les bons de commande et règle directement le titulaire."),
+    H1("Article 6 — Modalités de répartition financière"),
+    P("La répartition est calculée selon la quote-part définie en annexe."),
+    H1("Article 7 — Durée et fin du groupement"),
+    P("La présente convention prend fin à l'expiration du marché ou par dissolution prononcée à l'unanimité des membres."),
+    H1("Article 8 — Litiges"),
+    P("Compétence du tribunal administratif territorialement compétent."),
+    ...signatureBlock(ctx.branding, "double"),
+  ];
+  return buildDocxBuffer(ctx, body);
+}
+
+/** RAR — Rapport Annuel d'activité commande publique (DAJ). */
+export interface RarLigne {
+  reference: string;
+  objet: string;
+  type: "fournitures" | "services" | "travaux";
+  procedure: string;
+  attributaire: string;
+  siret: string;
+  montant_ht: number;
+  date_notification: string | null;
+  duree_mois: number;
+}
+export async function generateRAR(ctx: DocContext, lignes: RarLigne[], annee: number): Promise<Blob> {
+  const total = lignes.reduce((s, l) => s + (l.montant_ht || 0), 0);
+  const body = [
+    ...titleBlock(ctx, `RAR ${annee} — Recensement annuel commande publique`, "CCP art. R2196-1 ; spécification DAJ-REAP"),
+    H1("1. Périmètre"),
+    P(`Marchés notifiés sur l'exercice ${annee} d'un montant supérieur à 25 000 € HT — y compris bons de commande sur accord-cadre.`),
+    H1("2. Synthèse"),
+    infoTable([
+      { label: "Nombre de marchés recensés", value: String(lignes.length) },
+      { label: "Montant total HT", value: fmtEur(total) },
+      { label: "Année de référence", value: String(annee) },
+    ]),
+    H1("3. Liste des marchés"),
+    ...(lignes.length === 0
+      ? [P("Aucun marché supérieur à 25 000 € HT pour l'exercice considéré.")]
+      : lignes.flatMap((l) => [
+          H2(`${l.reference} — ${l.objet}`),
+          P(`Type : ${l.type} • Procédure : ${l.procedure} • Durée : ${l.duree_mois} mois`),
+          P(`Titulaire : ${l.attributaire} (SIRET ${l.siret || "—"})`),
+          P(`Montant HT : ${fmtEur(l.montant_ht)} • Notifié le ${fmtDate(l.date_notification)}`),
+          spacer(60),
+        ])),
+    H1("4. Modalités de transmission"),
+    P("Le présent recensement est transmis à la Direction des affaires juridiques (DAJ) dans le respect du calendrier annuel REAP."),
+    ...signatureBlock(ctx.branding, "ordonnateur"),
+  ];
+  return buildDocxBuffer(ctx, body);
+}
