@@ -219,17 +219,17 @@ export default function CampagneDashboard() {
   );
 
   const actionsFiltrees = useMemo(() => {
+    const q = searchActions.trim().toLowerCase();
     return actions.filter((a) => {
       if (filtreUrgence !== "all" && a.urgence !== filtreUrgence) return false;
       if (filtreActeur !== "all" && a.acteur !== filtreActeur) return false;
-      if (search.trim()) {
-        const q = search.trim().toLowerCase();
+      if (q) {
         const txt = `${a.agentNom} ${a.agentPrenom} ${a.libelle}`.toLowerCase();
         if (!txt.includes(q)) return false;
       }
       return true;
     });
-  }, [actions, filtreUrgence, filtreActeur, search]);
+  }, [actions, filtreUrgence, filtreActeur, searchActions]);
 
   const actionsParUrgence = useMemo(() => {
     const acc: Record<Urgence, number> = { critique: 0, haute: 0, moyenne: 0, basse: 0 };
