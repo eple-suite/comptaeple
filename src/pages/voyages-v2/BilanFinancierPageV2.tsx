@@ -69,8 +69,9 @@ interface ParticipantRow {
   ine: string | null;
   nom: string;
   prenom: string;
-  participation_due: number;
-  participation_payee: number;
+  participation_theorique: number;
+  participation_reelle: number;
+  reste_a_payer: number;
   statut_inscription: string;
 }
 
@@ -181,7 +182,7 @@ export default function BilanFinancierPageV2() {
         ine: p.ine,
         nom: p.nom,
         prenom: p.prenom,
-        paye: Number(p.participation_payee) || 0,
+        paye: Number(p.participation_reelle) || 0,
         parti: p.statut_inscription !== "desiste",
       })),
     });
