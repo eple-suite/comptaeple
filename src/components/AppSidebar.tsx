@@ -20,6 +20,7 @@ import {
   ChevronDown,
   Sparkles,
   UserCheck,
+  GraduationCap,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -74,11 +75,16 @@ const pilotageItems: NavItem[] = [
   { title: "Exécution budgétaire", url: "/execution-budgetaire", icon: TrendingUp },
 ];
 
+const ressourcesItems: NavItem[] = [
+  { title: "Mode d'emploi", url: "/aide", icon: GraduationCap, hot: true },
+];
+
 const allGroups: { id: string; label: string; items: NavItem[] }[] = [
   { id: "main", label: "Navigation", items: mainItems },
   { id: "analysis", label: "Analyses", items: analysisItems },
   { id: "tools", label: "Outils métiers", items: toolItems },
   { id: "pilotage", label: "Pilotage AC", items: pilotageItems },
+  { id: "ressources", label: "Ressources", items: ressourcesItems },
 ];
 
 export function AppSidebar() {
