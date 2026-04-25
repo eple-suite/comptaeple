@@ -894,6 +894,27 @@ function ApercuInjection({ state, setState }: any) {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
+          {snapshotAvant && (
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={annulerFusion}
+                    className="border-amber-300 text-amber-800 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-200 dark:hover:bg-amber-950"
+                  >
+                    <Undo2 className="h-3.5 w-3.5 mr-1" /> Annuler
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs max-w-xs">
+                  Restaure l'aperçu tel qu'il était avant la dernière action
+                  ({derniereAction === "conserver" ? "« Conserver mes choix »" : "« Ré-analyser »"}).
+                  Disponible uniquement jusqu'à la prochaine analyse.
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          )}
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
