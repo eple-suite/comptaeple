@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ArrowLeft, FileText, Plus, FileDown, Loader2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useDecisions, useEleves, useUpsertDecision } from "./useFsData";
+import { useDecisions, useEleves, useUpsertDecision, useLogJournalAcces } from "./useFsData";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { useEstablishmentBranding } from "@/hooks/useEstablishmentBranding";
 import { NATURE_AIDE_LABELS, STATUT_DECISION_LABELS, currentAnneeScolaire, type FsDecision } from "./fsv2Types";
@@ -43,6 +43,7 @@ export default function DecisionsPage() {
   const { data: decisions = [], isLoading } = useDecisions();
   const { data: eleves = [] } = useEleves();
   const upsert = useUpsertDecision();
+  const logAcces = useLogJournalAcces();
   const { selectedEstablishment } = useEstablishment();
   const { branding } = useEstablishmentBranding();
 
@@ -91,16 +92,19 @@ export default function DecisionsPage() {
     const e = elevesById.get(d.eleve_id);
     if (!e) return toast.error("Élève introuvable");
     downloadBlob(generateDecisionChefEtablissementPdf(d, e as any, pdfCtx()), `Decision-${d.numero_decision}.pdf`);
+    void logAcces({ type_ressource: "decision", ressource_id: d.id, action: "export_pdf", details: { type: "decision_chef_etab", numero: d.numero_decision } });
   }
   function handlePdfNotification(d: FsDecision) {
     const e = elevesById.get(d.eleve_id);
     if (!e) return toast.error("Élève introuvable");
     downloadBlob(generateNotificationFamillePdf(d, e as any, pdfCtx()), `Notification-${d.numero_decision}.pdf`);
+    void logAcces({ type_ressource: "decision", ressource_id: d.id, action: "export_pdf", details: { type: "notification_famille", numero: d.numero_decision } });
   }
   function handlePdfDemandePaiement(d: FsDecision) {
     const e = elevesById.get(d.eleve_id);
     if (!e) return toast.error("Élève introuvable");
     downloadBlob(generatePieceComptablePdf(d, e as any, pdfCtx()), `DP-${d.numero_decision}.pdf`);
+    void logAcces({ type_ressource: "decision", ressource_id: d.id, action: "export_pdf", details: { type: "piece_comptable_dp", numero: d.numero_decision } });
   }
 
   async function changeStatut(d: FsDecision, statut: FsDecision["statut"]) {
