@@ -5,7 +5,7 @@
  * anomalies détaillées, comparaison N/N-1/N-2, prédictif, annexe balance.
  */
 
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import type { Anomalie } from './anomaliesEngine';
 import type { Projection } from './predictifEngine';
