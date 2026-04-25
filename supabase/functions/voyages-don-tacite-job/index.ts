@@ -56,10 +56,50 @@ serve(async (req) => {
     auth: { persistSession: false },
   });
 
-  // Mode dry-run : ?dry=1 → ne modifie rien, retourne seulement le compte
+  // ─── Paramétrage du mode d'exécution ──────────────────────────
+  // Dry-run = simulation : aucune écriture en base, aucune alerte insérée.
+  // Activable via 3 canaux (priorité : body > header > query) :
+  //   • query  ?dry=1 / ?dry=true / ?mode=dry-run
+  //   • header X-Dry-Run: 1
+  //   • body   { "dry_run": true } ou { "mode": "dry-run" }
+  // Date de référence optionnelle pour projection "what-if" :
+  //   • query  ?ref_date=YYYY-MM-DD
+  //   • body   { "ref_date": "YYYY-MM-DD" }
   const url = new URL(req.url);
-  const dry = url.searchParams.get("dry") === "1";
-  const refIso = new Date().toISOString().slice(0, 10);
+  const truthy = (v: unknown) =>
+    v === true || v === 1 || (typeof v === "string" && /^(1|true|yes|dry|dry-run|on)$/i.test(v));
+
+  let bodyParams: Record<string, unknown> = {};
+  if (req.method === "POST" || req.method === "PUT" || req.method === "PATCH") {
+    try {
+      const raw = await req.text();
+      if (raw.trim()) bodyParams = JSON.parse(raw);
+    } catch {
+      /* corps absent ou invalide : ignoré */
+    }
+  }
+
+  const dryFromQuery = truthy(url.searchParams.get("dry")) ||
+    /dry/i.test(url.searchParams.get("mode") ?? "");
+  const dryFromHeader = truthy(req.headers.get("x-dry-run"));
+  const dryFromBody = truthy(bodyParams.dry_run) ||
+    truthy(bodyParams.dryRun) ||
+    /dry/i.test(String(bodyParams.mode ?? ""));
+  const dry = dryFromBody || dryFromHeader || dryFromQuery;
+
+  const refDateRaw =
+    (typeof bodyParams.ref_date === "string" ? bodyParams.ref_date : null) ||
+    url.searchParams.get("ref_date") ||
+    null;
+  const refIsoCandidate = refDateRaw && /^\d{4}-\d{2}-\d{2}$/.test(refDateRaw)
+    ? refDateRaw
+    : new Date().toISOString().slice(0, 10);
+  const refIso = refIsoCandidate;
+
+  console.log(
+    `[don-tacite-job] mode=${dry ? "DRY-RUN" : "APPLY"} ref_date=${refIso}` +
+      (refDateRaw && refIsoCandidate !== new Date().toISOString().slice(0, 10) ? " (override)" : ""),
+  );
 
   // 1. Coupons éligibles : sans réponse + date_limite_reponse <= aujourd'hui
   const { data: pending, error: errFetch } = await sb
@@ -81,6 +121,7 @@ serve(async (req) => {
       ok: true,
       mode: dry ? "dry-run" : "applied",
       ref_date: refIso,
+      writes_performed: false,
       coupons_traites: 0,
       voyages_concernes: 0,
       alertes_inserees: 0,
@@ -100,13 +141,25 @@ serve(async (req) => {
       ok: true,
       mode: "dry-run",
       ref_date: refIso,
+      writes_performed: false,
+      message:
+        "Simulation : aucun coupon mis à jour, aucune alerte insérée. Pour appliquer, rappeler la fonction sans le paramètre dry-run.",
       coupons_traites: coupons.length,
       voyages_concernes: byVoyage.size,
       alertes_inserees: 0,
+      coupons_preview: coupons.slice(0, 50).map((c) => ({
+        id: c.id,
+        voyage_id: c.voyage_id,
+        nom: c.nom,
+        prenom: c.prenom,
+        montant_concerne: Number(c.montant_concerne || 0),
+        date_limite_reponse: c.date_limite_reponse,
+      })),
       detail: Array.from(byVoyage.entries()).map(([vid, arr]) => ({
         voyage_id: vid,
         nb: arr.length,
         montant_total: +arr.reduce((s, c) => s + Number(c.montant_concerne || 0), 0).toFixed(2),
+        message_simule: `Don tacite serait appliqué automatiquement à ${arr.length} famille${arr.length > 1 ? "s" : ""} (silence après délai). Montant total : ${(+arr.reduce((s, c) => s + Number(c.montant_concerne || 0), 0).toFixed(2)).toFixed(2)} € à comptabiliser au C/7588.`,
       })),
     });
   }
@@ -158,6 +211,7 @@ serve(async (req) => {
     ok: true,
     mode: "applied",
     ref_date: refIso,
+    writes_performed: true,
     coupons_traites: coupons.length,
     voyages_concernes: byVoyage.size,
     alertes_inserees: alertesInserees,
