@@ -33,7 +33,7 @@ for (const f of aideFiles) {
     const isClarified =
       /2017[\s-]?1837/.test(window) ||
       /distinct/i.test(window) ||
-      /règle des 8/i.test(window) && /art\.?\s*21/i.test(window);
+      (/règle des 8/i.test(window) && /art\.?\s*21/i.test(window));
     if (!isClarified) {
       errors.push(`${f} : association SATD ↔ "1966" non clarifiée (manque référence 2017-1837 ou marqueur "distinct").`);
       break;
