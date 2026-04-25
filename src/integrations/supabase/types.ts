@@ -566,6 +566,88 @@ export type Database = {
           },
         ]
       }
+      balance_drilldown_notes: {
+        Row: {
+          analysed: boolean
+          commentaire: string
+          compte: string
+          created_at: string
+          establishment_id: string
+          id: string
+          updated_at: string
+          user_id: string
+          year: number
+        }
+        Insert: {
+          analysed?: boolean
+          commentaire?: string
+          compte: string
+          created_at?: string
+          establishment_id: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          year: number
+        }
+        Update: {
+          analysed?: boolean
+          commentaire?: string
+          compte?: string
+          created_at?: string
+          establishment_id?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balance_drilldown_notes_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: false
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      balance_parametres_periode: {
+        Row: {
+          alertes_actives: boolean
+          created_at: string
+          date_cloture: string | null
+          establishment_id: string
+          id: string
+          type_periode: string
+          updated_at: string
+        }
+        Insert: {
+          alertes_actives?: boolean
+          created_at?: string
+          date_cloture?: string | null
+          establishment_id: string
+          id?: string
+          type_periode?: string
+          updated_at?: string
+        }
+        Update: {
+          alertes_actives?: boolean
+          created_at?: string
+          date_cloture?: string | null
+          establishment_id?: string
+          id?: string
+          type_periode?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "balance_parametres_periode_establishment_id_fkey"
+            columns: ["establishment_id"]
+            isOneToOne: true
+            referencedRelation: "establishments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       balances: {
         Row: {
           account_label: string
@@ -1124,6 +1206,63 @@ export type Database = {
           uai?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      comptes_sens_normal_ref: {
+        Row: {
+          actif: boolean
+          action_corrective: string
+          cause_probable: string
+          classe: number
+          compte: string
+          created_at: string
+          despecialisable: boolean
+          libelle: string
+          message_alerte: string
+          niveau_alerte_si_anormal: string
+          reference_m96: string
+          sens_cloture: string
+          sens_normal: string
+          sous_classe: string
+          type_compte: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          action_corrective?: string
+          cause_probable?: string
+          classe: number
+          compte: string
+          created_at?: string
+          despecialisable?: boolean
+          libelle: string
+          message_alerte?: string
+          niveau_alerte_si_anormal?: string
+          reference_m96?: string
+          sens_cloture: string
+          sens_normal: string
+          sous_classe: string
+          type_compte: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          action_corrective?: string
+          cause_probable?: string
+          classe?: number
+          compte?: string
+          created_at?: string
+          despecialisable?: boolean
+          libelle?: string
+          message_alerte?: string
+          niveau_alerte_si_anormal?: string
+          reference_m96?: string
+          sens_cloture?: string
+          sens_normal?: string
+          sous_classe?: string
+          type_compte?: string
+          updated_at?: string
         }
         Relationships: []
       }

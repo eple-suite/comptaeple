@@ -31,6 +31,7 @@ import autoTable from "jspdf-autotable";
 import { supabase } from "@/integrations/supabase/client";
 import { CartographieSoldes } from "@/components/cofieple/CartographieSoldes";
 import { useCofiepleStore } from "@/store/useCofiepleStore";
+import { AnomaliesPanelM96 } from "@/components/balance/AnomaliesPanelM96";
 
 // ─── Enrichir les données balance avec la nomenclature M9-6 ───
 interface EnrichedBalanceRow {
@@ -437,6 +438,7 @@ const BalanceAnalysis = () => {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="vue-globale" className="gap-1 text-xs"><BarChart className="h-3 w-3" />Vue globale</TabsTrigger>
+          <TabsTrigger value="m96-anomalies" className="gap-1 text-xs"><AlertTriangle className="h-3 w-3" />Anomalies M9-6</TabsTrigger>
           <TabsTrigger value="sous-comptes" className="gap-1 text-xs"><Search className="h-3 w-3" />Sous-comptes M9-6</TabsTrigger>
           <TabsTrigger value="anomalies" className="gap-1 text-xs"><AlertTriangle className="h-3 w-3" />Anomalies</TabsTrigger>
           <TabsTrigger value="subventions" className="gap-1 text-xs"><Filter className="h-3 w-3" />Subventions</TabsTrigger>
@@ -531,6 +533,19 @@ const BalanceAnalysis = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+       <TabsContent value="m96-anomalies" className="space-y-4">
+         <AnomaliesPanelM96
+           balance={cartoBalanceN.map(l => ({
+             compte: l.compte,
+             libelle: l.intituleReduit,
+             debit: Number(l.solDbt) || 0,
+             credit: Number(l.solCrd) || 0,
+             solde: (Number(l.solDbt) || 0) - (Number(l.solCrd) || 0),
+           }))}
+           periode="cours"
+         />
+       </TabsContent>
 
         {/* ═══ SOUS-COMPTES M9-6 ═══ */}
         <TabsContent value="sous-comptes" className="space-y-4">
