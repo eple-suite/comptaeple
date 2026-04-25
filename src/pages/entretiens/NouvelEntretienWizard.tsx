@@ -143,16 +143,49 @@ export default function NouvelEntretienWizard() {
     if (!state.fiche_poste_id) return;
     const fp = fichesPoste.find((f: any) => f.id === state.fiche_poste_id);
     if (!fp) return;
-    setState((s) => ({
-      ...s,
-      fiche_poste_snapshot: {
-        intitule: fp.intitule,
-        missions_principales: fp.missions_principales,
-        activites: fp.activites,
-        competences_requises: fp.competences_requises,
-      },
-    }));
+    const snapshot = {
+      intitule: fp.intitule,
+      missions_principales: fp.missions_principales,
+      activites: fp.activites,
+      competences_requises: fp.competences_requises,
+    };
+    setState((s) => {
+      // On régénère l'aperçu uniquement si la fiche a changé
+      if (s.injection_apercu_fiche_id === fp.id && s.injection_apercu.length > 0) {
+        return { ...s, fiche_poste_snapshot: snapshot };
+      }
+      const apercu = analyserFichePoste(snapshot);
+      // Pré-remplit aussi la grille C1-C4 réglementaire (sous-critères) — vide si déjà saisie
+      const baseGrille = (Object.keys(SOUS_CRITERES_REGLEMENTAIRES) as RubriqueC[]).reduce(
+        (acc, k) => {
+          acc[k] = SOUS_CRITERES_REGLEMENTAIRES[k].map((c) => ({ critere: c, niveau: "satisfaisant" as const, commentaire: "" }));
+          return acc;
+        },
+        { C1_resultats: [], C2_competences_techniques: [], C3_qualites_personnelles: [], C4_encadrement: [] } as Record<RubriqueC, any[]>
+      );
+      return {
+        ...s,
+        fiche_poste_snapshot: snapshot,
+        injection_apercu: apercu,
+        injection_apercu_fiche_id: fp.id,
+        competences: baseGrille,
+      };
+    });
   }, [state.fiche_poste_id, fichesPoste]);
+
+  /* Recalcul de la grille à partir de l'aperçu sélectionné */
+  useEffect(() => {
+    if (state.injection_apercu.length === 0) return;
+    const ajouts = appliquerSelection(state.injection_apercu);
+    setState((s) => {
+      const merged = (Object.keys(ajouts) as RubriqueC[]).reduce((acc, k) => {
+        const reglementaire = SOUS_CRITERES_REGLEMENTAIRES[k].map((c) => ({ critere: c, niveau: "satisfaisant" as const, commentaire: "" }));
+        acc[k] = [...reglementaire, ...ajouts[k]];
+        return acc;
+      }, {} as Record<RubriqueC, any[]>);
+      return { ...s, competences: merged };
+    });
+  }, [state.injection_apercu]);
 
   /* ---------------- Navigation ---------------- */
   const errors = validateStep(step, state);
