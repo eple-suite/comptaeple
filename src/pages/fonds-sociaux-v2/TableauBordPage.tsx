@@ -117,7 +117,7 @@ export default function TableauBordPage() {
     try {
       const blob = generateBilanAnnuelPdf({
         etablissementNom: selectedEstablishment.name,
-        uai: selectedEstablishment.uai ?? undefined,
+        uai: selectedEstablishment.uai,
         anneeScolaire: annee,
         kpis: {
           totalAttribue, totalPaye, totalEnAttente,
