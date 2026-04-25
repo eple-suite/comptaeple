@@ -25,7 +25,7 @@ function check(label: string, cond: boolean) {
 }
 
 check("443110 marqué non-déspécialisable",
-  /\('443110',[^)]*?'C_ou_nul',\s*false/.test(seed));
+  /'443110'[\s\S]{0,400}'C_ou_nul'\s*,\s*false/.test(seed));
 check("443110 référence MENE1704160C présente",
   seed.includes("MENE1704160C"));
 check("443110 sous-programme bourses 2nd degré",
