@@ -31,6 +31,7 @@ import autoTable from "jspdf-autotable";
 import { supabase } from "@/integrations/supabase/client";
 import { CartographieSoldes } from "@/components/cofieple/CartographieSoldes";
 import { useCofiepleStore } from "@/store/useCofiepleStore";
+import { AnomaliesPanelM96 } from "@/components/balance/AnomaliesPanelM96";
 
 // ─── Enrichir les données balance avec la nomenclature M9-6 ───
 interface EnrichedBalanceRow {
