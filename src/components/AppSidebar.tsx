@@ -74,10 +74,12 @@ const pilotageItems: NavItem[] = [
   { title: "Contrôle interne", url: "/controle-interne", icon: ShieldCheck },
   { title: "Exécution budgétaire", url: "/execution-budgetaire", icon: TrendingUp },
   { title: "Marchés publics", url: "/marches", icon: Scale },
+  { title: "Habilitations Op@le", url: "/habilitations", icon: ShieldCheck, hot: true },
 ];
 
 const ressourcesItems: NavItem[] = [
   { title: "Mode d'emploi", url: "/aide", icon: GraduationCap, hot: true },
+  { title: "Liens utiles", url: "/liens-utiles", icon: BookOpen },
 ];
 
 const allGroups: { id: string; label: string; items: NavItem[] }[] = [
