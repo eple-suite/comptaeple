@@ -2873,6 +2873,71 @@ export type Database = {
         }
         Relationships: []
       }
+      mp_archives: {
+        Row: {
+          created_at: string
+          date_destruction_prevue: string | null
+          date_notification: string | null
+          duree_conservation_ans: number
+          establishment_id: string
+          full_text: unknown
+          hash_sha256: string
+          id: string
+          libelle: string
+          manifeste: Json
+          marche_id: string | null
+          montant_ht: number
+          reference: string
+          storage_path: string
+          type_marche: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_destruction_prevue?: string | null
+          date_notification?: string | null
+          duree_conservation_ans?: number
+          establishment_id: string
+          full_text?: unknown
+          hash_sha256?: string
+          id?: string
+          libelle: string
+          manifeste?: Json
+          marche_id?: string | null
+          montant_ht?: number
+          reference: string
+          storage_path?: string
+          type_marche: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_destruction_prevue?: string | null
+          date_notification?: string | null
+          duree_conservation_ans?: number
+          establishment_id?: string
+          full_text?: unknown
+          hash_sha256?: string
+          id?: string
+          libelle?: string
+          manifeste?: Json
+          marche_id?: string | null
+          montant_ht?: number
+          reference?: string
+          storage_path?: string
+          type_marche?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_archives_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "mp_marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mp_familles_achat: {
         Row: {
           actif: boolean
@@ -2962,6 +3027,100 @@ export type Database = {
           ville?: string
         }
         Relationships: []
+      }
+      mp_groupements_commandes: {
+        Row: {
+          coordonnateur_establishment_id: string
+          created_at: string
+          date_constitution: string
+          date_dissolution: string | null
+          id: string
+          libelle: string
+          marche_id: string | null
+          modalites_repartition: string
+          observations: string
+          perimetre_familles: Json
+          statut: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          coordonnateur_establishment_id: string
+          created_at?: string
+          date_constitution?: string
+          date_dissolution?: string | null
+          id?: string
+          libelle: string
+          marche_id?: string | null
+          modalites_repartition?: string
+          observations?: string
+          perimetre_familles?: Json
+          statut?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          coordonnateur_establishment_id?: string
+          created_at?: string
+          date_constitution?: string
+          date_dissolution?: string | null
+          id?: string
+          libelle?: string
+          marche_id?: string | null
+          modalites_repartition?: string
+          observations?: string
+          perimetre_familles?: Json
+          statut?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_groupements_commandes_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "mp_marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mp_groupements_membres: {
+        Row: {
+          created_at: string
+          establishment_id: string
+          groupement_id: string
+          id: string
+          montant_engage: number
+          observations: string
+          quote_part_pct: number
+        }
+        Insert: {
+          created_at?: string
+          establishment_id: string
+          groupement_id: string
+          id?: string
+          montant_engage?: number
+          observations?: string
+          quote_part_pct?: number
+        }
+        Update: {
+          created_at?: string
+          establishment_id?: string
+          groupement_id?: string
+          id?: string
+          montant_engage?: number
+          observations?: string
+          quote_part_pct?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_groupements_membres_groupement_id_fkey"
+            columns: ["groupement_id"]
+            isOneToOne: false
+            referencedRelation: "mp_groupements_commandes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       mp_marches: {
         Row: {
@@ -3119,42 +3278,116 @@ export type Database = {
         }
         Relationships: []
       }
+      mp_marches_avenants: {
+        Row: {
+          created_at: string
+          date_effet: string | null
+          date_signature: string | null
+          id: string
+          marche_id: string
+          montant_ht: number
+          motif: string
+          numero: number
+          objet: string
+          observations: string
+          pct_initial: number
+          statut: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_effet?: string | null
+          date_signature?: string | null
+          id?: string
+          marche_id: string
+          montant_ht?: number
+          motif?: string
+          numero: number
+          objet?: string
+          observations?: string
+          pct_initial?: number
+          statut?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_effet?: string | null
+          date_signature?: string | null
+          id?: string
+          marche_id?: string
+          montant_ht?: number
+          motif?: string
+          numero?: number
+          objet?: string
+          observations?: string
+          pct_initial?: number
+          statut?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_marches_avenants_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "mp_marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mp_marches_bdc: {
         Row: {
           created_at: string
           date_emission: string
+          date_livraison_prevue: string | null
+          date_reception: string | null
           fournisseur_id: string | null
           id: string
           marche_id: string
           montant_ht: number
           montant_ttc: number
           numero: string
+          objet: string
           observations: string
           statut: string
+          updated_at: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
           date_emission: string
+          date_livraison_prevue?: string | null
+          date_reception?: string | null
           fournisseur_id?: string | null
           id?: string
           marche_id: string
           montant_ht?: number
           montant_ttc?: number
           numero: string
+          objet?: string
           observations?: string
           statut?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
           date_emission?: string
+          date_livraison_prevue?: string | null
+          date_reception?: string | null
           fournisseur_id?: string | null
           id?: string
           marche_id?: string
           montant_ht?: number
           montant_ttc?: number
           numero?: string
+          objet?: string
           observations?: string
           statut?: string
+          updated_at?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -3291,6 +3524,118 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "mp_marches_pieces_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "mp_marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mp_marches_reconductions: {
+        Row: {
+          created_at: string
+          date_decision: string | null
+          date_effet: string
+          decision: string
+          duree_mois: number
+          id: string
+          marche_id: string
+          numero: number
+          observations: string
+          type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_decision?: string | null
+          date_effet: string
+          decision?: string
+          duree_mois?: number
+          id?: string
+          marche_id: string
+          numero: number
+          observations?: string
+          type?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_decision?: string | null
+          date_effet?: string
+          decision?: string
+          duree_mois?: number
+          id?: string
+          marche_id?: string
+          numero?: number
+          observations?: string
+          type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_marches_reconductions_marche_id_fkey"
+            columns: ["marche_id"]
+            isOneToOne: false
+            referencedRelation: "mp_marches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mp_marches_sous_traitants: {
+        Row: {
+          created_at: string
+          date_acceptation: string | null
+          id: string
+          marche_id: string
+          montant_ht: number
+          observations: string
+          paiement_direct: boolean
+          prestations: string
+          raison_sociale: string
+          rang: number
+          siret: string | null
+          statut: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          date_acceptation?: string | null
+          id?: string
+          marche_id: string
+          montant_ht?: number
+          observations?: string
+          paiement_direct?: boolean
+          prestations?: string
+          raison_sociale: string
+          rang?: number
+          siret?: string | null
+          statut?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          date_acceptation?: string | null
+          id?: string
+          marche_id?: string
+          montant_ht?: number
+          observations?: string
+          paiement_direct?: boolean
+          prestations?: string
+          raison_sociale?: string
+          rang?: number
+          siret?: string | null
+          statut?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mp_marches_sous_traitants_marche_id_fkey"
             columns: ["marche_id"]
             isOneToOne: false
             referencedRelation: "mp_marches"
