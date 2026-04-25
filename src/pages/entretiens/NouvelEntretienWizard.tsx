@@ -10,7 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, Sparkles, FileText, Calendar, User, Briefcase, Target, GraduationCap, ClipboardCheck } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, Sparkles, FileText, Calendar, User, Briefcase, Target, GraduationCap, ClipboardCheck, Wand2, RefreshCw, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,9 +24,14 @@ import {
   currentAnneeScolaire,
   defaultPeriodeObservation,
   validateStep,
-  buildCompetencesFromFichePoste,
 } from "@/lib/entretiens/wizard";
 import { SOUS_CRITERES_REGLEMENTAIRES, RUBRIQUES_C_LABELS, NIVEAUX_LABELS, type RubriqueC } from "@/lib/entretiens/types";
+import {
+  analyserFichePoste,
+  appliquerSelection,
+  SOURCE_LABELS,
+  type CritereInjecte,
+} from "@/lib/entretiens/fichePosteParser";
 
 const ICONS = [User, Calendar, Briefcase, FileText, Target, GraduationCap, ClipboardCheck];
 
@@ -129,10 +136,6 @@ export default function NouvelEntretienWizard() {
           }
         : s.fiche_poste_snapshot,
       autorite_n2_user_id: a.n2_user_id ?? s.autorite_n2_user_id,
-      competences:
-        s.competences.C1_resultats.length === 0
-          ? buildCompetencesFromFichePoste(SOUS_CRITERES_REGLEMENTAIRES, fp?.competences_requises ?? null)
-          : s.competences,
     }));
   }, [state.agent_id, agents, fichesPoste]);
 
@@ -140,16 +143,49 @@ export default function NouvelEntretienWizard() {
     if (!state.fiche_poste_id) return;
     const fp = fichesPoste.find((f: any) => f.id === state.fiche_poste_id);
     if (!fp) return;
-    setState((s) => ({
-      ...s,
-      fiche_poste_snapshot: {
-        intitule: fp.intitule,
-        missions_principales: fp.missions_principales,
-        activites: fp.activites,
-        competences_requises: fp.competences_requises,
-      },
-    }));
+    const snapshot = {
+      intitule: fp.intitule,
+      missions_principales: fp.missions_principales,
+      activites: fp.activites,
+      competences_requises: fp.competences_requises,
+    };
+    setState((s) => {
+      // On régénère l'aperçu uniquement si la fiche a changé
+      if (s.injection_apercu_fiche_id === fp.id && s.injection_apercu.length > 0) {
+        return { ...s, fiche_poste_snapshot: snapshot };
+      }
+      const apercu = analyserFichePoste(snapshot);
+      // Pré-remplit aussi la grille C1-C4 réglementaire (sous-critères) — vide si déjà saisie
+      const baseGrille = (Object.keys(SOUS_CRITERES_REGLEMENTAIRES) as RubriqueC[]).reduce(
+        (acc, k) => {
+          acc[k] = SOUS_CRITERES_REGLEMENTAIRES[k].map((c) => ({ critere: c, niveau: "satisfaisant" as const, commentaire: "" }));
+          return acc;
+        },
+        { C1_resultats: [], C2_competences_techniques: [], C3_qualites_personnelles: [], C4_encadrement: [] } as Record<RubriqueC, any[]>
+      );
+      return {
+        ...s,
+        fiche_poste_snapshot: snapshot,
+        injection_apercu: apercu,
+        injection_apercu_fiche_id: fp.id,
+        competences: baseGrille,
+      };
+    });
   }, [state.fiche_poste_id, fichesPoste]);
+
+  /* Recalcul de la grille à partir de l'aperçu sélectionné */
+  useEffect(() => {
+    if (state.injection_apercu.length === 0) return;
+    const ajouts = appliquerSelection(state.injection_apercu);
+    setState((s) => {
+      const merged = (Object.keys(ajouts) as RubriqueC[]).reduce((acc, k) => {
+        const reglementaire = SOUS_CRITERES_REGLEMENTAIRES[k].map((c) => ({ critere: c, niveau: "satisfaisant" as const, commentaire: "" }));
+        acc[k] = [...reglementaire, ...ajouts[k]];
+        return acc;
+      }, {} as Record<RubriqueC, any[]>);
+      return { ...s, competences: merged };
+    });
+  }, [state.injection_apercu]);
 
   /* ---------------- Navigation ---------------- */
   const errors = validateStep(step, state);
@@ -453,6 +489,10 @@ function Step1Agent({ state, setState, agents, fichesPoste }: any) {
           )}
         </div>
       )}
+
+      {state.fiche_poste_snapshot && (
+        <ApercuInjection state={state} setState={setState} />
+      )}
     </div>
   );
 }
@@ -745,6 +785,124 @@ function RecapRow({ label, value }: { label: string; value: string }) {
     <div className="flex justify-between border-b py-1.5">
       <span className="text-muted-foreground">{label}</span>
       <span className="font-medium">{value}</span>
+    </div>
+  );
+}
+
+/* ============================================================ */
+/* Aperçu de la pré-injection depuis la fiche de poste          */
+/* ============================================================ */
+function ApercuInjection({ state, setState }: any) {
+  const apercu: CritereInjecte[] = state.injection_apercu;
+  if (!apercu || apercu.length === 0) {
+    return (
+      <div className="p-3 border border-dashed rounded-md text-xs text-muted-foreground bg-muted/20">
+        <Wand2 className="h-4 w-4 inline mr-1 text-primary" />
+        Aucun critère détecté automatiquement dans cette fiche de poste — la grille réglementaire (sous-critères du décret 2010-888) sera utilisée seule.
+      </div>
+    );
+  }
+
+  const parRubrique = (Object.keys(RUBRIQUES_C_LABELS) as RubriqueC[]).map((r) => ({
+    rubrique: r,
+    items: apercu.filter((c) => c.rubrique === r),
+  }));
+
+  const totalSel = apercu.filter((c) => c.selectionne).length;
+
+  const toggle = (idx: number) => {
+    setState((s: WizardState) => ({
+      ...s,
+      injection_apercu: s.injection_apercu.map((c, i) => i === idx ? { ...c, selectionne: !c.selectionne } : c),
+    }));
+  };
+
+  const selectAllIn = (rub: RubriqueC, value: boolean) => {
+    setState((s: WizardState) => ({
+      ...s,
+      injection_apercu: s.injection_apercu.map((c) => c.rubrique === rub ? { ...c, selectionne: value } : c),
+    }));
+  };
+
+  const reanalyser = () => {
+    if (!state.fiche_poste_snapshot) return;
+    const fresh = analyserFichePoste(state.fiche_poste_snapshot);
+    setState((s: WizardState) => ({ ...s, injection_apercu: fresh }));
+    toast.success("Analyse de la fiche de poste relancée");
+  };
+
+  return (
+    <div className="border rounded-md bg-gradient-to-br from-primary/5 to-transparent">
+      <div className="p-3 border-b flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Eye className="h-4 w-4 text-primary" />
+          <div>
+            <div className="font-semibold text-sm">Aperçu — champs réellement injectés dans la grille</div>
+            <div className="text-xs text-muted-foreground">
+              {totalSel} / {apercu.length} critères seront ajoutés en plus des sous-critères réglementaires.
+            </div>
+          </div>
+        </div>
+        <Button size="sm" variant="ghost" onClick={reanalyser}>
+          <RefreshCw className="h-3.5 w-3.5 mr-1" /> Ré-analyser
+        </Button>
+      </div>
+      <div className="p-3 space-y-3">
+        {parRubrique.map(({ rubrique, items }) => {
+          if (items.length === 0) return null;
+          const sel = items.filter((i) => i.selectionne).length;
+          return (
+            <div key={rubrique} className="border rounded-md bg-card">
+              <div className="px-3 py-2 border-b flex items-center justify-between">
+                <div className="text-sm font-medium">{RUBRIQUES_C_LABELS[rubrique]}</div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-[10px]">{sel}/{items.length}</Badge>
+                  <Button size="sm" variant="ghost" className="h-6 text-[11px]" onClick={() => selectAllIn(rubrique, true)}>Tout</Button>
+                  <Button size="sm" variant="ghost" className="h-6 text-[11px]" onClick={() => selectAllIn(rubrique, false)}>Aucun</Button>
+                </div>
+              </div>
+              <ul className="divide-y">
+                {items.map((c) => {
+                  const idx = apercu.indexOf(c);
+                  const conf = Math.round(c.confiance * 100);
+                  const confColor = conf >= 70 ? "text-emerald-700 bg-emerald-50 dark:bg-emerald-950 dark:text-emerald-300"
+                    : conf >= 40 ? "text-amber-700 bg-amber-50 dark:bg-amber-950 dark:text-amber-300"
+                    : "text-rose-700 bg-rose-50 dark:bg-rose-950 dark:text-rose-300";
+                  return (
+                    <li key={idx} className="flex items-start gap-2 px-3 py-2 text-xs">
+                      <Checkbox
+                        checked={c.selectionne}
+                        onCheckedChange={() => toggle(idx)}
+                        className="mt-0.5"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-foreground leading-snug">{c.extrait}</div>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <Badge variant="outline" className="text-[9px] py-0 h-4">{SOURCE_LABELS[c.source]}</Badge>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Badge variant="outline" className={`text-[9px] py-0 h-4 ${confColor}`}>conf. {conf}%</Badge>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="text-xs max-w-xs">
+                                Score heuristique calculé à partir des mots-clés réglementaires (décret 2010-888) trouvés dans le texte.
+                                Vous pouvez décocher si le critère ne s'applique pas.
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          );
+        })}
+      </div>
+      <div className="px-3 py-2 border-t bg-muted/30 text-[11px] text-muted-foreground rounded-b-md">
+        ✅ Validez ces choix avant l'étape 5 — vous pourrez encore affiner pendant la conduite de l'entretien.
+      </div>
     </div>
   );
 }
