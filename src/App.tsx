@@ -34,6 +34,14 @@ import Regle8LogsAdmin from "./pages/admin/Regle8LogsAdmin";
 import EntretiensHome from "./pages/entretiens/EntretiensHome";
 import NouvelEntretienWizard from "./pages/entretiens/NouvelEntretienWizard";
 import CampagneDashboard from "./pages/entretiens/CampagneDashboard";
+import AideAccueil from "./pages/aide/AideAccueil";
+import AideArticle from "./pages/aide/AideArticle";
+import AideModule from "./pages/aide/AideModule";
+import AideGlossaire from "./pages/aide/AideGlossaire";
+import AideFAQ from "./pages/aide/AideFAQ";
+import AideModeles from "./pages/aide/AideModeles";
+import AideOnboarding from "./pages/aide/AideOnboarding";
+import AideReglementation from "./pages/aide/AideReglementation";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import { ChatEple } from "@/components/ChatEple";
@@ -105,6 +113,14 @@ const App = () => (
               <Route path="/entretiens" element={<EntretiensHome />} />
               <Route path="/entretiens/nouveau" element={<NouvelEntretienWizard />} />
               <Route path="/entretiens/campagne" element={<CampagneDashboard />} />
+              <Route path="/aide" element={<AideAccueil />} />
+              <Route path="/aide/article/:slug" element={<AideArticle />} />
+              <Route path="/aide/module/:moduleId" element={<AideModule />} />
+              <Route path="/aide/glossaire" element={<AideGlossaire />} />
+              <Route path="/aide/faq" element={<AideFAQ />} />
+              <Route path="/aide/modeles" element={<AideModeles />} />
+              <Route path="/aide/onboarding/:profilId" element={<AideOnboarding />} />
+              <Route path="/aide/reglementation" element={<AideReglementation />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
