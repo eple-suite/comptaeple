@@ -3,7 +3,7 @@
  * Recette : moteur "Actions à faire" du tableau de bord entretiens.
  * Vérifie le classement par urgence et la couverture des cas réglementaires.
  */
-import { buildActionsAFaire, urgenceFromJours } from "../src/lib/entretiens/actionsAFaire.ts";
+import { buildActionsAFaire, urgenceFromJours, sortActions, SORT_LABELS } from "../src/lib/entretiens/actionsAFaire.ts";
 
 let pass = 0, fail = 0;
 function t(name, cond, detail = "") {
@@ -170,6 +170,49 @@ const butoir = (date) => [{ establishment_id: "e1", date_butoir_signatures: date
   });
   t("Tri : la 1re action est critique", r[0].urgence === "critique");
   t("Tri : Beta (J-2 sans convoc) en tête", r[0].agentNom === "Beta");
+}
+
+/* ─── Tris configurables ─────────────────────────────────────────────────── */
+
+const mkAction = (agentNom, butoirISO, score, agentPrenom = "X") => ({
+  agentId: agentNom, agentNom, agentPrenom, etabUai: "—",
+  type: "creer_entretien", acteur: "SG", libelle: "L",
+  butoirISO, joursRestants: null, urgence: "moyenne", score,
+  href: "/", entretienId: null,
+});
+
+t("SORT_LABELS expose les 3 modes", Object.keys(SORT_LABELS).length === 3 && SORT_LABELS.urgence && SORT_LABELS.butoir && SORT_LABELS.nom);
+
+{
+  const list = [
+    mkAction("Zoé", "2025-05-01", 100),
+    mkAction("Adam", "2025-04-10", 200),
+    mkAction("Marie", null, 300),
+  ];
+  const sUrg = sortActions(list, "urgence");
+  t("Tri urgence : score décroissant", sUrg[0].agentNom === "Marie" && sUrg[2].agentNom === "Zoé");
+
+  const sBut = sortActions(list, "butoir");
+  t("Tri butoir : date la + proche en premier", sBut[0].agentNom === "Adam" && sBut[1].agentNom === "Zoé");
+  t("Tri butoir : nulls en dernier", sBut[2].agentNom === "Marie");
+
+  const sNom = sortActions(list, "nom");
+  t("Tri nom : ordre alphabétique fr", sNom.map((a) => a.agentNom).join(",") === "Adam,Marie,Zoé");
+}
+
+{
+  // tie-break sur urgence : à score égal → nom
+  const list = [mkAction("Charlie", null, 500), mkAction("Alpha", null, 500)];
+  const s = sortActions(list, "urgence");
+  t("Tri urgence : tie-break par nom", s[0].agentNom === "Alpha");
+}
+
+{
+  // immutabilité
+  const list = [mkAction("B", "2025-01-01", 100), mkAction("A", "2025-02-01", 200)];
+  const ref = list.slice();
+  sortActions(list, "nom");
+  t("sortActions est immuable", list[0] === ref[0] && list[1] === ref[1]);
 }
 
 console.log(`\n📊 Résultat : ${pass} OK / ${fail} KO\n`);
