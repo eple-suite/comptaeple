@@ -12,7 +12,7 @@ const motsCles = [
   /passation.{0,80}sgeple/i,
   /accr[ée]ditation/i,
   /habilitation/i,
-  /arr[ée]t[ée].{0,80}affectation/i,
+  /arr[êée]t[ée].{0,80}affectation/i,
   /signature/i,
   /sph[èe]re.{0,80}(ordonnateur|comptable)/i,
 ];
