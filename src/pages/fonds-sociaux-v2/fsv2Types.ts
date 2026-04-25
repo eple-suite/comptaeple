@@ -139,6 +139,12 @@ export interface FsCommission {
   dossiers_examines_count: number;
   proces_verbal_url: string | null;
   observations: string;
+  /** PV anonymisé (diffusion membres / familles) */
+  pv_anonymise_url?: string | null;
+  /** PV intégral nominatif (archive établissement) */
+  pv_integral_url?: string | null;
+  /** Vrai si la convocation a été envoyée */
+  convocation_envoyee?: boolean;
 }
 
 export interface FsDecision {
