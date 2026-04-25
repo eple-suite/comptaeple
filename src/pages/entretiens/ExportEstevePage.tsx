@@ -30,7 +30,8 @@ interface Row {
 export default function ExportEstevePage() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { currentEstablishment } = useEstablishment();
+  const { selectedEstablishment } = useEstablishment();
+  const currentEstablishment = selectedEstablishment;
   const [rows, setRows] = useState<Row[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
