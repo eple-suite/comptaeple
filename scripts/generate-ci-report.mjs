@@ -86,6 +86,13 @@ const STEPS = [
     args: ['scripts/verify-entretiens-dashboard.mjs'],
     categorie: 'Entretiens professionnels',
   },
+  {
+    id: 'verify-fiche-poste-parser',
+    titre: 'Recette — Parseur fiche de poste → rubriques C1-C4',
+    cmd: 'npx',
+    args: ['tsx', 'scripts/verify-fiche-poste-parser.mjs'],
+    categorie: 'Entretiens professionnels',
+  },
 ];
 
 // ---------------------------------------------------------------------
