@@ -55,6 +55,8 @@ import Regle8LogsAdmin from "./pages/admin/Regle8LogsAdmin";
 import EntretiensHome from "./pages/entretiens/EntretiensHome";
 import NouvelEntretienWizard from "./pages/entretiens/NouvelEntretienWizard";
 import CampagneDashboard from "./pages/entretiens/CampagneDashboard";
+import RecoursPage from "./pages/entretiens/RecoursPage";
+import FichesPostePage from "./pages/entretiens/FichesPostePage";
 import AideAccueil from "./pages/aide/AideAccueil";
 import AideArticle from "./pages/aide/AideArticle";
 import AideModule from "./pages/aide/AideModule";
@@ -157,6 +159,8 @@ const App = () => (
               <Route path="/entretiens" element={<EntretiensHome />} />
               <Route path="/entretiens/nouveau" element={<NouvelEntretienWizard />} />
               <Route path="/entretiens/campagne" element={<CampagneDashboard />} />
+              <Route path="/entretiens/recours" element={<RecoursPage />} />
+              <Route path="/entretiens/fiches-poste" element={<FichesPostePage />} />
               <Route path="/aide" element={<AideAccueil />} />
               <Route path="/aide/article/:slug" element={<AideArticle />} />
               <Route path="/aide/module/:moduleId" element={<AideModule />} />
