@@ -10,7 +10,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, Sparkles, FileText, Calendar, User, Briefcase, Target, GraduationCap, ClipboardCheck } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { ArrowLeft, ArrowRight, CheckCircle2, AlertTriangle, Sparkles, FileText, Calendar, User, Briefcase, Target, GraduationCap, ClipboardCheck, Wand2, RefreshCw, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -22,9 +24,14 @@ import {
   currentAnneeScolaire,
   defaultPeriodeObservation,
   validateStep,
-  buildCompetencesFromFichePoste,
 } from "@/lib/entretiens/wizard";
 import { SOUS_CRITERES_REGLEMENTAIRES, RUBRIQUES_C_LABELS, NIVEAUX_LABELS, type RubriqueC } from "@/lib/entretiens/types";
+import {
+  analyserFichePoste,
+  appliquerSelection,
+  SOURCE_LABELS,
+  type CritereInjecte,
+} from "@/lib/entretiens/fichePosteParser";
 
 const ICONS = [User, Calendar, Briefcase, FileText, Target, GraduationCap, ClipboardCheck];
 
