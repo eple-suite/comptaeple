@@ -15,6 +15,39 @@
 
 ---
 
+## Glossaire des notions financières
+
+Le glossaire ci-dessous précise les sigles, hypothèses et unités utilisés dans tout le document. Chaque notion est rattachée à sa source réglementaire (M9-6, GBCP, Code de l'éducation) et au paragraphe technique correspondant.
+
+| Sigle | Libellé complet | Définition synthétique | Unité | Hypothèses & conventions de calcul | Source / § |
+|---|---|---|---|---|---|
+| **FR** | Fonds de Roulement | Excédent durable des **capitaux permanents** (classes 10 à 18) sur l'**actif immobilisé net** (classes 20 à 27, nets de 28/29). Mesure la marge de manœuvre à moyen / long terme de l'EPLE. | € | Calculé selon **deux méthodes convergentes** (haut / bas de bilan), tolérance < 1 €. Les soldes sont lus à la **balance générale Op@le** en fin d'exercice. Le FR mobilisable est obtenu en retranchant les **réserves grevées** d'affectation spéciale (10681, 10683, 10687). | M9-6 t.4 art. 43231 — § 1 |
+| **BFR** | Besoin en Fonds de Roulement | Solde net du **cycle d'exploitation** : créances d'exploitation (familles, État, collectivités, stocks) moins dettes d'exploitation (fournisseurs, personnel, organismes sociaux). | € | Limité au périmètre **exploitation pédagogique et restauration** : exclut volontairement les comptes financiers (50, 51, 53, 54) et les comptes de liaison. Un BFR positif signifie que l'EPLE finance temporairement son cycle d'exploitation. | M9-6 t.4 (analyse fonctionnelle) — § 2 |
+| **TN** | Trésorerie Nette | Disponibilités effectives (Trésor, caisse, régies) diminuées des concours bancaires. Conceptuellement : `TN = FR − BFR`. | € | Vérifiée par **double lecture** : (a) `TN_calc = FR − BFR` ; (b) `TN_obs` lue à la balance (51 + 53 + 54 − 519). L'écart toléré est < 1 €. Les valeurs sont arrêtées au **31/12** ou à la date de clôture officielle. | M9-6 t.4 ; Op@le pièce 14 — § 3 |
+| **CAF** | Capacité d'AutoFinancement | Flux de ressources internes dégagé par l'activité, disponible pour financer les investissements, rembourser des emprunts ou alimenter le FR. | € | Calculée par la **méthode additive** à partir du résultat (12), corrigée des dotations / reprises (681, 686, 687, 781, 786, 787) et des opérations de cession (675, 775, 777). Hypothèse : exercice clos, balance équilibrée, écritures de clôture passées. La méthode soustractive (à partir de l'EBE) sert de contrôle (`|CAF_add − CAF_sous| < 1 €`). | M9-6 t.4 ; PCG art. 832-7 ; GBCP — § 5 |
+| **SRH** | Service annexe d'Restauration et d'Hébergement | Service à comptabilité distincte couvrant la restauration scolaire et, le cas échéant, l'hébergement (internat, demi-pension, commensaux). | € (réserves), unités physiques (repas) | Identifié par les comptes **70** (ventes de repas), **74** (subventions SRH éventuelles), **60-64** affectés au service. Les **réserves SRH** correspondent au compte **10681** : elles sont **grevées** (affectation spéciale) et ne peuvent financer le budget général sans délibération motivée du conseil d'administration. | M9-6 t.3 (plan comptable EPLE) ; Code éducation art. R.531-52 — § 8, § 9.1 |
+| **Jours de fonctionnement** | Jours de FR / Jours de TN | Mesure du nombre de jours pendant lesquels l'EPLE peut couvrir ses **charges décaissables** courantes avec son FR (ou sa TN), sans ressources nouvelles. | jours (base **360**) | Formule : `Jours_X = (X / Charges_décaissables) × 360`. Les **charges décaissables** = total classe 6 net, **diminué** des dotations aux amortissements (681) et des dotations aux provisions (686, 687) qui ne donnent pas lieu à sortie de trésorerie. Base 360 retenue pour homogénéité avec les pratiques académiques. Seuils REPROFI : < 30 j critique / 30-60 fragile / 60-120 confortable / > 120 surdimensionné. | Pratique académique consolidée alignée M9-6 — § 4 |
+
+### Notions complémentaires citées dans le document
+
+| Sigle | Libellé | Précision |
+|---|---|---|
+| **EPLE** | Établissement Public Local d'Enseignement | Lycées, collèges, EREA — entités juridiques autonomes au sens des articles L.421-1 et R.421-1 et s. du Code de l'éducation. |
+| **PCG** | Plan Comptable Général | Référentiel des numéros de comptes (1 à 7) appliqué aux EPLE via l'instruction M9-6. |
+| **DCT** | Dettes à Court Terme | Dettes exigibles à moins d'un an : fournisseurs (40), personnel (42c), organismes sociaux (43c), État créditeur (44c), créditeurs divers (46c), comptes transitoires créditeurs (47c). |
+| **ΔFR / ΔBFR / ΔTN** | Variations annuelles | Différentiel `N − N-1` ; servent à reconstruire le **tableau de financement** (M9-6 t.4) et à valider la triple convergence (cf. § 6). |
+| **Op@le pièce 14** | Situation patrimoniale | Document officiel produit par Op@le présentant le bilan fonctionnel et servant de référence pour la confrontation FR / BFR / TN. |
+
+### Hypothèses transversales
+
+1. **Source de données unique** : balance générale Op@le après opérations d'inventaire et de clôture. Aucun retraitement extra-comptable n'est appliqué sans traçabilité.
+2. **Devise et arrondi** : euros, arrondi à l'unité pour les montants, à une décimale pour les pourcentages, à une décimale pour les ratios et les durées en années.
+3. **Conventions de signe** : un FR / BFR / TN / CAF positif est favorable (sauf BFR pour lequel un excédent peut signaler un sur-stockage). Les indicateurs en pourcentage sont **toujours positifs** (valeurs absolues utilisées le cas échéant, ex. § 9.4 CAP).
+4. **Périodicité** : tous les indicateurs sont calculés sur l'exercice clos N. Les comparaisons N / N-1 utilisent des balances retraitées en cas de changement de périmètre (fusion, transfert SRH, etc.) — un commentaire explicite est alors apposé dans le rapport ordonnateur.
+5. **Auditabilité** : chaque formule est implémentée dans un module TypeScript pur (sans I/O), couvert par la recette `recette-diagnostic-financier.mjs` exécutée à chaque livraison (CI GitHub Actions).
+
+---
+
 ## Conventions et notations
 
 - `Σ Deb(prefixe)` : somme des **soldes débiteurs** de tous les comptes dont le numéro PCG commence par `prefixe`.
