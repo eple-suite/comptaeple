@@ -21,6 +21,7 @@ import type {
   FormationCategorie,
   FormationPriorite,
 } from "./types";
+import type { CritereInjecte } from "./fichePosteParser";
 
 export const WIZARD_STEPS = [
   { id: 1, key: "agent", title: "Agent & fiche de poste", description: "Sélectionnez l'agent évalué et sa fiche de poste de référence." },
@@ -99,6 +100,10 @@ export interface WizardState {
 
   /* Étape 5 */
   competences: Record<RubriqueC, WizardCompetence[]>;
+  /** Critères proposés par l'analyse de la fiche de poste — l'utilisateur peut décocher avant validation. */
+  injection_apercu: CritereInjecte[];
+  /** ID de fiche dont l'aperçu provient (pour ne pas écraser une saisie utilisateur). */
+  injection_apercu_fiche_id: string | null;
 
   /* Étape 6 */
   objectifs_futurs: WizardObjectifFutur[];
@@ -132,6 +137,8 @@ export const EMPTY_WIZARD_STATE: WizardState = {
     C3_qualites_personnelles: [],
     C4_encadrement: [],
   },
+  injection_apercu: [],
+  injection_apercu_fiche_id: null,
   objectifs_futurs: [],
   formations_demandes: [],
   texte_libre_formation: "",
