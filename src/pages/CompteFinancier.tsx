@@ -34,9 +34,11 @@ import { IndicateursCfa } from '@/components/cofieple/IndicateursCfa';
 import { IndicateursSrh } from '@/components/cofieple/IndicateursSrh';
 import { PerimetreComptable } from '@/components/cofieple/PerimetreComptable';
 import { VueConsolidee } from '@/components/cofieple/VueConsolidee';
+import { VueGroupement } from '@/components/cofieple/VueGroupement';
 import { RapportImpression } from '@/components/rapport/RapportImpression';
 import { CofiepleHero } from '@/components/cofieple/premium/CofiepleHero';
 import { MagazineExportButton } from '@/components/cofieple/premium/MagazineExportButton';
+import { ExportTroisPdfBouton } from '@/components/cofieple/ExportTroisPdfBouton';
 import {
   OrdoS1Presentation, OrdoS2TableauBord, OrdoS3ExecFonctionnement,
   OrdoS4ExecRecettes, OrdoS5Pilotage, OrdoS6SRH, OrdoS7VieEleve,
@@ -129,6 +131,7 @@ const CompteFinancier = () => {
     ...(budgets.some(b => b.type === 'annexe_cfa') ? [{ id: 'cfa', label: 'CFA', icon: <BookOpen className="h-4 w-4" /> }] : []),
     ...(budgets.some(b => b.type === 'annexe_autre') ? [{ id: 'srh', label: 'SRH', icon: <UtensilsCrossed className="h-4 w-4" /> }] : []),
     ...(hasConsolidation ? [{ id: 'vue_consolidee', label: 'Consolidé', icon: <Layers className="h-4 w-4" />, requiresData: true }] : []),
+    { id: 'vue_groupement', label: 'Groupement', icon: <Layers className="h-4 w-4" /> },
     { id: 'document_ca', label: 'Doc. CA', icon: <Landmark className="h-4 w-4" />, requiresData: true },
     { id: 'annexe', label: 'Annexe', icon: <BookOpen className="h-4 w-4" />, requiresData: true },
     { id: 'diaporama', label: 'Diaporama', icon: <Monitor className="h-4 w-4" />, requiresData: true },
@@ -186,6 +189,7 @@ const CompteFinancier = () => {
       case 'cfa': return <IndicateursCfa />;
       case 'srh': return <IndicateursSrh />;
       case 'vue_consolidee': return <VueConsolidee />;
+      case 'vue_groupement': return <VueGroupement />;
       case 'document_ca': return <DocumentCASection />;
       case 'rapport_ac': return <RapportACSection />;
       case 'annexe': return <AnnexeComptableSection />;
@@ -307,6 +311,7 @@ const CompteFinancier = () => {
         {/* Export bar — Rapport Ordonnateur */}
         {mainTab === 'ordo' && hasData && (
           <div className="flex justify-end gap-2 px-5 pt-4 pb-0">
+            <ExportTroisPdfBouton />
             <button
               onClick={() => window.print()}
               className="flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-lg bg-muted hover:bg-muted/70 text-foreground transition-all duration-200"
