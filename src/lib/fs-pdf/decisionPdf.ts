@@ -188,6 +188,108 @@ export function generateNotificationFamillePdf(
   return doc.output("blob");
 }
 
+/** 8) PV de commission — anonymisé (diffusion membres / familles)
+ *  Pas d'identité élève : seulement initiales, montants accordés et motif générique. */
+export function generatePvCommissionAnonymisePdf(
+  commission: FsCommission,
+  dossiers: { initiales: string; classe: string; nature: string; montant: number; decision: "accord" | "refus" | "complement" }[],
+  ctx: PdfContext,
+): Blob {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  header(doc, "PROCÈS-VERBAL — COMMISSION FONDS SOCIAUX (anonymisé)", ctx);
+
+  let y = 62;
+  doc.setFontSize(10).setFont("helvetica", "normal");
+  doc.text(`Date : ${formatDateFr(commission.date_commission)}`, 20, y); y += 6;
+  doc.text(`Type : ${commission.type} · Année scolaire : ${commission.annee_scolaire}`, 20, y); y += 6;
+  doc.text(`Membres présents : ${(commission.membres_presents ?? []).length}`, 20, y); y += 8;
+
+  doc.setFont("helvetica", "bold").text(`Dossiers examinés : ${dossiers.length}`, 20, y); y += 4;
+  doc.setFont("helvetica", "normal");
+
+  autoTable(doc, {
+    startY: y,
+    theme: "grid",
+    styles: { fontSize: 9 },
+    head: [["Initiales", "Classe", "Nature aide", "Décision", "Montant"]],
+    body: dossiers.map(d => [
+      d.initiales, d.classe, d.nature,
+      d.decision === "accord" ? "Accord" : d.decision === "refus" ? "Refus" : "Complément",
+      d.decision === "accord" ? formatEur(d.montant) : "—",
+    ]),
+    foot: [["", "", "Total accordé", "", formatEur(dossiers.filter(d => d.decision === "accord").reduce((s, d) => s + d.montant, 0))]],
+  });
+
+  let yAfter = (doc as any).lastAutoTable.finalY + 8;
+  if (commission.observations) {
+    doc.setFont("helvetica", "bold").text("Observations :", 20, yAfter); yAfter += 6;
+    doc.setFont("helvetica", "normal");
+    doc.splitTextToSize(commission.observations, 170).forEach((l: string) => {
+      doc.text(l, 20, yAfter); yAfter += 5;
+    });
+  }
+
+  doc.setFont("helvetica", "italic").setFontSize(8);
+  doc.text("Ce PV anonymisé respecte le RGPD (art. 5.1.c — minimisation). Identités complètes dans le PV intégral archivé.", 20, 240);
+
+  footer(doc, ctx, ctx.signataireOrdonnateur ?? "", "Le Chef d'établissement,");
+  return doc.output("blob");
+}
+
+/** 9) PV de commission — intégral nominatif (archive établissement, accès restreint)
+ *  Contient l'identité complète des élèves, à conserver 5 ans (RGPD). */
+export function generatePvCommissionIntegralPdf(
+  commission: FsCommission,
+  dossiers: { eleve_nom: string; eleve_prenom: string; classe: string; nature: string; montant: number; decision: "accord" | "refus" | "complement"; motif?: string }[],
+  ctx: PdfContext,
+): Blob {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  header(doc, "PROCÈS-VERBAL — COMMISSION FONDS SOCIAUX (intégral)", ctx);
+
+  // Bandeau confidentialité
+  doc.setFillColor(255, 240, 200);
+  doc.rect(20, 56, 170, 6, "F");
+  doc.setFont("helvetica", "bold").setFontSize(9).setTextColor(120, 60, 0);
+  doc.text("CONFIDENTIEL — Document nominatif, accès restreint, conservation 5 ans (RGPD)", 105, 60, { align: "center" });
+  doc.setTextColor(0, 0, 0);
+
+  let y = 72;
+  doc.setFontSize(10).setFont("helvetica", "normal");
+  doc.text(`Date : ${formatDateFr(commission.date_commission)}`, 20, y); y += 6;
+  doc.text(`Type : ${commission.type} · Année scolaire : ${commission.annee_scolaire}`, 20, y); y += 6;
+  doc.text(`Membres présents : ${(commission.membres_presents ?? []).map(m => `${m.nom} (${m.qualite})`).join(", ") || "—"}`, 20, y); y += 8;
+
+  doc.setFont("helvetica", "bold").text(`Dossiers examinés : ${dossiers.length}`, 20, y); y += 4;
+  doc.setFont("helvetica", "normal");
+
+  autoTable(doc, {
+    startY: y,
+    theme: "grid",
+    styles: { fontSize: 8 },
+    head: [["Élève", "Classe", "Nature aide", "Décision", "Montant", "Motif"]],
+    body: dossiers.map(d => [
+      `${d.eleve_nom} ${d.eleve_prenom}`,
+      d.classe, d.nature,
+      d.decision === "accord" ? "Accord" : d.decision === "refus" ? "Refus" : "Complément",
+      d.decision === "accord" ? formatEur(d.montant) : "—",
+      d.motif ?? "—",
+    ]),
+    foot: [["", "", "", "Total accordé", formatEur(dossiers.filter(d => d.decision === "accord").reduce((s, d) => s + d.montant, 0)), ""]],
+  });
+
+  let yAfter = (doc as any).lastAutoTable.finalY + 8;
+  if (commission.observations) {
+    doc.setFont("helvetica", "bold").text("Observations :", 20, yAfter); yAfter += 6;
+    doc.setFont("helvetica", "normal");
+    doc.splitTextToSize(commission.observations, 170).forEach((l: string) => {
+      doc.text(l, 20, yAfter); yAfter += 5;
+    });
+  }
+
+  footer(doc, ctx, ctx.signataireOrdonnateur ?? "", "Le Chef d'établissement,");
+  return doc.output("blob");
+}
+
 /** 3) Pièce comptable — Demande de paiement Op@le (remplace l'ex « mandat ») */
 export function generatePieceComptablePdf(
   decision: FsDecision,

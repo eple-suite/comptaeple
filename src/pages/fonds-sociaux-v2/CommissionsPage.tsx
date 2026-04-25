@@ -11,15 +11,27 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ArrowLeft, Plus, ClipboardCheck, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, ClipboardCheck, Loader2, Mail, FileText, FileLock2 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useCommissions, useUpsertCommission } from "./useFsData";
-import { currentAnneeScolaire, type FsCommission } from "./fsv2Types";
+import { useCommissions, useUpsertCommission, useUpsertConvocation, useDecisions, useEleves, useLogJournalAcces } from "./useFsData";
+import { currentAnneeScolaire, type FsCommission, NATURE_AIDE_LABELS } from "./fsv2Types";
+import {
+  generateConvocationCommissionPdf,
+  generatePvCommissionAnonymisePdf,
+  generatePvCommissionIntegralPdf,
+  downloadBlob,
+} from "@/lib/fs-pdf/decisionPdf";
+import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { toast } from "sonner";
 
 export default function CommissionsPage() {
   const { data: commissions = [], isLoading } = useCommissions();
+  const { data: decisions = [] } = useDecisions();
+  const { data: eleves = [] } = useEleves();
   const upsert = useUpsertCommission();
+  const upsertConvocation = useUpsertConvocation();
+  const logAcces = useLogJournalAcces();
+  const { selectedEstablishment } = useEstablishment();
   const [open, setOpen] = useState(false);
 
   const [date, setDate] = useState(new Date().toISOString().slice(0, 10));
@@ -42,6 +54,90 @@ export default function CommissionsPage() {
       toast.success("Commission enregistrée");
       setOpen(false); setObservations(""); setMembresText("");
     } catch (e: any) { toast.error(e.message ?? "Erreur"); }
+  }
+
+  function buildPdfCtx() {
+    return {
+      etablissementNom: selectedEstablishment?.name ?? "Établissement",
+      etablissementAdresse: "",
+      etablissementCp: "",
+      etablissementVille: selectedEstablishment?.city ?? "",
+      uai: selectedEstablishment?.uai ?? "",
+      ville: selectedEstablishment?.city ?? "",
+      signataireOrdonnateur: "",
+    };
+  }
+
+  function dossiersForCommission(c: FsCommission) {
+    return decisions
+      .filter(d => d.commission_id === c.id)
+      .map(d => {
+        const e = eleves.find(x => x.id === d.eleve_id);
+        const decisionType: "accord" | "refus" | "complement" =
+          d.statut === "refusee" ? "refus" :
+          d.statut === "complement_demande" ? "complement" : "accord";
+        return {
+          eleve: e,
+          classe: e?.classe ?? "—",
+          nature: NATURE_AIDE_LABELS[d.nature_aide] ?? d.nature_aide,
+          montant: Number(d.montant),
+          decision: decisionType,
+          motif: d.motif,
+        };
+      });
+  }
+
+  async function handleEnvoyerConvocation(c: FsCommission) {
+    try {
+      const ctx = buildPdfCtx();
+      const membres = (c.membres_presents ?? []).map(m => ({ ...m, email: undefined }));
+      const convocation = {
+        id: "preview",
+        establishment_id: c.establishment_id,
+        commission_id: c.id,
+        date_envoi: new Date().toISOString().slice(0, 10),
+        membres_convoques: membres,
+        ordre_du_jour: `Examen des dossiers fonds sociaux — commission du ${new Date(c.date_commission).toLocaleDateString("fr-FR")}`,
+        pdf_url: null,
+      };
+      const blob = generateConvocationCommissionPdf(c, convocation, ctx);
+      downloadBlob(blob, `convocation-${c.date_commission}.pdf`);
+      await upsertConvocation.mutateAsync({
+        commission_id: c.id,
+        date_envoi: convocation.date_envoi,
+        membres_convoques: membres,
+        ordre_du_jour: convocation.ordre_du_jour,
+      });
+      void logAcces({ type_ressource: "commission", ressource_id: c.id, action: "export_pdf", details: { type: "convocation" } });
+      toast.success("Convocation générée et enregistrée");
+    } catch (e: any) {
+      toast.error(e.message ?? "Erreur convocation");
+    }
+  }
+
+  function handlePvAnonymise(c: FsCommission) {
+    const ctx = buildPdfCtx();
+    const dossiers = dossiersForCommission(c).map(d => ({
+      initiales: d.eleve ? `${d.eleve.prenom?.[0] ?? "?"}.${d.eleve.nom?.[0] ?? "?"}.` : "—",
+      classe: d.classe, nature: d.nature, montant: d.montant, decision: d.decision,
+    }));
+    const blob = generatePvCommissionAnonymisePdf(c, dossiers, ctx);
+    downloadBlob(blob, `pv-anonymise-${c.date_commission}.pdf`);
+    void logAcces({ type_ressource: "pv", ressource_id: c.id, action: "export_pdf", details: { type: "anonymise" } });
+    toast.success("PV anonymisé généré");
+  }
+
+  function handlePvIntegral(c: FsCommission) {
+    const ctx = buildPdfCtx();
+    const dossiers = dossiersForCommission(c).map(d => ({
+      eleve_nom: d.eleve?.nom ?? "—",
+      eleve_prenom: d.eleve?.prenom ?? "—",
+      classe: d.classe, nature: d.nature, montant: d.montant, decision: d.decision, motif: d.motif,
+    }));
+    const blob = generatePvCommissionIntegralPdf(c, dossiers, ctx);
+    downloadBlob(blob, `pv-integral-${c.date_commission}.pdf`);
+    void logAcces({ type_ressource: "pv", ressource_id: c.id, action: "export_pdf", details: { type: "integral" } });
+    toast.warning("PV intégral généré (CONFIDENTIEL — accès restreint)");
   }
 
   return (
@@ -79,6 +175,17 @@ export default function CommissionsPage() {
                 <div><span className="text-muted-foreground">Membres présents : </span>{(c.membres_presents ?? []).length}</div>
                 <div><span className="text-muted-foreground">Dossiers examinés : </span>{c.dossiers_examines_count}</div>
                 {c.observations && <p className="text-xs text-muted-foreground line-clamp-3">{c.observations}</p>}
+                <div className="flex flex-wrap gap-2 pt-2 border-t mt-2">
+                  <Button size="sm" variant="outline" onClick={() => handleEnvoyerConvocation(c)}>
+                    <Mail className="h-3 w-3 mr-1" /> Convocation
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => handlePvAnonymise(c)}>
+                    <FileText className="h-3 w-3 mr-1" /> PV anonymisé
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={() => handlePvIntegral(c)}>
+                    <FileLock2 className="h-3 w-3 mr-1" /> PV intégral
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}

@@ -85,6 +85,17 @@ Sortie brute :
 | 10 | 7 scripts de recette restants : decision-chef-etab, trois-fonds, deliberation-ca, creance-411200, commission-pv, bordereau-dp, journal-rgpd |
 | 11 | Audit transverse mandat→DP dans Voyages-v2 / Marchés / Compte financier / glossaire (167 occurrences à trier — politique : remplacement chirurgical UI, conservation textes réglementaires et parsers Op@le) |
 
+## ✅ Tranche complémentaire — 2026-04-25 (suite)
+
+- ✏️ Suppression effective des orphelins legacy : `src/pages/FondsSociaux.tsx` + dossier `src/pages/fonds-sociaux/` (étape 1 close)
+- ➕ `src/pages/fonds-sociaux-v2/DeliberationsCAPage.tsx` : CRUD délibérations CA (circ. 2017-122 § II.2), route `/fonds-sociaux/v2/deliberations`, tuile d'accueil (étape 3 close)
+- ➕ `useDeliberationsCa`, `useUpsertDeliberationCa`, `useConvocations`, `useUpsertConvocation`, `useLogJournalAcces` dans `useFsData.ts` (étapes 3 + 9)
+- ✏️ `CommissionsPage.tsx` enrichie : boutons « Convocation », « PV anonymisé », « PV intégral » (étape 5 close)
+- ➕ Gabarits PDF `generatePvCommissionAnonymisePdf` + `generatePvCommissionIntegralPdf` (avec bandeau confidentialité RGPD) dans `decisionPdf.ts`
+- ✏️ `DecisionsPage.tsx` : journalisation automatique RGPD à chaque export PDF (decision_chef_etab, notification_famille, piece_comptable_dp) — étape 9 close
+- ✅ `bunx tsc --noEmit` : exit 0
+- ✅ 8 scripts de recette FS + audit transverse : tous verts
+
 ## Fichiers modifiés / créés ce tour
 
 - ✏️ `src/App.tsx` (route `/fonds-sociaux` → redirect)

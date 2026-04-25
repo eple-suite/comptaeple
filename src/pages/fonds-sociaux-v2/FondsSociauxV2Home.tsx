@@ -5,7 +5,7 @@
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Users, FileText, ClipboardCheck, BarChart3, HandHeart, AlertTriangle, LayoutDashboard, Network, Shield } from "lucide-react";
+import { Users, FileText, ClipboardCheck, BarChart3, HandHeart, AlertTriangle, LayoutDashboard, Network, Shield, Gavel } from "lucide-react";
 import { useEleves, useDecisions, useCommissions } from "./useFsData";
 import { currentAnneeScolaire } from "./fsv2Types";
 import { evaluerCompletudeEleve } from "./fsEnqueteHelpers";
@@ -15,6 +15,7 @@ const tiles = [
   { to: "/fonds-sociaux/v2/eleves", icon: Users, label: "Élèves & Classes", desc: "Base élèves de l'établissement" },
   { to: "/fonds-sociaux/v2/decisions", icon: FileText, label: "Demandes & Décisions", desc: "Aides FS & FSC, workflow complet" },
   { to: "/fonds-sociaux/v2/commissions", icon: ClipboardCheck, label: "Commissions", desc: "Réunions commission fonds social" },
+  { to: "/fonds-sociaux/v2/deliberations", icon: Gavel, label: "Délibérations CA", desc: "Cadre fixé par le Conseil d'administration (circ. 2017-122)" },
   { to: "/fonds-sociaux/v2/enquete", icon: BarChart3, label: "Tableau de bord Enquête", desc: "Préparation enquête Rectorat DGESCO" },
   { to: "/fonds-sociaux/v2/tableau-bord", icon: LayoutDashboard, label: "Pilotage & Bilan annuel", desc: "KPIs temps réel + bilan PDF pour le CA" },
   { to: "/fonds-sociaux/v2/groupement", icon: Network, label: "Vue consolidée Groupement", desc: "Agrégation multi-établissements" },
