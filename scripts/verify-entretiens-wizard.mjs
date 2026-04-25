@@ -11,10 +11,6 @@
  * Sortie : exit 0 si toutes assertions passent.
  */
 
-import { register } from "node:module";
-import { pathToFileURL } from "node:url";
-register("ts-node/esm", pathToFileURL("./"));
-
 let pass = 0, fail = 0;
 const ok = (label) => { pass++; console.log(`✅ ${label}`); };
 const ko = (label, detail) => { fail++; console.log(`❌ ${label} — ${detail}`); };
