@@ -20,7 +20,9 @@ describe("Terminologie Op@le", () => {
   });
   it("glossaire SATD = loi 2017-1837 (et pas 1966 seule)", () => {
     expect(gloss).toMatch(/2017-1837/);
-    const satdLine = gloss.split("\n").find((l) => /\bSATD\b/.test(l) && !/Règle/.test(l));
+    const satdLine = gloss
+      .split("\n")
+      .find((l) => /terme:\s*"SATD"/.test(l));
     expect(satdLine).toMatch(/2017-1837/);
   });
 });
