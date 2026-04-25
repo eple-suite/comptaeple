@@ -489,6 +489,10 @@ function Step1Agent({ state, setState, agents, fichesPoste }: any) {
           )}
         </div>
       )}
+
+      {state.fiche_poste_snapshot && (
+        <ApercuInjection state={state} setState={setState} />
+      )}
     </div>
   );
 }
