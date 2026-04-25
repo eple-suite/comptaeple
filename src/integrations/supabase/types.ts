@@ -1658,6 +1658,44 @@ export type Database = {
           },
         ]
       }
+      entretiens_acces_log: {
+        Row: {
+          consultant_user_id: string
+          created_at: string
+          entretien_id: string
+          id: string
+          ip_address: string | null
+          type_acces: string
+          user_agent: string | null
+        }
+        Insert: {
+          consultant_user_id: string
+          created_at?: string
+          entretien_id: string
+          id?: string
+          ip_address?: string | null
+          type_acces: string
+          user_agent?: string | null
+        }
+        Update: {
+          consultant_user_id?: string
+          created_at?: string
+          entretien_id?: string
+          id?: string
+          ip_address?: string | null
+          type_acces?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_acces_log_entretien_id_fkey"
+            columns: ["entretien_id"]
+            isOneToOne: false
+            referencedRelation: "entretiens_professionnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entretiens_campagnes: {
         Row: {
           annee_scolaire: string
@@ -1758,54 +1796,163 @@ export type Database = {
           },
         ]
       }
+      entretiens_etat_log: {
+        Row: {
+          ancien_statut: string | null
+          commentaire: string | null
+          created_at: string
+          entretien_id: string
+          id: string
+          ip_address: string | null
+          nouveau_statut: string
+          user_agent: string | null
+          user_id: string
+          user_role: string | null
+        }
+        Insert: {
+          ancien_statut?: string | null
+          commentaire?: string | null
+          created_at?: string
+          entretien_id: string
+          id?: string
+          ip_address?: string | null
+          nouveau_statut: string
+          user_agent?: string | null
+          user_id: string
+          user_role?: string | null
+        }
+        Update: {
+          ancien_statut?: string | null
+          commentaire?: string | null
+          created_at?: string
+          entretien_id?: string
+          id?: string
+          ip_address?: string | null
+          nouveau_statut?: string
+          user_agent?: string | null
+          user_id?: string
+          user_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_etat_log_entretien_id_fkey"
+            columns: ["entretien_id"]
+            isOneToOne: false
+            referencedRelation: "entretiens_professionnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      entretiens_export_esteve: {
+        Row: {
+          created_at: string
+          entretien_id: string
+          esteve_dossier_ref: string | null
+          exported_at: string
+          exported_by: string
+          id: string
+          notes: string | null
+        }
+        Insert: {
+          created_at?: string
+          entretien_id: string
+          esteve_dossier_ref?: string | null
+          exported_at?: string
+          exported_by: string
+          id?: string
+          notes?: string | null
+        }
+        Update: {
+          created_at?: string
+          entretien_id?: string
+          esteve_dossier_ref?: string | null
+          exported_at?: string
+          exported_by?: string
+          id?: string
+          notes?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entretiens_export_esteve_entretien_id_fkey"
+            columns: ["entretien_id"]
+            isOneToOne: true
+            referencedRelation: "entretiens_professionnels"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entretiens_fiches_poste: {
         Row: {
           activites: string | null
+          agent_id: string | null
           categorie: Database["public"]["Enums"]["agent_categorie"] | null
           competences_requises: string | null
           conditions_exercice: string | null
+          contraintes_specificites: string | null
+          corps_grade_cible: string | null
           created_at: string
           created_by: string | null
+          date_revision: string | null
           establishment_id: string | null
           filiere: Database["public"]["Enums"]["agent_filiere"] | null
           id: string
           intitule: string
           missions_principales: string | null
           partagee_groupement: boolean
+          pdf_url: string | null
+          positionnement_hierarchique: string | null
           service: string | null
           updated_at: string
+          validee_le: string | null
+          validee_par_user_id: string | null
         }
         Insert: {
           activites?: string | null
+          agent_id?: string | null
           categorie?: Database["public"]["Enums"]["agent_categorie"] | null
           competences_requises?: string | null
           conditions_exercice?: string | null
+          contraintes_specificites?: string | null
+          corps_grade_cible?: string | null
           created_at?: string
           created_by?: string | null
+          date_revision?: string | null
           establishment_id?: string | null
           filiere?: Database["public"]["Enums"]["agent_filiere"] | null
           id?: string
           intitule: string
           missions_principales?: string | null
           partagee_groupement?: boolean
+          pdf_url?: string | null
+          positionnement_hierarchique?: string | null
           service?: string | null
           updated_at?: string
+          validee_le?: string | null
+          validee_par_user_id?: string | null
         }
         Update: {
           activites?: string | null
+          agent_id?: string | null
           categorie?: Database["public"]["Enums"]["agent_categorie"] | null
           competences_requises?: string | null
           conditions_exercice?: string | null
+          contraintes_specificites?: string | null
+          corps_grade_cible?: string | null
           created_at?: string
           created_by?: string | null
+          date_revision?: string | null
           establishment_id?: string | null
           filiere?: Database["public"]["Enums"]["agent_filiere"] | null
           id?: string
           intitule?: string
           missions_principales?: string | null
           partagee_groupement?: boolean
+          pdf_url?: string | null
+          positionnement_hierarchique?: string | null
           service?: string | null
           updated_at?: string
+          validee_le?: string | null
+          validee_par_user_id?: string | null
         }
         Relationships: [
           {
@@ -2122,42 +2269,63 @@ export type Database = {
       entretiens_recours: {
         Row: {
           created_at: string
+          date_avis_cap: string | null
+          date_decision_finale: string | null
           date_limite_reponse: string | null
           date_reponse: string | null
           date_saisine: string
+          decision_finale: string | null
           entretien_id: string
           id: string
           motif: string
+          pdf_recours_url: string | null
+          pieces_jointes_urls: Json | null
           reponse: string | null
+          sens_avis_cap: string | null
           statut: Database["public"]["Enums"]["recours_statut"]
           type: Database["public"]["Enums"]["recours_type"]
           updated_at: string
+          user_saisie_id: string | null
         }
         Insert: {
           created_at?: string
+          date_avis_cap?: string | null
+          date_decision_finale?: string | null
           date_limite_reponse?: string | null
           date_reponse?: string | null
           date_saisine: string
+          decision_finale?: string | null
           entretien_id: string
           id?: string
           motif: string
+          pdf_recours_url?: string | null
+          pieces_jointes_urls?: Json | null
           reponse?: string | null
+          sens_avis_cap?: string | null
           statut?: Database["public"]["Enums"]["recours_statut"]
           type: Database["public"]["Enums"]["recours_type"]
           updated_at?: string
+          user_saisie_id?: string | null
         }
         Update: {
           created_at?: string
+          date_avis_cap?: string | null
+          date_decision_finale?: string | null
           date_limite_reponse?: string | null
           date_reponse?: string | null
           date_saisine?: string
+          decision_finale?: string | null
           entretien_id?: string
           id?: string
           motif?: string
+          pdf_recours_url?: string | null
+          pieces_jointes_urls?: Json | null
           reponse?: string | null
+          sens_avis_cap?: string | null
           statut?: Database["public"]["Enums"]["recours_statut"]
           type?: Database["public"]["Enums"]["recours_type"]
           updated_at?: string
+          user_saisie_id?: string | null
         }
         Relationships: [
           {
