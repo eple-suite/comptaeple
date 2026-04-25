@@ -34,11 +34,38 @@
   affiché systématiquement.
 - Logs `opale_acces_log` et `opale_fiches_consultations` activés.
 
-## Reste à livrer (itération 2)
-- Recherche avancée + pgvector RAG.
-- Modération académique complète (workflow approbation/rejet/demande modifs).
-- Forum Q&R interactif.
-- Tableau de bord rectorat (KPI, heatmap, export PDF mensuel).
-- Gamification (score, badges, newsletter).
-- Extension corpus Assistant Expert (citation fiches publiées).
-- 6 scripts vitest de recette et documents finaux RECETTE / VIDEO_TOUR / AUDIT / GUIDE_DEMARRAGE.
+## Itération 2 — Livrée le 25/04/2026
+
+### Nouvelles pages réelles (remplacent les stubs)
+- `/ressources/opale/recherche` — recherche full-text par mots-clés, module, type, version Op@le, fraîcheur.
+- `/ressources/opale/moderation` — workflow approuver / rejeter (avec motif) / demander des modifs. Réservé aux rôles `moderateur_opale` et `admin`. Journalisation systématique.
+- `/ressources/opale/mes-fiches` — Tabs brouillons / soumises / publiées / rejetées avec motif de rejet visible.
+- `/ressources/opale/forum` — Forum Q&R inter-AC, blocage RGPD à la création de question.
+- `/ressources/opale/tendances` — top consultations par module + fiches à re-vérifier.
+- `/ressources/opale/dashboard` — KPI consolidés (fiches, consultations, taux d'utilité, modules).
+- `/ressources/opale/cgu` — Conditions générales (CC-BY-SA, RGPD, modération, versioning).
+
+### Gamification
+- `src/lib/opale/gamification.ts` : 6 badges (premier pas, contributeur actif, rédacteur d'or, expert module, modérateur solidaire, veilleur), formule de score, détecteur de fiches à re-vérifier.
+
+### Tests de recette (6 scripts vitest — 42 assertions, exit 0)
+- `verify-opale-anonymisation.test.ts` (8 tests RGPD)
+- `verify-opale-types.test.ts` (5 tests référentiel)
+- `verify-opale-gamification.test.ts` (6 tests score + badges)
+- `verify-opale-routing.test.ts` (14 tests routes & sidebar)
+- `verify-opale-rappel-officiel.test.ts` (4 tests positionnement)
+- `verify-opale-wizard-rgpd.test.ts` (5 tests wizard 7 étapes)
+
+### Documents
+- `docs/RECETTE_OPALE.md` — récapitulatif et conformité.
+- `docs/AUDIT_OPALE.md` — audit interne sécurité, RGPD, institutionnel.
+- `docs/GUIDE_DEMARRAGE_OPALE.md` — guide utilisateur 7 étapes + charte.
+- `docs/VIDEO_TOUR_OPALE.md` — script visite guidée 4'30".
+
+### Build
+`bunx tsc --noEmit` : exit 0.
+
+### Reste à venir (itération 3 facultative)
+- Intégration RAG pgvector des fiches publiées dans l'Assistant Expert.
+- Newsletter mensuelle des fiches les plus consultées.
+- Heatmap géographique académique.
