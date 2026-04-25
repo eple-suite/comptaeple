@@ -15,7 +15,7 @@ import { Check, ChevronLeft, ChevronRight, Loader2, AlertTriangle, Info } from "
 import { useEleves, useCommissions, useDecisions, useUpsertDecision } from "./useFsData";
 import {
   buildNumeroDecision, currentAnneeScolaire, defaultTypeFondsForNature, CODE_ACTIVITE_DEFAULT,
-  NATURE_AIDE_LABELS, NATURES_Q10,
+  NATURE_AIDE_LABELS, NATURES_Q10, TYPE_FONDS_LABELS, COMPTE_CREANCE_DP_FAMILLE,
   type FsDecision, type NatureAide, type TypeFonds, type ModaliteAttribution, type ModaliteVersement,
 } from "./fsv2Types";
 import { VoieBadge } from "./VoieBadge";
@@ -50,6 +50,8 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
   const [organismeType, setOrganismeType] = useState<string>("autre");
   const [codeActivite, setCodeActivite] = useState<string>(CODE_ACTIVITE_DEFAULT.FS);
   const [compteImputation, setCompteImputation] = useState<string>("6571");
+  const [extinctionCreanceDp, setExtinctionCreanceDp] = useState<boolean>(false);
+  const [compteCreanceFamille, setCompteCreanceFamille] = useState<string>(COMPTE_CREANCE_DP_FAMILLE);
   const [dateDecision, setDateDecision] = useState<string>(new Date().toISOString().slice(0, 10));
 
   const annee = currentAnneeScolaire();
@@ -112,6 +114,8 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
       date_decision: dateDecision,
       motif,
       pieces_justificatives_urls: [],
+      extinction_creance_dp: extinctionCreanceDp,
+      compte_creance_famille: extinctionCreanceDp ? compteCreanceFamille : undefined,
       statut: "brouillon",
     };
     try {
@@ -129,6 +133,7 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
     setModaliteAttribution("commission"); setCommissionId(null);
     setModaliteVersement("aide_directe"); setOrganismeNom(""); setOrganismeSiret(""); setOrganismeType("autre");
     setCodeActivite(CODE_ACTIVITE_DEFAULT.FS); setCompteImputation("6571");
+    setExtinctionCreanceDp(false); setCompteCreanceFamille(COMPTE_CREANCE_DP_FAMILLE);
     setDateDecision(new Date().toISOString().slice(0, 10));
   }
 
@@ -287,11 +292,13 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
               <Select value={typeFonds} onValueChange={(v) => handleTypeFondsChange(v as TypeFonds)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="FS">FS — Fonds social lycéen / collégien</SelectItem>
-                  <SelectItem value="FSC">FSC — Fonds social pour les cantines</SelectItem>
+                  <SelectItem value="FSL">{TYPE_FONDS_LABELS.FSL}</SelectItem>
+                  <SelectItem value="FSC_COL">{TYPE_FONDS_LABELS.FSC_COL}</SelectItem>
+                  <SelectItem value="FSC">{TYPE_FONDS_LABELS.FSC}</SelectItem>
+                  <SelectItem value="FS">{TYPE_FONDS_LABELS.FS}</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="text-xs text-muted-foreground mt-1">Suggéré automatiquement selon la nature.</p>
+              <p className="text-xs text-muted-foreground mt-1">Suggéré automatiquement selon la nature. FSL/FSC_COL/FSC selon circulaire 2017-122.</p>
             </div>
             <div>
               <Label>Montant (€)</Label>
@@ -392,6 +399,35 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                 <Input value={compteImputation} onChange={e => setCompteImputation(e.target.value)} placeholder="ex: 6571" />
               </div>
             </div>
+            {(natureAide === "restauration" || typeFonds === "FSC") && (
+              <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">
+                <label className="flex items-start gap-2 text-sm cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={extinctionCreanceDp}
+                    onChange={e => setExtinctionCreanceDp(e.target.checked)}
+                    className="mt-1"
+                  />
+                  <div>
+                    <div className="font-medium">Extinction de la créance demi-pension de la famille</div>
+                    <div className="text-xs text-muted-foreground">
+                      Le montant viendra solder la créance famille au compte
+                      <strong> C/{COMPTE_CREANCE_DP_FAMILLE}</strong> — « Frais scolaires — élèves » (M9-6 tome 3).
+                    </div>
+                  </div>
+                </label>
+                {extinctionCreanceDp && (
+                  <div>
+                    <Label className="text-xs">Compte créance famille (par défaut 411200)</Label>
+                    <Input
+                      value={compteCreanceFamille}
+                      onChange={e => setCompteCreanceFamille(e.target.value)}
+                      className="font-mono text-sm"
+                    />
+                  </div>
+                )}
+              </div>
+            )}
             <div>
               <Label>Date de décision</Label>
               <Input type="date" value={dateDecision} onChange={e => setDateDecision(e.target.value)} />
@@ -435,7 +471,16 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                 </table>
               </div>
             </div>
-            <p className="text-xs text-muted-foreground">La décision sera enregistrée en statut « Brouillon ». Vous pourrez ensuite générer les PDFs et la mandater.</p>
+            {extinctionCreanceDp && (
+              <div className="rounded-md border border-primary/40 bg-primary/10 p-3 text-xs">
+                <strong>Extinction créance DP :</strong> le montant sera affecté au compte
+                <strong> C/{compteCreanceFamille}</strong> de l'élève pour solder la dette famille.
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              La décision sera enregistrée en statut « Brouillon ». Vous pourrez ensuite générer les PDFs
+              puis émettre la <strong>demande de paiement Op@le</strong> (DP) qui sera prise en charge par l'agent comptable.
+            </p>
           </div>
         )}
 
