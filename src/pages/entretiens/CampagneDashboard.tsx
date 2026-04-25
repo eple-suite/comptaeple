@@ -9,12 +9,12 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LayoutDashboard, ArrowLeft, AlertTriangle, CheckCircle2, Clock, Plus, Search, Users, Calendar, ListChecks, ArrowRight, Flame } from "lucide-react";
+import { LayoutDashboard, ArrowLeft, AlertTriangle, CheckCircle2, Clock, Plus, Search, Users, Calendar, ListChecks, ArrowRight, Flame, ArrowUpDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { currentAnneeScolaire } from "@/lib/entretiens/wizard";
 import { STATUT_LABELS, type EntretienStatut } from "@/lib/entretiens/types";
-import { buildActionsAFaire, URGENCE_LABELS, ACTEUR_COLORS, type Urgence, type ActionAgent } from "@/lib/entretiens/actionsAFaire";
+import { buildActionsAFaire, URGENCE_LABELS, ACTEUR_COLORS, sortActions, SORT_LABELS, type Urgence, type ActionAgent, type SortKey } from "@/lib/entretiens/actionsAFaire";
 import { usePersistedState } from "@/hooks/usePersistedState";
 
 interface Etablissement {
@@ -100,6 +100,7 @@ export default function CampagneDashboard() {
   const [filtreUrgence, setFiltreUrgence] = usePersistedState<Urgence | "all">("camp_act_urgence", "all", { urlParam: "urg" });
   const [filtreActeur, setFiltreActeur] = usePersistedState<ActionAgent["acteur"] | "all">("camp_act_acteur", "all", { urlParam: "acteur" });
   const [searchActions, setSearchActions] = usePersistedState<string>("camp_act_search", "", { urlParam: "qa" });
+  const [tri, setTri] = usePersistedState<SortKey>("camp_act_tri", "urgence", { urlParam: "tri" });
 
   /* Tous les établissements accessibles */
   const { data: etablissements = [] } = useQuery({
@@ -220,7 +221,7 @@ export default function CampagneDashboard() {
 
   const actionsFiltrees = useMemo(() => {
     const q = searchActions.trim().toLowerCase();
-    return actions.filter((a) => {
+    const filtres = actions.filter((a) => {
       if (filtreUrgence !== "all" && a.urgence !== filtreUrgence) return false;
       if (filtreActeur !== "all" && a.acteur !== filtreActeur) return false;
       if (q) {
@@ -229,7 +230,8 @@ export default function CampagneDashboard() {
       }
       return true;
     });
-  }, [actions, filtreUrgence, filtreActeur, searchActions]);
+    return sortActions(filtres, tri);
+  }, [actions, filtreUrgence, filtreActeur, searchActions, tri]);
 
   const actionsParUrgence = useMemo(() => {
     const acc: Record<Urgence, number> = { critique: 0, haute: 0, moyenne: 0, basse: 0 };
@@ -377,13 +379,29 @@ export default function CampagneDashboard() {
                 <Flame className="h-4 w-4 text-rose-600" />
                 Actions classées par urgence
               </h2>
-              <div className="flex flex-wrap gap-1">
-                {(["critique", "haute", "moyenne", "basse"] as Urgence[]).map((u) => (
-                  <Badge key={u} variant="outline" className={`${URGENCE_LABELS[u].color} cursor-pointer`}
-                    onClick={() => setFiltreUrgence(filtreUrgence === u ? "all" : u)}>
-                    {URGENCE_LABELS[u].label} : {actionsParUrgence[u]}
-                  </Badge>
-                ))}
+              <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap gap-1">
+                  {(["critique", "haute", "moyenne", "basse"] as Urgence[]).map((u) => (
+                    <Badge key={u} variant="outline" className={`${URGENCE_LABELS[u].color} cursor-pointer`}
+                      onClick={() => setFiltreUrgence(filtreUrgence === u ? "all" : u)}>
+                      {URGENCE_LABELS[u].label} : {actionsParUrgence[u]}
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex items-center gap-1.5 pl-2 border-l">
+                  <ArrowUpDown className="h-3.5 w-3.5 text-muted-foreground" />
+                  <label htmlFor="tri-actions" className="text-xs text-muted-foreground">Trier par&nbsp;:</label>
+                  <Select value={tri} onValueChange={(v) => setTri(v as SortKey)}>
+                    <SelectTrigger id="tri-actions" className="h-7 w-[200px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(Object.keys(SORT_LABELS) as SortKey[]).map((k) => (
+                        <SelectItem key={k} value={k} className="text-xs">{SORT_LABELS[k]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
             <div className="p-3 border-b bg-muted/20 space-y-2">
@@ -404,12 +422,12 @@ export default function CampagneDashboard() {
                     </Badge>
                   );
                 })}
-                {(filtreUrgence !== "all" || filtreActeur !== "all" || searchActions !== "") && (
+                {(filtreUrgence !== "all" || filtreActeur !== "all" || searchActions !== "" || tri !== "urgence") && (
                   <Button
                     variant="ghost"
                     size="sm"
                     className="h-6 text-xs ml-auto"
-                    onClick={() => { setFiltreUrgence("all"); setFiltreActeur("all"); setSearchActions(""); }}
+                    onClick={() => { setFiltreUrgence("all"); setFiltreActeur("all"); setSearchActions(""); setTri("urgence"); }}
                   >
                     Réinitialiser
                   </Button>
