@@ -80,7 +80,7 @@ must("Import / usage de TYPE_FONDS_LABELS", /TYPE_FONDS_LABELS/.test(pdf));
 for (const code of ["FS", "FSL", "FSC_COL", "FSC"]) {
   must(
     `TYPE_FONDS_LABELS contient le code « ${code} »`,
-    new RegExp(`["']${code}["']\\s*:`).test(types),
+    new RegExp(`(^|[\\s,{])${code}\\s*:`, "m").test(types),
   );
 }
 
