@@ -5,7 +5,6 @@
 // ═══════════════════════════════════════════════════════════════════
 import { useMemo, useState } from 'react';
 import { OrdoNavigation, OrdoViewMode } from './OrdoNavigation';
-import { OrdoFicheIndicateur } from './OrdoFicheIndicateur';
 import { OrdoMosaique } from './OrdoMosaique';
 import { OrdoNarrationContinue } from './OrdoNarrationContinue';
 import { ORDO_FICHES, getFicheById } from './catalog';
@@ -13,6 +12,7 @@ import { FicheA3Population } from './fiches/FicheA3Population';
 import { FicheB3TauxRealisation } from './fiches/FicheB3TauxRealisation';
 import { FicheC1ChargesAP } from './fiches/FicheC1ChargesAP';
 import { FicheD1Financements } from './fiches/FicheD1Financements';
+import { FicheGenerique } from './fiches/FicheGenerique';
 
 export function RapportOrdoCofi() {
   const [view, setView] = useState<OrdoViewMode>('mosaique');
@@ -31,14 +31,7 @@ export function RapportOrdoCofi() {
       case 'ordo_c1': return <FicheC1ChargesAP />;
       case 'ordo_d1': return <FicheD1Financements />;
       default:
-        return (
-          <OrdoFicheIndicateur
-            fiche={fiche}
-            rows={[]}
-            hasData={false}
-            emptyMessage={`Cette fiche est en cours de câblage aux données réelles. La structure est en place : tableau N-2/N-1/N, graphique adapté, narration IA et zone de commentaire ordonnateur sont prêts. Voir M9-6 ${fiche.meta} pour la définition normative de l'indicateur.`}
-          />
-        );
+        return <FicheGenerique fiche={fiche} />;
     }
   };
 
