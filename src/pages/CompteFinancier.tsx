@@ -35,6 +35,7 @@ import { IndicateursSrh } from '@/components/cofieple/IndicateursSrh';
 import { PerimetreComptable } from '@/components/cofieple/PerimetreComptable';
 import { VueConsolidee } from '@/components/cofieple/VueConsolidee';
 import { VueGroupement } from '@/components/cofieple/VueGroupement';
+import { PurgeImportsVidesBanner } from '@/components/cofieple/PurgeImportsVidesBanner';
 import { RapportImpression } from '@/components/rapport/RapportImpression';
 import { CofiepleHero } from '@/components/cofieple/premium/CofiepleHero';
 import { MagazineExportButton } from '@/components/cofieple/premium/MagazineExportButton';
@@ -226,6 +227,9 @@ const CompteFinancier = () => {
         {(hasData || nbFichiers > 0) && (
           <div className="mx-1 mt-2 no-print"><PerimetreComptable /></div>
         )}
+
+        {/* Bandeau auto-détection imports SDE/SDR vides (Bug 1 — purge) */}
+        <PurgeImportsVidesBanner />
 
         {/* Banner Budget Annexe */}
         {hasData && activeBudget !== 'principal' && resultats[activeBudget] && (() => {
