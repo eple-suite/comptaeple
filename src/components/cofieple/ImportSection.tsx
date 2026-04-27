@@ -1083,9 +1083,10 @@ export function ImportSection() {
           <CardContent className="p-4 flex items-start gap-3">
             <ShieldCheck className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
             <div className="text-xs">
-              <strong>Triple verrou de sécurité actif</strong> — Chaque fichier sera vérifié sur 3 critères :
+              <strong>Verrou de sécurité adaptatif actif</strong> — Balance : 3 critères ; SDE/SDR : établissement + nature du flux, l'exercice venant du contexte de travail.
+              <br />Critères contrôlés :
               <span className="font-semibold"> 1) Code Op@le/UAI</span>,
-              <span className="font-semibold"> 2) Exercice comptable ({exerciceTravail})</span>,
+              <span className="font-semibold"> 2) Exercice comptable ({exerciceTravail}, balance uniquement)</span>,
               <span className="font-semibold"> 3) Nature du flux</span>.
               <br />
               Établissement : <span className="font-mono font-semibold text-primary">{selectedEstablishment.uai}</span>
