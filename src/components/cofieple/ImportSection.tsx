@@ -33,6 +33,7 @@ import {
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import { toast } from 'sonner';
 import { ImportDebug } from './ImportDebug';
+import { DiagnosticImportPanel, type DiagnosticImportEntry } from './DiagnosticImportPanel';
 
 interface FileSlot {
   key: string; label: string; sublabel: string;
@@ -579,6 +580,8 @@ export function ImportSection() {
   const [lockAlert, setLockAlert] = useState<TripleLockResult & { slotLabel?: string } | null>(null);
   /** Diagnostic du choix d'onglet par slot (SDE/SDR/Balance Excel). */
   const [sheetDiag, setSheetDiag] = useState<Record<string, SheetPickDiagnostic>>({});
+  /** Diagnostic enrichi par slot (mapping, échantillon, comptes ignorés) — affiché dans le panneau dédié. */
+  const [diagEntries, setDiagEntries] = useState<Record<string, DiagnosticImportEntry>>({});
   /** Workbooks XLSX gardés en mémoire par slot, pour permettre une
    *  re-sélection manuelle de l'onglet sans re-uploader le fichier. */
   const workbooksRef = useRef<Record<string, { wb: XLSX.WorkBook; fileName: string }>>({});
@@ -821,6 +824,24 @@ export function ImportSection() {
             });
           }
           console.log(`[TAUX-SDE] ${slot.label}`, c, `services:`, taux.parService.length);
+          // Diagnostic enrichi pour le panneau « 🔍 Diagnostic d'import »
+          const ignored: Array<{ compte: string; raison: string }> = [];
+          for (const r of rawRows) {
+            const compteRaw = String((r as Record<string, unknown>)['compte'] ?? '').trim();
+            const compte = compteRaw.replace(/^C\//i, '').replace(/[^0-9]/g, '');
+            if (!compte) ignored.push({ compte: compteRaw, raison: 'compte vide ou non numérique' });
+            else if (!compte.startsWith('6')) ignored.push({ compte, raison: 'préfixe ≠ 6 (hors classe dépenses)' });
+          }
+          setDiagEntries(prev => ({
+            ...prev,
+            [slot.key]: {
+              slotKey: slot.key, slotLabel: slot.label, fileName,
+              rowsCount: sdeRows.length, diag,
+              mapping: { service: 0, activite: 1, compte: 2, oi: 3, dbm: 4, ot: 5, engagementsComptables: 6, mandats: 7, liquidations: 8 },
+              sample: sdeRows.slice(0, 3) as unknown as Record<string, unknown>[],
+              ignored,
+            },
+          }));
         } else if (slot.type === 'sdr' || slot.type === 'sdr1') {
           const taux = computeTauxRecettesFromRecords(rows);
           const c = taux.consolide;
@@ -835,6 +856,23 @@ export function ImportSection() {
             duration: 9000,
           });
           console.log(`[TAUX-SDR] ${slot.label}`, c, `services:`, taux.parService.length);
+          const ignored: Array<{ compte: string; raison: string }> = [];
+          for (const r of rawRows) {
+            const compteRaw = String((r as Record<string, unknown>)['compte'] ?? '').trim();
+            const compte = compteRaw.replace(/^C\//i, '').replace(/[^0-9]/g, '');
+            if (!compte) ignored.push({ compte: compteRaw, raison: 'compte vide ou non numérique' });
+            else if (!compte.startsWith('7')) ignored.push({ compte, raison: 'préfixe ≠ 7 (hors classe recettes)' });
+          }
+          setDiagEntries(prev => ({
+            ...prev,
+            [slot.key]: {
+              slotKey: slot.key, slotLabel: slot.label, fileName,
+              rowsCount: rows.length, diag,
+              mapping: { service: 0, activite: 1, compte: 2, pi: 3, dbm: 4, pt: 5, ordresRecettes: 6, recettesEncaissees: 7, resteARecouvrer: 8 },
+              sample: rows.slice(0, 3) as unknown as Record<string, unknown>[],
+              ignored,
+            },
+          }));
         }
       } catch (tauxErr) {
         console.warn('[TAUX] Calcul des taux indisponible :', tauxErr);
@@ -1100,6 +1138,9 @@ export function ImportSection() {
 
       {/* Debug panel — dev only */}
       <ImportDebug />
+
+      {/* Panneau diagnostic d'import (toujours accessible, repliable) */}
+      <DiagnosticImportPanel entries={Object.values(diagEntries)} />
     </div>
   );
 }
