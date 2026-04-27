@@ -294,6 +294,8 @@ export interface SheetPickDiagnostic {
    *  `forced` = onglet imposé manuellement par l'utilisateur. */
   mode: 'canonique' | 'balance-headers' | 'fallback' | 'forced';
   score: number | null;
+  /** Exercice comptable extrait de façon fiable quand le format le permet (balance : AE4). */
+  detectedExercice?: number | null;
   /** Liste exhaustive des onglets évalués (pour la boîte « Reprendre sélection »). */
   candidates: Array<{ sheetName: string; score: number | null; reason: string }>;
 }
@@ -319,6 +321,7 @@ function pickBestWorkbookRows(
         sheetName: forcedSheetName,
         mode: 'forced',
         score: null,
+          detectedExercice: expectedType === 'bal' ? extractExerciceFromBalanceSheet(wb.Sheets[forcedSheetName]) : null,
         candidates: wb.SheetNames.map((n) => ({ sheetName: n, score: null, reason: n === forcedSheetName ? 'imposé manuellement' : '' })),
       },
     };
@@ -350,6 +353,7 @@ function pickBestWorkbookRows(
           sheetName: balanceSheet.sheetName,
           mode: 'balance-headers',
           score: null,
+            detectedExercice: extractExerciceFromBalanceSheet(wb.Sheets[balanceSheet.sheetName]),
           candidates: wb.SheetNames.map((n) => ({ sheetName: n, score: null, reason: n === balanceSheet.sheetName ? 'sélecteur balance par en-têtes' : '' })),
         },
       };
@@ -478,6 +482,7 @@ function pickBestWorkbookRows(
       sheetName: bestSheet || (wb.SheetNames[0] ?? ''),
       mode: 'fallback',
       score: bestScore === -Infinity ? null : Math.round(bestScore * 10) / 10,
+          detectedExercice: expectedType === 'bal' && bestSheet ? extractExerciceFromBalanceSheet(wb.Sheets[bestSheet]) : null,
       candidates: fallbackCandidates,
     },
   };
