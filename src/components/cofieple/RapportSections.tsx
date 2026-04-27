@@ -1881,11 +1881,14 @@ function CommentaireBox({ label, value, onChange, placeholder, status, lastSaved
     }
   };
   return (
-    <div className="mb-4 section-rapport">
-      <div className="flex items-center gap-1 mb-1 no-print">
-        <MessageSquare className="h-3 w-3 text-muted-foreground" />
-        <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">{label}</span>
-        {status && <span className="ml-auto"><SaveIndicator status={status} lastSaved={lastSaved} /></span>}
+    // Encart latéral : sur grand écran (lg+), s'affiche à droite à côté des visuels
+    // de la section grâce à un layout grid 2 colonnes appliqué au parent ; sur mobile,
+    // bascule sous les visuels. À l'impression (PDF), reste en pleine largeur.
+    <div className="mb-4 section-rapport lg:max-w-md lg:ml-auto print:max-w-none print:ml-0 rounded-lg border border-border/60 bg-muted/20 p-3">
+      <div className="flex items-center gap-1 mb-1.5">
+        <MessageSquare className="h-3.5 w-3.5 text-primary" />
+        <span className="text-[10px] text-foreground font-bold uppercase tracking-wide">{label}</span>
+        {status && <span className="ml-auto no-print"><SaveIndicator status={status} lastSaved={lastSaved} /></span>}
       </div>
       <Textarea
         ref={textareaRef}
@@ -1894,12 +1897,12 @@ function CommentaireBox({ label, value, onChange, placeholder, status, lastSaved
           onChange(e.target.value);
           const t = e.target;
           t.style.height = 'auto';
-          t.style.height = `${Math.max(48, t.scrollHeight)}px`;
+          t.style.height = `${Math.max(64, t.scrollHeight)}px`;
         }}
         placeholder={placeholder || `Saisissez ici les faits caractéristiques de cette rubrique…`}
-        rows={2}
-        className="bg-muted/30 text-xs resize-none overflow-hidden"
-        style={{ minHeight: 48 }}
+        rows={3}
+        className="bg-background text-xs resize-none overflow-hidden border-border"
+        style={{ minHeight: 64 }}
       />
     </div>
   );
