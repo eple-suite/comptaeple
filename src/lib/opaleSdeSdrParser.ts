@@ -56,6 +56,48 @@ export const TCD_SIGNATURES = [
   'etiquettes de colonnes',
 ] as const;
 
+// ─── Spécification chirurgicale Op@le (export GPE réel) ───────────────
+// Découverte forensique : l'onglet "Donnees" porte les VRAIES données
+// avec un mapping POSITIONNEL fixe quel que soit le libellé d'en-tête
+// (Op@le nomme génériquement « Montant colonne 1..5 » en ligne 2).
+//
+// Indices 0-based des colonnes utiles (vérifiés sur SDE/SDR Op@le 2025) :
+const OPALE_POS = {
+  CODE_OPALE: 0,    // A  — Code Op@le établissement (P04481)
+  SERVICE: 10,      // K  — Service budgétaire (AP/VE/ALO/SRH/OPC)
+  LIBELLE_SVC: 11,  // L
+  DOMAINE: 13,      // N
+  ACTIVITE: 16,     // Q
+  COMPTE: 37,       // AL — Compte par nature (6XXXXX/7XXXXX)
+  LIBELLE_CPT: 38,  // AM
+  MONTANT_1: 63,    // BL — Budget / Prévision
+  MONTANT_2: 64,    // BM — Engagé
+  MONTANT_3: 65,    // BN — Réalisé / Ordres de recettes
+  MONTANT_4: 66,    // BO — En cours / Recettes notifiées
+  MONTANT_5: 67,    // BP — Disponible / +-values
+  UAI: 77,          // BZ — UAI éducation nationale
+  // L3, colonnes CD-CH : libellés humains des 5 montants
+  HUMAN_LABELS_ROW: 2, // ligne d'index 2 (3e ligne, 0-based)
+  HUMAN_LABEL_BUDGET: 81,   // CD
+  HUMAN_LABEL_ENGAGE: 82,   // CE
+  HUMAN_LABEL_REALISE: 83,  // CF
+  HUMAN_LABEL_ENCOURS: 84,  // CG
+  HUMAN_LABEL_DISPO: 85,    // CH
+} as const;
+
+/** Détecte si un onglet présente la signature positionnelle Op@le brute :
+ *  ligne 2 (index 1) contient « Montant colonne 1..5 » aux indices BL-BP. */
+function hasOpalePositionalSignature(matrix: SheetCell[][]): boolean {
+  if (matrix.length < 4) return false;
+  const headerRow = matrix[1] ?? [];
+  let hits = 0;
+  for (let col = OPALE_POS.MONTANT_1; col <= OPALE_POS.MONTANT_5; col += 1) {
+    const cell = normalizeColumnName(String(headerRow[col] ?? ''));
+    if (cell.startsWith('montant colonne')) hits += 1;
+  }
+  return hits >= 3;
+}
+
 /** Synonymes pour mapping des colonnes — Op@le change les libellés selon versions */
 const HEADER_ALIASES: Record<string, string[]> = {
   service: ['service budgetaire', 'service', 'sb'],
@@ -64,19 +106,19 @@ const HEADER_ALIASES: Record<string, string[]> = {
   domaine: ['domaine fonctionnel', 'domaine'],
   compte: ['compte par nature', 'compte nature', 'compte'],
   libelle: ['libelle compte', 'libelle du compte', 'intitule compte', 'libelle'],
-  oi: ['ouvertures initiales', 'ouverture initiale', 'oi', 'budget initial', 'bi'],
-  pi: ['previsions initiales', 'prevision initiale', 'pi', 'budget initial', 'bi'],
+  oi: ['ouvertures initiales', 'ouverture initiale', 'oi', 'budget initial', 'bi', 'budget'],
+  pi: ['previsions initiales', 'prevision initiale', 'pi', 'budget initial', 'bi', 'budget'],
   dbm: ['dbm', 'dbm de l exercice', 'decisions budgetaires modificatives', 'modifications'],
   ot: ['ouvertures totales', 'ot', 'credits ouverts', 'credits totaux'],
   pt: ['previsions totales', 'pt', 'previsions de recettes totales'],
-  engagements_juridiques: ['engagements juridiques', 'ej', 'engagements', 'engages'],
-  engagements_comptables: ['engagements comptables', 'ec', 'mandats pris en charge'],
-  liquidations: ['liquidations', 'liquide', 'liquides'],
-  mandats: ['mandats emis', 'mandats', 'mandates', 'mandatements'],
+  engagements_juridiques: ['engagements juridiques', 'ej', 'engagements', 'engages', 'engage'],
+  engagements_comptables: ['engagements comptables', 'ec', 'mandats pris en charge', 'engage'],
+  liquidations: ['liquidations', 'liquide', 'liquides', 'realise'],
+  mandats: ['mandats emis', 'mandats', 'mandates', 'mandatements', 'realise'],
   disponible: ['disponible', 'restes a engager', 'reste a engager'],
-  ordres_recettes: ['ordres de recettes emis', 'ordres de recettes', 'ordres recettes', 'aor', 'titres emis'],
+  ordres_recettes: ['ordres de recettes emis', 'ordres de recettes', 'ordres recettes', 'aor', 'titres emis', 'realise'],
   recettes_notifiees: ['recettes notifiees', 'notifications', 'notifies'],
-  recettes_encaissees: ['recettes encaissees', 'encaissements', 'encaisse', 'recouvre'],
+  recettes_encaissees: ['recettes encaissees', 'encaissements', 'encaisse', 'recouvre', 'realise'],
   reste_a_recouvrer: ['reste a recouvrer', 'rar', 'reste a emettre'],
 };
 
@@ -130,14 +172,18 @@ export function selectOpaleSdeSdrSheet(
   kind: ExecKind,
 ): SdeSdrSelection | null {
   const canonical = kind === 'sde' ? SDE_CANONICAL_HEADERS : SDR_CANONICAL_HEADERS;
-  const scored: Array<{
+  const expectedClass = kind === 'sde' ? '6' : '7';
+
+  type Scored = {
     sheetName: string;
     score: number;
     headerRowIndex: number;
     headers: string[];
     matrix: SheetCell[][];
+    positional: boolean;
     reason: string;
-  }> = [];
+  };
+  const scored: Scored[] = [];
 
   for (const sheetName of workbook.SheetNames) {
     const sheet = workbook.Sheets[sheetName];
@@ -149,70 +195,121 @@ export function selectOpaleSdeSdrSheet(
       raw: true,
     });
 
+    const nameNorm = normalizeColumnName(sheetName);
+    let score = 0;
+    const reasons: string[] = [];
+
+    // ── Bonus : nom d'onglet « Donnees » / « Data » ──────────────────
+    if (/^(donnee|donnees|données|data|ecbu detail)$/i.test(nameNorm) ||
+        nameNorm === 'donnees' || nameNorm === 'donnee' || nameNorm === 'data') {
+      score += 100;
+      reasons.push('+100 nom=Donnees');
+    }
+
+    // ── Pénalité : noms d'onglet TCD récap ───────────────────────────
+    if (/^(ecbu|balance|tcd|tableau croise|synthese|recapitulatif)$/i.test(nameNorm)) {
+      score -= 200;
+      reasons.push('-200 nom=TCD');
+    }
+
+    // ── Bonus volumétrie ─────────────────────────────────────────────
+    const nonEmptyRows = matrix.filter((r) => (r ?? []).some((c) => c != null && String(c).trim() !== '')).length;
+    const maxCols = matrix.reduce((m, r) => Math.max(m, (r ?? []).length), 0);
+    if (nonEmptyRows > 50) { score += 50; reasons.push(`+50 (${nonEmptyRows} lignes)`); }
+    if (maxCols > 30) { score += 30; reasons.push(`+30 (${maxCols} colonnes)`); }
+    if (nonEmptyRows <= 10) { score -= 5; reasons.push(`-5 (≤10 lignes)`); }
+
+    // ── Bonus lignes ≥5 valeurs numériques non nulles ────────────────
+    let richDataRows = 0;
+    for (const r of matrix) {
+      let n = 0;
+      for (const c of r ?? []) {
+        if (typeof c === 'number' && c !== 0) n += 1;
+        else if (typeof c === 'string' && /^-?[\d\s\u00A0]*[.,]?\d+$/.test(c.trim()) && parseFloat(c.replace(',', '.')) !== 0) n += 1;
+      }
+      if (n >= 5) richDataRows += 1;
+    }
+    score += richDataRows;
+    if (richDataRows) reasons.push(`+${richDataRows} (lignes riches)`);
+
+    // ── Pénalités TCD : « Somme de Montant », « Total général », « (vide) » ──
+    let pSomme = 0, pTotal = 0, pVide = 0;
+    for (const r of matrix.slice(0, 30)) {
+      for (const c of r ?? []) {
+        const s = normalizeColumnName(String(c ?? ''));
+        if (s.startsWith('somme de montant') || s.startsWith('somme de ')) pSomme += 1;
+        else if (s === 'total general') pTotal += 1;
+        else if (s === '(vide)' || s === 'vide') pVide += 1;
+      }
+    }
+    score -= pSomme * 50;
+    score -= pTotal * 50;
+    score -= pVide * 30;
+    if (pSomme) reasons.push(`-${pSomme * 50} (Somme de…)`);
+    if (pTotal) reasons.push(`-${pTotal * 50} (Total général)`);
+    if (pVide) reasons.push(`-${pVide * 30} ((vide))`);
+
+    // ── Détection signature positionnelle Op@le (BL-BP « Montant colonne ») ──
+    const positional = hasOpalePositionalSignature(matrix);
+    if (positional) { score += 80; reasons.push('+80 signature positionnelle Op@le'); }
+
+    // ── Détection en-têtes canoniques (voie alternative) ─────────────
     let bestRow = -1;
     let bestMatches = 0;
-    let tcdPenalty = 0;
-
-    // Scan jusqu'à 12 lignes d'en-tête possibles (Op@le met parfois ligne 3)
     for (let i = 0; i < Math.min(matrix.length, 12); i += 1) {
       const row = matrix[i] ?? [];
       const norm = row.map((c) => normalizeColumnName(String(c ?? '')));
-      const tcd = isTCDRow(row);
-      if (tcd) {
-        tcdPenalty = -10;
-        continue;
-      }
+      if (isTCDRow(row)) continue;
       const matches = canonical.filter((c) =>
         norm.some((h) => h === normalizeColumnName(c) || h.startsWith(normalizeColumnName(c))),
       ).length;
-      if (matches > bestMatches) {
-        bestMatches = matches;
-        bestRow = i;
-      }
+      if (matches > bestMatches) { bestMatches = matches; bestRow = i; }
     }
+    if (bestMatches > 0) { score += bestMatches * 5; reasons.push(`+${bestMatches * 5} en-têtes canoniques`); }
 
-    let score = bestMatches * 5 + tcdPenalty;
+    // Pour la voie positionnelle, l'index d'en-têtes effectif est la ligne 1 (0-based).
+    // Pour la voie canonique, c'est bestRow.
+    const headerRowIndex = positional ? 1 : bestRow;
+
+    // ── Comptage lignes valides (compte commençant par classe attendue) ──
     let validRows = 0;
-
-    if (bestRow >= 0) {
+    if (positional) {
+      for (let i = 2; i < matrix.length; i += 1) {
+        const r = matrix[i] ?? [];
+        const compte = String(r[OPALE_POS.COMPTE] ?? '').replace(/[^0-9]/g, '');
+        if (compte.length >= 3 && compte.startsWith(expectedClass)) validRows += 1;
+      }
+    } else if (bestRow >= 0) {
       const headers = matrix[bestRow].map((c) => normalizeColumnName(String(c ?? '')));
       const compteIdx = findHeaderIndex(headers, 'compte');
-      const serviceIdx = findHeaderIndex(headers, 'service');
-      // Compte ligne valide : compte 6XXXXX (SDE) ou 7XXXXX (SDR) + service non vide
-      const expectedClass = kind === 'sde' ? '6' : '7';
       if (compteIdx !== -1) {
         for (let i = bestRow + 1; i < matrix.length; i += 1) {
           const r = matrix[i] ?? [];
-          const compteRaw = String(r[compteIdx] ?? '').trim().replace(/^C\//i, '');
-          const compte = compteRaw.replace(/[^0-9]/g, '');
-          const service = serviceIdx !== -1 ? String(r[serviceIdx] ?? '').trim() : '';
+          const compte = String(r[compteIdx] ?? '').replace(/[^0-9]/g, '');
           if (compte.length >= 3 && compte.startsWith(expectedClass)) validRows += 1;
-          else if (compte.length >= 3 && service && /^[A-Z]{2,4}$/.test(service)) validRows += 1;
         }
       }
-      score += validRows;
     }
+    if (validRows) { score += validRows; reasons.push(`+${validRows} comptes ${expectedClass}XXXXX`); }
 
-    // Boost si nom d'onglet contient "donnees"
-    const nameNorm = normalizeColumnName(sheetName);
-    if (nameNorm.includes('donnee')) score += 5;
-    if (nameNorm.includes('situation')) score -= 3; // souvent le TCD
+    const headers = headerRowIndex >= 0
+      ? (matrix[headerRowIndex] ?? []).map((c) => String(c ?? ''))
+      : [];
 
     scored.push({
       sheetName,
       score,
-      headerRowIndex: bestRow,
-      headers: bestRow >= 0 ? matrix[bestRow].map((c) => String(c ?? '')) : [],
+      headerRowIndex,
+      headers,
       matrix,
-      reason: `${bestMatches}/${canonical.length} en-têtes canoniques, ${validRows} lignes valides${tcdPenalty < 0 ? ', TCD pénalisé' : ''}`,
+      positional,
+      reason: reasons.join(' · ') || '—',
     });
   }
 
   scored.sort((a, b) => b.score - a.score);
-  const winner = scored[0];
-  if (!winner || winner.score < 10 || winner.headerRowIndex < 0) {
-    return null;
-  }
+  const winner = scored.find((s) => s.score > 0 && s.headerRowIndex >= 0) ?? null;
+  if (!winner) return null;
 
   return {
     kind,
@@ -223,6 +320,92 @@ export function selectOpaleSdeSdrSheet(
     score: winner.score,
     scoredSheets: scored.map(({ sheetName, score, reason }) => ({ sheetName, score, reason })),
   };
+}
+
+// ─── Parsing positionnel Op@le (spec chirurgicale) ────────────────────
+
+/** Parse SDE/SDR via mapping POSITIONNEL fixe (colonnes K, AL, BL-BP).
+ *  À utiliser dès qu'on détecte la signature « Montant colonne N » en L2.
+ *  Cette voie est insensible aux libellés d'en-têtes Op@le génériques. */
+export function parseSdeRowsPositional(matrix: SheetCell[][]): SdeRow[] {
+  const rows: SdeRow[] = [];
+  for (let i = 2; i < matrix.length; i += 1) {
+    const r = matrix[i] ?? [];
+    const codeOpale = String(r[OPALE_POS.CODE_OPALE] ?? '').trim();
+    if (!codeOpale || /^total/i.test(codeOpale)) continue;
+    const service = String(r[OPALE_POS.SERVICE] ?? '').trim();
+    if (!service) continue;
+    const compte = String(r[OPALE_POS.COMPTE] ?? '').replace(/[^0-9]/g, '');
+    if (compte.length < 3 || !compte.startsWith('6')) continue;
+
+    const oi = toNum(r[OPALE_POS.MONTANT_1]);
+    const ec = toNum(r[OPALE_POS.MONTANT_2]);
+    const realise = toNum(r[OPALE_POS.MONTANT_3]);
+    const enCours = toNum(r[OPALE_POS.MONTANT_4]);
+    const dispo = toNum(r[OPALE_POS.MONTANT_5]);
+
+    if (oi === 0 && ec === 0 && realise === 0 && enCours === 0 && dispo === 0) continue;
+
+    rows.push({
+      service,
+      activite: String(r[OPALE_POS.ACTIVITE] ?? '').trim(),
+      natureAnalytique: '',
+      domaine: String(r[OPALE_POS.DOMAINE] ?? '').trim(),
+      compte,
+      libelle: String(r[OPALE_POS.LIBELLE_CPT] ?? '').trim(),
+      oi,
+      dbm: 0,
+      ot: oi, // budget total = colonne BL « Budget »
+      engagementsJuridiques: ec,
+      engagementsComptables: ec,
+      liquidations: realise,
+      mandats: realise,
+      disponible: dispo || (oi - ec),
+    });
+  }
+  return rows;
+}
+
+/** Idem pour SDR (compte commençant par 7, montant 5 = +/- value). */
+export function parseSdrRowsPositional(matrix: SheetCell[][]): SdrRow[] {
+  const rows: SdrRow[] = [];
+  for (let i = 2; i < matrix.length; i += 1) {
+    const r = matrix[i] ?? [];
+    const codeOpale = String(r[OPALE_POS.CODE_OPALE] ?? '').trim();
+    if (!codeOpale || /^total/i.test(codeOpale)) continue;
+    const service = String(r[OPALE_POS.SERVICE] ?? '').trim();
+    if (!service) continue;
+    const compte = String(r[OPALE_POS.COMPTE] ?? '').replace(/[^0-9]/g, '');
+    if (compte.length < 3 || !compte.startsWith('7')) continue;
+
+    const pi = toNum(r[OPALE_POS.MONTANT_1]);
+    const engage = toNum(r[OPALE_POS.MONTANT_2]);
+    const realise = toNum(r[OPALE_POS.MONTANT_3]);
+    const notif = toNum(r[OPALE_POS.MONTANT_4]);
+    const pmv = toNum(r[OPALE_POS.MONTANT_5]);
+
+    if (pi === 0 && engage === 0 && realise === 0 && notif === 0 && pmv === 0) continue;
+
+    rows.push({
+      service,
+      activite: String(r[OPALE_POS.ACTIVITE] ?? '').trim(),
+      compte,
+      libelle: String(r[OPALE_POS.LIBELLE_CPT] ?? '').trim(),
+      pi,
+      dbm: 0,
+      pt: pi,
+      ordresRecettes: realise,
+      recettesNotifiees: notif,
+      recettesEncaissees: realise,
+      resteARecouvrer: pmv,
+    });
+  }
+  return rows;
+}
+
+/** Helper exporté : détection positionnelle pour les consommateurs. */
+export function isOpalePositionalMatrix(matrix: SheetCell[][]): boolean {
+  return hasOpalePositionalSignature(matrix);
 }
 
 // ─── Parsing ──────────────────────────────────────────────────────────
@@ -272,6 +455,10 @@ function toStr(v: unknown): string {
 /** Parse les lignes de l'onglet SDE retenu */
 export function parseSdeRows(selection: SdeSdrSelection): SdeRow[] {
   if (selection.kind !== 'sde') throw new Error('parseSdeRows: selection.kind must be "sde"');
+  // Voie positionnelle Op@le (BL-BP « Montant colonne 1..5 »)
+  if (hasOpalePositionalSignature(selection.matrix)) {
+    return parseSdeRowsPositional(selection.matrix);
+  }
   const headers = selection.matrix[selection.headerRowIndex].map((c) => normalizeColumnName(String(c ?? '')));
   const idx = {
     service: findHeaderIndex(headers, 'service'),
@@ -329,6 +516,9 @@ export function parseSdeRows(selection: SdeSdrSelection): SdeRow[] {
 /** Parse les lignes de l'onglet SDR retenu */
 export function parseSdrRows(selection: SdeSdrSelection): SdrRow[] {
   if (selection.kind !== 'sdr') throw new Error('parseSdrRows: selection.kind must be "sdr"');
+  if (hasOpalePositionalSignature(selection.matrix)) {
+    return parseSdrRowsPositional(selection.matrix);
+  }
   const headers = selection.matrix[selection.headerRowIndex].map((c) => normalizeColumnName(String(c ?? '')));
   const idx = {
     service: findHeaderIndex(headers, 'service'),
