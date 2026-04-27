@@ -80,36 +80,50 @@ function extractCsvIdentifier(rows: Record<string, string>[]): { uai: string | n
   return { uai, opale };
 }
 
-/** Extrait l'exercice comptable depuis les données CSV.
- *  Priorité : champ exercice > période "du …/YYYY au …/YYYY" > année isolée.
- *  On ignore les dates d'édition (ex. "Edité au : 04/03/2026"). */
-function extractExercice(rows: Record<string, string>[], sheetMeta?: string | null): number | null {
+/** Convertit une valeur Op@le en exercice, uniquement si elle porte une vraie date/période. */
+function extractYearFromDateLikeValue(value: unknown): number | null {
   const isValidYear = (year: number | null | undefined): year is number => !!year && year >= 2000 && year <= 2099;
 
-  const extractYearFromValue = (value: string): number | null => {
-    const v = String(value || '').trim();
-    if (!v) return null;
+  if (value instanceof Date) {
+    const y = value.getFullYear();
+    return isValidYear(y) ? y : null;
+  }
 
-    const fullDate = v.match(/\b\d{1,2}[/-]\d{1,2}[/-](20\d{2})\b/);
-    if (fullDate) {
-      const y = parseInt(fullDate[1], 10);
-      return isValidYear(y) ? y : null;
-    }
+  const v = String(value ?? '').trim();
+  if (!v) return null;
 
-    const monthYear = v.match(/\b\d{1,2}[/-](20\d{2})\b/);
-    if (monthYear) {
-      const y = parseInt(monthYear[1], 10);
-      return isValidYear(y) ? y : null;
-    }
+  const fullDate = v.match(/\b\d{1,2}[/-]\d{1,2}[/-](20\d{2})\b/);
+  if (fullDate) {
+    const y = parseInt(fullDate[1], 10);
+    return isValidYear(y) ? y : null;
+  }
 
-    const yearOnly = v.match(/^\s*(20\d{2})\s*$/);
-    if (yearOnly) {
-      const y = parseInt(yearOnly[1], 10);
-      return isValidYear(y) ? y : null;
-    }
+  const monthYear = v.match(/\b\d{1,2}[/-](20\d{2})\b/);
+  if (monthYear) {
+    const y = parseInt(monthYear[1], 10);
+    return isValidYear(y) ? y : null;
+  }
 
-    return null;
-  };
+  const yearOnly = v.match(/^\s*(20\d{2})\s*$/);
+  if (yearOnly) {
+    const y = parseInt(yearOnly[1], 10);
+    return isValidYear(y) ? y : null;
+  }
+
+  return null;
+}
+
+/** Extrait l'exercice depuis la balance uniquement, via la cellule AE4 (ligne 4, colonne AE) de l'onglet Donnees. */
+function extractExerciceFromBalanceSheet(sheet?: XLSX.WorkSheet): number | null {
+  if (!sheet) return null;
+  const cell = sheet[XLSX.utils.encode_cell({ r: 3, c: 30 })];
+  return extractYearFromDateLikeValue(cell?.v ?? null);
+}
+
+/** Extrait l'exercice depuis une balance CSV/normalisée, sans jamais scanner les montants. */
+function extractExerciceFromBalanceRows(rows: Record<string, string>[], sheetMeta?: string | null): number | null {
+  const isValidYear = (year: number | null | undefined): year is number => !!year && year >= 2000 && year <= 2099;
+
 
   const isEditionOrPrintContext = (text: string): boolean => {
     const t = normalizeColumnName(text);
@@ -132,7 +146,7 @@ function extractExercice(rows: Record<string, string>[], sheetMeta?: string | nu
   for (const [key, val] of entries) {
     const k = normalizeColumnName(key);
     if (!k.includes('periode')) continue;
-    const y = extractYearFromValue(String(val || ''));
+    const y = extractYearFromDateLikeValue(String(val || ''));
     if (!isValidYear(y)) continue;
     if (k.includes('fin')) periodEnd = y;
     if (k.includes('debut')) periodStart = y;
@@ -172,21 +186,13 @@ function extractExercice(rows: Record<string, string>[], sheetMeta?: string | nu
     if (isValidYear(y)) return y;
   }
 
-  // 4) Fallback: end-of-exercise dates, then generic year (excluding edition/print metadata)
+  // 4) Balance only: end-of-exercise dates. No generic year fallback: amounts like 2 081,25 € must never become an exercise.
   for (const [key, val] of entries) {
     const k = normalizeColumnName(key);
     if (k.includes('fin') && k.includes('exercice') && !isEditionOrPrintContext(k)) {
-      const y = extractYearFromValue(String(val || ''));
+      const y = extractYearFromDateLikeValue(String(val || ''));
       if (isValidYear(y)) return y;
     }
-  }
-
-  for (const [key, val] of entries) {
-    if (isEditionOrPrintContext(key) || isEditionOrPrintContext(String(val || ''))) continue;
-    const m = String(val || '').match(/\b(20\d{2})\b/);
-    if (!m) continue;
-    const y = parseInt(m[1], 10);
-    if (isValidYear(y)) return y;
   }
 
   return null;
