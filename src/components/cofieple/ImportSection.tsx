@@ -404,7 +404,12 @@ function pickBestWorkbookRows(
     const normalized = normalizeColumnName(sheetName);
     let score = 0;
 
-    if ((expected === 'sde' || expected === 'sdr') && normalized.includes('ecbu')) score += 30;
+    // ⚠ CORRECTION CHIRURGICALE Op@le : l'onglet « ECBU » est un TCD
+    // récapitulatif (6-10 lignes vides ou à zéro). Les vraies données
+    // sont dans « Donnees ». On pénalise donc ECBU et on privilégie
+    // Donnees pour SDE/SDR.
+    if ((expected === 'sde' || expected === 'sdr') && normalized.includes('ecbu')) score -= 200;
+    if ((expected === 'sde' || expected === 'sdr') && normalized.includes('donnee')) score += 50;
     if (expected === 'bal' && normalized.includes('donnee')) score += 30;
     if (expected === 'bal' && normalized.includes('balance')) score -= 10;
 
