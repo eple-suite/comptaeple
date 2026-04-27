@@ -33,6 +33,7 @@ import {
 import type { TypeBudget } from '@/lib/cofieple_storeTypes';
 import { toast } from 'sonner';
 import { ImportDebug } from './ImportDebug';
+import { DiagnosticImportPanel, type DiagnosticImportEntry } from './DiagnosticImportPanel';
 
 interface FileSlot {
   key: string; label: string; sublabel: string;
@@ -579,6 +580,8 @@ export function ImportSection() {
   const [lockAlert, setLockAlert] = useState<TripleLockResult & { slotLabel?: string } | null>(null);
   /** Diagnostic du choix d'onglet par slot (SDE/SDR/Balance Excel). */
   const [sheetDiag, setSheetDiag] = useState<Record<string, SheetPickDiagnostic>>({});
+  /** Diagnostic enrichi par slot (mapping, échantillon, comptes ignorés) — affiché dans le panneau dédié. */
+  const [diagEntries, setDiagEntries] = useState<Record<string, DiagnosticImportEntry>>({});
   /** Workbooks XLSX gardés en mémoire par slot, pour permettre une
    *  re-sélection manuelle de l'onglet sans re-uploader le fichier. */
   const workbooksRef = useRef<Record<string, { wb: XLSX.WorkBook; fileName: string }>>({});
