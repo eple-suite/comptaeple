@@ -224,10 +224,10 @@ export default function HabilitationsOpalePage() {
         <TabsList>
           <TabsTrigger value="ordonnateur"><Building2 className="h-4 w-4 mr-1" />Sphère ordonnateur</TabsTrigger>
           <TabsTrigger value="comptable"><Lock className="h-4 w-4 mr-1" />Sphère comptable</TabsTrigger>
-          <TabsTrigger value="recap" onClick={() => navigate("/habilitations/recap")}>
+          <TabsTrigger value="recap" onClick={() => navigate("/rentree/habilitations-recap")}>
             <FileText className="h-4 w-4 mr-1" />Document récapitulatif
           </TabsTrigger>
-          <TabsTrigger value="rectorat" onClick={() => navigate("/habilitations/rectorat")}>
+          <TabsTrigger value="rectorat" onClick={() => navigate("/rentree/vue-rectorat")}>
             <Eye className="h-4 w-4 mr-1" />Vue rectorat
           </TabsTrigger>
         </TabsList>

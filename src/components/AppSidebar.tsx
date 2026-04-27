@@ -76,7 +76,7 @@ const pilotageItems: NavItem[] = [
   { title: "Contrôle interne", url: "/controle-interne", icon: ShieldCheck },
   { title: "Exécution budgétaire", url: "/execution-budgetaire", icon: TrendingUp },
   { title: "Marchés publics", url: "/marches", icon: Scale },
-  { title: "Habilitations Op@le", url: "/habilitations", icon: ShieldCheck, hot: true },
+  { title: "Habilitations Op@le", url: "/rentree/habilitations-opale", icon: ShieldCheck, hot: true },
   { title: "Enquêtes Rectorat", url: "/enquetes-rectorat", icon: ClipboardList, hot: true },
 ];
 
