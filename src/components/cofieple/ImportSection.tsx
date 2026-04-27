@@ -117,6 +117,12 @@ function extractYearFromDateLikeValue(value: unknown): number | null {
 function extractExerciceFromBalanceSheet(sheet?: XLSX.WorkSheet): number | null {
   if (!sheet) return null;
   const cell = sheet[XLSX.utils.encode_cell({ r: 3, c: 30 })];
+  const formatted = extractYearFromDateLikeValue(cell?.w ?? null);
+  if (formatted) return formatted;
+  if (typeof cell?.v === 'number') {
+    const decoded = XLSX.SSF.parse_date_code(cell.v);
+    if (decoded?.y) return extractYearFromDateLikeValue(String(decoded.y));
+  }
   return extractYearFromDateLikeValue(cell?.v ?? null);
 }
 
@@ -549,8 +555,7 @@ function tripleLockCheck(
   const fileExercice = baseType === 'bal'
     ? (detectedExercice ?? extractExerciceFromBalanceRows(rows, sheetMeta))
     : null;
-  if (fileExercice && exerciceTravail && fileExercice !== exerciceTravail) {
-    // Allow N-1 files in N-1 slots
+  if (fileExercice && exerciceTravail) {
     const isN1Slot = slotType.endsWith('1');
     const expectedYear = isN1Slot ? exerciceTravail - 1 : exerciceTravail;
     if (fileExercice !== expectedYear) {
