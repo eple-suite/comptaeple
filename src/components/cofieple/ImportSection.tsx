@@ -531,16 +531,16 @@ function tripleLockCheck(
   if (fileUai && selectedUai && fileUai !== selectedUai.toUpperCase()) {
     return {
       ok: false, type: 'opale',
-      title: 'Erreur de concordance — Établissement',
-      message: `Le fichier importé appartient à l'établissement UAI ${fileUai}, mais l'établissement sélectionné est ${selectedUai}.`,
+      title: 'Concordance d’établissement',
+      message: `Le fichier importé appartient à l'établissement UAI ${fileUai}, alors que vous travaillez sur ${selectedUai}. Veuillez vérifier votre export Op@le.`,
       details: 'Veuillez vérifier que vous avez sélectionné le bon établissement ou que votre export Op@le correspond.',
     };
   }
   if (fileOpale && selectedOpale && fileOpale !== selectedOpale.toUpperCase()) {
     return {
       ok: false, type: 'opale',
-      title: 'Erreur de concordance — Identifiant Op@le',
-      message: `Le fichier contient l'identifiant Op@le ${fileOpale}, mais l'établissement sélectionné utilise ${selectedOpale}.`,
+      title: 'Concordance d’établissement',
+      message: `Le fichier importé appartient à l'établissement Op@le ${fileOpale}, alors que vous travaillez sur ${selectedOpale}. Veuillez vérifier votre export Op@le.`,
       details: "Veuillez vérifier votre export Op@le ou l\u2019identifiant technique de l\u2019établissement.",
     };
   }
