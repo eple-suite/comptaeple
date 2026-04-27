@@ -80,36 +80,56 @@ function extractCsvIdentifier(rows: Record<string, string>[]): { uai: string | n
   return { uai, opale };
 }
 
-/** Extrait l'exercice comptable depuis les données CSV.
- *  Priorité : champ exercice > période "du …/YYYY au …/YYYY" > année isolée.
- *  On ignore les dates d'édition (ex. "Edité au : 04/03/2026"). */
-function extractExercice(rows: Record<string, string>[], sheetMeta?: string | null): number | null {
+/** Convertit une valeur Op@le en exercice, uniquement si elle porte une vraie date/période. */
+function extractYearFromDateLikeValue(value: unknown): number | null {
   const isValidYear = (year: number | null | undefined): year is number => !!year && year >= 2000 && year <= 2099;
 
-  const extractYearFromValue = (value: string): number | null => {
-    const v = String(value || '').trim();
-    if (!v) return null;
+  if (value instanceof Date) {
+    const y = value.getFullYear();
+    return isValidYear(y) ? y : null;
+  }
 
-    const fullDate = v.match(/\b\d{1,2}[/-]\d{1,2}[/-](20\d{2})\b/);
-    if (fullDate) {
-      const y = parseInt(fullDate[1], 10);
-      return isValidYear(y) ? y : null;
-    }
+  const v = String(value ?? '').trim();
+  if (!v) return null;
 
-    const monthYear = v.match(/\b\d{1,2}[/-](20\d{2})\b/);
-    if (monthYear) {
-      const y = parseInt(monthYear[1], 10);
-      return isValidYear(y) ? y : null;
-    }
+  const fullDate = v.match(/\b\d{1,2}[/-]\d{1,2}[/-](20\d{2})\b/);
+  if (fullDate) {
+    const y = parseInt(fullDate[1], 10);
+    return isValidYear(y) ? y : null;
+  }
 
-    const yearOnly = v.match(/^\s*(20\d{2})\s*$/);
-    if (yearOnly) {
-      const y = parseInt(yearOnly[1], 10);
-      return isValidYear(y) ? y : null;
-    }
+  const monthYear = v.match(/\b\d{1,2}[/-](20\d{2})\b/);
+  if (monthYear) {
+    const y = parseInt(monthYear[1], 10);
+    return isValidYear(y) ? y : null;
+  }
 
-    return null;
-  };
+  const yearOnly = v.match(/^\s*(20\d{2})\s*$/);
+  if (yearOnly) {
+    const y = parseInt(yearOnly[1], 10);
+    return isValidYear(y) ? y : null;
+  }
+
+  return null;
+}
+
+/** Extrait l'exercice depuis la balance uniquement, via la cellule AE4 (ligne 4, colonne AE) de l'onglet Donnees. */
+function extractExerciceFromBalanceSheet(sheet?: XLSX.WorkSheet): number | null {
+  if (!sheet) return null;
+  const cell = sheet[XLSX.utils.encode_cell({ r: 3, c: 30 })];
+  const formatted = extractYearFromDateLikeValue(cell?.w ?? null);
+  if (formatted) return formatted;
+  if (typeof cell?.v === 'number') {
+    const decoded = XLSX.SSF.parse_date_code(cell.v);
+    if (decoded?.y) return extractYearFromDateLikeValue(String(decoded.y));
+  }
+  return extractYearFromDateLikeValue(cell?.v ?? null);
+}
+
+/** Extrait l'exercice depuis une balance CSV/normalisée, sans jamais scanner les montants. */
+function extractExerciceFromBalanceRows(rows: Record<string, string>[], sheetMeta?: string | null): number | null {
+  const isValidYear = (year: number | null | undefined): year is number => !!year && year >= 2000 && year <= 2099;
+
 
   const isEditionOrPrintContext = (text: string): boolean => {
     const t = normalizeColumnName(text);
@@ -132,7 +152,7 @@ function extractExercice(rows: Record<string, string>[], sheetMeta?: string | nu
   for (const [key, val] of entries) {
     const k = normalizeColumnName(key);
     if (!k.includes('periode')) continue;
-    const y = extractYearFromValue(String(val || ''));
+    const y = extractYearFromDateLikeValue(String(val || ''));
     if (!isValidYear(y)) continue;
     if (k.includes('fin')) periodEnd = y;
     if (k.includes('debut')) periodStart = y;
@@ -172,21 +192,13 @@ function extractExercice(rows: Record<string, string>[], sheetMeta?: string | nu
     if (isValidYear(y)) return y;
   }
 
-  // 4) Fallback: end-of-exercise dates, then generic year (excluding edition/print metadata)
+  // 4) Balance only: end-of-exercise dates. No generic year fallback: amounts like 2 081,25 € must never become an exercise.
   for (const [key, val] of entries) {
     const k = normalizeColumnName(key);
     if (k.includes('fin') && k.includes('exercice') && !isEditionOrPrintContext(k)) {
-      const y = extractYearFromValue(String(val || ''));
+      const y = extractYearFromDateLikeValue(String(val || ''));
       if (isValidYear(y)) return y;
     }
-  }
-
-  for (const [key, val] of entries) {
-    if (isEditionOrPrintContext(key) || isEditionOrPrintContext(String(val || ''))) continue;
-    const m = String(val || '').match(/\b(20\d{2})\b/);
-    if (!m) continue;
-    const y = parseInt(m[1], 10);
-    if (isValidYear(y)) return y;
   }
 
   return null;
@@ -288,6 +300,8 @@ export interface SheetPickDiagnostic {
    *  `forced` = onglet imposé manuellement par l'utilisateur. */
   mode: 'canonique' | 'balance-headers' | 'fallback' | 'forced';
   score: number | null;
+  /** Exercice comptable extrait de façon fiable quand le format le permet (balance : AE4). */
+  detectedExercice?: number | null;
   /** Liste exhaustive des onglets évalués (pour la boîte « Reprendre sélection »). */
   candidates: Array<{ sheetName: string; score: number | null; reason: string }>;
 }
@@ -313,6 +327,7 @@ function pickBestWorkbookRows(
         sheetName: forcedSheetName,
         mode: 'forced',
         score: null,
+          detectedExercice: expectedType === 'bal' ? extractExerciceFromBalanceSheet(wb.Sheets[forcedSheetName]) : null,
         candidates: wb.SheetNames.map((n) => ({ sheetName: n, score: null, reason: n === forcedSheetName ? 'imposé manuellement' : '' })),
       },
     };
@@ -344,6 +359,7 @@ function pickBestWorkbookRows(
           sheetName: balanceSheet.sheetName,
           mode: 'balance-headers',
           score: null,
+          detectedExercice: extractExerciceFromBalanceSheet(wb.Sheets[balanceSheet.sheetName]),
           candidates: wb.SheetNames.map((n) => ({ sheetName: n, score: null, reason: n === balanceSheet.sheetName ? 'sélecteur balance par en-têtes' : '' })),
         },
       };
@@ -452,6 +468,7 @@ function pickBestWorkbookRows(
           sheetName,
           mode: 'fallback',
           score: Math.round(score * 10) / 10,
+          detectedExercice: expectedType === 'bal' ? extractExerciceFromBalanceSheet(wb.Sheets[sheetName]) : null,
           candidates: fallbackCandidates,
         },
       };
@@ -472,6 +489,7 @@ function pickBestWorkbookRows(
       sheetName: bestSheet || (wb.SheetNames[0] ?? ''),
       mode: 'fallback',
       score: bestScore === -Infinity ? null : Math.round(bestScore * 10) / 10,
+      detectedExercice: expectedType === 'bal' && bestSheet ? extractExerciceFromBalanceSheet(wb.Sheets[bestSheet]) : null,
       candidates: fallbackCandidates,
     },
   };
@@ -512,30 +530,33 @@ function tripleLockCheck(
   exerciceTravail: number,
   sheetTitle?: string | null,
   sheetMeta?: string | null,
+  detectedExercice?: number | null,
 ): TripleLockResult {
+  const baseType = slotType.replace('1', '');
   // ── VERROU 1 : Code Op@le / UAI ──
   const { uai: fileUai, opale: fileOpale } = extractCsvIdentifier(rows);
   if (fileUai && selectedUai && fileUai !== selectedUai.toUpperCase()) {
     return {
       ok: false, type: 'opale',
-      title: 'Erreur de concordance — Établissement',
-      message: `Le fichier importé appartient à l'établissement UAI ${fileUai}, mais l'établissement sélectionné est ${selectedUai}.`,
+      title: 'Concordance d’établissement',
+      message: `Le fichier importé appartient à l'établissement UAI ${fileUai}, alors que vous travaillez sur ${selectedUai}. Veuillez vérifier votre export Op@le.`,
       details: 'Veuillez vérifier que vous avez sélectionné le bon établissement ou que votre export Op@le correspond.',
     };
   }
   if (fileOpale && selectedOpale && fileOpale !== selectedOpale.toUpperCase()) {
     return {
       ok: false, type: 'opale',
-      title: 'Erreur de concordance — Identifiant Op@le',
-      message: `Le fichier contient l'identifiant Op@le ${fileOpale}, mais l'établissement sélectionné utilise ${selectedOpale}.`,
+      title: 'Concordance d’établissement',
+      message: `Le fichier importé appartient à l'établissement Op@le ${fileOpale}, alors que vous travaillez sur ${selectedOpale}. Veuillez vérifier votre export Op@le.`,
       details: "Veuillez vérifier votre export Op@le ou l\u2019identifiant technique de l\u2019établissement.",
     };
   }
 
   // ── VERROU 2 : Exercice comptable ──
-  const fileExercice = extractExercice(rows, sheetMeta);
-  if (fileExercice && exerciceTravail && fileExercice !== exerciceTravail) {
-    // Allow N-1 files in N-1 slots
+  const fileExercice = baseType === 'bal'
+    ? (detectedExercice ?? extractExerciceFromBalanceRows(rows, sheetMeta))
+    : null;
+  if (fileExercice && exerciceTravail) {
     const isN1Slot = slotType.endsWith('1');
     const expectedYear = isN1Slot ? exerciceTravail - 1 : exerciceTravail;
     if (fileExercice !== expectedYear) {
@@ -691,12 +712,15 @@ export function ImportSection() {
 
     const headers = Object.keys(rows[0] || {});
     const { uai: csvUai, opale: csvOpale } = extractCsvIdentifier(rows);
-    const csvExercice = extractExercice(rows, sheetMeta);
+    const baseType = slot.type.replace('1', '');
+    const csvExercice = baseType === 'bal'
+      ? (diag?.detectedExercice ?? extractExerciceFromBalanceRows(rows, sheetMeta))
+      : null;
     const csvDocType = detectDocumentType(headers, sheetTitle);
 
     // ── TRIPLE VERROU DE SÉCURITÉ ──
     if (selectedEstablishment) {
-      const lock = tripleLockCheck(rows, headers, slot.type, selectedEstablishment.uai, selectedEstablishment.opale_number || '', exerciceTravail, sheetTitle, sheetMeta);
+      const lock = tripleLockCheck(rows, headers, slot.type, selectedEstablishment.uai, selectedEstablishment.opale_number || '', exerciceTravail, sheetTitle, sheetMeta, csvExercice);
       if (!lock.ok) {
         const resultCode = lock.type === 'opale' ? 'blocked_opale' : lock.type === 'exercice' ? 'blocked_exercice' : 'blocked_colonnes';
         setSecurityBlocks(prev => ({ ...prev, [slot.key]: lock.message || 'Import bloqué' }));
@@ -1065,9 +1089,10 @@ export function ImportSection() {
           <CardContent className="p-4 flex items-start gap-3">
             <ShieldCheck className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
             <div className="text-xs">
-              <strong>Triple verrou de sécurité actif</strong> — Chaque fichier sera vérifié sur 3 critères :
+              <strong>Verrou de sécurité adaptatif actif</strong> — Balance : 3 critères ; SDE/SDR : établissement + nature du flux, l'exercice venant du contexte de travail.
+              <br />Critères contrôlés :
               <span className="font-semibold"> 1) Code Op@le/UAI</span>,
-              <span className="font-semibold"> 2) Exercice comptable ({exerciceTravail})</span>,
+              <span className="font-semibold"> 2) Exercice comptable ({exerciceTravail}, balance uniquement)</span>,
               <span className="font-semibold"> 3) Nature du flux</span>.
               <br />
               Établissement : <span className="font-mono font-semibold text-primary">{selectedEstablishment.uai}</span>

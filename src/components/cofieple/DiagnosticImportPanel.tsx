@@ -54,6 +54,7 @@ export function DiagnosticImportPanel({ entries }: Props) {
                   <Badge variant="outline">
                     Onglet retenu : « {e.diag.sheetName} »
                     {e.diag.score != null && ` · score ${e.diag.score}`}
+                    {e.diag.detectedExercice != null && ` · exercice ${e.diag.detectedExercice}`}
                   </Badge>
                 )}
               </div>
