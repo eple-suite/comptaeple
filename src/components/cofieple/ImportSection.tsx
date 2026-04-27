@@ -359,7 +359,7 @@ function pickBestWorkbookRows(
           sheetName: balanceSheet.sheetName,
           mode: 'balance-headers',
           score: null,
-            detectedExercice: extractExerciceFromBalanceSheet(wb.Sheets[balanceSheet.sheetName]),
+          detectedExercice: extractExerciceFromBalanceSheet(wb.Sheets[balanceSheet.sheetName]),
           candidates: wb.SheetNames.map((n) => ({ sheetName: n, score: null, reason: n === balanceSheet.sheetName ? 'sélecteur balance par en-têtes' : '' })),
         },
       };
@@ -468,6 +468,7 @@ function pickBestWorkbookRows(
           sheetName,
           mode: 'fallback',
           score: Math.round(score * 10) / 10,
+          detectedExercice: expectedType === 'bal' ? extractExerciceFromBalanceSheet(wb.Sheets[sheetName]) : null,
           candidates: fallbackCandidates,
         },
       };
@@ -488,7 +489,7 @@ function pickBestWorkbookRows(
       sheetName: bestSheet || (wb.SheetNames[0] ?? ''),
       mode: 'fallback',
       score: bestScore === -Infinity ? null : Math.round(bestScore * 10) / 10,
-          detectedExercice: expectedType === 'bal' && bestSheet ? extractExerciceFromBalanceSheet(wb.Sheets[bestSheet]) : null,
+      detectedExercice: expectedType === 'bal' && bestSheet ? extractExerciceFromBalanceSheet(wb.Sheets[bestSheet]) : null,
       candidates: fallbackCandidates,
     },
   };
