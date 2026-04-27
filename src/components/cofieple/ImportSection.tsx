@@ -523,7 +523,9 @@ function tripleLockCheck(
   exerciceTravail: number,
   sheetTitle?: string | null,
   sheetMeta?: string | null,
+  detectedExercice?: number | null,
 ): TripleLockResult {
+  const baseType = slotType.replace('1', '');
   // ── VERROU 1 : Code Op@le / UAI ──
   const { uai: fileUai, opale: fileOpale } = extractCsvIdentifier(rows);
   if (fileUai && selectedUai && fileUai !== selectedUai.toUpperCase()) {
@@ -544,7 +546,9 @@ function tripleLockCheck(
   }
 
   // ── VERROU 2 : Exercice comptable ──
-  const fileExercice = extractExercice(rows, sheetMeta);
+  const fileExercice = baseType === 'bal'
+    ? (detectedExercice ?? extractExerciceFromBalanceRows(rows, sheetMeta))
+    : null;
   if (fileExercice && exerciceTravail && fileExercice !== exerciceTravail) {
     // Allow N-1 files in N-1 slots
     const isN1Slot = slotType.endsWith('1');
@@ -702,12 +706,15 @@ export function ImportSection() {
 
     const headers = Object.keys(rows[0] || {});
     const { uai: csvUai, opale: csvOpale } = extractCsvIdentifier(rows);
-    const csvExercice = extractExercice(rows, sheetMeta);
+    const baseType = slot.type.replace('1', '');
+    const csvExercice = baseType === 'bal'
+      ? (diag?.detectedExercice ?? extractExerciceFromBalanceRows(rows, sheetMeta))
+      : null;
     const csvDocType = detectDocumentType(headers, sheetTitle);
 
     // ── TRIPLE VERROU DE SÉCURITÉ ──
     if (selectedEstablishment) {
-      const lock = tripleLockCheck(rows, headers, slot.type, selectedEstablishment.uai, selectedEstablishment.opale_number || '', exerciceTravail, sheetTitle, sheetMeta);
+      const lock = tripleLockCheck(rows, headers, slot.type, selectedEstablishment.uai, selectedEstablishment.opale_number || '', exerciceTravail, sheetTitle, sheetMeta, csvExercice);
       if (!lock.ok) {
         const resultCode = lock.type === 'opale' ? 'blocked_opale' : lock.type === 'exercice' ? 'blocked_exercice' : 'blocked_colonnes';
         setSecurityBlocks(prev => ({ ...prev, [slot.key]: lock.message || 'Import bloqué' }));
