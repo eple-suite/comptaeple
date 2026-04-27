@@ -149,6 +149,10 @@ const App = () => (
               <Route path="/rentree/habilitations-opale" element={<HabilitationsOpalePage />} />
               <Route path="/rentree/habilitations-recap" element={<HabilitationsRecapPage />} />
               <Route path="/rentree/vue-rectorat" element={<VueRectoratPage />} />
+              {/* Redirections de compatibilité pour anciens liens */}
+              <Route path="/habilitations" element={<Navigate to="/rentree/habilitations-opale" replace />} />
+              <Route path="/habilitations/recap" element={<Navigate to="/rentree/habilitations-recap" replace />} />
+              <Route path="/habilitations/rectorat" element={<Navigate to="/rentree/vue-rectorat" replace />} />
               <Route path="/liens-utiles" element={<LiensUtilesPage />} />
               <Route path="/enquetes-rectorat" element={<EnquetesHubPage />} />
               <Route path="/enquetes-rectorat/nomenclature" element={<NomenclaturePage />} />
