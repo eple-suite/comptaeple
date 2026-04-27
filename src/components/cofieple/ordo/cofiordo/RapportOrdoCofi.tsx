@@ -5,7 +5,6 @@
 // ═══════════════════════════════════════════════════════════════════
 import { useMemo, useState } from 'react';
 import { OrdoNavigation, OrdoViewMode } from './OrdoNavigation';
-import { OrdoFicheIndicateur } from './OrdoFicheIndicateur';
 import { OrdoMosaique } from './OrdoMosaique';
 import { OrdoNarrationContinue } from './OrdoNarrationContinue';
 import { ORDO_FICHES, getFicheById } from './catalog';
