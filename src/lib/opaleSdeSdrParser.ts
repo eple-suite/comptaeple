@@ -455,6 +455,10 @@ function toStr(v: unknown): string {
 /** Parse les lignes de l'onglet SDE retenu */
 export function parseSdeRows(selection: SdeSdrSelection): SdeRow[] {
   if (selection.kind !== 'sde') throw new Error('parseSdeRows: selection.kind must be "sde"');
+  // Voie positionnelle Op@le (BL-BP « Montant colonne 1..5 »)
+  if (hasOpalePositionalSignature(selection.matrix)) {
+    return parseSdeRowsPositional(selection.matrix);
+  }
   const headers = selection.matrix[selection.headerRowIndex].map((c) => normalizeColumnName(String(c ?? '')));
   const idx = {
     service: findHeaderIndex(headers, 'service'),
@@ -512,6 +516,9 @@ export function parseSdeRows(selection: SdeSdrSelection): SdeRow[] {
 /** Parse les lignes de l'onglet SDR retenu */
 export function parseSdrRows(selection: SdeSdrSelection): SdrRow[] {
   if (selection.kind !== 'sdr') throw new Error('parseSdrRows: selection.kind must be "sdr"');
+  if (hasOpalePositionalSignature(selection.matrix)) {
+    return parseSdrRowsPositional(selection.matrix);
+  }
   const headers = selection.matrix[selection.headerRowIndex].map((c) => normalizeColumnName(String(c ?? '')));
   const idx = {
     service: findHeaderIndex(headers, 'service'),
