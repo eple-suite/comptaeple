@@ -317,33 +317,48 @@ export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
   const serviceRowsWithBudget = serviceRows.filter((row) => row.budget > 0);
   const detailRowsWithBudget = detailRows.filter((row) => row.budget > 0);
 
-  // M9-6 strict : préférer Σ détails > Σ services > ligne globale.
-  // La global row est conservée uniquement comme dernier recours (ECBU agrégé)
-  // pour éviter les lignes globales tronquées qui produisent des fantômes
-  // (ex. 429 000 € au lieu de 1 145 666 €).
-  const budgetSource = detailRowsWithBudget.length
+  // M9-6 strict : préférer la source la plus exhaustive cohérente.
+  // Hiérarchie réelle Op@le = global ⊇ services ⊇ détails. On choisit la
+  // somme des services dès qu'elle est cohérente (≥ ligne globale), sinon
+  // on retombe sur la global row. Les détails ne sont utilisés en propre
+  // que s'ils couvrent au moins ~90 % du global (pyramide complète) ;
+  // sinon ils sont incomplets et fausseraient les totaux.
+  const sumServicesBudget = serviceRowsWithBudget.reduce((s, r) => s + r.budget, 0);
+  const sumDetailsBudget  = detailRowsWithBudget.reduce((s, r) => s + r.budget, 0);
+  const globalBudget = preferredBudgetGlobal?.budget ?? 0;
+  const detailsCoverGlobal = globalBudget > 0 && sumDetailsBudget >= globalBudget * 0.9;
+  const servicesCoverGlobal = globalBudget === 0 || sumServicesBudget >= globalBudget * 0.9;
+
+  const budgetSource = detailsCoverGlobal
     ? detailRowsWithBudget
-    : serviceRowsWithBudget.length
+    : serviceRowsWithBudget.length && servicesCoverGlobal
       ? serviceRowsWithBudget
       : preferredBudgetGlobal
         ? [preferredBudgetGlobal]
-        : meaningfulRows;
-  const realisedSource = detailRows.length
+        : serviceRowsWithBudget.length
+          ? serviceRowsWithBudget
+          : detailRowsWithBudget.length
+            ? detailRowsWithBudget
+            : meaningfulRows;
+  const sumServicesRealise = serviceRows.reduce((s, r) => s + (r.realise > 0 ? r.realise : 0), 0);
+  const sumDetailsRealise  = detailRows.reduce((s, r) => s + (r.realise > 0 ? r.realise : 0), 0);
+  const globalRealise = preferredRealGlobal?.realise ?? 0;
+  const detailsCoverGlobalReal  = globalRealise > 0 && sumDetailsRealise  >= globalRealise * 0.9;
+  const servicesCoverGlobalReal = globalRealise === 0 || sumServicesRealise >= globalRealise * 0.9;
+  const realisedSource = detailsCoverGlobalReal
     ? detailRows
-    : serviceRows.length
+    : serviceRows.length && servicesCoverGlobalReal
       ? serviceRows
       : preferredRealGlobal
         ? [preferredRealGlobal]
-        : preferredRateGlobal
-          ? [preferredRateGlobal]
-          : meaningfulRows;
-  const rateSource = detailRows.length
-    ? detailRows
-    : serviceRows.length
-      ? serviceRows
-      : preferredRateGlobal
-        ? [preferredRateGlobal]
-        : meaningfulRows;
+        : serviceRows.length
+          ? serviceRows
+          : detailRows.length
+            ? detailRows
+            : preferredRateGlobal
+              ? [preferredRateGlobal]
+              : meaningfulRows;
+  const rateSource = realisedSource;
   const serviceBaseRows = serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
 
   return {
@@ -366,30 +381,42 @@ export function deriveSdrExecutionTotals(rows: LigneSDR[]) {
   const serviceRowsWithBudget = serviceRows.filter((row) => row.budget > 0);
   const detailRowsWithBudget = detailRows.filter((row) => row.budget > 0);
 
-  // M9-6 strict : préférer Σ détails > Σ services > ligne globale.
-  const budgetSource = detailRowsWithBudget.length
+  const sumServicesBudget = serviceRowsWithBudget.reduce((s, r) => s + r.budget, 0);
+  const sumDetailsBudget  = detailRowsWithBudget.reduce((s, r) => s + r.budget, 0);
+  const globalBudget = preferredBudgetGlobal?.budget ?? 0;
+  const detailsCoverGlobal = globalBudget > 0 && sumDetailsBudget >= globalBudget * 0.9;
+  const servicesCoverGlobal = globalBudget === 0 || sumServicesBudget >= globalBudget * 0.9;
+
+  const budgetSource = detailsCoverGlobal
     ? detailRowsWithBudget
-    : serviceRowsWithBudget.length
+    : serviceRowsWithBudget.length && servicesCoverGlobal
       ? serviceRowsWithBudget
       : preferredBudgetGlobal
         ? [preferredBudgetGlobal]
-        : meaningfulRows;
-  const realisedSource = detailRows.length
+        : serviceRowsWithBudget.length
+          ? serviceRowsWithBudget
+          : detailRowsWithBudget.length
+            ? detailRowsWithBudget
+            : meaningfulRows;
+  const sumServicesRealise = serviceRows.reduce((s, r) => s + (r.realise > 0 ? r.realise : 0), 0);
+  const sumDetailsRealise  = detailRows.reduce((s, r) => s + (r.realise > 0 ? r.realise : 0), 0);
+  const globalRealise = preferredRealGlobal?.realise ?? 0;
+  const detailsCoverGlobalReal  = globalRealise > 0 && sumDetailsRealise  >= globalRealise * 0.9;
+  const servicesCoverGlobalReal = globalRealise === 0 || sumServicesRealise >= globalRealise * 0.9;
+  const realisedSource = detailsCoverGlobalReal
     ? detailRows
-    : serviceRows.length
+    : serviceRows.length && servicesCoverGlobalReal
       ? serviceRows
       : preferredRealGlobal
         ? [preferredRealGlobal]
-        : preferredRateGlobal
-          ? [preferredRateGlobal]
-          : meaningfulRows;
-  const rateSource = detailRows.length
-    ? detailRows
-    : serviceRows.length
-      ? serviceRows
-      : preferredRateGlobal
-        ? [preferredRateGlobal]
-        : meaningfulRows;
+        : serviceRows.length
+          ? serviceRows
+          : detailRows.length
+            ? detailRows
+            : preferredRateGlobal
+              ? [preferredRateGlobal]
+              : meaningfulRows;
+  const rateSource = realisedSource;
   const serviceBaseRows = serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
 
   return {
