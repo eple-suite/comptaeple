@@ -187,6 +187,7 @@ type Store = CofiepleState & {
   syncFromBackend: () => Promise<void>;
   // ── Budget Profiles ─────────────────────────────────────────────
   budgetProfiles: BudgetProfile[];
+  setMethodeCalcul: (m: 'balance' | 'budgetaire') => void;
   createBudgetProfile: (nom: string, type: TypeBudget, uai?: string, exercice?: string) => BudgetProfile;
   updateBudgetProfile: (id: string, patch: Partial<Omit<BudgetProfile, 'id' | 'createdAt'>>) => void;
   deleteBudgetProfile: (id: string) => void;
@@ -219,6 +220,7 @@ export const useCofiepleStore = create<Store>()(
       uaiError: null,
       analysisRunning: false,
       lastAnalysisAt: null,
+      methodeCalcul: 'balance' as 'balance' | 'budgetaire',
       budgetProfiles: loadProfiles(),
 
       switchEstablishment: async (id) => {
