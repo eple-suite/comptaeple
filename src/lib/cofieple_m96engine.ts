@@ -110,19 +110,20 @@ export function calculerResultatsM96(
   const produitsNonEncaissables = (crd78 - dbt78) + (crd775 - dbt775) + (crd776 - dbt776) + (crd777 - dbt777);
   const cafComptable = resultatComptable + chargesNonDecaissables - produitsNonEncaissables;
 
-  // ── CAF budgétaire (M9-6 § IV.3 — Bilan de santé financière)
-  // Standard M9-6 : CAF = Produits encaissables − Charges décaissables
-  //   Charges décaissables = Total SDE − Charges d'ordre SDE (cpt 68* + 675*)
-  //   Produits encaissables = Total SDR − Produits d'ordre SDR (cpt 78* + 775* + 776* + 777*)
-  // Équivalent : CAF = Résultat budgétaire + Charges OO(SDE) − Produits OO(SDR)
-  // Fallback : quand SDE/SDR n'ont que des lignes agrégées (ECBU) sans comptes 68/78,
-  // on utilise les opérations d'ordre issues de la balance (chargesNonDecaissables / produitsNonEncaissables)
+  // ── CAF budgétaire (M9-6 § IV.3 — Méthode additive comptable) ─────
+  // RÈGLE M9-6 STRICTE : la CAF est toujours dérivée de la BALANCE (méthode
+  // additive sur les comptes OO réellement passés), seule source certifiée.
+  // La méthode "budgétaire pure" (résultat budgétaire + OO SDE − OO SDR)
+  // produit des aberrations dès que la SDE/SDR a des lignes agrégées ou
+  // des regex matchant trop large (ex. /^78/ qui attrape 780xxx).
+  //
+  //   CAF = Résultat comptable + Charges non décaissables − Produits non encaissables
+  //
+  // ⇒ Sur l'exemple Coeffin : 21 429,61 + 13 931,51 − 0 = +35 361,12 €
+  //   (Capacité d'autofinancement, badge VERT).
   const chargesOrdre_SDE_raw = sdeForAccounting.filter(r => /^(68|675)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const produitsOrdre_SDR_raw = sdrForAccounting.filter(r => /^(78|775|776|777)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const hasOOinSDE = chargesOrdre_SDE_raw > 0 || produitsOrdre_SDR_raw > 0;
-  const cafBudgetaire = hasOOinSDE
-    ? resultatBudgetaire + chargesOrdre_SDE_raw - produitsOrdre_SDR_raw
-    : resultatBudgetaire + chargesNonDecaissables - produitsNonEncaissables;
+  const cafBudgetaire = resultatComptable + chargesNonDecaissables - produitsNonEncaissables;
 
   // Charges d'investissement (SDE classe 2) — conservé pour d'autres calculs
   const chInvSde = sdeForAccounting.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
@@ -189,9 +190,19 @@ export function calculerResultatsM96(
   const varFdrCaf = cafBudgetaire;
 
   // ── BFR ────────────────────────────────────────────────────────────
+  // M9-6 : BFR = Actif circulant hors trésorerie − Passif circulant hors trésorerie
+  // ⚠ Inclure les comptes de classe 5 HORS trésorerie (notamment 585x
+  // « Virements internes ») dans l'actif circulant. Sinon le compte 585
+  // reste « coincé » dans les ressources stables et fausse le BFR ainsi
+  // que la cohérence FDR_haut / FDR_bas.
+  const COMPTES_TRESORERIE_REGEX = /^(511|512|514|515|516|517|518|531|532|533|534|535|536|537|538|539)/;
   const solDbtCl4only = sumBal(bal, c => c.charAt(0) === '4', 'solDbt');
-  const bfr = solDbtCl3 + solDbtCl4only - solCrdCl4;
-  const bfrBE = antDbtCl3 + antDbtCl4 - antCrdCl4;
+  const solDbtCl5HorsTreso = sumBal(bal, c => c.charAt(0) === '5' && !COMPTES_TRESORERIE_REGEX.test(c), 'solDbt');
+  const solCrdCl5HorsTreso = sumBal(bal, c => c.charAt(0) === '5' && !COMPTES_TRESORERIE_REGEX.test(c), 'solCrd');
+  const antDbtCl5HorsTreso = sumBal(bal, c => c.charAt(0) === '5' && !COMPTES_TRESORERIE_REGEX.test(c), 'antDbt');
+  const antCrdCl5HorsTreso = sumBal(bal, c => c.charAt(0) === '5' && !COMPTES_TRESORERIE_REGEX.test(c), 'antCrd');
+  const bfr = solDbtCl3 + solDbtCl4only + solDbtCl5HorsTreso - solCrdCl4 - solCrdCl5HorsTreso;
+  const bfrBE = antDbtCl3 + antDbtCl4 + antDbtCl5HorsTreso - antCrdCl4 - antCrdCl5HorsTreso;
   const varBfrSynthetique  = bfr - bfrBE;
   const varBfrSoustractive = varFdrBas - (solDbtCl5 - solCrdCl5 - antDbtCl5 + antCrdCl5);
 
@@ -323,10 +334,22 @@ export function calculerResultatsM96(
     produitsOrigine[nat] = (produitsOrigine[nat] || 0) + r.realise;
   });
 
-  // Taux d'exécution : utilise totalForRate du moteur de hiérarchie
-  // (engagé pour dépenses, AOR/réalisé pour recettes)
-  const tauxExecCharges  = totalChargesPrev > 0 ? sdeExec.totalForRate / totalChargesPrev : 0;
-  const tauxExecProduits = totalProduitsPrev > 0 ? sdrExec.totalForRate / totalProduitsPrev : 0;
+  // Taux d'exécution — M9-6 STRICT
+  // Numérateur = Σ realise sur les lignes de détail (parser positionnel SDE/SDR)
+  // Dénominateur = Σ budget sur les mêmes lignes de détail.
+  // On évite totalForRate du moteur de hiérarchie qui peut mélanger des
+  // niveaux global/service/détail et produire des bases fantaisistes.
+  const sumDetailBudgetSDE   = sdeForAccounting.reduce((s, r) => s + (r.budget   || 0), 0);
+  const sumDetailRealiseSDE  = sdeForAccounting.reduce((s, r) => s + (r.realise  || 0), 0);
+  const sumDetailBudgetSDR   = sdrForAccounting.reduce((s, r) => s + (r.budget   || 0), 0);
+  const sumDetailRealiseSDR  = sdrForAccounting.reduce((s, r) => s + (r.realise  || 0), 0);
+  // Fallback uniquement si pas de détails (ECBU agrégé) : retomber sur ETS
+  const baseBudgetCharges   = sumDetailBudgetSDE   > 0 ? sumDetailBudgetSDE   : totalChargesPrev;
+  const baseRealiseCharges  = sumDetailRealiseSDE  > 0 ? sumDetailRealiseSDE  : totalChargesSde;
+  const baseBudgetProduits  = sumDetailBudgetSDR   > 0 ? sumDetailBudgetSDR   : totalProduitsPrev;
+  const baseRealiseProduits = sumDetailRealiseSDR  > 0 ? sumDetailRealiseSDR  : totalProduitsSdr;
+  const tauxExecCharges  = baseBudgetCharges  > 0 ? baseRealiseCharges  / baseBudgetCharges  : 0;
+  const tauxExecProduits = baseBudgetProduits > 0 ? baseRealiseProduits / baseBudgetProduits : 0;
 
   // ── Charges de fonctionnement (hors investissement) ────────────────
   const chargesFonctSDE = totalChargesSde - chInvSde;
@@ -339,20 +362,19 @@ export function calculerResultatsM96(
   const totalProduitsRef = totalProduitsSdr > 0 ? totalProduitsSdr : (totalProduitsBalance > 0 ? totalProduitsBalance : 0);
 
   // ── DRFN — Dépenses Réelles de Fonctionnement Nettes ───────────────
-  // Conforme Op@le Pièce 14 / M9-6 :
-  //   DRFN = Total dépenses mandatées de FONCTIONNEMENT (SDE réalisé, section FONC)
-  //          MOINS les dotations aux amortissements (comptes 681xxx)
-  //          MOINS les opérations d'ordre non décaissables
-  // Les 681xxx ne sont pas des décaissements réels → exclusion obligatoire
-  const amortSDE = sdeForAccounting.filter(r => /^681/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const amortBalance681 = sumBal(bal, c => c.startsWith('681'), 'dbt') - sumBal(bal, c => c.startsWith('681'), 'crd');
-  const amortEffectif = amortSDE > 0 ? amortSDE : (amortBalance681 > 0 ? amortBalance681 : 0);
-  const drfn = chargesFonctionnement - amortEffectif;
+  // M9-6 / Op@le : charges effectivement décaissables = classe 6 hors comptes
+  // d'ordre (675 VNC cessions, 676, 681 dotations amort, 686/687 dotations
+  // provisions). Calcul depuis la balance (mvts débit − crédit) pour neutraliser
+  // toute opération d'ordre déjà soustraite au crédit.
+  const COMPTES_ORDRE_CL6_REGEX = /^(675|676|681|686|687)/;
+  const chargesDecaissablesAnnuelles = bal
+    .filter(b => !b.isAggregate && b.compte.charAt(0) === '6' && !COMPTES_ORDRE_CL6_REGEX.test(b.compte))
+    .reduce((s, b) => s + ((b.dbt || 0) - (b.crd || 0)), 0);
+  // Conservé pour les autres modules consommant `drfn`.
+  const drfn = chargesDecaissablesAnnuelles;
 
-  // ── Jours d'autonomie financière (Op@le Pièce 14) ──────────────────
-  // Jours FDR = (FDR × 365) / DRFN
-  // Jours Trésorerie = (Trésorerie × 365) / DRFN
-  const drfnQuotidien = drfn / 365;
+  // ── Jours d'autonomie financière (M9-6 § IV.2 — base 360 calendaires) ─
+  const drfnQuotidien = chargesDecaissablesAnnuelles / 360;
   const joursAutonomie   = drfnQuotidien > 0 ? (fdrComptable / drfnQuotidien) : 0;
   const ratioFdrBfr      = bfr !== 0 ? fdrBas / bfr : 0;
 
@@ -372,22 +394,32 @@ export function calculerResultatsM96(
     ? sdrForAccounting.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
     : sumBal(bal, c => /^7[0-3]/.test(c), 'crd') - sumBal(bal, c => /^7[0-3]/.test(c), 'dbt');
 
-  // ── Jours FDR et Trésorerie (Op@le Pièce 14) ────────────────────────
-  // Dénominateur = DRFN quotidien (charges fonctionnement nettes / 365)
+  // ── Jours FDR et Trésorerie (Op@le Pièce 14, base 360) ─────────────
   const joursFdr = drfnQuotidien > 0 ? fdrComptable / drfnQuotidien : 0;
   const joursTresorerie = drfnQuotidien > 0 ? tresorerie / drfnQuotidien : 0;
 
-  // ── M9-6 — TMcap (Taux moyen charges à payer) ─────────────────────
-  // Part impayée des charges = dettes fournisseurs / charges réalisées
-  // Dénominateur : SDE si dispo, sinon balance classe 6
+  // ── M9-6 — TMcap (Taux moyen Charges À Payer) ─────────────────────
+  // STRICT M9-6 : uniquement les comptes de "charges à payer" rattachés à
+  // l'exercice (4081, 4084, 4086, 4088, 4286, 4386, 4486, 4686).
+  // Les fournisseurs ordinaires (401), rémunérations dues (421), État (441),
+  // collectivités (443) NE SONT PAS des charges à payer comptables.
+  // Dénominateur = total mvts débit classe 6 (charges constatées de l'exercice).
+  const chargesAPayer = sumBal(
+    bal,
+    c => /^(4081|4084|4086|4088|4286|4386|4486|4686)/.test(c),
+    'solCrd',
+  );
+  // Dettes fournisseurs (utilisées par d'autres calculs : DGP, composition tréso)
   const dettesFournisseurs = sumBal(bal, c => c.startsWith('401') || c.startsWith('408'), 'solCrd');
-  const tmcap = totalChargesRef > 0 ? (dettesFournisseurs / totalChargesRef) * 100 : 0;
+  const tmcap = dbtCl6 > 0 ? (chargesAPayer / dbtCl6) * 100 : 0;
 
-  // ── M9-6 — TMnr (Taux moyen de non-recouvrement) ──────────────────
-  // Part non recouvrée = créances cl4 débit / recettes réalisées
-  // Dénominateur : SDR si dispo, sinon balance classe 7
+  // ── M9-6 — TMnr (Taux moyen de Non-Recouvrement) ──────────────────
+  // STRICT M9-6 : créances clients/familles uniquement (411, 416, 418).
+  // Exclure 401 (fournisseurs), 441 (État), 443 (collectivités), 463/467 (autres).
+  // Dénominateur = produits constatés (mvts crédit classe 7 de l'exercice).
+  const creancesClientsM96 = sumBal(bal, c => /^(411|416|418)/.test(c), 'solDbt');
   const totalCreancesCl4 = sumBal(bal, c => c.charAt(0) === '4', 'solDbt');
-  const tmnr = totalProduitsRef > 0 ? (totalCreancesCl4 / totalProduitsRef) * 100 : 0;
+  const tmnr = crdCl7 > 0 ? (creancesClientsM96 / crdCl7) * 100 : 0;
 
   // ── M9-6 — Créances par origine ───────────────────────────────────
   const creancesEtat = sumBal(bal, c => c.startsWith('4411') || c.startsWith('4431') || c.startsWith('4432') || c.startsWith('4438'), 'solDbt');
