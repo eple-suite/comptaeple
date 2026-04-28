@@ -125,6 +125,13 @@ export function calculerResultatsM96(
   const produitsOrdre_SDR_raw = sdrForAccounting.filter(r => /^(78|775|776|777)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const cafBudgetaire = resultatComptable + chargesNonDecaissables - produitsNonEncaissables;
 
+  // ── CAF "budgétaire pure" (méthode historique) ─────────────────────
+  // Conservée pour permettre à l'utilisateur de comparer dans le
+  // tableau de bord. Formule M9-6 budgétaire : Résultat budgétaire
+  // + opérations d'ordre de charges (68/675) − opérations d'ordre de
+  // produits (78/775/776/777), calculées à partir des SDE/SDR bruts.
+  const cafBudgetairePure = resultatBudgetaire + chargesOrdre_SDE_raw - produitsOrdre_SDR_raw;
+
   // Charges d'investissement (SDE classe 2) — conservé pour d'autres calculs
   const chInvSde = sdeForAccounting.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const finProdSdr = sdrForAccounting.filter(r => /^(10|13)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
