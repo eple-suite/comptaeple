@@ -1,12 +1,7 @@
-// Polyfill import.meta.env for node
-(globalThis as any).importMetaEnv = { VITE_SUPABASE_URL: 'http://x', VITE_SUPABASE_PUBLISHABLE_KEY: 'x' };
-process.env.VITE_SUPABASE_URL = 'http://x';
-process.env.VITE_SUPABASE_PUBLISHABLE_KEY = 'x';
 import * as XLSX from 'xlsx';
 import { calculerResultatsM96 } from '/dev-server/src/lib/cofieple_m96engine';
-// Bypass cofieple_calculations (which pulls supabase via sensNormalOverrides) — use minimal parsers inline
+import { parserSDE, parserSDR, parserBalance } from '/dev-server/src/lib/cofieple_calculations';
 import { buildRowsFromSheetMatrix, normalizeRowsForOpaleImport, normalizeColumnName } from '/dev-server/src/lib/opaleImportUtils';
-import { enrichParsedSdeRow, enrichParsedSdrRow } from '/dev-server/src/lib/opaleExecutionHierarchy';
 
 function pickSheet(wb: XLSX.WorkBook, kind: 'sde'|'sdr'|'bal'): string {
   const names = wb.SheetNames;
