@@ -581,6 +581,8 @@ export function calculerResultatsM96(
   return {
     resultatBudgetaire, resultatComptable, excedent, deficit,
     cafBudgetaire, cafComptable,
+    cafBudgetairePure,
+    tauxExecChargesPure, tauxExecProduitsPure,
     chargesNonDecaissables, produitsNonEncaissables,
     fdrHaut, fdrBas, fdrComptable,
     varFdrHaut, varFdrBas, varFdrCaf, varFdrTableauFinancement: varFdrBas, structurationFdr,
