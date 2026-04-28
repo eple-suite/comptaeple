@@ -311,72 +311,38 @@ export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
   const meaningfulRows = rows.filter((row) => hasAnySdeAmounts(row));
   const detailRows = meaningfulRows.filter((row) => row.aggregationLevel === 'detail');
   const serviceRows = meaningfulRows.filter((row) => row.aggregationLevel === 'service');
-  const globalRows = meaningfulRows.filter((row) => row.aggregationLevel === 'global');
-  const sortedGlobalRows = sortRowsByBudgetPriority(globalRows, (row) => getChargeRateBase(row));
-  const preferredBudgetGlobal = sortedGlobalRows.find((row) => row.budget > 0);
-  const preferredRealGlobal = sortedGlobalRows.find((row) => row.realise > 0);
-  const preferredRateGlobal = sortedGlobalRows.find((row) => getChargeRateBase(row) > 0);
-  const serviceRowsWithBudget = serviceRows.filter((row) => row.budget > 0);
-  const detailRowsWithBudget = detailRows.filter((row) => row.budget > 0);
-
-  // M9-6 strict : préférer la source la plus exhaustive cohérente.
-  // Hiérarchie réelle Op@le = global ⊇ services ⊇ détails. On choisit la
-  // somme des services dès qu'elle est cohérente (≥ ligne globale), sinon
-  // on retombe sur la global row. Les détails ne sont utilisés en propre
-  // que s'ils couvrent au moins ~90 % du global (pyramide complète) ;
-  // sinon ils sont incomplets et fausseraient les totaux.
-  // Heuristique M9-6 : préférer la source la plus large et exhaustive.
-  // 1. Si Σ services ≥ ligne globale → on utilise les services (ils
-  //    représentent l'exhaustivité réelle ; la global row peut être tronquée).
-  // 2. Sinon (Σ services < global) → la global est plus complète, on l'utilise.
-  // Les détails ne sont une source autonome que s'ils couvrent >= 90 % de
-  // la global ET >= 90 % de la somme des services (pyramide complète).
-  const sumServicesBudget = serviceRowsWithBudget.reduce((s, r) => s + r.budget, 0);
-  const sumDetailsBudget  = detailRowsWithBudget.reduce((s, r) => s + r.budget, 0);
-  const globalBudget = preferredBudgetGlobal?.budget ?? 0;
-  const detailsAreExhaustive = sumDetailsBudget >= Math.max(globalBudget, sumServicesBudget) * 0.9 && sumDetailsBudget > 0;
-  const servicesAtLeastAsLargeAsGlobal = sumServicesBudget >= globalBudget && sumServicesBudget > 0;
-
-  const budgetSource = detailsAreExhaustive
-    ? detailRowsWithBudget
-    : servicesAtLeastAsLargeAsGlobal
-      ? serviceRowsWithBudget
-      : preferredBudgetGlobal
-        ? [preferredBudgetGlobal]
-        : serviceRowsWithBudget.length
-          ? serviceRowsWithBudget
-          : detailRowsWithBudget.length
-            ? detailRowsWithBudget
-            : meaningfulRows;
-
-  const sumServicesRealise = serviceRows.reduce((s, r) => s + (r.realise > 0 ? r.realise : 0), 0);
-  const sumDetailsRealise  = detailRows.reduce((s, r) => s + (r.realise > 0 ? r.realise : 0), 0);
-  const globalRealise = preferredRealGlobal?.realise ?? 0;
-  const detailsRealExhaustive = sumDetailsRealise >= Math.max(globalRealise, sumServicesRealise) * 0.9 && sumDetailsRealise > 0;
-  const servicesRealAtLeastAsLargeAsGlobal = sumServicesRealise >= globalRealise && sumServicesRealise > 0;
-  const realisedSource = detailsRealExhaustive
-    ? detailRows
-    : servicesRealAtLeastAsLargeAsGlobal
-      ? serviceRows
-      : preferredRealGlobal
-        ? [preferredRealGlobal]
-        : serviceRows.length
-          ? serviceRows
-          : detailRows.length
-            ? detailRows
-            : preferredRateGlobal
-              ? [preferredRateGlobal]
-              : meaningfulRows;
-  const rateSource = realisedSource;
-  const serviceBaseRows = serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
+  // ✅ M9-6 STRICT — simple agrégation SUM() sur lignes de DÉTAIL uniquement.
+  // Les lignes 'service'/'global'/'section' sont des agrégats Op@le (totaux
+  // partiels ou enveloppes non ventilées). Les sommer avec les détails créerait
+  // un double comptage ; les utiliser à la place des détails (cascade) prend
+  // une ligne tronquée pour le total. La règle métier réelle : SUM des feuilles.
+  const validDetailRows = detailRows.filter((r) => isLigneSdeValide(r));
+  // Fallback : si aucun détail détecté (parsing dégradé), on prend toutes les
+  // lignes utiles non-globales/non-section pour ne pas afficher 0.
+  const sourceRows = validDetailRows.length > 0
+    ? validDetailRows
+    : meaningfulRows.filter((r) => r.aggregationLevel !== 'global' && r.aggregationLevel !== 'section');
+  const serviceBaseRows = serviceRows.length
+    ? serviceRows
+    : detailRows.length
+      ? detailRows
+      : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
+  const totalBudget = sourceRows.reduce((sum, row) => sum + (row.budget || 0), 0);
+  const totalRealise = sourceRows.reduce((sum, row) => sum + (row.realise > 0 ? row.realise : 0), 0);
+  const totalForRate = sourceRows.reduce((sum, row) => sum + getChargeRateBase(row), 0);
+  const sourceKind: ExecutionSource = validDetailRows.length > 0 ? 'details' : 'mixte';
 
   return {
-    totalBudget: budgetSource.reduce((sum, row) => sum + (row.budget || 0), 0),
-    totalRealise: realisedSource.reduce((sum, row) => sum + ((row.realise > 0 ? row.realise : 0) || 0), 0),
-    totalForRate: rateSource.reduce((sum, row) => sum + getChargeRateBase(row), 0),
+    totalBudget,
+    totalRealise,
+    totalForRate,
     serviceBaseRows,
-    budgetSourceKind: classifySourceKind(budgetSource, detailRowsWithBudget, serviceRowsWithBudget, preferredBudgetGlobal ? [preferredBudgetGlobal] : []),
-    realisedSourceKind: classifySourceKind(realisedSource, detailRows, serviceRows, preferredRealGlobal ? [preferredRealGlobal] : []),
+    budgetSourceKind: sourceKind,
+    realisedSourceKind: sourceKind,
+    coverage: {
+      linesUsed: sourceRows.length,
+      linesTotal: rows.length,
+    },
   };
 }
 
@@ -384,59 +350,54 @@ export function deriveSdrExecutionTotals(rows: LigneSDR[]) {
   const meaningfulRows = rows.filter((row) => hasAnySdrAmounts(row));
   const detailRows = meaningfulRows.filter((row) => row.aggregationLevel === 'detail');
   const serviceRows = meaningfulRows.filter((row) => row.aggregationLevel === 'service');
-  const globalRows = meaningfulRows.filter((row) => row.aggregationLevel === 'global');
-  const sortedGlobalRows = sortRowsByBudgetPriority(globalRows, (row) => getProductRateBase(row));
-  const preferredBudgetGlobal = sortedGlobalRows.find((row) => row.budget > 0);
-  const preferredRealGlobal = sortedGlobalRows.find((row) => row.realise > 0);
-  const preferredRateGlobal = sortedGlobalRows.find((row) => getProductRateBase(row) > 0);
-  const serviceRowsWithBudget = serviceRows.filter((row) => row.budget > 0);
-  const detailRowsWithBudget = detailRows.filter((row) => row.budget > 0);
-
-  const sumServicesBudget = serviceRowsWithBudget.reduce((s, r) => s + r.budget, 0);
-  const sumDetailsBudget  = detailRowsWithBudget.reduce((s, r) => s + r.budget, 0);
-  const globalBudget = preferredBudgetGlobal?.budget ?? 0;
-  const detailsAreExhaustive = sumDetailsBudget >= Math.max(globalBudget, sumServicesBudget) * 0.9 && sumDetailsBudget > 0;
-  const servicesAtLeastAsLargeAsGlobal = sumServicesBudget >= globalBudget && sumServicesBudget > 0;
-  const budgetSource = detailsAreExhaustive
-    ? detailRowsWithBudget
-    : servicesAtLeastAsLargeAsGlobal
-      ? serviceRowsWithBudget
-      : preferredBudgetGlobal
-        ? [preferredBudgetGlobal]
-        : serviceRowsWithBudget.length
-          ? serviceRowsWithBudget
-          : detailRowsWithBudget.length
-            ? detailRowsWithBudget
-            : meaningfulRows;
-  const sumServicesRealise = serviceRows.reduce((s, r) => s + (r.realise > 0 ? r.realise : 0), 0);
-  const sumDetailsRealise  = detailRows.reduce((s, r) => s + (r.realise > 0 ? r.realise : 0), 0);
-  const globalRealise = preferredRealGlobal?.realise ?? 0;
-  const detailsRealExhaustive = sumDetailsRealise >= Math.max(globalRealise, sumServicesRealise) * 0.9 && sumDetailsRealise > 0;
-  const servicesRealAtLeastAsLargeAsGlobal = sumServicesRealise >= globalRealise && sumServicesRealise > 0;
-  const realisedSource = detailsRealExhaustive
-    ? detailRows
-    : servicesRealAtLeastAsLargeAsGlobal
-      ? serviceRows
-      : preferredRealGlobal
-        ? [preferredRealGlobal]
-        : serviceRows.length
-          ? serviceRows
-          : detailRows.length
-            ? detailRows
-            : preferredRateGlobal
-              ? [preferredRateGlobal]
-              : meaningfulRows;
-  const rateSource = realisedSource;
-  const serviceBaseRows = serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
+  // ✅ M9-6 STRICT — simple SUM() sur lignes de détail valides (cf. SDE)
+  const validDetailRows = detailRows.filter((r) => isLigneSdrValide(r));
+  const sourceRows = validDetailRows.length > 0
+    ? validDetailRows
+    : meaningfulRows.filter((r) => r.aggregationLevel !== 'global' && r.aggregationLevel !== 'section');
+  const serviceBaseRows = serviceRows.length
+    ? serviceRows
+    : detailRows.length
+      ? detailRows
+      : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
+  const totalBudget = sourceRows.reduce((sum, row) => sum + (row.budget || 0), 0);
+  const totalRealise = sourceRows.reduce((sum, row) => sum + (row.realise > 0 ? row.realise : 0), 0);
+  const totalForRate = sourceRows.reduce((sum, row) => sum + getProductRateBase(row), 0);
+  const sourceKind: ExecutionSource = validDetailRows.length > 0 ? 'details' : 'mixte';
 
   return {
-    totalBudget: budgetSource.reduce((sum, row) => sum + (row.budget || 0), 0),
-    totalRealise: realisedSource.reduce((sum, row) => sum + ((row.realise > 0 ? row.realise : 0) || 0), 0),
-    totalForRate: rateSource.reduce((sum, row) => sum + getProductRateBase(row), 0),
+    totalBudget,
+    totalRealise,
+    totalForRate,
     serviceBaseRows,
-    budgetSourceKind: classifySourceKind(budgetSource, detailRowsWithBudget, serviceRowsWithBudget, preferredBudgetGlobal ? [preferredBudgetGlobal] : []),
-    realisedSourceKind: classifySourceKind(realisedSource, detailRows, serviceRows, preferredRealGlobal ? [preferredRealGlobal] : []),
+    budgetSourceKind: sourceKind,
+    realisedSourceKind: sourceKind,
+    coverage: {
+      linesUsed: sourceRows.length,
+      linesTotal: rows.length,
+    },
   };
+}
+
+/**
+ * Une ligne SDE est valide pour l'agrégation si :
+ *  - elle est une feuille (detail), pas un agrégat,
+ *  - elle a un compte par nature de classe 6 (charges) renseigné.
+ * Les enveloppes non ventilées (compte vide) sont exclues — elles seraient
+ * sinon comptées en double quand la ventilation arrive ultérieurement.
+ */
+function isLigneSdeValide(row: LigneSDE): boolean {
+  if (row.aggregationLevel !== 'detail') return false;
+  const compte = String(row.compte ?? '').trim();
+  if (!compte) return false;
+  return /^6\d{2,}/.test(compte) || /^[67]\d{2,}/.test(compte);
+}
+
+function isLigneSdrValide(row: LigneSDR): boolean {
+  if (row.aggregationLevel !== 'detail') return false;
+  const compte = String(row.compte ?? '').trim();
+  if (!compte) return false;
+  return /^7\d{2,}/.test(compte);
 }
 
 function classifySourceKind(
