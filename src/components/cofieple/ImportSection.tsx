@@ -302,8 +302,22 @@ export interface SheetPickDiagnostic {
   score: number | null;
   /** Exercice comptable extrait de façon fiable quand le format le permet (balance : AE4). */
   detectedExercice?: number | null;
+  /** Source/cellule où l'exercice a été lu (ex. « AE4 » pour les balances). */
+  detectedExerciceSource?: string | null;
+  /** Règle exacte appliquée pour parser l'onglet retenu
+   *  (ex. « Mapping POSITIONNEL Op@le K/AL/BL-BP », « En-têtes canoniques SDE/SDR »,
+   *  « Sélecteur Balance par en-têtes (Compte/Débit/Crédit) »…). */
+  appliedRule?: string;
+  /** Index 0-based de la ligne d'en-têtes effectivement utilisée. */
+  headerRowIndex?: number | null;
   /** Liste exhaustive des onglets évalués (pour la boîte « Reprendre sélection »). */
-  candidates: Array<{ sheetName: string; score: number | null; reason: string }>;
+  candidates: Array<{
+    sheetName: string;
+    score: number | null;
+    reason: string;
+    /** Mode de détection envisagé pour cette feuille (positionnel, en-têtes, TCD…). */
+    detectionMode?: string;
+  }>;
 }
 
 function pickBestWorkbookRows(
