@@ -302,8 +302,22 @@ export interface SheetPickDiagnostic {
   score: number | null;
   /** Exercice comptable extrait de façon fiable quand le format le permet (balance : AE4). */
   detectedExercice?: number | null;
+  /** Source/cellule où l'exercice a été lu (ex. « AE4 » pour les balances). */
+  detectedExerciceSource?: string | null;
+  /** Règle exacte appliquée pour parser l'onglet retenu
+   *  (ex. « Mapping POSITIONNEL Op@le K/AL/BL-BP », « En-têtes canoniques SDE/SDR »,
+   *  « Sélecteur Balance par en-têtes (Compte/Débit/Crédit) »…). */
+  appliedRule?: string;
+  /** Index 0-based de la ligne d'en-têtes effectivement utilisée. */
+  headerRowIndex?: number | null;
   /** Liste exhaustive des onglets évalués (pour la boîte « Reprendre sélection »). */
-  candidates: Array<{ sheetName: string; score: number | null; reason: string }>;
+  candidates: Array<{
+    sheetName: string;
+    score: number | null;
+    reason: string;
+    /** Mode de détection envisagé pour cette feuille (positionnel, en-têtes, TCD…). */
+    detectionMode?: string;
+  }>;
 }
 
 function pickBestWorkbookRows(
@@ -328,6 +342,9 @@ function pickBestWorkbookRows(
         mode: 'forced',
         score: null,
           detectedExercice: expectedType === 'bal' ? extractExerciceFromBalanceSheet(wb.Sheets[forcedSheetName]) : null,
+        detectedExerciceSource: expectedType === 'bal' ? 'AE4 (cellule fixe balance Op@le)' : null,
+        appliedRule: 'Onglet imposé manuellement par l’utilisateur (« Reprendre sélection »)',
+        headerRowIndex: null,
         candidates: wb.SheetNames.map((n) => ({ sheetName: n, score: null, reason: n === forcedSheetName ? 'imposé manuellement' : '' })),
       },
     };
@@ -360,6 +377,9 @@ function pickBestWorkbookRows(
           mode: 'balance-headers',
           score: null,
           detectedExercice: extractExerciceFromBalanceSheet(wb.Sheets[balanceSheet.sheetName]),
+          detectedExerciceSource: 'AE4 (cellule fixe balance Op@le)',
+          appliedRule: 'Sélecteur Balance par en-têtes (Compte / Débit / Crédit / Solde / Classe de compte ; ≥5 correspondances dans les 8 premières lignes)',
+          headerRowIndex: null,
           candidates: wb.SheetNames.map((n) => ({ sheetName: n, score: null, reason: n === balanceSheet.sheetName ? 'sélecteur balance par en-têtes' : '' })),
         },
       };
@@ -403,7 +423,18 @@ function pickBestWorkbookRows(
             sheetName: selection.sheetName,
             mode: 'canonique',
             score: selection.score,
-            candidates: selection.scoredSheets.map((s) => ({ sheetName: s.sheetName, score: s.score, reason: s.reason })),
+            detectedExercice: null,
+            detectedExerciceSource: 'Non extrait (SDE/SDR : exercice issu du contexte de travail, pas du fichier)',
+            appliedRule: selection.positional
+              ? 'Mapping POSITIONNEL Op@le — Service=K(10), Compte=AL(37), Montants=BL→BP(63→67) ; signature « Montant colonne N » détectée en L2'
+              : `En-têtes canoniques SDE/SDR (ligne ${selection.headerRowIndex + 1}) — alias : Service, Compte, Budget/OI/PI, Engagé, Réalisé/Mandats, En cours, Disponible/Notif/PMV`,
+            headerRowIndex: selection.headerRowIndex,
+            candidates: selection.scoredSheets.map((s) => ({
+              sheetName: s.sheetName,
+              score: s.score,
+              reason: s.reason,
+              detectionMode: s.positional ? 'positionnel BL-BP' : 'en-têtes canoniques',
+            })),
           },
         };
       }
@@ -469,6 +500,9 @@ function pickBestWorkbookRows(
           mode: 'fallback',
           score: Math.round(score * 10) / 10,
           detectedExercice: expectedType === 'bal' ? extractExerciceFromBalanceSheet(wb.Sheets[sheetName]) : null,
+          detectedExerciceSource: expectedType === 'bal' ? 'AE4 (cellule fixe balance Op@le)' : null,
+          appliedRule: `Heuristique fallback (scoring volumétrie + détection type ${expectedType.toUpperCase()} + bonus nom d'onglet « Donnees »)`,
+          headerRowIndex: null,
           candidates: fallbackCandidates,
         },
       };
@@ -490,6 +524,9 @@ function pickBestWorkbookRows(
       mode: 'fallback',
       score: bestScore === -Infinity ? null : Math.round(bestScore * 10) / 10,
       detectedExercice: expectedType === 'bal' && bestSheet ? extractExerciceFromBalanceSheet(wb.Sheets[bestSheet]) : null,
+      detectedExerciceSource: expectedType === 'bal' ? 'AE4 (cellule fixe balance Op@le)' : null,
+      appliedRule: `Heuristique fallback (meilleur score ${bestScore === -Infinity ? '∅' : Math.round(bestScore * 10) / 10} après pénalisation TCD/ECBU et bonus « Donnees »)`,
+      headerRowIndex: null,
       candidates: fallbackCandidates,
     },
   };
