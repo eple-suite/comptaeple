@@ -319,6 +319,50 @@ function isTotalExecutionLabel(row: { service?: string; domaine?: string; activi
 }
 
 /**
+ * Diagnostic — qualifie pourquoi une ligne SDE/SDR est retenue ou exclue
+ * par la logique d'agrégation stricte M9-6.
+ */
+export type PerimetreExclusionRaison =
+  | 'service_vide'
+  | 'service_total'
+  | 'libelle_total'
+  | 'aucun_montant';
+
+export interface PerimetreLigneDiagnostic<T> {
+  row: T;
+  retenue: boolean;
+  raisons: PerimetreExclusionRaison[];
+}
+
+function diagnoseRow<T extends { service: string; domaine?: string; activite?: string; rawLabel?: string }>(
+  row: T,
+  hasAmounts: boolean,
+): PerimetreLigneDiagnostic<T> {
+  const raisons: PerimetreExclusionRaison[] = [];
+  const cleanedService = cleanLabel(row.service);
+  if (!cleanedService || cleanedService === '-') {
+    raisons.push('service_vide');
+  } else if (/^tot(?:al|aux)\b/i.test(cleanedService)) {
+    raisons.push('service_total');
+  }
+  const otherFields = [row.rawLabel, row.domaine, row.activite]
+    .filter((value): value is string => !!value);
+  if (otherFields.some((value) => /^tot(?:al|aux)\b/i.test(cleanLabel(value)))) {
+    if (!raisons.includes('service_total')) raisons.push('libelle_total');
+  }
+  if (!hasAmounts) raisons.push('aucun_montant');
+  return { row, retenue: raisons.length === 0, raisons };
+}
+
+export function diagnoseSdePerimetre(rows: LigneSDE[]): PerimetreLigneDiagnostic<LigneSDE>[] {
+  return rows.map((row) => diagnoseRow(row, hasAnySdeAmounts(row)));
+}
+
+export function diagnoseSdrPerimetre(rows: LigneSDR[]): PerimetreLigneDiagnostic<LigneSDR>[] {
+  return rows.map((row) => diagnoseRow(row, hasAnySdrAmounts(row)));
+}
+
+/**
  * IMPORTANT — Format Op@le SDE/SDR
  *
  * Op@le exporte chaque activité budgétaire en mode éclaté :
