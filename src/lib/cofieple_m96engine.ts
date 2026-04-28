@@ -381,22 +381,32 @@ export function calculerResultatsM96(
     ? sdrForAccounting.filter(r => /^7[0-3]/.test(r.compte)).reduce((s, r) => s + r.realise, 0)
     : sumBal(bal, c => /^7[0-3]/.test(c), 'crd') - sumBal(bal, c => /^7[0-3]/.test(c), 'dbt');
 
-  // ── Jours FDR et Trésorerie (Op@le Pièce 14) ────────────────────────
-  // Dénominateur = DRFN quotidien (charges fonctionnement nettes / 365)
+  // ── Jours FDR et Trésorerie (Op@le Pièce 14, base 360) ─────────────
   const joursFdr = drfnQuotidien > 0 ? fdrComptable / drfnQuotidien : 0;
   const joursTresorerie = drfnQuotidien > 0 ? tresorerie / drfnQuotidien : 0;
 
-  // ── M9-6 — TMcap (Taux moyen charges à payer) ─────────────────────
-  // Part impayée des charges = dettes fournisseurs / charges réalisées
-  // Dénominateur : SDE si dispo, sinon balance classe 6
+  // ── M9-6 — TMcap (Taux moyen Charges À Payer) ─────────────────────
+  // STRICT M9-6 : uniquement les comptes de "charges à payer" rattachés à
+  // l'exercice (4081, 4084, 4086, 4088, 4286, 4386, 4486, 4686).
+  // Les fournisseurs ordinaires (401), rémunérations dues (421), État (441),
+  // collectivités (443) NE SONT PAS des charges à payer comptables.
+  // Dénominateur = total mvts débit classe 6 (charges constatées de l'exercice).
+  const chargesAPayer = sumBal(
+    bal,
+    c => /^(4081|4084|4086|4088|4286|4386|4486|4686)/.test(c),
+    'solCrd',
+  );
+  // Dettes fournisseurs (utilisées par d'autres calculs : DGP, composition tréso)
   const dettesFournisseurs = sumBal(bal, c => c.startsWith('401') || c.startsWith('408'), 'solCrd');
-  const tmcap = totalChargesRef > 0 ? (dettesFournisseurs / totalChargesRef) * 100 : 0;
+  const tmcap = dbtCl6 > 0 ? (chargesAPayer / dbtCl6) * 100 : 0;
 
-  // ── M9-6 — TMnr (Taux moyen de non-recouvrement) ──────────────────
-  // Part non recouvrée = créances cl4 débit / recettes réalisées
-  // Dénominateur : SDR si dispo, sinon balance classe 7
+  // ── M9-6 — TMnr (Taux moyen de Non-Recouvrement) ──────────────────
+  // STRICT M9-6 : créances clients/familles uniquement (411, 416, 418).
+  // Exclure 401 (fournisseurs), 441 (État), 443 (collectivités), 463/467 (autres).
+  // Dénominateur = produits constatés (mvts crédit classe 7 de l'exercice).
+  const creancesClientsM96 = sumBal(bal, c => /^(411|416|418)/.test(c), 'solDbt');
   const totalCreancesCl4 = sumBal(bal, c => c.charAt(0) === '4', 'solDbt');
-  const tmnr = totalProduitsRef > 0 ? (totalCreancesCl4 / totalProduitsRef) * 100 : 0;
+  const tmnr = crdCl7 > 0 ? (creancesClientsM96 / crdCl7) * 100 : 0;
 
   // ── M9-6 — Créances par origine ───────────────────────────────────
   const creancesEtat = sumBal(bal, c => c.startsWith('4411') || c.startsWith('4431') || c.startsWith('4432') || c.startsWith('4438'), 'solDbt');
