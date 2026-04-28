@@ -400,6 +400,7 @@ export const useCofiepleStore = create<Store>()(
 
       setActiveTab: (tab) => set(state => { state.activeTab = tab; }),
       setActiveBudget: (b) => set(state => { state.activeBudget = b; }),
+      setMethodeCalcul: (m) => set(state => { state.methodeCalcul = m; }),
       setUAILoading: (v) => set(state => { state.uaiLoading = v; }),
       setUAIError: (e) => set(state => { state.uaiError = e; }),
       setAnalysisRunning: (v) => set(state => { state.analysisRunning = v; }),
