@@ -334,10 +334,22 @@ export function calculerResultatsM96(
     produitsOrigine[nat] = (produitsOrigine[nat] || 0) + r.realise;
   });
 
-  // Taux d'exécution : utilise totalForRate du moteur de hiérarchie
-  // (engagé pour dépenses, AOR/réalisé pour recettes)
-  const tauxExecCharges  = totalChargesPrev > 0 ? sdeExec.totalForRate / totalChargesPrev : 0;
-  const tauxExecProduits = totalProduitsPrev > 0 ? sdrExec.totalForRate / totalProduitsPrev : 0;
+  // Taux d'exécution — M9-6 STRICT
+  // Numérateur = Σ realise sur les lignes de détail (parser positionnel SDE/SDR)
+  // Dénominateur = Σ budget sur les mêmes lignes de détail.
+  // On évite totalForRate du moteur de hiérarchie qui peut mélanger des
+  // niveaux global/service/détail et produire des bases fantaisistes.
+  const sumDetailBudgetSDE   = sdeForAccounting.reduce((s, r) => s + (r.budget   || 0), 0);
+  const sumDetailRealiseSDE  = sdeForAccounting.reduce((s, r) => s + (r.realise  || 0), 0);
+  const sumDetailBudgetSDR   = sdrForAccounting.reduce((s, r) => s + (r.budget   || 0), 0);
+  const sumDetailRealiseSDR  = sdrForAccounting.reduce((s, r) => s + (r.realise  || 0), 0);
+  // Fallback uniquement si pas de détails (ECBU agrégé) : retomber sur ETS
+  const baseBudgetCharges   = sumDetailBudgetSDE   > 0 ? sumDetailBudgetSDE   : totalChargesPrev;
+  const baseRealiseCharges  = sumDetailRealiseSDE  > 0 ? sumDetailRealiseSDE  : totalChargesSde;
+  const baseBudgetProduits  = sumDetailBudgetSDR   > 0 ? sumDetailBudgetSDR   : totalProduitsPrev;
+  const baseRealiseProduits = sumDetailRealiseSDR  > 0 ? sumDetailRealiseSDR  : totalProduitsSdr;
+  const tauxExecCharges  = baseBudgetCharges  > 0 ? baseRealiseCharges  / baseBudgetCharges  : 0;
+  const tauxExecProduits = baseBudgetProduits > 0 ? baseRealiseProduits / baseBudgetProduits : 0;
 
   // ── Charges de fonctionnement (hors investissement) ────────────────
   const chargesFonctSDE = totalChargesSde - chInvSde;
