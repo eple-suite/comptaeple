@@ -36,6 +36,7 @@ import { PerimetreComptable } from '@/components/cofieple/PerimetreComptable';
 import { VueConsolidee } from '@/components/cofieple/VueConsolidee';
 import { VueGroupement } from '@/components/cofieple/VueGroupement';
 import { PurgeImportsVidesBanner } from '@/components/cofieple/PurgeImportsVidesBanner';
+import { DetailComptesIndicateursSection } from '@/components/cofieple/DetailComptesIndicateursSection';
 import { RapportImpression } from '@/components/rapport/RapportImpression';
 import { CofiepleHero } from '@/components/cofieple/premium/CofiepleHero';
 import { MagazineExportButton } from '@/components/cofieple/premium/MagazineExportButton';
@@ -51,7 +52,7 @@ import {
   Home, Upload, ScrollText, Eye, ShieldCheck, AlertTriangle,
   History, PenTool, Bot, Gauge, Link2, GraduationCap, UtensilsCrossed,
   Layers, Landmark, BookOpen, Monitor, Building2, FileText, Shield,
-  Search, ClipboardList, BarChart3, Printer, Sparkles,
+  Search, ClipboardList, BarChart3, Printer, Sparkles, ListTree,
 } from 'lucide-react';
 
 // ── Types ────────────────────────────────────────────────────────
@@ -123,6 +124,7 @@ const CompteFinancier = () => {
     { id: 'ratios', label: 'Ratios', icon: <Gauge className="h-4 w-4" />, requiresData: true },
     { id: 'reprofi', label: 'Diagnostic Financier', icon: <Sparkles className="h-4 w-4" />, requiresData: true,
       badge: '10', badgeType: 'success' },
+    { id: 'detail_comptes', label: 'Détail comptes', icon: <ListTree className="h-4 w-4" />, requiresData: true },
     { id: 'pluriannuel', label: 'N à N-4', icon: <History className="h-4 w-4" /> },
     { id: 'indicateurs', label: 'Indicateurs', icon: <PenTool className="h-4 w-4" /> },
     { id: 'analyse_ia', label: 'Analyse IA', icon: <Bot className="h-4 w-4" />, requiresData: true },
@@ -180,6 +182,7 @@ const CompteFinancier = () => {
       case 'controles': return <AuditControlesSection />;
       case 'ratios': return <RatiosGestionSection />;
       case 'reprofi': return <IndicateursReprofiSection />;
+      case 'detail_comptes': return <DetailComptesIndicateursSection />;
       case 'points_bloquants': return <PointsBloquantsSection />;
       case 'pluriannuel': return <PluriannuelSection />;
       case 'indicateurs': return <IndicateursHorsComptables />;
