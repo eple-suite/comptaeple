@@ -323,15 +323,21 @@ export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
   // on retombe sur la global row. Les détails ne sont utilisés en propre
   // que s'ils couvrent au moins ~90 % du global (pyramide complète) ;
   // sinon ils sont incomplets et fausseraient les totaux.
+  // Heuristique M9-6 : préférer la source la plus large et exhaustive.
+  // 1. Si Σ services ≥ ligne globale → on utilise les services (ils
+  //    représentent l'exhaustivité réelle ; la global row peut être tronquée).
+  // 2. Sinon (Σ services < global) → la global est plus complète, on l'utilise.
+  // Les détails ne sont une source autonome que s'ils couvrent >= 90 % de
+  // la global ET >= 90 % de la somme des services (pyramide complète).
   const sumServicesBudget = serviceRowsWithBudget.reduce((s, r) => s + r.budget, 0);
   const sumDetailsBudget  = detailRowsWithBudget.reduce((s, r) => s + r.budget, 0);
   const globalBudget = preferredBudgetGlobal?.budget ?? 0;
-  const detailsCoverGlobal = globalBudget > 0 && sumDetailsBudget >= globalBudget * 0.9;
-  const servicesCoverGlobal = globalBudget === 0 || sumServicesBudget >= globalBudget * 0.9;
+  const detailsAreExhaustive = sumDetailsBudget >= Math.max(globalBudget, sumServicesBudget) * 0.9 && sumDetailsBudget > 0;
+  const servicesAtLeastAsLargeAsGlobal = sumServicesBudget >= globalBudget && sumServicesBudget > 0;
 
-  const budgetSource = detailsCoverGlobal
+  const budgetSource = detailsAreExhaustive
     ? detailRowsWithBudget
-    : serviceRowsWithBudget.length && servicesCoverGlobal
+    : servicesAtLeastAsLargeAsGlobal
       ? serviceRowsWithBudget
       : preferredBudgetGlobal
         ? [preferredBudgetGlobal]
@@ -340,14 +346,15 @@ export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
           : detailRowsWithBudget.length
             ? detailRowsWithBudget
             : meaningfulRows;
+
   const sumServicesRealise = serviceRows.reduce((s, r) => s + (r.realise > 0 ? r.realise : 0), 0);
   const sumDetailsRealise  = detailRows.reduce((s, r) => s + (r.realise > 0 ? r.realise : 0), 0);
   const globalRealise = preferredRealGlobal?.realise ?? 0;
-  const detailsCoverGlobalReal  = globalRealise > 0 && sumDetailsRealise  >= globalRealise * 0.9;
-  const servicesCoverGlobalReal = globalRealise === 0 || sumServicesRealise >= globalRealise * 0.9;
-  const realisedSource = detailsCoverGlobalReal
+  const detailsRealExhaustive = sumDetailsRealise >= Math.max(globalRealise, sumServicesRealise) * 0.9 && sumDetailsRealise > 0;
+  const servicesRealAtLeastAsLargeAsGlobal = sumServicesRealise >= globalRealise && sumServicesRealise > 0;
+  const realisedSource = detailsRealExhaustive
     ? detailRows
-    : serviceRows.length && servicesCoverGlobalReal
+    : servicesRealAtLeastAsLargeAsGlobal
       ? serviceRows
       : preferredRealGlobal
         ? [preferredRealGlobal]
@@ -384,12 +391,11 @@ export function deriveSdrExecutionTotals(rows: LigneSDR[]) {
   const sumServicesBudget = serviceRowsWithBudget.reduce((s, r) => s + r.budget, 0);
   const sumDetailsBudget  = detailRowsWithBudget.reduce((s, r) => s + r.budget, 0);
   const globalBudget = preferredBudgetGlobal?.budget ?? 0;
-  const detailsCoverGlobal = globalBudget > 0 && sumDetailsBudget >= globalBudget * 0.9;
-  const servicesCoverGlobal = globalBudget === 0 || sumServicesBudget >= globalBudget * 0.9;
-
-  const budgetSource = detailsCoverGlobal
+  const detailsAreExhaustive = sumDetailsBudget >= Math.max(globalBudget, sumServicesBudget) * 0.9 && sumDetailsBudget > 0;
+  const servicesAtLeastAsLargeAsGlobal = sumServicesBudget >= globalBudget && sumServicesBudget > 0;
+  const budgetSource = detailsAreExhaustive
     ? detailRowsWithBudget
-    : serviceRowsWithBudget.length && servicesCoverGlobal
+    : servicesAtLeastAsLargeAsGlobal
       ? serviceRowsWithBudget
       : preferredBudgetGlobal
         ? [preferredBudgetGlobal]
@@ -401,11 +407,11 @@ export function deriveSdrExecutionTotals(rows: LigneSDR[]) {
   const sumServicesRealise = serviceRows.reduce((s, r) => s + (r.realise > 0 ? r.realise : 0), 0);
   const sumDetailsRealise  = detailRows.reduce((s, r) => s + (r.realise > 0 ? r.realise : 0), 0);
   const globalRealise = preferredRealGlobal?.realise ?? 0;
-  const detailsCoverGlobalReal  = globalRealise > 0 && sumDetailsRealise  >= globalRealise * 0.9;
-  const servicesCoverGlobalReal = globalRealise === 0 || sumServicesRealise >= globalRealise * 0.9;
-  const realisedSource = detailsCoverGlobalReal
+  const detailsRealExhaustive = sumDetailsRealise >= Math.max(globalRealise, sumServicesRealise) * 0.9 && sumDetailsRealise > 0;
+  const servicesRealAtLeastAsLargeAsGlobal = sumServicesRealise >= globalRealise && sumServicesRealise > 0;
+  const realisedSource = detailsRealExhaustive
     ? detailRows
-    : serviceRows.length && servicesCoverGlobalReal
+    : servicesRealAtLeastAsLargeAsGlobal
       ? serviceRows
       : preferredRealGlobal
         ? [preferredRealGlobal]
