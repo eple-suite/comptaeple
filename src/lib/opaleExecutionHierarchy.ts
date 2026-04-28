@@ -375,6 +375,8 @@ export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
     totalRealise: realisedSource.reduce((sum, row) => sum + ((row.realise > 0 ? row.realise : 0) || 0), 0),
     totalForRate: rateSource.reduce((sum, row) => sum + getChargeRateBase(row), 0),
     serviceBaseRows,
+    budgetSourceKind: classifySourceKind(budgetSource, detailRowsWithBudget, serviceRowsWithBudget, preferredBudgetGlobal ? [preferredBudgetGlobal] : []),
+    realisedSourceKind: classifySourceKind(realisedSource, detailRows, serviceRows, preferredRealGlobal ? [preferredRealGlobal] : []),
   };
 }
 
@@ -432,5 +434,29 @@ export function deriveSdrExecutionTotals(rows: LigneSDR[]) {
     totalRealise: realisedSource.reduce((sum, row) => sum + ((row.realise > 0 ? row.realise : 0) || 0), 0),
     totalForRate: rateSource.reduce((sum, row) => sum + getProductRateBase(row), 0),
     serviceBaseRows,
+    budgetSourceKind: classifySourceKind(budgetSource, detailRowsWithBudget, serviceRowsWithBudget, preferredBudgetGlobal ? [preferredBudgetGlobal] : []),
+    realisedSourceKind: classifySourceKind(realisedSource, detailRows, serviceRows, preferredRealGlobal ? [preferredRealGlobal] : []),
   };
+}
+
+function classifySourceKind(
+  used: Array<{ aggregationLevel?: AggregationLevel }>,
+  detailRef: Array<unknown>,
+  serviceRef: Array<unknown>,
+  globalRef: Array<unknown>,
+): ExecutionSource {
+  if (!used || used.length === 0) return 'aucune';
+  // Identity match: if the chosen array is exactly one of the references
+  if (used === detailRef as unknown) return 'details';
+  if (used === serviceRef as unknown) return 'services';
+  if (used === globalRef as unknown) return 'global';
+  // Fallback: classify by levels present in the chosen rows
+  const levels = new Set(used.map(r => r.aggregationLevel));
+  if (levels.size === 1) {
+    const only = [...levels][0];
+    if (only === 'detail') return 'details';
+    if (only === 'service') return 'services';
+    if (only === 'global' || only === 'section') return 'global';
+  }
+  return 'mixte';
 }
