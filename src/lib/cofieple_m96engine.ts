@@ -358,6 +358,13 @@ export function calculerResultatsM96(
   const tauxExecCharges  = baseBudgetCharges  > 0 ? baseRealiseCharges  / baseBudgetCharges  : 0;
   const tauxExecProduits = baseBudgetProduits > 0 ? baseRealiseProduits / baseBudgetProduits : 0;
 
+  // Taux d'exécution "budgétaire pure" — utilise les totaux SDE/SDR
+  // bruts (lignes agrégées comprises) tels qu'importés. Sert de
+  // comparaison dans le tableau de bord aux taux "balance stricte"
+  // ci-dessus, qui filtrent sur les lignes de détail positionnelles.
+  const tauxExecChargesPure  = totalChargesPrev  > 0 ? totalChargesSde   / totalChargesPrev  : 0;
+  const tauxExecProduitsPure = totalProduitsPrev > 0 ? totalProduitsSdr  / totalProduitsPrev : 0;
+
   // ── Charges de fonctionnement (hors investissement) ────────────────
   const chargesFonctSDE = totalChargesSde - chInvSde;
   const chargesBalanceCl6 = totalChargesBalance;
