@@ -238,11 +238,16 @@ function classifyAggregationLevel(compte: string, labels: string[], hasAmounts: 
 }
 
 export function enrichParsedSdeRow(base: LigneSDE, row: Record<string, string>): LigneSDE {
-  const budget = base.budget || getFallbackMetricValue('sde', row, 'budget');
-  const engage = base.engage || getFallbackMetricValue('sde', row, 'engage');
-  const realise = base.realise || getFallbackMetricValue('sde', row, 'realise');
-  const encours = base.encours || getFallbackMetricValue('sde', row, 'encours');
-  const disponible = base.disponible || getFallbackMetricValue('sde', row, 'disponible');
+  // ⚠ Ne JAMAIS appeler getFallbackMetricValue ici : la fonction prend la
+  // première valeur non nulle parmi des index candidats, ce qui assigne
+  // le réalisé comme budget sur les lignes "réalisé" (Op@le éclate budget
+  // et réalisé sur des lignes différentes). Si base.budget = 0, c'est
+  // légitime — on conserve 0.
+  const budget = base.budget || 0;
+  const engage = base.engage || 0;
+  const realise = base.realise || 0;
+  const encours = base.encours || 0;
+  const disponible = base.disponible || 0;
   const hierarchy = buildHierarchyFields(row, base.service, base.domaine, base.activite);
   const aggregationLevel = classifyAggregationLevel(base.compte, hierarchy.labels, [budget, engage, realise, encours, disponible].some((v) => Math.abs(v) > 0));
 
@@ -264,12 +269,13 @@ export function enrichParsedSdeRow(base: LigneSDE, row: Record<string, string>):
 }
 
 export function enrichParsedSdrRow(base: LigneSDR, row: Record<string, string>): LigneSDR {
-  const budget = base.budget || getFallbackMetricValue('sdr', row, 'budget');
-  const engage = base.engage || getFallbackMetricValue('sdr', row, 'engage');
-  const aor = base.aor || getFallbackMetricValue('sdr', row, 'aor');
-  const realise = base.realise || getFallbackMetricValue('sdr', row, 'realise');
-  const encours = base.encours || getFallbackMetricValue('sdr', row, 'encours');
-  const plusValues = base.plusValues || getFallbackMetricValue('sdr', row, 'plusValues');
+  // ⚠ Voir enrichParsedSdeRow : pas de fallback "devine la valeur".
+  const budget = base.budget || 0;
+  const engage = base.engage || 0;
+  const aor = base.aor || 0;
+  const realise = base.realise || 0;
+  const encours = base.encours || 0;
+  const plusValues = base.plusValues || 0;
   const hierarchy = buildHierarchyFields(row, base.service, base.domaine, base.activite);
   const aggregationLevel = classifyAggregationLevel(base.compte, hierarchy.labels, [budget, engage, aor, realise, encours, plusValues].some((v) => Math.abs(v) > 0));
 
