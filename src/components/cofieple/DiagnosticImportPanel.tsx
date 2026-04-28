@@ -59,6 +59,44 @@ export function DiagnosticImportPanel({ entries }: Props) {
                 )}
               </div>
 
+              {e.diag && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-1">
+                  <div className="rounded border bg-background p-2">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Mode de détection</div>
+                    <div className="font-semibold">
+                      {e.diag.mode === 'canonique' && '✅ Canonique (parser SDE/SDR officiel)'}
+                      {e.diag.mode === 'balance-headers' && '✅ Sélecteur Balance par en-têtes'}
+                      {e.diag.mode === 'forced' && '🔧 Imposé manuellement'}
+                      {e.diag.mode === 'fallback' && '⚠️ Heuristique fallback (legacy)'}
+                    </div>
+                    {e.diag.headerRowIndex != null && e.diag.headerRowIndex >= 0 && (
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        Ligne d'en-tête : {e.diag.headerRowIndex + 1}
+                      </div>
+                    )}
+                  </div>
+                  <div className="rounded border bg-background p-2">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Exercice détecté</div>
+                    <div className="font-semibold">
+                      {e.diag.detectedExercice != null
+                        ? `Exercice ${e.diag.detectedExercice}`
+                        : <span className="text-muted-foreground">Non extrait du fichier</span>}
+                    </div>
+                    {e.diag.detectedExerciceSource && (
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        Source : {e.diag.detectedExerciceSource}
+                      </div>
+                    )}
+                  </div>
+                  <div className="rounded border bg-background p-2">
+                    <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Règle appliquée</div>
+                    <div className="font-semibold leading-snug">
+                      {e.diag.appliedRule || '—'}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {e.diag && e.diag.candidates.length > 0 && (
                 <div>
                   <div className="font-semibold mb-1">Onglets évalués :</div>
@@ -67,6 +105,7 @@ export function DiagnosticImportPanel({ entries }: Props) {
                       <tr className="bg-muted">
                         <th className="border px-2 py-0.5 text-left">Onglet</th>
                         <th className="border px-2 py-0.5 text-left">Score</th>
+                        <th className="border px-2 py-0.5 text-left">Mode envisagé</th>
                         <th className="border px-2 py-0.5 text-left">Raison / motif</th>
                       </tr>
                     </thead>
@@ -75,6 +114,7 @@ export function DiagnosticImportPanel({ entries }: Props) {
                         <tr key={c.sheetName} className={c.sheetName === e.diag!.sheetName ? 'bg-emerald-50 dark:bg-emerald-900/20 font-semibold' : ''}>
                           <td className="border px-2 py-0.5 font-mono">{c.sheetName}</td>
                           <td className="border px-2 py-0.5">{c.score ?? '—'}</td>
+                          <td className="border px-2 py-0.5">{c.detectionMode ?? '—'}</td>
                           <td className="border px-2 py-0.5">{c.reason || '—'}</td>
                         </tr>
                       ))}
