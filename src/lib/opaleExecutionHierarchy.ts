@@ -3,7 +3,7 @@ import { extractIndexedColumnNumber, normalizeColumnName } from './opaleImportUt
 
 export type AggregationLevel = 'global' | 'section' | 'service' | 'detail' | 'unknown';
 
-export type ExecutionSource = 'global' | 'services' | 'details' | 'mixte' | 'aucune';
+export type ExecutionSource = 'global' | 'services' | 'details' | 'totalisation' | 'mixte' | 'aucune';
 
 type ExecutionKind = 'sde' | 'sdr';
 
@@ -307,36 +307,48 @@ export function getProductRateBase(row: Pick<LigneSDR, 'aor' | 'realise'>): numb
   return row.aor > 0 ? row.aor : row.realise;
 }
 
+function isUsableExecutionService(service: string): boolean {
+  const normalized = cleanLabel(service);
+  return !!normalized && normalized !== '-' && !/^tot(?:al|aux)\b/i.test(normalized);
+}
+
+function isTotalExecutionLabel(row: { service?: string; domaine?: string; activite?: string; rawLabel?: string }): boolean {
+  return [row.rawLabel, row.service, row.domaine, row.activite]
+    .filter((value): value is string => !!value)
+    .some((value) => /^tot(?:al|aux)\b/i.test(cleanLabel(value)));
+}
+
+/**
+ * IMPORTANT — Format Op@le SDE/SDR
+ *
+ * Op@le exporte chaque activité budgétaire en mode éclaté :
+ *   • lignes SANS compte par nature (colonne AL vide) → portent le BUDGET ;
+ *   • lignes AVEC compte par nature → portent le RÉALISÉ.
+ *
+ * Pour calculer un total d'exécution, faire une SUM() sur toutes les lignes
+ * valides, avec un filtre minimal sur le service renseigné et l'exclusion des
+ * lignes explicitement libellées « Total ».
+ *
+ * NE JAMAIS filtrer sur la présence du compte par nature : cela supprimerait
+ * les lignes budget et réactiverait les valeurs fantômes.
+ */
+function getUsableExecutionRows<T extends { service: string; domaine?: string; activite?: string; rawLabel?: string }>(rows: T[]): T[] {
+  return rows.filter((row) => isUsableExecutionService(row.service) && !isTotalExecutionLabel(row));
+}
+
 export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
-  const meaningfulRows = rows.filter((row) => hasAnySdeAmounts(row));
-  const detailRows = meaningfulRows.filter((row) => row.aggregationLevel === 'detail');
-  const serviceRows = meaningfulRows.filter((row) => row.aggregationLevel === 'service');
-  // ✅ M9-6 STRICT — simple agrégation SUM() sur lignes de DÉTAIL uniquement.
-  // Les lignes 'service'/'global'/'section' sont des agrégats Op@le (totaux
-  // partiels ou enveloppes non ventilées). Les sommer avec les détails créerait
-  // un double comptage ; les utiliser à la place des détails (cascade) prend
-  // une ligne tronquée pour le total. La règle métier réelle : SUM des feuilles.
-  const validDetailRows = detailRows.filter((r) => isLigneSdeValide(r));
-  // Fallback : si aucun détail détecté (parsing dégradé), on prend toutes les
-  // lignes utiles non-globales/non-section pour ne pas afficher 0.
-  const sourceRows = validDetailRows.length > 0
-    ? validDetailRows
-    : meaningfulRows.filter((r) => r.aggregationLevel !== 'global' && r.aggregationLevel !== 'section');
-  const serviceBaseRows = serviceRows.length
-    ? serviceRows
-    : detailRows.length
-      ? detailRows
-      : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
+  const meaningfulRows = getUsableExecutionRows(rows.filter((row) => hasAnySdeAmounts(row)));
+  const sourceRows = meaningfulRows;
   const totalBudget = sourceRows.reduce((sum, row) => sum + (row.budget || 0), 0);
-  const totalRealise = sourceRows.reduce((sum, row) => sum + (row.realise > 0 ? row.realise : 0), 0);
-  const totalForRate = sourceRows.reduce((sum, row) => sum + getChargeRateBase(row), 0);
-  const sourceKind: ExecutionSource = validDetailRows.length > 0 ? 'details' : 'mixte';
+  const totalRealise = sourceRows.reduce((sum, row) => sum + (row.realise || 0), 0);
+  const totalForRate = totalRealise;
+  const sourceKind: ExecutionSource = sourceRows.length > 0 ? 'totalisation' : 'aucune';
 
   return {
     totalBudget,
     totalRealise,
     totalForRate,
-    serviceBaseRows,
+    serviceBaseRows: sourceRows,
     budgetSourceKind: sourceKind,
     realisedSourceKind: sourceKind,
     coverage: {
@@ -347,29 +359,18 @@ export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
 }
 
 export function deriveSdrExecutionTotals(rows: LigneSDR[]) {
-  const meaningfulRows = rows.filter((row) => hasAnySdrAmounts(row));
-  const detailRows = meaningfulRows.filter((row) => row.aggregationLevel === 'detail');
-  const serviceRows = meaningfulRows.filter((row) => row.aggregationLevel === 'service');
-  // ✅ M9-6 STRICT — simple SUM() sur lignes de détail valides (cf. SDE)
-  const validDetailRows = detailRows.filter((r) => isLigneSdrValide(r));
-  const sourceRows = validDetailRows.length > 0
-    ? validDetailRows
-    : meaningfulRows.filter((r) => r.aggregationLevel !== 'global' && r.aggregationLevel !== 'section');
-  const serviceBaseRows = serviceRows.length
-    ? serviceRows
-    : detailRows.length
-      ? detailRows
-      : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
+  const meaningfulRows = getUsableExecutionRows(rows.filter((row) => hasAnySdrAmounts(row)));
+  const sourceRows = meaningfulRows;
   const totalBudget = sourceRows.reduce((sum, row) => sum + (row.budget || 0), 0);
-  const totalRealise = sourceRows.reduce((sum, row) => sum + (row.realise > 0 ? row.realise : 0), 0);
-  const totalForRate = sourceRows.reduce((sum, row) => sum + getProductRateBase(row), 0);
-  const sourceKind: ExecutionSource = validDetailRows.length > 0 ? 'details' : 'mixte';
+  const totalRealise = sourceRows.reduce((sum, row) => sum + (row.realise || 0), 0);
+  const totalForRate = totalRealise;
+  const sourceKind: ExecutionSource = sourceRows.length > 0 ? 'totalisation' : 'aucune';
 
   return {
     totalBudget,
     totalRealise,
     totalForRate,
-    serviceBaseRows,
+    serviceBaseRows: sourceRows,
     budgetSourceKind: sourceKind,
     realisedSourceKind: sourceKind,
     coverage: {
@@ -377,47 +378,4 @@ export function deriveSdrExecutionTotals(rows: LigneSDR[]) {
       linesTotal: rows.length,
     },
   };
-}
-
-/**
- * Une ligne SDE est valide pour l'agrégation si :
- *  - elle est une feuille (detail), pas un agrégat,
- *  - elle a un compte par nature de classe 6 (charges) renseigné.
- * Les enveloppes non ventilées (compte vide) sont exclues — elles seraient
- * sinon comptées en double quand la ventilation arrive ultérieurement.
- */
-function isLigneSdeValide(row: LigneSDE): boolean {
-  if (row.aggregationLevel !== 'detail') return false;
-  const compte = String(row.compte ?? '').trim();
-  if (!compte) return false;
-  return /^6\d{2,}/.test(compte) || /^[67]\d{2,}/.test(compte);
-}
-
-function isLigneSdrValide(row: LigneSDR): boolean {
-  if (row.aggregationLevel !== 'detail') return false;
-  const compte = String(row.compte ?? '').trim();
-  if (!compte) return false;
-  return /^7\d{2,}/.test(compte);
-}
-
-function classifySourceKind(
-  used: Array<{ aggregationLevel?: AggregationLevel }>,
-  detailRef: Array<unknown>,
-  serviceRef: Array<unknown>,
-  globalRef: Array<unknown>,
-): ExecutionSource {
-  if (!used || used.length === 0) return 'aucune';
-  // Identity match: if the chosen array is exactly one of the references
-  if (used === detailRef as unknown) return 'details';
-  if (used === serviceRef as unknown) return 'services';
-  if (used === globalRef as unknown) return 'global';
-  // Fallback: classify by levels present in the chosen rows
-  const levels = new Set(used.map(r => r.aggregationLevel));
-  if (levels.size === 1) {
-    const only = [...levels][0];
-    if (only === 'detail') return 'details';
-    if (only === 'service') return 'services';
-    if (only === 'global' || only === 'section') return 'global';
-  }
-  return 'mixte';
 }

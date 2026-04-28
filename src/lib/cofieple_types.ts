@@ -118,12 +118,11 @@ export interface ResultatsM96 {
   tauxExecChargesPure?: number;
   tauxExecProduitsPure?: number;
   // Source d'agrégation Op@le utilisée pour les taux d'exécution
-  // ('global' = ligne globale, 'services' = somme des services,
-  // 'details' = somme des comptes détail, 'mixte' / 'aucune')
-  sourceTauxCharges?: 'global' | 'services' | 'details' | 'mixte' | 'aucune';
-  sourceTauxProduits?: 'global' | 'services' | 'details' | 'mixte' | 'aucune';
-  sourceBudgetCharges?: 'global' | 'services' | 'details' | 'mixte' | 'aucune';
-  sourceBudgetProduits?: 'global' | 'services' | 'details' | 'mixte' | 'aucune';
+  // 'totalisation' = SUM brute des lignes valides SDE/SDR, sans cascade.
+  sourceTauxCharges?: 'global' | 'services' | 'details' | 'totalisation' | 'mixte' | 'aucune';
+  sourceTauxProduits?: 'global' | 'services' | 'details' | 'totalisation' | 'mixte' | 'aucune';
+  sourceBudgetCharges?: 'global' | 'services' | 'details' | 'totalisation' | 'mixte' | 'aucune';
+  sourceBudgetProduits?: 'global' | 'services' | 'details' | 'totalisation' | 'mixte' | 'aucune';
   fdrHaut: number; fdrBas: number; fdrComptable: number;
   varFdrHaut: number; varFdrBas: number; varFdrCaf: number;
   varFdrTableauFinancement: number; structurationFdr: number;

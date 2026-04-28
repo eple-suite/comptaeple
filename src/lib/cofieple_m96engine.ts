@@ -47,9 +47,10 @@ export function calculerResultatsM96(
 ): ResultatsM96 {
   const { isAnnexe = false } = options;
 
-  // ── Totaux SDE/SDR — Hiérarchie Op@le ───────────────────────────────
-  // Utilise le moteur de hiérarchie pour isoler la ligne globale
-  // et éviter les doubles comptes (global + services + détail)
+  // ── Totaux SDE/SDR — totalisation Op@le ─────────────────────────────
+  // Op@le éclate les activités : lignes sans compte = budget, lignes avec
+  // compte = réalisé. Le moteur totalise donc toutes les lignes valides,
+  // sans cascade global/services/détails et sans filtre sur le compte.
   const sdeExec = deriveSdeExecutionTotals(sde);
   const sdrExec = deriveSdrExecutionTotals(sdr);
 
@@ -341,27 +342,15 @@ export function calculerResultatsM96(
     produitsOrigine[nat] = (produitsOrigine[nat] || 0) + r.realise;
   });
 
-  // Taux d'exécution — M9-6 STRICT
-  // Numérateur = Σ realise sur les lignes de détail (parser positionnel SDE/SDR)
-  // Dénominateur = Σ budget sur les mêmes lignes de détail.
-  // On évite totalForRate du moteur de hiérarchie qui peut mélanger des
-  // niveaux global/service/détail et produire des bases fantaisistes.
-  const sumDetailBudgetSDE   = sdeForAccounting.reduce((s, r) => s + (r.budget   || 0), 0);
-  const sumDetailRealiseSDE  = sdeForAccounting.reduce((s, r) => s + (r.realise  || 0), 0);
-  const sumDetailBudgetSDR   = sdrForAccounting.reduce((s, r) => s + (r.budget   || 0), 0);
-  const sumDetailRealiseSDR  = sdrForAccounting.reduce((s, r) => s + (r.realise  || 0), 0);
-  // Fallback uniquement si pas de détails (ECBU agrégé) : retomber sur ETS
-  const baseBudgetCharges   = sumDetailBudgetSDE   > 0 ? sumDetailBudgetSDE   : totalChargesPrev;
-  const baseRealiseCharges  = sumDetailRealiseSDE  > 0 ? sumDetailRealiseSDE  : totalChargesSde;
-  const baseBudgetProduits  = sumDetailBudgetSDR   > 0 ? sumDetailBudgetSDR   : totalProduitsPrev;
-  const baseRealiseProduits = sumDetailRealiseSDR  > 0 ? sumDetailRealiseSDR  : totalProduitsSdr;
-  const tauxExecCharges  = baseBudgetCharges  > 0 ? baseRealiseCharges  / baseBudgetCharges  : 0;
-  const tauxExecProduits = baseBudgetProduits > 0 ? baseRealiseProduits / baseBudgetProduits : 0;
+  // Taux d'exécution — totalisation Op@le brute
+  // Numérateur = Σ réalisé sur toutes les lignes valides ; dénominateur = Σ budget
+  // sur toutes les lignes valides. Ne jamais filtrer sur le compte par nature :
+  // les lignes sans compte portent justement le budget Op@le.
+  const tauxExecCharges  = totalChargesPrev  > 0 ? totalChargesSde   / totalChargesPrev  : 0;
+  const tauxExecProduits = totalProduitsPrev > 0 ? totalProduitsSdr  / totalProduitsPrev : 0;
 
-  // Taux d'exécution "budgétaire pure" — utilise les totaux SDE/SDR
-  // bruts (lignes agrégées comprises) tels qu'importés. Sert de
-  // comparaison dans le tableau de bord aux taux "balance stricte"
-  // ci-dessus, qui filtrent sur les lignes de détail positionnelles.
+  // Taux d'exécution "budgétaire pure" — conservé pour compatibilité UI ;
+  // il pointe désormais sur la même totalisation SDE/SDR corrigée.
   const tauxExecChargesPure  = totalChargesPrev  > 0 ? totalChargesSde   / totalChargesPrev  : 0;
   const tauxExecProduitsPure = totalProduitsPrev > 0 ? totalProduitsSdr  / totalProduitsPrev : 0;
 

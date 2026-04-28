@@ -1,10 +1,21 @@
 ---
 name: Financial Validation Logic
-description: Logique de filtrage des lignes SDE/SDR pour éviter les doubles comptes dans la hiérarchie CGR Op@le
+description: Logique SDE/SDR Op@le : totalisation brute compte financier et contrôles hiérarchiques execution
 type: feature
 ---
 
-## Filtrage hiérarchique CGR — Anti double-comptage
+## Compte financier — format Op@le SDE/SDR en deux lignes
+
+### Règle absolue pour les taux du compte financier
+Op@le exporte les activités budgétaires en mode éclaté :
+- ligne **sans compte par nature** : porte le budget ;
+- ligne **avec compte par nature** : porte le réalisé.
+
+Pour les taux d'exécution du compte financier, utiliser une **SUM brute de toutes les lignes SDE/SDR valides** (service renseigné, hors libellés Total), sans seuil de couverture et sans cascade global/services/détails.
+
+**Ne jamais filtrer sur la présence du compte par nature** pour les totaux d'exécution du compte financier, car cela supprime les budgets.
+
+## Filtrage hiérarchique CGR — Module exécution uniquement
 
 ### Règle absolue
 Les données Op@le (SDE/SDR) sont organisées en arbre hiérarchique :
@@ -14,8 +25,9 @@ Les données Op@le (SDE/SDR) sont organisées en arbre hiérarchique :
 - Niveau 4 : AP, VE, ALO (enfants de SG), SRH (enfant de SS)
 - Niveaux 5+ : détails feuilles
 
-**N'utiliser QUE les lignes feuilles (`aggregationLevel === 'detail'`) pour les agrégations par service.**
-**Utiliser la ligne ETS (`aggregationLevel === 'global'`) pour les totaux généraux.**
+Pour les écrans d'exécution budgétaire, les contrôles hiérarchiques restent utiles :
+**n'utiliser QUE les lignes feuilles (`aggregationLevel === 'detail'`) pour les agrégations par service.**
+**Utiliser la ligne ETS (`aggregationLevel === 'global'`) pour les totaux généraux de contrôle.**
 
 ### Module `src/lib/executionRowFilters.ts`
 - `getLeafSdeRows()` / `getLeafSdrRows()` : filtre les lignes feuilles uniquement
