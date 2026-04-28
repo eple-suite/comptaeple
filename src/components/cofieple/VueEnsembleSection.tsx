@@ -78,6 +78,17 @@ export function VueEnsembleSection() {
         ? 'À recalculer'
         : '0.0 %';
 
+  // Source des taux d'exécution (ligne globale / Σ services / Σ détails)
+  const sourceLabel: Record<string, { label: string; tooltip: string; color: string }> = {
+    global:   { label: '🟦 Source : ligne globale',     tooltip: "Calcul basé sur la ligne globale Op@le (totaux SDE/SDR niveau établissement).", color: 'bg-primary/15 text-primary border-primary/30' },
+    services: { label: '🟩 Source : Σ services',         tooltip: "Calcul basé sur la somme des services (AP + VE + ALO + SRH…) — la ligne globale était tronquée ou plus faible.", color: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' },
+    details:  { label: '🟧 Source : Σ comptes détail',   tooltip: "Calcul basé sur la somme des lignes comptes détail (couverture ≥ 90 % du global / services).", color: 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border-orange-500/30' },
+    mixte:    { label: '⚪ Source : mixte',              tooltip: "Sources hétérogènes — vérifier la cohérence de l'import.", color: 'bg-muted text-muted-foreground border-border' },
+    aucune:   { label: '⚫ Source : aucune',             tooltip: "Aucune ligne exploitable détectée pour ce taux.", color: 'bg-destructive/15 text-destructive border-destructive/30' },
+  };
+  const srcCharges  = sourceLabel[R.sourceTauxCharges  || 'aucune'] || sourceLabel.aucune;
+  const srcProduits = sourceLabel[R.sourceTauxProduits || 'aucune'] || sourceLabel.aucune;
+
   // Radar 8 axes
   const normalize = (val: number, good: number, bad: number) => {
     if (good === bad) return 50;
@@ -144,6 +155,24 @@ export function VueEnsembleSection() {
         <KPICard label="Taux exéc. recettes" value={tauxProduitsDisplay} color={effectiveProductRate !== null && effectiveProductRate >= 0.9 ? 'green' : 'amber'}
           icon="💰" sub={`Budget ${formatEur(R.totalProduitsPrev)} · Réal. ${formatEur(R.totalProduitsSdr)}`} isText />
       </div>
+
+      {/* Indicateur de source d'agrégation des taux d'exécution */}
+      {(effectiveChargeRate !== null || effectiveProductRate !== null) && (
+        <Card className="border-border/60">
+          <CardContent className="p-3 flex flex-wrap items-center gap-3 text-xs">
+            <span className="font-semibold text-muted-foreground">Origine des taux d'exécution :</span>
+            <span className={`px-2 py-1 rounded-md border ${srcCharges.color}`} title={srcCharges.tooltip}>
+              Dépenses — {srcCharges.label}
+            </span>
+            <span className={`px-2 py-1 rounded-md border ${srcProduits.color}`} title={srcProduits.tooltip}>
+              Recettes — {srcProduits.label}
+            </span>
+            <span className="ml-auto text-muted-foreground italic">
+              Hiérarchie M9-6 : détails (≥ 90 %) ▸ Σ services (≥ global) ▸ ligne globale.
+            </span>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Alertes automatiques */}
       {(nbBloq > 0 || nbSoldesAnormaux > 0 || fdr < 0 || treso < 0 || caf < 0) && (
