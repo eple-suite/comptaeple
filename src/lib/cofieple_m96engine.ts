@@ -189,9 +189,19 @@ export function calculerResultatsM96(
   const varFdrCaf = cafBudgetaire;
 
   // ── BFR ────────────────────────────────────────────────────────────
+  // M9-6 : BFR = Actif circulant hors trésorerie − Passif circulant hors trésorerie
+  // ⚠ Inclure les comptes de classe 5 HORS trésorerie (notamment 585x
+  // « Virements internes ») dans l'actif circulant. Sinon le compte 585
+  // reste « coincé » dans les ressources stables et fausse le BFR ainsi
+  // que la cohérence FDR_haut / FDR_bas.
+  const COMPTES_TRESORERIE_REGEX = /^(511|512|514|515|516|517|518|531|532|533|534|535|536|537|538|539)/;
   const solDbtCl4only = sumBal(bal, c => c.charAt(0) === '4', 'solDbt');
-  const bfr = solDbtCl3 + solDbtCl4only - solCrdCl4;
-  const bfrBE = antDbtCl3 + antDbtCl4 - antCrdCl4;
+  const solDbtCl5HorsTreso = sumBal(bal, c => c.charAt(0) === '5' && !COMPTES_TRESORERIE_REGEX.test(c), 'solDbt');
+  const solCrdCl5HorsTreso = sumBal(bal, c => c.charAt(0) === '5' && !COMPTES_TRESORERIE_REGEX.test(c), 'solCrd');
+  const antDbtCl5HorsTreso = sumBal(bal, c => c.charAt(0) === '5' && !COMPTES_TRESORERIE_REGEX.test(c), 'antDbt');
+  const antCrdCl5HorsTreso = sumBal(bal, c => c.charAt(0) === '5' && !COMPTES_TRESORERIE_REGEX.test(c), 'antCrd');
+  const bfr = solDbtCl3 + solDbtCl4only + solDbtCl5HorsTreso - solCrdCl4 - solCrdCl5HorsTreso;
+  const bfrBE = antDbtCl3 + antDbtCl4 + antDbtCl5HorsTreso - antCrdCl4 - antCrdCl5HorsTreso;
   const varBfrSynthetique  = bfr - bfrBE;
   const varBfrSoustractive = varFdrBas - (solDbtCl5 - solCrdCl5 - antDbtCl5 + antCrdCl5);
 
