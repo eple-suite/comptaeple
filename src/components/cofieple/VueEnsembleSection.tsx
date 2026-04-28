@@ -140,9 +140,9 @@ export function VueEnsembleSection() {
         <KPICard label="CAF / IAF" value={formatEur(caf)} color={caf >= 0 ? 'green' : 'red'}
           icon="🔄" sub={caf >= 0 ? 'Capacité' : 'Insuffisance'} isText />
         <KPICard label="Taux exéc. dépenses" value={tauxChargesDisplay} color={effectiveChargeRate !== null && effectiveChargeRate >= 0.85 && effectiveChargeRate <= 1 ? 'green' : 'amber'}
-          icon="💸" sub={formatEur(R.totalChargesSde)} isText />
+          icon="💸" sub={`Budget ${formatEur(R.totalChargesPrev)} · Réal. ${formatEur(R.totalChargesSde)}`} isText />
         <KPICard label="Taux exéc. recettes" value={tauxProduitsDisplay} color={effectiveProductRate !== null && effectiveProductRate >= 0.9 ? 'green' : 'amber'}
-          icon="💰" sub={formatEur(R.totalProduitsSdr)} isText />
+          icon="💰" sub={`Budget ${formatEur(R.totalProduitsPrev)} · Réal. ${formatEur(R.totalProduitsSdr)}`} isText />
       </div>
 
       {/* Alertes automatiques */}
