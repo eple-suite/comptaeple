@@ -159,8 +159,10 @@ export interface SdeSdrSelection {
   headers: string[];
   matrix: SheetCell[][];
   score: number;
+  /** True si la voie positionnelle Op@le (BL-BP « Montant colonne ») a été retenue. */
+  positional: boolean;
   /** Toutes les feuilles évaluées (debug) */
-  scoredSheets: Array<{ sheetName: string; score: number; reason: string }>;
+  scoredSheets: Array<{ sheetName: string; score: number; reason: string; positional: boolean }>;
 }
 
 /**
@@ -318,7 +320,8 @@ export function selectOpaleSdeSdrSheet(
     headers: winner.headers,
     matrix: winner.matrix,
     score: winner.score,
-    scoredSheets: scored.map(({ sheetName, score, reason }) => ({ sheetName, score, reason })),
+    positional: winner.positional,
+    scoredSheets: scored.map(({ sheetName, score, reason, positional }) => ({ sheetName, score, reason, positional })),
   };
 }
 
