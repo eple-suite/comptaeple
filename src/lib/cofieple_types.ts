@@ -112,6 +112,11 @@ export interface ResultatsM96 {
   excedent: number; deficit: number;
   cafBudgetaire: number; cafComptable: number;
   chargesNonDecaissables: number; produitsNonEncaissables: number;
+  // Variantes "budgétaire pure" (M9-6 méthode budgétaire stricte SDE/SDR)
+  // utilisées par le sélecteur de méthode du tableau de bord.
+  cafBudgetairePure?: number;
+  tauxExecChargesPure?: number;
+  tauxExecProduitsPure?: number;
   fdrHaut: number; fdrBas: number; fdrComptable: number;
   varFdrHaut: number; varFdrBas: number; varFdrCaf: number;
   varFdrTableauFinancement: number; structurationFdr: number;

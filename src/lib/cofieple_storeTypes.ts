@@ -149,4 +149,8 @@ export interface CofiepleState {
   uaiLoading: boolean;
   uaiError: string | null;
   analysisRunning: boolean;
+  /** Méthode de calcul affichée dans le tableau de bord du compte financier.
+   *  - 'balance' : CAF/IAF + taux dérivés de la balance certifiée (M9-6 strict, défaut)
+   *  - 'budgetaire' : CAF/IAF + taux dérivés des SDE/SDR bruts (méthode budgétaire historique) */
+  methodeCalcul?: 'balance' | 'budgetaire';
 }

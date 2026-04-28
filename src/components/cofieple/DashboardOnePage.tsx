@@ -13,7 +13,8 @@ import {
   ResponsiveContainer, Cell, ReferenceLine, LineChart, Line,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from 'recharts';
-import { TrendingUp, TrendingDown, Minus, ArrowRight, Activity, Shield, AlertTriangle } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, ArrowRight, Activity, Shield, AlertTriangle, Database, Calculator, Info } from 'lucide-react';
+import { Tooltip as UiTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface Props {
   historique?: { exercice: number; fdr: number; bfr: number; tresorerie: number; caf: number; resultat: number; joursAutonomie: number; scoreRisque: number }[];
@@ -23,6 +24,8 @@ export function DashboardOnePage({ historique = [] }: Props) {
   const resultats = useCofiepleStore(s => s.resultats);
   const etab = useCofiepleStore(s => s.etablissement);
   const setActiveTab = useCofiepleStore(s => s.setActiveTab);
+  const methodeCalcul = useCofiepleStore(s => s.methodeCalcul ?? 'balance');
+  const setMethodeCalcul = useCofiepleStore(s => s.setMethodeCalcul);
   const R = resultats.principal;
 
   if (!R) return null;
@@ -30,7 +33,18 @@ export function DashboardOnePage({ historique = [] }: Props) {
   const fdr = R.fdrComptable;
   const bfr = R.bfr;
   const treso = R.tresorerieNette;
-  const caf = R.cafBudgetaire;
+  // Sélecteur méthode de calcul ────────────────────────────────────────
+  // 'balance'    → CAF/IAF dérivée de la balance (méthode additive M9-6 stricte)
+  // 'budgetaire' → CAF/IAF dérivée des SDE/SDR bruts (méthode budgétaire historique)
+  const cafBalance = R.cafComptable;
+  const cafBudg = (R as any).cafBudgetairePure ?? R.cafBudgetaire;
+  const caf = methodeCalcul === 'balance' ? cafBalance : cafBudg;
+  const tauxCharges = methodeCalcul === 'balance'
+    ? R.tauxExecCharges
+    : ((R as any).tauxExecChargesPure ?? R.tauxExecCharges);
+  const tauxProduits = methodeCalcul === 'balance'
+    ? R.tauxExecProduits
+    : ((R as any).tauxExecProduitsPure ?? R.tauxExecProduits);
   const jours = R.joursAutonomie;
   const score = R.scoreRisque || 0;
   const niveau = R.niveauRisque || 'faible';
@@ -40,8 +54,8 @@ export function DashboardOnePage({ historique = [] }: Props) {
     { subject: 'FDR', value: Math.min(fdr > 0 ? 80 : fdr === 0 ? 50 : 20, 100), fullMark: 100 },
     { subject: 'Trésorerie', value: Math.min(jours >= 30 ? 90 : jours >= 15 ? 60 : 20, 100), fullMark: 100 },
     { subject: 'CAF', value: Math.min(caf > 0 ? 85 : caf === 0 ? 50 : 15, 100), fullMark: 100 },
-    { subject: 'Exéc. dépenses', value: Math.min(R.tauxExecCharges * 100, 100), fullMark: 100 },
-    { subject: 'Exéc. recettes', value: Math.min(R.tauxExecProduits * 100, 100), fullMark: 100 },
+    { subject: 'Exéc. dépenses', value: Math.min(tauxCharges * 100, 100), fullMark: 100 },
+    { subject: 'Exéc. recettes', value: Math.min(tauxProduits * 100, 100), fullMark: 100 },
     { subject: 'Réserves', value: Math.min(R.reserves > 0 ? 80 : 30, 100), fullMark: 100 },
   ];
 
@@ -78,6 +92,77 @@ export function DashboardOnePage({ historique = [] }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Sélecteur méthode de calcul + source ─────────────────────── */}
+      <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
+        <CardContent className="p-3 flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Calculator className="h-4 w-4 text-primary" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Méthode de calcul
+            </span>
+          </div>
+          <div className="inline-flex rounded-md border border-border bg-background p-0.5" role="tablist" aria-label="Méthode de calcul CAF/IAF">
+            <button
+              type="button"
+              role="tab"
+              aria-selected={methodeCalcul === 'balance'}
+              onClick={() => setMethodeCalcul('balance')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-sm transition-colors ${
+                methodeCalcul === 'balance'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Database className="h-3 w-3 inline mr-1" />
+              Balance stricte (M9-6)
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={methodeCalcul === 'budgetaire'}
+              onClick={() => setMethodeCalcul('budgetaire')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-sm transition-colors ${
+                methodeCalcul === 'budgetaire'
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Calculator className="h-3 w-3 inline mr-1" />
+              Budgétaire (SDE/SDR)
+            </button>
+          </div>
+
+          <Badge variant="outline" className="text-[10px] gap-1">
+            <Database className="h-3 w-3" />
+            Source :{' '}
+            {methodeCalcul === 'balance'
+              ? 'Balance comptable certifiée'
+              : 'Sections développées SDE/SDR'}
+          </Badge>
+
+          <TooltipProvider>
+            <UiTooltip>
+              <TooltipTrigger asChild>
+                <button type="button" aria-label="Détails sur les méthodes" className="text-muted-foreground hover:text-foreground">
+                  <Info className="h-3.5 w-3.5" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-sm text-xs leading-relaxed">
+                <p className="font-semibold mb-1">Balance stricte (M9-6, recommandée)</p>
+                <p className="mb-2">CAF/IAF = Résultat comptable + Charges non décaissables (68/675) − Produits non encaissables (78/775/776/777). Taux d'exécution calculés sur lignes de détail positionnelles.</p>
+                <p className="font-semibold mb-1">Budgétaire (SDE/SDR)</p>
+                <p>CAF/IAF = Résultat budgétaire + OO charges − OO produits, à partir des SDE/SDR bruts. Méthode historique, sensible aux lignes agrégées.</p>
+              </TooltipContent>
+            </UiTooltip>
+          </TooltipProvider>
+
+          <div className="ml-auto text-[10px] text-muted-foreground italic">
+            CAF balance : <span className="font-mono">{formatEur(cafBalance)}</span> ·{' '}
+            CAF budgétaire : <span className="font-mono">{formatEur(cafBudg)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Score de risque global */}
       <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
         <GaugeKPI label="Score de risque" value={`${100 - score}/100`} sub={niveau}
