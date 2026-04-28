@@ -3,6 +3,8 @@ import { extractIndexedColumnNumber, normalizeColumnName } from './opaleImportUt
 
 export type AggregationLevel = 'global' | 'section' | 'service' | 'detail' | 'unknown';
 
+export type ExecutionSource = 'global' | 'services' | 'details' | 'mixte' | 'aucune';
+
 type ExecutionKind = 'sde' | 'sdr';
 
 const METADATA_KEYS = new Set([
