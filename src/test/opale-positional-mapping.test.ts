@@ -28,7 +28,7 @@ describe("Mapping positionnel Op@le — Montant colonne 1..5", () => {
   };
 
   it("SDE : col 1→Budget, 2→Engagé, 3→Réalisé, 4→En cours, 5→Disponible", () => {
-    const [ligne] = parserSDE([baseRow], "BI");
+    const [ligne] = parserSDE([baseRow], "principal");
     expect(ligne).toBeDefined();
     expect(ligne.budget).toBe(1000);
     expect(ligne.engage).toBe(200);
@@ -38,7 +38,7 @@ describe("Mapping positionnel Op@le — Montant colonne 1..5", () => {
   });
 
   it("SDR : col 1→Budget, 2→Engagé, 3→Réalisé/AOR, 4→En cours, 5→+/-values", () => {
-    const [ligne] = parserSDR([baseRow], "BI");
+    const [ligne] = parserSDR([baseRow], "principal");
     expect(ligne).toBeDefined();
     expect(ligne.budget).toBe(1000);
     expect(ligne.engage).toBe(200);
@@ -56,7 +56,7 @@ describe("Mapping positionnel Op@le — Montant colonne 1..5", () => {
       "Montant colonne 4": "",
       "Montant colonne 5": "",
     };
-    const [sde] = parserSDE([partial], "BI");
+    const [sde] = parserSDE([partial], "principal");
     expect(sde.budget).toBe(0);
     expect(sde.engage).toBe(0);
     expect(sde.realise).toBe(300); // seule colonne renseignée
