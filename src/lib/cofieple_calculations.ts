@@ -113,6 +113,39 @@ export function parserSDE(rows: Record<string, string>[], _typeBudget: TypeBudge
   if (rows.length === 0) return [];
   const firstRow = rows[0];
   const keys = Object.keys(firstRow);
+  // ═══════════════════════════════════════════════════════════════
+  // DÉTECTION OP@LE POSITIONNELLE
+  // En-têtes "Montant colonne 1..N" ⇒ mapping positionnel strict :
+  //   col 1 = Budget · col 2 = Engagé · col 3 = Réalisé
+  //   col 4 = En cours · col 5 = Disponible
+  // On retourne directement l'objet (sans enrichParsedSdeRow) pour
+  // éviter le fallback "devine la valeur" qui contamine les lignes.
+  // ═══════════════════════════════════════════════════════════════
+  const hasOpalePositional = keys.some(k => /montant\s*colonne\s*1/i.test(k))
+                          && keys.some(k => /montant\s*colonne\s*3/i.test(k));
+  if (hasOpalePositional) {
+    const findMontant = (r: Record<string, string>, n: number): number => {
+      const re = new RegExp(`montant\\s*colonne\\s*${n}\\b`, 'i');
+      for (const [key, value] of Object.entries(r)) {
+        if (re.test(key)) return toNumDirect(String(value ?? ''));
+      }
+      return 0;
+    };
+    return rows.map(r => enrichParsedSdeRow({
+      rne: findCol(r, 'RNE', 'rne', 'Code Op@le établissement'),
+      exercice: Math.round(toNumDirect(findCol(r, 'exercice', 'Exercice'))) || new Date().getFullYear(),
+      service: findCol(r, 'Service budgétaire', 'Service budgetaire', 'service', 'Service'),
+      domaine: findCol(r, 'Domaine fonctionnel', 'Domaine', 'domaine'),
+      activite: findCol(r, 'Code activité', 'Code activite', 'activités', 'activite', 'Activité', 'activites'),
+      compte: normalizeCompte(findCol(r, 'Compte par nature', 'compte', 'Compte')).substring(0, 6),
+      budget: findMontant(r, 1),
+      engage: findMontant(r, 2),
+      realise: findMontant(r, 3),
+      encours: findMontant(r, 4),
+      disponible: findMontant(r, 5),
+      ext: findCol(r, 'EXT', 'ext'),
+    }, r)).filter(r => r.service !== '' || r.compte !== '');
+  }
   // Check if we can find expected columns directly
   const hasDirectCols = keys.some(k => {
     const nk = normalizeHeader(k);
@@ -140,6 +173,38 @@ export function parserSDE(rows: Record<string, string>[], _typeBudget: TypeBudge
 export function parserSDR(rows: Record<string, string>[], _typeBudget: TypeBudget): LigneSDR[] {
   if (rows.length === 0) return [];
   const keys = Object.keys(rows[0]);
+  // Détection Op@le positionnelle (cf. parserSDE) :
+  //   col 1 = Budget · col 2 = Engagé · col 3 = Réalisé/AOR
+  //   col 4 = En cours · col 5 = +/- values
+  const hasOpalePositional = keys.some(k => /montant\s*colonne\s*1/i.test(k))
+                          && keys.some(k => /montant\s*colonne\s*3/i.test(k));
+  if (hasOpalePositional) {
+    const findMontant = (r: Record<string, string>, n: number): number => {
+      const re = new RegExp(`montant\\s*colonne\\s*${n}\\b`, 'i');
+      for (const [key, value] of Object.entries(r)) {
+        if (re.test(key)) return toNumDirect(String(value ?? ''));
+      }
+      return 0;
+    };
+    return rows.map(r => {
+      const realise = findMontant(r, 3);
+      return enrichParsedSdrRow({
+        rne: findCol(r, 'RNE', 'rne', 'Code Op@le établissement'),
+        exercice: Math.round(toNumDirect(findCol(r, 'exercice', 'Exercice'))) || new Date().getFullYear(),
+        service: findCol(r, 'Service budgétaire', 'Service budgetaire', 'service', 'Service'),
+        domaine: findCol(r, 'Domaine fonctionnel', 'Domaine', 'domaine'),
+        activite: findCol(r, 'Code activité', 'Code activite', 'activités', 'activite', 'Activité', 'activites'),
+        compte: normalizeCompte(findCol(r, 'Compte par nature', 'compte', 'Compte')).substring(0, 6),
+        budget: findMontant(r, 1),
+        engage: findMontant(r, 2),
+        aor: realise,
+        realise,
+        encours: findMontant(r, 4),
+        plusValues: findMontant(r, 5),
+        extourne: findCol(r, 'EXTOURNE', 'extourne') || 'N',
+      }, r);
+    }).filter(r => r.service !== '' || r.compte !== '');
+  }
   const hasDirectCols = keys.some(k => {
     const nk = normalizeHeader(k);
     return nk.includes('service') || nk.includes('compte') || nk.includes('budget');
