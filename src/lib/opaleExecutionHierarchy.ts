@@ -317,9 +317,33 @@ export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
   const serviceRowsWithBudget = serviceRows.filter((row) => row.budget > 0);
   const detailRowsWithBudget = detailRows.filter((row) => row.budget > 0);
 
-  const budgetSource = preferredBudgetGlobal ? [preferredBudgetGlobal] : serviceRowsWithBudget.length ? serviceRowsWithBudget : detailRowsWithBudget.length ? detailRowsWithBudget : meaningfulRows;
-  const realisedSource = preferredRealGlobal ? [preferredRealGlobal] : detailRows.length ? detailRows : serviceRows.length ? serviceRows : preferredRateGlobal ? [preferredRateGlobal] : meaningfulRows;
-  const rateSource = preferredRateGlobal ? [preferredRateGlobal] : serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows;
+  // M9-6 strict : préférer Σ détails > Σ services > ligne globale.
+  // La global row est conservée uniquement comme dernier recours (ECBU agrégé)
+  // pour éviter les lignes globales tronquées qui produisent des fantômes
+  // (ex. 429 000 € au lieu de 1 145 666 €).
+  const budgetSource = detailRowsWithBudget.length
+    ? detailRowsWithBudget
+    : serviceRowsWithBudget.length
+      ? serviceRowsWithBudget
+      : preferredBudgetGlobal
+        ? [preferredBudgetGlobal]
+        : meaningfulRows;
+  const realisedSource = detailRows.length
+    ? detailRows
+    : serviceRows.length
+      ? serviceRows
+      : preferredRealGlobal
+        ? [preferredRealGlobal]
+        : preferredRateGlobal
+          ? [preferredRateGlobal]
+          : meaningfulRows;
+  const rateSource = detailRows.length
+    ? detailRows
+    : serviceRows.length
+      ? serviceRows
+      : preferredRateGlobal
+        ? [preferredRateGlobal]
+        : meaningfulRows;
   const serviceBaseRows = serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
 
   return {
@@ -342,9 +366,30 @@ export function deriveSdrExecutionTotals(rows: LigneSDR[]) {
   const serviceRowsWithBudget = serviceRows.filter((row) => row.budget > 0);
   const detailRowsWithBudget = detailRows.filter((row) => row.budget > 0);
 
-  const budgetSource = preferredBudgetGlobal ? [preferredBudgetGlobal] : serviceRowsWithBudget.length ? serviceRowsWithBudget : detailRowsWithBudget.length ? detailRowsWithBudget : meaningfulRows;
-  const realisedSource = preferredRealGlobal ? [preferredRealGlobal] : detailRows.length ? detailRows : serviceRows.length ? serviceRows : preferredRateGlobal ? [preferredRateGlobal] : meaningfulRows;
-  const rateSource = preferredRateGlobal ? [preferredRateGlobal] : serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows;
+  // M9-6 strict : préférer Σ détails > Σ services > ligne globale.
+  const budgetSource = detailRowsWithBudget.length
+    ? detailRowsWithBudget
+    : serviceRowsWithBudget.length
+      ? serviceRowsWithBudget
+      : preferredBudgetGlobal
+        ? [preferredBudgetGlobal]
+        : meaningfulRows;
+  const realisedSource = detailRows.length
+    ? detailRows
+    : serviceRows.length
+      ? serviceRows
+      : preferredRealGlobal
+        ? [preferredRealGlobal]
+        : preferredRateGlobal
+          ? [preferredRateGlobal]
+          : meaningfulRows;
+  const rateSource = detailRows.length
+    ? detailRows
+    : serviceRows.length
+      ? serviceRows
+      : preferredRateGlobal
+        ? [preferredRateGlobal]
+        : meaningfulRows;
   const serviceBaseRows = serviceRows.length ? serviceRows : detailRows.length ? detailRows : meaningfulRows.filter((row) => row.aggregationLevel !== 'global' && row.aggregationLevel !== 'section');
 
   return {
