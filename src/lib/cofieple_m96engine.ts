@@ -110,19 +110,20 @@ export function calculerResultatsM96(
   const produitsNonEncaissables = (crd78 - dbt78) + (crd775 - dbt775) + (crd776 - dbt776) + (crd777 - dbt777);
   const cafComptable = resultatComptable + chargesNonDecaissables - produitsNonEncaissables;
 
-  // ── CAF budgétaire (M9-6 § IV.3 — Bilan de santé financière)
-  // Standard M9-6 : CAF = Produits encaissables − Charges décaissables
-  //   Charges décaissables = Total SDE − Charges d'ordre SDE (cpt 68* + 675*)
-  //   Produits encaissables = Total SDR − Produits d'ordre SDR (cpt 78* + 775* + 776* + 777*)
-  // Équivalent : CAF = Résultat budgétaire + Charges OO(SDE) − Produits OO(SDR)
-  // Fallback : quand SDE/SDR n'ont que des lignes agrégées (ECBU) sans comptes 68/78,
-  // on utilise les opérations d'ordre issues de la balance (chargesNonDecaissables / produitsNonEncaissables)
+  // ── CAF budgétaire (M9-6 § IV.3 — Méthode additive comptable) ─────
+  // RÈGLE M9-6 STRICTE : la CAF est toujours dérivée de la BALANCE (méthode
+  // additive sur les comptes OO réellement passés), seule source certifiée.
+  // La méthode "budgétaire pure" (résultat budgétaire + OO SDE − OO SDR)
+  // produit des aberrations dès que la SDE/SDR a des lignes agrégées ou
+  // des regex matchant trop large (ex. /^78/ qui attrape 780xxx).
+  //
+  //   CAF = Résultat comptable + Charges non décaissables − Produits non encaissables
+  //
+  // ⇒ Sur l'exemple Coeffin : 21 429,61 + 13 931,51 − 0 = +35 361,12 €
+  //   (Capacité d'autofinancement, badge VERT).
   const chargesOrdre_SDE_raw = sdeForAccounting.filter(r => /^(68|675)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
   const produitsOrdre_SDR_raw = sdrForAccounting.filter(r => /^(78|775|776|777)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const hasOOinSDE = chargesOrdre_SDE_raw > 0 || produitsOrdre_SDR_raw > 0;
-  const cafBudgetaire = hasOOinSDE
-    ? resultatBudgetaire + chargesOrdre_SDE_raw - produitsOrdre_SDR_raw
-    : resultatBudgetaire + chargesNonDecaissables - produitsNonEncaissables;
+  const cafBudgetaire = resultatComptable + chargesNonDecaissables - produitsNonEncaissables;
 
   // Charges d'investissement (SDE classe 2) — conservé pour d'autres calculs
   const chInvSde = sdeForAccounting.filter(r => /^(20|21|23|26|27)/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
