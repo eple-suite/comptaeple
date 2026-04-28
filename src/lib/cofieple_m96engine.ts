@@ -349,20 +349,19 @@ export function calculerResultatsM96(
   const totalProduitsRef = totalProduitsSdr > 0 ? totalProduitsSdr : (totalProduitsBalance > 0 ? totalProduitsBalance : 0);
 
   // ── DRFN — Dépenses Réelles de Fonctionnement Nettes ───────────────
-  // Conforme Op@le Pièce 14 / M9-6 :
-  //   DRFN = Total dépenses mandatées de FONCTIONNEMENT (SDE réalisé, section FONC)
-  //          MOINS les dotations aux amortissements (comptes 681xxx)
-  //          MOINS les opérations d'ordre non décaissables
-  // Les 681xxx ne sont pas des décaissements réels → exclusion obligatoire
-  const amortSDE = sdeForAccounting.filter(r => /^681/.test(r.compte)).reduce((s, r) => s + r.realise, 0);
-  const amortBalance681 = sumBal(bal, c => c.startsWith('681'), 'dbt') - sumBal(bal, c => c.startsWith('681'), 'crd');
-  const amortEffectif = amortSDE > 0 ? amortSDE : (amortBalance681 > 0 ? amortBalance681 : 0);
-  const drfn = chargesFonctionnement - amortEffectif;
+  // M9-6 / Op@le : charges effectivement décaissables = classe 6 hors comptes
+  // d'ordre (675 VNC cessions, 676, 681 dotations amort, 686/687 dotations
+  // provisions). Calcul depuis la balance (mvts débit − crédit) pour neutraliser
+  // toute opération d'ordre déjà soustraite au crédit.
+  const COMPTES_ORDRE_CL6_REGEX = /^(675|676|681|686|687)/;
+  const chargesDecaissablesAnnuelles = bal
+    .filter(b => !b.isAggregate && b.compte.charAt(0) === '6' && !COMPTES_ORDRE_CL6_REGEX.test(b.compte))
+    .reduce((s, b) => s + ((b.dbt || 0) - (b.crd || 0)), 0);
+  // Conservé pour les autres modules consommant `drfn`.
+  const drfn = chargesDecaissablesAnnuelles;
 
-  // ── Jours d'autonomie financière (Op@le Pièce 14) ──────────────────
-  // Jours FDR = (FDR × 365) / DRFN
-  // Jours Trésorerie = (Trésorerie × 365) / DRFN
-  const drfnQuotidien = drfn / 365;
+  // ── Jours d'autonomie financière (M9-6 § IV.2 — base 360 calendaires) ─
+  const drfnQuotidien = chargesDecaissablesAnnuelles / 360;
   const joursAutonomie   = drfnQuotidien > 0 ? (fdrComptable / drfnQuotidien) : 0;
   const ratioFdrBfr      = bfr !== 0 ? fdrBas / bfr : 0;
 
