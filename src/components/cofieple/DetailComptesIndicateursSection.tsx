@@ -5,21 +5,18 @@
 // Source : règles codifiées dans src/lib/cofieple_m96engine.ts
 // ═══════════════════════════════════════════════════════════════════
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from '@/components/ui/table';
-import {
-  Tabs, TabsList, TabsTrigger, TabsContent,
-} from '@/components/ui/tabs';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
 import type { LigneBalance, LigneSDE, LigneSDR } from '@/lib/cofieple_types';
 import {
-  Calculator, CheckCircle2, XCircle, Filter, Search, Database, Info,
+  Calculator, CheckCircle2, XCircle, Filter, Search, Database, Info, LayoutGrid,
 } from 'lucide-react';
 
 // ── Règles (miroir exact de cofieple_m96engine.ts) ────────────────────
@@ -329,6 +326,21 @@ export function DetailComptesIndicateursSection() {
   const [filter, setFilter] = useState<'tous' | 'inclus' | 'exclus'>('tous');
   const [search, setSearch] = useState('');
 
+  // Sélecteur d'indicateur unique (persisté dans localStorage).
+  // 'tous' affiche tous les blocs empilés ; sinon n'affiche que le bloc choisi.
+  type IndicId = 'tous' | 'bfr' | 'drfn' | 'caf' | 'tmcap' | 'tmnr';
+  const STORAGE_KEY = 'cofieple_detail_comptes_indicateur';
+  const [selectedIndic, setSelectedIndic] = useState<IndicId>(() => {
+    try {
+      const v = localStorage.getItem(STORAGE_KEY);
+      if (v && ['tous', 'bfr', 'drfn', 'caf', 'tmcap', 'tmnr'].includes(v)) return v as IndicId;
+    } catch { /* noop */ }
+    return 'bfr';
+  });
+  useEffect(() => {
+    try { localStorage.setItem(STORAGE_KEY, selectedIndic); } catch { /* noop */ }
+  }, [selectedIndic]);
+
   const blocks = useMemo<IndicateurBlock[]>(() => {
     if (bal.length === 0) return [];
     return [
@@ -365,6 +377,19 @@ export function DetailComptesIndicateursSection() {
     });
   };
 
+  const INDIC_OPTIONS: { id: IndicId; label: string; sub?: string }[] = [
+    { id: 'tous',  label: 'Tous',     sub: '5 indicateurs' },
+    { id: 'bfr',   label: 'BFR',      sub: 'Besoin Fonds Roul.' },
+    { id: 'drfn',  label: 'DRFN',     sub: 'Dép. réelles fonct.' },
+    { id: 'caf',   label: 'CAF/IAF',  sub: 'Autofinancement' },
+    { id: 'tmcap', label: 'TMcap',    sub: 'Charges à payer' },
+    { id: 'tmnr',  label: 'TMnr',     sub: 'Non-recouvrement' },
+  ];
+
+  const visibleBlocks = selectedIndic === 'tous'
+    ? blocks
+    : blocks.filter(b => b.id === selectedIndic);
+
   return (
     <div className="space-y-4">
       <Card className="border-primary/30 bg-gradient-to-r from-primary/5 to-transparent">
@@ -384,6 +409,53 @@ export function DetailComptesIndicateursSection() {
             Source : balance certifiée du périmètre <Badge variant="outline" className="text-[10px] mx-1">{activeBudget}</Badge>
             ({bal.filter(b => !b.isAggregate).length} comptes de détail · {sdeRows.length} lignes SDE · {sdrRows.length} lignes SDR).
           </p>
+        </CardContent>
+      </Card>
+
+      {/* Sélecteur d'indicateur (pilules) ─────────────────────── */}
+      <Card className="border-primary/20">
+        <CardContent className="p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <LayoutGrid className="h-4 w-4 text-primary" />
+            <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Indicateur affiché
+            </span>
+            {selectedIndic !== 'tous' && (
+              <Badge variant="outline" className="text-[10px] ml-auto">
+                Vue dédiée — un seul indicateur
+              </Badge>
+            )}
+          </div>
+          <div
+            role="tablist"
+            aria-label="Sélecteur d'indicateur M9-6"
+            className="flex flex-wrap gap-1.5"
+          >
+            {INDIC_OPTIONS.map(opt => {
+              const active = selectedIndic === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setSelectedIndic(opt.id)}
+                  className={`flex flex-col items-start px-3 py-1.5 rounded-md border text-left transition-colors ${
+                    active
+                      ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                      : 'bg-background hover:bg-muted/60 border-border text-foreground'
+                  }`}
+                >
+                  <span className="text-xs font-bold leading-tight">{opt.label}</span>
+                  {opt.sub && (
+                    <span className={`text-[10px] leading-tight ${active ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                      {opt.sub}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
 
@@ -422,17 +494,9 @@ export function DetailComptesIndicateursSection() {
         </CardContent>
       </Card>
 
-      {/* Onglets par indicateur */}
-      <Tabs defaultValue="bfr" className="space-y-3">
-        <TabsList className="grid grid-cols-5 w-full">
-          {blocks.map(b => (
-            <TabsTrigger key={b.id} value={b.id} className="text-xs">
-              {b.titre.split('—')[0].trim()}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-
-        {blocks.map(block => {
+      {/* Bloc(s) indicateur(s) — selon sélecteur */}
+      <div className="space-y-6">
+        {visibleBlocks.map(block => {
           const visibleRows = filterRows(block.rows);
           const inclus = block.rows.filter(r => r.inclusion === 'inclus').length;
           const exclus = block.rows.filter(r => r.inclusion === 'exclu').length;
@@ -441,7 +505,7 @@ export function DetailComptesIndicateursSection() {
             .reduce((s, r) => s + r.montant * r.signe, 0);
 
           return (
-            <TabsContent key={block.id} value={block.id} className="space-y-3 mt-3">
+            <div key={block.id} className="space-y-3">
               {/* Bloc résumé */}
               <Card>
                 <CardHeader className="pb-2">
@@ -542,10 +606,10 @@ export function DetailComptesIndicateursSection() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </div>
           );
         })}
-      </Tabs>
+      </div>
     </div>
   );
 }
