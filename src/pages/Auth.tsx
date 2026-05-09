@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Shield, Mail, Lock, User, ArrowRight } from "lucide-react";
+import { Shield, Mail, Lock, User, ArrowRight, Eye, EyeOff, ArrowLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { lovable } from "@/integrations/lovable/index";
+import { supabase } from "@/integrations/supabase/client";
+import { PasswordStrength, evaluatePassword } from "@/components/auth/PasswordStrength";
 
 const Auth = () => {
   const { signIn, signUp } = useAuth();
@@ -16,6 +18,11 @@ const Auth = () => {
   const [signupForm, setSignupForm] = useState({ email: "", password: "", first_name: "", last_name: "" });
   const [loading, setLoading] = useState(false);
   const [oauthLoading, setOauthLoading] = useState(false);
+  const [mode, setMode] = useState<"auth" | "forgot">("auth");
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotSent, setForgotSent] = useState(false);
+  const [showLoginPwd, setShowLoginPwd] = useState(false);
+  const [showSignupPwd, setShowSignupPwd] = useState(false);
 
   const handleGoogleSignIn = async () => {
     setOauthLoading(true);
@@ -40,8 +47,13 @@ const Auth = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (signupForm.password.length < 6) {
-      toast({ title: "Erreur", description: "Le mot de passe doit contenir au moins 6 caractères", variant: "destructive" });
+    const ev = evaluatePassword(signupForm.password);
+    if (signupForm.password.length < 8) {
+      toast({ title: "Erreur", description: "Le mot de passe doit contenir au moins 8 caractères.", variant: "destructive" });
+      return;
+    }
+    if (ev.score < 3) {
+      toast({ title: "Mot de passe trop faible", description: "Ajoutez majuscules, chiffres et caractères spéciaux.", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -57,6 +69,22 @@ const Auth = () => {
     }
   };
 
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!forgotEmail) return;
+    setLoading(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(forgotEmail, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (error) {
+      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      return;
+    }
+    setForgotSent(true);
+    toast({ title: "Email envoyé", description: "Vérifiez votre boîte de réception pour réinitialiser votre mot de passe." });
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-md">
@@ -70,6 +98,53 @@ const Auth = () => {
 
         <Card className="shadow-card">
           <CardContent className="pt-6">
+            {mode === "forgot" ? (
+              <div className="space-y-4">
+                <button
+                  type="button"
+                  onClick={() => { setMode("auth"); setForgotSent(false); }}
+                  className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-1" /> Retour
+                </button>
+                <div>
+                  <h2 className="text-lg font-semibold">Mot de passe oublié</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Entrez votre email, nous vous enverrons un lien sécurisé pour le réinitialiser.
+                  </p>
+                </div>
+                {forgotSent ? (
+                  <div className="rounded-lg border border-success/30 bg-success/10 p-4 text-sm">
+                    <p className="font-medium text-success">Email envoyé ✓</p>
+                    <p className="text-muted-foreground mt-1">
+                      Si un compte existe pour <strong>{forgotEmail}</strong>, vous recevrez un lien de
+                      réinitialisation dans quelques instants. Pensez à vérifier vos spams.
+                    </p>
+                  </div>
+                ) : (
+                  <form onSubmit={handleForgot} className="space-y-4">
+                    <div>
+                      <Label>Email</Label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          type="email"
+                          placeholder="agent@ac-versailles.fr"
+                          className="pl-10"
+                          required
+                          value={forgotEmail}
+                          onChange={(e) => setForgotEmail(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <Button type="submit" className="w-full gradient-primary border-0" disabled={loading}>
+                      {loading ? "Envoi..." : "Envoyer le lien de réinitialisation"}
+                      <ArrowRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </form>
+                )}
+              </div>
+            ) : (
             <Tabs defaultValue="login">
               <TabsList className="w-full mb-6">
                 <TabsTrigger value="login" className="flex-1">Connexion</TabsTrigger>
@@ -87,11 +162,25 @@ const Auth = () => {
                     </div>
                   </div>
                   <div>
-                    <Label>Mot de passe</Label>
+                    <div className="flex items-center justify-between">
+                      <Label>Mot de passe</Label>
+                      <button
+                        type="button"
+                        onClick={() => { setForgotEmail(loginForm.email); setMode("forgot"); }}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Mot de passe oublié ?
+                      </button>
+                    </div>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input type="password" placeholder="••••••••" className="pl-10" required
+                      <Input type={showLoginPwd ? "text" : "password"} placeholder="••••••••" className="pl-10 pr-10" required
                         value={loginForm.password} onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })} />
+                      <button type="button" onClick={() => setShowLoginPwd((s) => !s)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={showLoginPwd ? "Masquer" : "Afficher"}>
+                        {showLoginPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
                     </div>
                   </div>
                   <Button type="submit" className="w-full gradient-primary border-0" disabled={loading}>
@@ -137,9 +226,15 @@ const Auth = () => {
                     <Label>Mot de passe</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input type="password" placeholder="Min. 6 caractères" className="pl-10" required
+                      <Input type={showSignupPwd ? "text" : "password"} placeholder="Min. 8 caractères" className="pl-10 pr-10" required
                         value={signupForm.password} onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })} />
+                      <button type="button" onClick={() => setShowSignupPwd((s) => !s)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        aria-label={showSignupPwd ? "Masquer" : "Afficher"}>
+                        {showSignupPwd ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
                     </div>
+                    <PasswordStrength password={signupForm.password} />
                   </div>
                   <Button type="submit" className="w-full gradient-primary border-0" disabled={loading}>
                     {loading ? "Inscription..." : "S'inscrire"} <ArrowRight className="h-4 w-4 ml-1" />
@@ -155,6 +250,7 @@ const Auth = () => {
                 </form>
               </TabsContent>
             </Tabs>
+            )}
           </CardContent>
         </Card>
       </motion.div>
