@@ -80,6 +80,7 @@ import OpaleDashboardPage from "./pages/opale/OpaleDashboardPage";
 import OpaleModerationPage from "./pages/opale/OpaleModerationPage";
 import OpaleCguPage from "./pages/opale/OpaleCguPage";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { ChatEple } from "@/components/ChatEple";
 
@@ -120,6 +121,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route element={<ProtectedRoute><EstablishmentProvider><AppLayout /></EstablishmentProvider></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/import" element={<DataImport />} />
