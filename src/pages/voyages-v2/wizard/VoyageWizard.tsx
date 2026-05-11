@@ -255,9 +255,20 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
           <DialogTitle className="flex items-center gap-2">
             <Badge variant="outline">Étape {step}/{STEPS.length}</Badge>
             {STEPS[step - 1].label}
+            {demoMode && (
+              <Badge className="bg-amber-500 text-white text-[10px]">
+                <Sparkles className="h-3 w-3 mr-1" /> Mode démonstration
+              </Badge>
+            )}
+            <div className="ml-auto">
+              <Button type="button" variant="outline" size="sm" onClick={loadDemo} className="h-7 text-xs">
+                <Sparkles className="h-3 w-3 mr-1" /> Charger l'exemple
+              </Button>
+            </div>
           </DialogTitle>
           <DialogDescription>
             Création d'un voyage scolaire — conforme circulaire MENE2407159C, GBCP, M9-6.
+            {demoMode && " Données fictives chargées : libre à vous de naviguer entre les étapes."}
           </DialogDescription>
         </DialogHeader>
 
