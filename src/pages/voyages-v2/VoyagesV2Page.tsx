@@ -147,16 +147,16 @@ export default function VoyagesV2Page() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="h-5 w-5 text-primary" />
-            <Badge variant="outline" className="text-xs">v2 — preview rectorat</Badge>
+            <Badge variant="outline" className="text-xs">Module Voyages scolaires</Badge>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">Voyages scolaires v2</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Voyages scolaires</h1>
           <p className="text-muted-foreground mt-1">
-            Module refondu — wizard 9 étapes, rétroplanning J-180→J+120, moteur d'alertes 17 catégories.
+            Créez, suivez et finalisez vos voyages scolaires en toute conformité (circulaire MENE2407159C, GBCP, M9-6).
           </p>
         </div>
         <div className="flex gap-2">
           <Button onClick={() => setWizardOpen(true)} size="lg">
-            <Wand2 className="h-4 w-4 mr-2" /> Lancer le wizard
+            <Wand2 className="h-4 w-4 mr-2" /> Créer un nouveau voyage
           </Button>
           <Button variant="outline" size="lg" onClick={() => navigate("/voyages-v2/enquetes-rectorat")}>
             <ClipboardCheck className="h-4 w-4 mr-2" /> Enquêtes rectorat
@@ -166,11 +166,12 @@ export default function VoyagesV2Page() {
 
       <Alert>
         <ShieldCheck className="h-4 w-4" />
-        <AlertTitle>Coexistence /voyages et /voyages-v2</AlertTitle>
+        <AlertTitle>Comment démarrer&nbsp;?</AlertTitle>
         <AlertDescription>
-          La version 1 (<code>/voyages</code>) reste pleinement opérationnelle. Cette v2 est livrée en
-          parallèle pour validation rectorale, sans régression. Cf.{" "}
-          <code>docs/RECAP_VOYAGES_INSTRUCTIONS.md</code> pour le statut détaillé.
+          Cliquez sur <strong>«&nbsp;Créer un nouveau voyage&nbsp;»</strong> pour ouvrir l'assistant pas-à-pas
+          (9 étapes guidées). Vous pouvez naviguer librement entre les étapes — aucune n'est verrouillée
+          tant que vous ne finalisez pas le voyage. Les alertes réglementaires sont calculées en temps réel
+          dans la colonne de droite.
         </AlertDescription>
       </Alert>
 
@@ -178,16 +179,16 @@ export default function VoyagesV2Page() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-primary" /> Wizard 9 étapes
+              <Calendar className="h-4 w-4 text-primary" /> Assistant de création
             </CardTitle>
             <CardDescription>
-              Identification → Type projet (4 nuances) → Dates/effectifs → Recettes (4 statuts) →
-              Dépenses → Accompagnateurs → Validation CA → Rétroplanning → Récap.
+              Un parcours en 9 étapes&nbsp;: identification, type de projet, dates et effectifs, recettes,
+              dépenses, accompagnateurs, validation CA, rétroplanning et récapitulatif.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="outline" className="w-full" onClick={() => setWizardOpen(true)}>
-              Ouvrir
+              Créer un nouveau voyage
             </Button>
           </CardContent>
         </Card>
