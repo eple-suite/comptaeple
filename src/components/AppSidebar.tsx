@@ -217,6 +217,10 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-2 border-t border-sidebar-border/40">
+        {/* Mode démonstration */}
+        <div className="px-1 mb-2">
+          <DemoModeToggle collapsed={collapsed} />
+        </div>
         {/* Status pill */}
         {!collapsed && (
           <div className="px-2 py-2 mb-1 rounded-lg bg-sidebar-accent/40 flex items-center gap-2">
