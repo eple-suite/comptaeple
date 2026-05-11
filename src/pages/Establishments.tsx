@@ -119,34 +119,77 @@ const Establishments = () => {
         throw new Error("Le numéro Op@le doit être au format P00804 (P suivi de 5 chiffres)");
       }
 
-      const { data, error } = await supabase.from("establishments").upsert(
-        {
-          uai: uaiInput.toUpperCase(),
-          name: lookupResult.nom_etablissement,
-          type: lookupResult.type_etablissement || "Lycée",
-          academy: lookupResult.libelle_academie || "",
-          city: lookupResult.nom_commune || "",
-          opale_number: opaleNumber.toUpperCase(),
-        },
-        { onConflict: "uai", ignoreDuplicates: false }
-      ).select().single();
-      if (error) throw error;
+      const uaiUp = uaiInput.toUpperCase();
+      let establishment: any = null;
 
-      if (user && data) {
+      // 1) L'EPLE existe-t-il déjà en base (visible si non revendiqué ou déjà rattaché à moi) ?
+      const { data: existing } = await supabase
+        .from("establishments")
+        .select("*")
+        .eq("uai", uaiUp)
+        .maybeSingle();
+
+      if (existing) {
+        establishment = existing;
+        // Mise à jour facultative du n° Op@le si l'utilisateur en saisit un nouveau
+        if (opaleNumber && existing.opale_number !== opaleNumber.toUpperCase()) {
+          const { data: upd } = await supabase
+            .from("establishments")
+            .update({ opale_number: opaleNumber.toUpperCase() })
+            .eq("id", existing.id)
+            .select()
+            .maybeSingle();
+          if (upd) establishment = upd;
+        }
+      } else {
+        // 2) Création — peut échouer RLS si l'UAI existe mais est déjà revendiqué par un autre compte
+        const { data: created, error: insErr } = await supabase
+          .from("establishments")
+          .insert({
+            uai: uaiUp,
+            name: lookupResult.nom_etablissement,
+            type: lookupResult.type_etablissement || "Lycée",
+            academy: lookupResult.libelle_academie || "",
+            city: lookupResult.nom_commune || "",
+            opale_number: opaleNumber.toUpperCase(),
+          })
+          .select()
+          .single();
+        if (insErr) {
+          if (insErr.message?.includes("row-level security") || insErr.code === "42501") {
+            throw new Error(
+              `L'UAI ${uaiUp} est déjà enregistré et rattaché à un autre compte. Demandez à un administrateur de vous y donner accès.`
+            );
+          }
+          throw insErr;
+        }
+        establishment = created;
+      }
+
+      // 3) Rattachement de l'utilisateur (idempotent)
+      if (user && establishment) {
         const { data: existingLink } = await supabase
           .from("user_establishments")
           .select("id")
           .eq("user_id", user.id)
-          .eq("establishment_id", data.id)
+          .eq("establishment_id", establishment.id)
           .maybeSingle();
         if (!existingLink) {
-          await supabase.from("user_establishments").insert({
+          const { error: linkErr } = await supabase.from("user_establishments").insert({
             user_id: user.id,
-            establishment_id: data.id,
+            establishment_id: establishment.id,
           });
+          if (linkErr) {
+            if (linkErr.message?.includes("row-level security") || linkErr.code === "42501") {
+              throw new Error(
+                `L'établissement ${uaiUp} est déjà rattaché à un autre compte. Contactez un administrateur pour obtenir l'accès.`
+              );
+            }
+            throw linkErr;
+          }
         }
       }
-      return data;
+      return establishment;
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["user-establishments"] });
