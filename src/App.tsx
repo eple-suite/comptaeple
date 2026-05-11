@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { EstablishmentProvider } from "@/contexts/EstablishmentContext";
+import { DemoModeProvider } from "@/contexts/DemoModeContext";
 import { AppLayout } from "@/components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import DataImport from "./pages/DataImport";
@@ -44,6 +45,7 @@ import RelancesPage from "./pages/enquetes-rectorat/RelancesPage";
 import HistoriquePluriannuelPage from "./pages/enquetes-rectorat/HistoriquePluriannuelPage";
 import CreditNourriture from "./pages/CreditNourriture";
 import VeilleJuridique from "./pages/VeilleJuridique";
+import Demo from "./pages/Demo";
 import ControleInterne from "./pages/ControleInterne";
 import SettingsPage from "./pages/SettingsPage";
 import RegiesCaisse from "./pages/RegiesCaisse";
@@ -119,11 +121,13 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
+          <DemoModeProvider>
           <Routes>
             <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route element={<ProtectedRoute><EstablishmentProvider><AppLayout /></EstablishmentProvider></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
+              <Route path="/demo" element={<Demo />} />
               <Route path="/import" element={<DataImport />} />
               <Route path="/etablissements" element={<Establishments />} />
               <Route path="/balance" element={<BalanceAnalysis />} />
