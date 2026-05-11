@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════
 // Wizard Voyage v2 — orchestration 8 étapes
 // ════════════════════════════════════════════════════════════════
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -33,6 +33,8 @@ import { Regle8History } from "./Regle8History";
 import { evaluerAlertesVoyage } from "../lib/alertesEngine";
 import { buildAlertesInputFromDraft } from "./AlertesPanel";
 import { syncVoyageAlertes } from "../lib/alertesPersistence";
+import { buildDemoDraft, buildDemoRecettes, buildDemoDepenses } from "../lib/demoVoyage";
+import { Sparkles } from "lucide-react";
 
 const STEPS = [
   { n: 1, key: "identification", label: "Identification" },
@@ -52,10 +54,12 @@ interface Props {
   establishmentId: string;
   initial?: Partial<Voyage>;
   onSaved?: (voyageId: string) => void;
+  /** Pré-remplit le wizard avec un voyage exemple (Barcelone) — non sauvegardé tant que l'utilisateur ne l'enregistre pas. */
+  demo?: boolean;
 }
 
-export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onSaved }: Props) {
-  const { draft, update, updateMany, reset } = useVoyageDraft(initial);
+export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onSaved, demo }: Props) {
+  const { draft, update, updateMany, reset, setDraft } = useVoyageDraft(initial);
   const [recettes, setRecettes] = useState<Partial<VoyageRecette>[]>([]);
   const [depenses, setDepenses] = useState<Partial<VoyageDepense>[]>([]);
   const [jalonsState, setJalonsState] = useState<Record<string, { statut: JalonStatut }>>({});
@@ -65,6 +69,20 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
   const [userId, setUserId] = useState<string | null>(null);
   const [donTaciteAccepte, setDonTaciteAccepte] = useState(false);
   const [uai, setUai] = useState<string | null>(null);
+  const [demoMode, setDemoMode] = useState(false);
+
+  const loadDemo = useCallback(() => {
+    setDraft(buildDemoDraft());
+    setRecettes(buildDemoRecettes());
+    setDepenses(buildDemoDepenses());
+    setStep(1);
+    setVoyageId(undefined);
+    setDonTaciteAccepte(false);
+    setDemoMode(true);
+    toast.success("Exemple chargé — voyage Barcelone (démonstration)", {
+      description: "Vous pouvez naviguer librement entre les étapes. Rien n'est enregistré tant que vous ne cliquez pas sur Sauvegarder.",
+    });
+  }, [setDraft]);
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUserId(data?.user?.id || null));
@@ -78,15 +96,23 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
   // Reset à l'ouverture
   useEffect(() => {
     if (open && !initial) {
-      reset();
-      setRecettes([]);
-      setDepenses([]);
+      if (demo) {
+        setDraft(buildDemoDraft());
+        setRecettes(buildDemoRecettes());
+        setDepenses(buildDemoDepenses());
+        setDemoMode(true);
+      } else {
+        reset();
+        setRecettes([]);
+        setDepenses([]);
+        setDemoMode(false);
+      }
       setJalonsState({});
       setStep(1);
       setVoyageId(undefined);
       setDonTaciteAccepte(false);
     }
-  }, [open, initial, reset]);
+  }, [open, initial, reset, demo, setDraft]);
 
   const regle8 = useMemo<Regle8Result>(() => {
     const snap = snapshotVoyage(
@@ -229,9 +255,20 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
           <DialogTitle className="flex items-center gap-2">
             <Badge variant="outline">Étape {step}/{STEPS.length}</Badge>
             {STEPS[step - 1].label}
+            {demoMode && (
+              <Badge className="bg-amber-500 text-white text-[10px]">
+                <Sparkles className="h-3 w-3 mr-1" /> Mode démonstration
+              </Badge>
+            )}
+            <div className="ml-auto">
+              <Button type="button" variant="outline" size="sm" onClick={loadDemo} className="h-7 text-xs">
+                <Sparkles className="h-3 w-3 mr-1" /> Charger l'exemple
+              </Button>
+            </div>
           </DialogTitle>
           <DialogDescription>
             Création d'un voyage scolaire — conforme circulaire MENE2407159C, GBCP, M9-6.
+            {demoMode && " Données fictives chargées : libre à vous de naviguer entre les étapes."}
           </DialogDescription>
         </DialogHeader>
 
