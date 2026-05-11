@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, MapPin, Plus, Loader2, CheckCircle2, Building2, GraduationCap, BookOpen, UtensilsCrossed, Layers } from "lucide-react";
+import { Search, MapPin, Plus, Loader2, CheckCircle2, Building2, GraduationCap, BookOpen, UtensilsCrossed, Layers, Trash2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -199,6 +200,45 @@ const Establishments = () => {
       resetDialog();
     },
     onError: (err: any) => toast.error(err.message || "Erreur lors de l'ajout"),
+  });
+
+  // Suppression : détache l'utilisateur de l'EPLE. Si plus aucun rattachement et EPLE non revendiqué,
+  // on supprime aussi la fiche `establishments` et son lien `establishment_annexes` éventuel.
+  const deleteMutation = useMutation({
+    mutationFn: async (estId: string) => {
+      if (!user) throw new Error("Non authentifié");
+      // 1) Supprime mon rattachement
+      const { error: delLinkErr } = await supabase
+        .from("user_establishments")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("establishment_id", estId);
+      if (delLinkErr) throw delLinkErr;
+
+      // 2) S'il ne reste aucun utilisateur rattaché, on tente de supprimer la fiche
+      const { count } = await supabase
+        .from("user_establishments")
+        .select("id", { count: "exact", head: true })
+        .eq("establishment_id", estId);
+      if ((count ?? 0) === 0) {
+        // Nettoyage liens annexes (support ou annexe)
+        await supabase.from("establishment_annexes").delete().eq("annexe_establishment_id", estId);
+        await supabase.from("establishment_annexes").delete().eq("support_establishment_id", estId);
+        // Suppression de l'établissement (peut être bloquée par RLS/FK : on ignore l'erreur silencieusement)
+        await supabase.from("establishments").delete().eq("id", estId);
+      }
+      return estId;
+    },
+    onSuccess: (estId) => {
+      queryClient.invalidateQueries({ queryKey: ["user-establishments"] });
+      refetch();
+      if (selectedEstablishment?.id === estId) {
+        const remaining = establishments.filter((x) => x.id !== estId);
+        if (remaining[0]) selectEstablishment(remaining[0]);
+      }
+      toast.success("Établissement retiré de votre liste");
+    },
+    onError: (err: any) => toast.error(err.message || "Suppression impossible"),
   });
 
   // ---- Lookup UAI pour annexe ----
@@ -681,17 +721,52 @@ const Establishments = () => {
                       <TableCell className="text-sm text-muted-foreground">{e.agent_comptable || "—"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{e.secretaire_general || "—"}</TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant={isSelected ? "default" : "outline"}
-                          onClick={(ev) => {
-                            ev.stopPropagation();
-                            selectEstablishment(e);
-                            toast.success(`${e.name} sélectionné`);
-                          }}
-                        >
-                          {isSelected ? "✓ Actif" : "Sélectionner"}
-                        </Button>
+                        <div className="flex items-center justify-end gap-2" onClick={(ev) => ev.stopPropagation()}>
+                          <Button
+                            size="sm"
+                            variant={isSelected ? "default" : "outline"}
+                            onClick={(ev) => {
+                              ev.stopPropagation();
+                              selectEstablishment(e);
+                              toast.success(`${e.name} sélectionné`);
+                            }}
+                          >
+                            {isSelected ? "✓ Actif" : "Sélectionner"}
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                title="Supprimer de ma liste"
+                                onClick={(ev) => ev.stopPropagation()}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent onClick={(ev) => ev.stopPropagation()}>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Supprimer « {e.name} » ?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  L'établissement <span className="font-mono">{e.uai}</span> sera retiré de votre liste.
+                                  Si aucun autre utilisateur n'y est rattaché, sa fiche sera entièrement supprimée
+                                  (y compris ses liens de budgets annexes). Les données d'imports et historiques
+                                  associés peuvent être conservés selon les politiques en place.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => deleteMutation.mutate(e.id)}
+                                >
+                                  {deleteMutation.isPending ? "Suppression…" : "Supprimer"}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
