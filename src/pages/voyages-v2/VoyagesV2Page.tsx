@@ -23,6 +23,7 @@ import { VoyageWizard } from "./wizard/VoyageWizard";
 import { DocumentsGenerator } from "./DocumentsGenerator";
 import { DocumentsGeneratorReal } from "./DocumentsGeneratorReal";
 import { SidebarAlertes } from "./SidebarAlertes";
+import { RecommandationCard } from "./wizard/RecommandationCard";
 import type { DocxBuildContext } from "./lib/docxBuilder";
 import {
   evaluerAlertesVoyage,
@@ -141,10 +142,9 @@ export default function VoyagesV2Page() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-        {/* Colonne principale */}
-        <div className="space-y-6 min-w-0">
-          <div className="flex items-start justify-between gap-4 flex-wrap">
+      <div className="space-y-6">
+        {/* En-tête */}
+        <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <Sparkles className="h-5 w-5 text-primary" />
@@ -171,7 +171,7 @@ export default function VoyagesV2Page() {
             <ClipboardCheck className="h-4 w-4 mr-2" /> Enquêtes rectorat
           </Button>
         </div>
-          </div>
+        </div>
 
       <Alert>
         <ShieldCheck className="h-4 w-4" />
@@ -180,11 +180,11 @@ export default function VoyagesV2Page() {
           Cliquez sur <strong>«&nbsp;Créer un nouveau voyage&nbsp;»</strong> pour ouvrir l'assistant pas-à-pas
           (9 étapes guidées). Vous pouvez naviguer librement entre les étapes — aucune n'est verrouillée
           tant que vous ne finalisez pas le voyage. Les alertes réglementaires sont calculées en temps réel
-          dans la colonne de droite.
+          et transformées en recommandations actionnables (cases à cocher + lien vers le champ à corriger).
         </AlertDescription>
       </Alert>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -208,13 +208,13 @@ export default function VoyagesV2Page() {
               <AlertTriangle className="h-4 w-4 text-destructive" /> Moteur d'alertes A.3
             </CardTitle>
             <CardDescription>
-              17 catégories : délai CA 30/60/90 j, engagement avant CA, budget, accompagnateurs,
-              MAPA, Ariane, RGP, passeport…
+              17 catégories transformées en recommandations actionnables : délai CA, engagement,
+              budget, accompagnateurs, MAPA, Ariane, RGP…
             </CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="outline" className="w-full" onClick={lancerDemo}>
-              <Bug className="h-4 w-4 mr-2" /> Tester sur voyage fictif fautif
+              <Bug className="h-4 w-4 mr-2" /> Voir un exemple de recommandations
             </Button>
           </CardContent>
         </Card>
@@ -233,7 +233,7 @@ export default function VoyagesV2Page() {
             <div>✅ Wizard 9 étapes accessible</div>
             <div>✅ 32 documents — branchés voyages réels</div>
             <div>❌ Règle 8 € + bilan Créteil v2</div>
-            <div>❌ Sidebar alertes permanente</div>
+            <div>✅ Recommandations actionnables (check-list + jump)</div>
             <Button variant="outline" size="sm" className="w-full mt-2" onClick={() => setShowDocs(v => !v)}>
               {showDocs ? "Masquer" : "Ouvrir"} le générateur 32 docs
             </Button>
@@ -287,10 +287,14 @@ export default function VoyagesV2Page() {
           <CardHeader>
             <div className="flex items-center justify-between flex-wrap gap-2">
               <div>
-                <CardTitle>Démo alertes — {demoAlertes.length} alerte(s) remontée(s)</CardTitle>
+                <CardTitle>
+                  Recommandations — {demoAlertes.length} action(s) à mener
+                </CardTitle>
                 <CardDescription>
-                  Voyage fictif : départ J+15, CA J+0, engagement J-10, accompagnateurs sur famille,
-                  destination Espagne sans Ariane, fournisseur ≥ 95 k€ /12 mois.
+                  Chaque alerte est transformée en recommandation concrète avec une case à cocher
+                  par sous-tâche et un lien direct vers l'étape du wizard à corriger. Voyage fictif :
+                  départ J+15, CA J+0, engagement J-10, accompagnateurs sur famille, destination
+                  Espagne sans Ariane, fournisseur ≥ 95 k€ /12 mois.
                 </CardDescription>
               </div>
               {compteur && (
@@ -308,26 +312,14 @@ export default function VoyagesV2Page() {
           </CardHeader>
           <CardContent className="space-y-3">
             {demoAlertes.map((a) => (
-              <div
+              <RecommandationCard
                 key={a.id}
-                className="border rounded-md p-3 flex items-start gap-3 bg-card"
-              >
-                <Badge className={NIVEAU_BADGE[a.niveau].color}>{a.niveau.toUpperCase()}</Badge>
-                <div className="flex-1">
-                  <div className="font-medium text-sm flex items-center gap-2">
-                    {a.titre}
-                    {a.bloquant && (
-                      <Badge variant="outline" className="text-[10px]">Bloquant</Badge>
-                    )}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">{a.message}</div>
-                  {a.reference_legale && (
-                    <div className="text-[11px] mt-1 italic text-muted-foreground">
-                      Réf. : {a.reference_legale}
-                    </div>
-                  )}
-                </div>
-              </div>
+                alerte={a}
+                onJumpToStep={() => {
+                  setWizardDemo(true);
+                  setWizardOpen(true);
+                }}
+              />
             ))}
           </CardContent>
         </Card>
@@ -342,15 +334,12 @@ export default function VoyagesV2Page() {
           onSaved={() => setDocsRefreshKey((k) => k + 1)}
         />
       )}
-        </div>
 
-        {/* Sidebar alertes permanente */}
-        <aside className="lg:sticky lg:top-4 lg:self-start">
-          <SidebarAlertes
-            establishmentId={selectedEstablishment?.id || null}
-            refreshKey={docsRefreshKey}
-          />
-        </aside>
+        {/* Alertes actives de l'EPLE — pleine largeur en bas */}
+        <SidebarAlertes
+          establishmentId={selectedEstablishment?.id || null}
+          refreshKey={docsRefreshKey}
+        />
       </div>
     </div>
   );
