@@ -157,8 +157,11 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
 
   const handleNext = async () => {
     if (!canNext.ok) {
-      toast.error(canNext.message || "Champs requis manquants");
-      return;
+      // Avertissement non bloquant : l'utilisateur peut naviguer librement
+      // (utile pour les démonstrations et la consultation des étapes).
+      toast.warning(canNext.message || "Champs requis manquants", {
+        description: "Vous pouvez continuer, mais cette étape devra être complétée avant la finalisation.",
+      });
     }
     if (step < STEPS.length) {
       await persistAndAdvance(step + 1);
@@ -239,14 +242,15 @@ export function VoyageWizard({ open, onOpenChange, establishmentId, initial, onS
             <button
               key={s.n}
               type="button"
-              onClick={() => s.n < step && setStep(s.n)}
-              className={`px-2 py-1 rounded whitespace-nowrap transition-colors ${
+              onClick={() => setStep(s.n)}
+              className={`px-2 py-1 rounded whitespace-nowrap transition-colors cursor-pointer ${
                 s.n === step
                   ? "bg-primary text-primary-foreground font-semibold"
                   : s.n < step
-                  ? "bg-emerald-100 text-emerald-900 hover:bg-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100 cursor-pointer"
-                  : "bg-muted"
+                  ? "bg-emerald-100 text-emerald-900 hover:bg-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-100"
+                  : "bg-muted hover:bg-muted/70"
               }`}
+              title="Cliquer pour aller à cette étape"
             >
               {s.n < step && <CheckCircle2 className="inline h-3 w-3 mr-0.5" />}
               {s.n}. {s.label}
