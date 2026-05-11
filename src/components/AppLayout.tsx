@@ -5,6 +5,7 @@ import { Outlet } from "react-router-dom";
 import { Building2, LogOut, ChevronDown, Check, Search, Sparkles } from "lucide-react";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { CommandPalette } from "@/components/CommandPalette";
+import { DemoModeBanner } from "@/components/demo/DemoModeBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ export function AppLayout() {
       <div className="min-h-screen flex w-full bg-background">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
+          <DemoModeBanner />
           {/* Premium glass header */}
           <header className="h-14 flex items-center gap-3 border-b border-border/60 bg-card/70 backdrop-blur-xl px-4 shrink-0 sticky top-0 z-30 supports-[backdrop-filter]:bg-card/60">
             <div className="flex items-center gap-2 min-w-0 shrink-0">
