@@ -2,7 +2,7 @@ import { Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
-  Home, BarChart3, CalendarDays, Settings, Bot, FileSpreadsheet, Zap,
+  Home, BarChart3, CalendarDays, Settings, Bot, FileSpreadsheet, Zap, Trophy, BookOpen,
 } from 'lucide-react';
 import HyperaleAccueil from './HyperaleAccueil';
 import HyperaleAnalyse from './HyperaleAnalyse';
@@ -10,6 +10,8 @@ import HyperaleJournal from './HyperaleJournal';
 import HyperaleParametres from './HyperaleParametres';
 import HyperaleAssistant from './HyperaleAssistant';
 import HyperaleImport from './HyperaleImport';
+import HyperaleVsIdeale from './HyperaleVsIdeale';
+import HyperaleModeEmploi from './HyperaleModeEmploi';
 
 const NAV_ITEMS = [
   { path: '/hyperale', label: 'Accueil', icon: Home, end: true },
@@ -18,6 +20,8 @@ const NAV_ITEMS = [
   { path: '/hyperale/import', label: 'Import Op@le', icon: FileSpreadsheet },
   { path: '/hyperale/parametres', label: 'Paramètres', icon: Settings },
   { path: '/hyperale/assistant', label: 'Assistant IA', icon: Bot },
+  { path: '/hyperale/vs-ideale', label: 'vs Ide@le', icon: Trophy },
+  { path: '/hyperale/mode-emploi', label: 'Mode d\'emploi', icon: BookOpen },
 ];
 
 export default function HyperalePage() {
@@ -101,6 +105,8 @@ export default function HyperalePage() {
           <Route path="import" element={<HyperaleImport />} />
           <Route path="parametres" element={<HyperaleParametres />} />
           <Route path="assistant" element={<HyperaleAssistant />} />
+          <Route path="vs-ideale" element={<HyperaleVsIdeale />} />
+          <Route path="mode-emploi" element={<HyperaleModeEmploi />} />
         </Routes>
       </motion.div>
     </div>
