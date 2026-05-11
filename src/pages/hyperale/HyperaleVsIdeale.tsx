@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Check, X, Zap, Sparkles, Trophy, Target, Brain, FileSpreadsheet, MessagesSquare, BellRing, Layers, History, Wand2, Languages, Shield, Download, GitCompareArrows } from 'lucide-react';
+import { Check, X, Zap, Sparkles, Trophy, Target, Brain, FileSpreadsheet, MessagesSquare, BellRing, Layers, History, Wand2, Languages, Shield, Download, GitCompareArrows, Info } from 'lucide-react';
 
 /**
  * Page comparative HYPER@LE vs Ide@le
@@ -20,73 +20,73 @@ const FEATURES: FeatureRow[] = [
   {
     icon: FileSpreadsheet,
     axe: 'Sources de données',
-    ideale: { ok: true, text: 'Restitutions Op@le standardisées (ECBU, SDE, SDR)' },
+    ideale: { ok: true, text: 'Branchement direct sur les données Op@le (ECBU, SDE, SDR, balance)' },
     hyperale: { text: 'Mêmes sources Op@le + saisie manuelle + historique pluriannuel N à N-5 + import balance externe', bonus: 'Compatible établissements non encore migrés Op@le' },
   },
   {
     icon: History,
     axe: 'Historique pluriannuel',
-    ideale: { ok: false, text: 'Vue principalement annuelle, comparaison N/N-1 limitée' },
+    ideale: { ok: false, text: 'Restitutions centrées sur l\'exercice ; profondeur historique limitée à la durée d\'utilisation d\'Op@le par l\'EPLE' },
     hyperale: { text: 'Profondeur 6 exercices (N à N-5), graphiques de tendance, détection automatique des décrochages', bonus: 'Projection N+1 sur la base de la trajectoire CAF/FDR' },
   },
   {
     icon: Brain,
     axe: 'Intelligence d\'analyse',
-    ideale: { ok: false, text: 'Calcul des ratios M9-6, sans interprétation' },
+    ideale: { ok: false, text: 'Calcul des ratios M9-6 (FDR, BFR, trésorerie, CAF…) sans interprétation textuelle automatisée' },
     hyperale: { text: 'Score de santé financière 0-100, niveau (excellent / surveiller / critique), texte "storyteller" généré + suggestions proactives priorisées', bonus: 'Détection patterns : DRFN >90j, marge SRH négative, FDR <30j, etc.' },
   },
   {
     icon: BellRing,
     axe: 'Moteur d\'alertes',
-    ideale: { ok: false, text: 'Alertes basiques sur seuils figés' },
+    ideale: { ok: false, text: 'Lecture de seuils standards M9-6, sans recommandation actionnable' },
     hyperale: { text: 'Seuils paramétrables par établissement, alertes hiérarchisées (info/warning/critical), recommandations actionnables avec lien vers le levier', bonus: 'Mode "Débutant" qui explique chaque alerte en français clair' },
   },
   {
     icon: MessagesSquare,
     axe: 'Assistant conversationnel',
-    ideale: { ok: false, text: 'Aucun' },
+    ideale: { ok: false, text: 'Pas d\'assistant conversationnel intégré à date' },
     hyperale: { text: 'Assistant IA contextuel branché sur les données de l\'établissement, réponses sourcées M9-6 / GBCP', bonus: 'Suggestions de questions, mode "expliquez à mon CA"' },
   },
   {
     icon: Wand2,
     axe: 'Textes prêts à copier',
-    ideale: { ok: false, text: 'Aucun — production manuelle des commentaires' },
+    ideale: { ok: false, text: 'Production manuelle des commentaires d\'annexe et notes au CA' },
     hyperale: { text: 'Génère automatiquement : commentaire annexe COFI, note CE, présentation CA, synthèse rectorat', bonus: 'Ton ajusté (technique / pédagogique) selon le destinataire' },
   },
   {
     icon: Languages,
     axe: 'Pédagogie',
-    ideale: { ok: false, text: 'Vocabulaire purement technique' },
+    ideale: { ok: false, text: 'Vocabulaire technique M9-6 sans mode pédagogique intégré' },
     hyperale: { text: 'Mode Débutant / Expert, infobulles définition pour chaque indicateur, glossaire intégré', bonus: 'Tutoriels vidéo et mode d\'emploi pas-à-pas par profil utilisateur' },
   },
   {
     icon: GitCompareArrows,
     axe: 'Multi-établissements',
-    ideale: { ok: false, text: 'Vue mono-établissement' },
+    ideale: { ok: false, text: 'Vue par EPLE ; consolidation de groupement non native côté agent comptable' },
     hyperale: { text: 'Sélecteur multi-EPLE, comparaison de groupement, vue agence comptable consolidée, classement par score', bonus: 'Heatmap des établissements à risque pour l\'AC' },
   },
   {
     icon: Layers,
     axe: 'Journal de bord',
-    ideale: { ok: false, text: 'Aucun journal' },
+    ideale: { ok: false, text: 'Pas de journal d\'événements financiers commenté' },
     hyperale: { text: 'Data Journal chronologique : événements financiers, décisions CA, commentaires datés', bonus: 'Détection IA d\'anomalies de saisie (montants atypiques)' },
   },
   {
     icon: Download,
     axe: 'Export et restitution',
-    ideale: { ok: true, text: 'Exports tableurs bruts' },
+    ideale: { ok: true, text: 'Exports tableurs (Excel/CSV) standards Op@le' },
     hyperale: { text: 'PDF A4 paysage prêt à diffuser (4 pages), export CSV, copier-coller direct dans le COFI', bonus: 'Graphiques pure CSS imprimables, aucune dépendance externe' },
   },
   {
     icon: Shield,
     axe: 'Souveraineté & sécurité',
-    ideale: { ok: true, text: 'Hébergement Éducation nationale' },
+    ideale: { ok: true, text: 'Hébergement et gouvernance Éducation nationale (ministère)' },
     hyperale: { text: 'Données chiffrées, RLS par établissement, audit trail complet, aucune donnée nominative envoyée à l\'IA', bonus: 'Mode démonstration sans écriture en base pour formation/présentation' },
   },
   {
     icon: Target,
     axe: 'Aide à la décision',
-    ideale: { ok: false, text: 'Lecture passive des indicateurs' },
+    ideale: { ok: false, text: 'Restitution des indicateurs sans plan d\'action proposé' },
     hyperale: { text: 'Suggestions priorisées avec deeplink vers la page d\'action, simulateur FDR, plan de redressement guidé', bonus: 'Recommandations conformes M9-6 avec référence réglementaire citée' },
   },
 ];
@@ -125,6 +125,21 @@ export default function HyperaleVsIdeale() {
           </div>
         </div>
       </motion.div>
+
+      {/* Disclaimer factuel */}
+      <Card className="border-amber-500/40 bg-amber-50/40 dark:bg-amber-500/5">
+        <CardContent className="p-3 flex items-start gap-2 text-xs leading-relaxed">
+          <Info className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+          <div>
+            <strong className="text-foreground">Note de sincérité.</strong> Le périmètre exact d'Ide@le évolue
+            avec les versions livrées par la DGFIP/MEN. La colonne « Ide@le » ci-dessous décrit les fonctions
+            documentées publiquement à date (instruction M9-6, communications académiques, retours de groupement
+            comptable). Si une fonction listée comme « absente » a été ajoutée par une version récente, signalez-le :
+            HYPER@LE conserve son intérêt en tant que <em>surcouche d'analyse augmentée</em>, indépendante du
+            calendrier de déploiement Op@le.
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Chiffres clés */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
