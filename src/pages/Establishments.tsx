@@ -341,7 +341,7 @@ const Establishments = () => {
         <div className="relative flex-1 max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher par code UAI ou nom..."
+            placeholder="Filtrer la liste ci-dessous (UAI ou nom)…"
             className="pl-10"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -349,8 +349,19 @@ const Establishments = () => {
         </div>
         <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetDialog(); }}>
           <DialogTrigger asChild>
-            <Button className="gradient-primary border-0">
-              <Plus className="h-4 w-4 mr-1" /> Ajouter
+            <Button
+              className="gradient-primary border-0"
+              onClick={() => {
+                // Préremplit le dialogue avec ce qui est tapé dans la barre si c'est un UAI valide
+                const candidate = search.trim().toUpperCase();
+                if (/^[0-9]{7}[A-Z]$/.test(candidate)) {
+                  setUaiInput(candidate);
+                  // déclenche la recherche annuaire
+                  setTimeout(() => handleLookup(candidate), 50);
+                }
+              }}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Ajouter un établissement
             </Button>
           </DialogTrigger>
           <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col p-0 gap-0">
