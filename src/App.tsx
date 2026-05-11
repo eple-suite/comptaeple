@@ -211,6 +211,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
           <ChatEple />
+          </DemoModeProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
