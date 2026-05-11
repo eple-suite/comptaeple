@@ -6,6 +6,7 @@ import { Building2, LogOut, ChevronDown, Check, Search, Sparkles } from "lucide-
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { CommandPalette } from "@/components/CommandPalette";
 import { DemoModeBanner } from "@/components/demo/DemoModeBanner";
+import { DemoModuleBanner } from "@/components/demo/DemoModuleBanner";
 import { useAuth } from "@/contexts/AuthContext";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { Button } from "@/components/ui/button";
@@ -165,6 +166,7 @@ export function AppLayout() {
           <main className="flex-1 overflow-auto p-6 bg-background relative">
             {/* Subtle radial accent */}
             <div className="absolute inset-x-0 top-0 h-64 bg-radial-fade pointer-events-none -z-10" />
+            <DemoModuleBanner />
             <Outlet />
           </main>
         </div>
