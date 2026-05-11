@@ -1,7 +1,7 @@
 // ════════════════════════════════════════════════════════════════
 // Wizard Voyage v2 — orchestration 8 étapes
 // ════════════════════════════════════════════════════════════════
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
