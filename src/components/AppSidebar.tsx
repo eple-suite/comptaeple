@@ -52,6 +52,7 @@ interface NavItem {
 
 const mainItems: NavItem[] = [
   { title: "Tableau de bord", url: "/", icon: LayoutDashboard },
+  { title: "Mode démonstration", url: "/demo", icon: Sparkles, hot: true },
   { title: "Vue Agence", url: "/agence", icon: Building2 },
   { title: "Import des données", url: "/import", icon: Upload },
   { title: "Établissements", url: "/etablissements", icon: Building2 },
