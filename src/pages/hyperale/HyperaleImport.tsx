@@ -9,6 +9,7 @@ import {
   FileUp, Trash2, Loader2, Download,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { ExpectedFilesGuide } from '@/components/import/ExpectedFilesGuide';
 
 type ImportStatus = 'idle' | 'parsing' | 'preview' | 'done' | 'error';
 
@@ -170,49 +171,55 @@ export default function HyperaleImport() {
 
       {/* Help */}
       {status === 'idle' && (
-        <Card className="border-dashed">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Info className="h-4 w-4 text-primary" /> Format attendu
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Le fichier doit contenir au minimum les colonnes suivantes :
-            </p>
-            <div className="overflow-x-auto rounded-lg border">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="bg-muted/50">
-                    <th className="p-2 text-left font-semibold">Colonne</th>
-                    <th className="p-2 text-left font-semibold">Description</th>
-                    <th className="p-2 text-left font-semibold">Exemple</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[
-                    ['uai', 'Code UAI de l\'établissement', '0330089T'],
-                    ['annee', 'Année de l\'exercice', '2023'],
-                    ['fdr', 'Fonds de roulement (€)', '150000'],
-                    ['caf', 'Capacité d\'autofinancement (€)', '86000'],
-                    ['tresorerie', 'Trésorerie (€)', '102000'],
-                    ['reserves', 'Réserves (€)', '130000'],
-                  ].map(([col, desc, ex]) => (
-                    <tr key={col} className="border-t">
-                      <td className="p-2 font-mono font-bold text-primary">{col}</td>
-                      <td className="p-2 text-muted-foreground">{desc}</td>
-                      <td className="p-2 text-muted-foreground">{ex}</td>
+        <>
+          <ExpectedFilesGuide
+            title="Quels fichiers importer dans HYPER@LE ?"
+            description="HYPER@LE alimente le fonds de roulement, la CAF, la trésorerie, les réserves et le DRFN. Les fichiers ci-dessous sont ceux qui produisent ces indicateurs."
+            types={['balance', 'sde', 'sdr', 'ecbu']}
+          />
+          <Card className="border-dashed">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Info className="h-4 w-4 text-primary" /> Variante : fichier consolidé pluriannuel
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Vous pouvez aussi déposer un CSV/XLSX consolidé contenant directement les indicateurs (utile pour comparer plusieurs EPLE et exercices) :
+              </p>
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="bg-muted/50">
+                      <th className="p-2 text-left font-semibold">Colonne</th>
+                      <th className="p-2 text-left font-semibold">Description</th>
+                      <th className="p-2 text-left font-semibold">Exemple</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Les colonnes supplémentaires (nom, drfn, résultat comptable…) sont prises en charge si présentes.
-              Les noms de colonnes sont détectés automatiquement (insensible à la casse et aux accents).
-            </p>
-          </CardContent>
-        </Card>
+                  </thead>
+                  <tbody>
+                    {[
+                      ['uai', "Code UAI de l'établissement", '0330089T'],
+                      ['annee', "Année de l'exercice", '2023'],
+                      ['fdr', 'Fonds de roulement (€)', '150000'],
+                      ['caf', "Capacité d'autofinancement (€)", '86000'],
+                      ['tresorerie', 'Trésorerie (€)', '102000'],
+                      ['reserves', 'Réserves (€)', '130000'],
+                    ].map(([col, desc, ex]) => (
+                      <tr key={col} className="border-t">
+                        <td className="p-2 font-mono font-bold text-primary">{col}</td>
+                        <td className="p-2 text-muted-foreground">{desc}</td>
+                        <td className="p-2 text-muted-foreground">{ex}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Les colonnes supplémentaires (nom, drfn, résultat comptable…) sont prises en charge automatiquement (insensible à la casse et aux accents).
+              </p>
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Error */}

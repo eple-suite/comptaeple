@@ -307,6 +307,15 @@ export default function EleveImportPage() {
             <CardDescription>Formats acceptés : CSV, XLSX, XLS. La première feuille est utilisée pour Excel.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs space-y-1">
+              <div className="font-semibold text-primary flex items-center gap-1.5">
+                <FileSpreadsheet className="h-3.5 w-3.5" /> Quel fichier importer ici ?
+              </div>
+              <div><strong>Type :</strong> Export SIECLE — liste des élèves de l'établissement (et idéalement état des bourses pour pré-remplir l'éligibilité).</div>
+              <div><strong>Où le trouver :</strong> SIECLE → BEE → Exploitation → Liste des élèves → Exporter (CSV ou XLSX).</div>
+              <div><strong>Exemples de noms :</strong> <code className="bg-muted px-1 rounded">ExportEleves_0330089T.csv</code> ou <code className="bg-muted px-1 rounded">Bourses_0330089T_T1.csv</code></div>
+              <div className="text-muted-foreground">Colonnes utiles : INE, nom, prénom, date naissance, classe, MEF, régime, boursier, échelon.</div>
+            </div>
             <Input
               type="file"
               accept=".csv,.xlsx,.xls"

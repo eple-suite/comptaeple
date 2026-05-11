@@ -32,6 +32,7 @@ import { CrossValidationPanel } from "@/components/import/CrossValidationPanel";
 import { HistoriqueImports } from "@/components/import/HistoriqueImports";
 import { RgpdSiecleNotice } from "@/components/import/RgpdSiecleNotice";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { ExpectedFilesGuide } from "@/components/import/ExpectedFilesGuide";
 
 interface ParsedFile {
   id: string;
@@ -370,6 +371,11 @@ const DataImport = () => {
         </TabsList>
 
         <TabsContent value="depot" className="space-y-4">
+          <ExpectedFilesGuide
+            title="Quels fichiers pouvez-vous déposer ici ?"
+            description="La détection est automatique, mais voici la liste exhaustive des types reconnus, avec l'emplacement Op@le / SIECLE et un exemple de nom."
+            types={['balance', 'sde', 'sdr', 'grand_livre', 'etat_tiers', 'siecle_eleves', 'siecle_bourses', 'regies', 'paie']}
+          />
           {pendingRgpd ? (
             <RgpdSiecleNotice
               onAccept={() => { const p = pendingRgpd; setPendingRgpd(null); handleImportOne(p, true); }}

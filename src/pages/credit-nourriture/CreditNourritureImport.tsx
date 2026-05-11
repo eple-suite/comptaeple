@@ -176,6 +176,19 @@ export default function CreditNourritureImport() {
 
       {/* Drop zone */}
       {(status === 'idle' || status === 'error') && (
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-3 text-xs space-y-1">
+            <div className="font-semibold text-primary flex items-center gap-1.5">
+              <Upload className="h-3.5 w-3.5" /> Quels fichiers importer ici ?
+            </div>
+            <div><strong>Type :</strong> SDE (Situation des dépenses) <em>et</em> SDR (Situation des recettes) du budget SRH — ou la balance comptable du SRH.</div>
+            <div><strong>Où les trouver :</strong> Op@le → Budget → Éditions → SDE / SDR (filtrer sur le service SRH) → export Excel.</div>
+            <div><strong>Exemples de noms :</strong> <code className="bg-muted px-1 rounded">SDE_SRH_0330089T_2024.xlsx</code>, <code className="bg-muted px-1 rounded">SDR_SRH_0330089T_2024.xlsx</code></div>
+            <div className="text-muted-foreground">Comptes ciblés : 6011 (denrées), 7066/7067/7068 (recettes SRH).</div>
+          </CardContent>
+        </Card>
+      )}
+      {(status === 'idle' || status === 'error') && (
         <Card
           onDrop={onDrop}
           onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
