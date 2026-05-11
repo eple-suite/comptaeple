@@ -40,6 +40,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useCofiepleStore } from "@/store/useCofiepleStore";
+import { DemoModeToggle } from "@/components/demo/DemoModeToggle";
 
 interface NavItem {
   title: string;
@@ -51,6 +52,7 @@ interface NavItem {
 
 const mainItems: NavItem[] = [
   { title: "Tableau de bord", url: "/", icon: LayoutDashboard },
+  { title: "Mode démonstration", url: "/demo", icon: Sparkles, hot: true },
   { title: "Vue Agence", url: "/agence", icon: Building2 },
   { title: "Import des données", url: "/import", icon: Upload },
   { title: "Établissements", url: "/etablissements", icon: Building2 },
@@ -217,6 +219,10 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter className="p-2 border-t border-sidebar-border/40">
+        {/* Mode démonstration */}
+        <div className="px-1 mb-2">
+          <DemoModeToggle collapsed={collapsed} />
+        </div>
         {/* Status pill */}
         {!collapsed && (
           <div className="px-2 py-2 mb-1 rounded-lg bg-sidebar-accent/40 flex items-center gap-2">
