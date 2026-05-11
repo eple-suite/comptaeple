@@ -218,6 +218,15 @@ export function StepImportSiecle({ voyageId, onImported }: Props) {
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-xs space-y-1">
+          <div className="font-semibold text-primary flex items-center gap-1.5">
+            <FileSpreadsheet className="h-3.5 w-3.5" /> Quel fichier importer ici ?
+          </div>
+          <div><strong>Type :</strong> Export SIECLE — Liste nominative des élèves participants au voyage.</div>
+          <div><strong>Où le trouver :</strong> SIECLE → BEE → Exploitation → filtrer la classe ou la division concernée → Exporter (CSV ou XLSX).</div>
+          <div><strong>Exemple de nom :</strong> <code className="bg-muted px-1 rounded">Voyage_Espagne_3eA.csv</code></div>
+          <div className="text-muted-foreground">Colonnes attendues : INE, nom, prénom, date naissance, classe, MEF, régime, bourse.</div>
+        </div>
         <Alert>
           <ShieldAlert className="h-4 w-4" />
           <AlertTitle>Mention RGPD obligatoire</AlertTitle>
