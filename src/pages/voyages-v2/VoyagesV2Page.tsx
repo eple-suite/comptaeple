@@ -48,6 +48,7 @@ export default function VoyagesV2Page() {
   const { selectedEstablishment } = useEstablishment();
   const navigate = useNavigate();
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [wizardDemo, setWizardDemo] = useState(false);
   const [demoAlertes, setDemoAlertes] = useState<AlerteVoyage[] | null>(null);
   const [showDocs, setShowDocs] = useState(false);
   const [docsMode, setDocsMode] = useState<"reel" | "demo">("reel");
@@ -155,8 +156,16 @@ export default function VoyagesV2Page() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button onClick={() => setWizardOpen(true)} size="lg">
+          <Button onClick={() => { setWizardDemo(false); setWizardOpen(true); }} size="lg">
             <Wand2 className="h-4 w-4 mr-2" /> Créer un nouveau voyage
+          </Button>
+          <Button
+            onClick={() => { setWizardDemo(true); setWizardOpen(true); }}
+            size="lg"
+            variant="secondary"
+            title="Ouvre l'assistant pré-rempli avec un voyage exemple — aucune donnée réelle n'est créée"
+          >
+            <Sparkles className="h-4 w-4 mr-2" /> Mode démonstration
           </Button>
           <Button variant="outline" size="lg" onClick={() => navigate("/voyages-v2/enquetes-rectorat")}>
             <ClipboardCheck className="h-4 w-4 mr-2" /> Enquêtes rectorat
@@ -329,6 +338,7 @@ export default function VoyagesV2Page() {
           open={wizardOpen}
           onOpenChange={setWizardOpen}
           establishmentId={selectedEstablishment.id}
+          demo={wizardDemo}
           onSaved={() => setDocsRefreshKey((k) => k + 1)}
         />
       )}
