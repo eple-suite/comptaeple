@@ -40,6 +40,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import { useCofiepleStore } from "@/store/useCofiepleStore";
+import { DemoModeToggle } from "@/components/demo/DemoModeToggle";
 
 interface NavItem {
   title: string;
