@@ -13,7 +13,7 @@ export interface TiersDetenteur {
 
 export interface Creance {
   id: string;
-  compte: string; // 4112, 4122, 416
+  compte: string; // Op@le M9-6 (6 chiffres) : 411200, 411300, 412200, 412800, 416200, 416800, 467100…
   libelle: string;
   exercice: number;
   montantInitial: number;
