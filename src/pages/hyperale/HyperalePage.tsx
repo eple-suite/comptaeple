@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Home, BarChart3, CalendarDays, Settings, Bot, FileSpreadsheet, Zap, Trophy, BookOpen, Presentation,
+  Users, GraduationCap, Gauge, FileText,
 } from 'lucide-react';
 import HyperaleAccueil from './HyperaleAccueil';
 import HyperaleAnalyse from './HyperaleAnalyse';
@@ -11,12 +12,21 @@ import HyperaleParametres from './HyperaleParametres';
 import HyperaleAssistant from './HyperaleAssistant';
 import HyperaleImport from './HyperaleImport';
 import HyperaleVsIdeale from './HyperaleVsIdeale';
+import HyperaleVsIdealeSlide from './HyperaleVsIdealeSlide';
 import HyperaleModeEmploi from './HyperaleModeEmploi';
 import HyperaleDemoRectorat from './HyperaleDemoRectorat';
+import HyperaleDashboardsRoles from './HyperaleDashboardsRoles';
+import HyperaleBenchmark from './HyperaleBenchmark';
+import HyperalePilotagePedago from './HyperalePilotagePedago';
+import HyperaleRapportsCA from './HyperaleRapportsCA';
 
 const NAV_ITEMS = [
   { path: '/hyperale', label: 'Accueil', icon: Home, end: true },
   { path: '/hyperale/analyse', label: 'Analyse', icon: BarChart3 },
+  { path: '/hyperale/dashboards', label: 'Vues par rôle', icon: Users },
+  { path: '/hyperale/pilotage-pedago', label: 'Pilotage pédago', icon: GraduationCap },
+  { path: '/hyperale/benchmark', label: 'Benchmark', icon: Gauge },
+  { path: '/hyperale/rapports-ca', label: 'Rapports CA', icon: FileText },
   { path: '/hyperale/journal', label: 'Journal', icon: CalendarDays },
   { path: '/hyperale/import', label: 'Import Op@le', icon: FileSpreadsheet },
   { path: '/hyperale/parametres', label: 'Paramètres', icon: Settings },
@@ -103,11 +113,16 @@ export default function HyperalePage() {
         <Routes>
           <Route index element={<HyperaleAccueil />} />
           <Route path="analyse" element={<HyperaleAnalyse />} />
+          <Route path="dashboards" element={<HyperaleDashboardsRoles />} />
+          <Route path="pilotage-pedago" element={<HyperalePilotagePedago />} />
+          <Route path="benchmark" element={<HyperaleBenchmark />} />
+          <Route path="rapports-ca" element={<HyperaleRapportsCA />} />
           <Route path="journal" element={<HyperaleJournal />} />
           <Route path="import" element={<HyperaleImport />} />
           <Route path="parametres" element={<HyperaleParametres />} />
           <Route path="assistant" element={<HyperaleAssistant />} />
           <Route path="vs-ideale" element={<HyperaleVsIdeale />} />
+          <Route path="vs-ideale-slide" element={<HyperaleVsIdealeSlide />} />
           <Route path="demo-rectorat" element={<HyperaleDemoRectorat />} />
           <Route path="mode-emploi" element={<HyperaleModeEmploi />} />
         </Routes>
