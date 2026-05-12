@@ -47,7 +47,7 @@ export default function SatdFormulaire({ open, onOpenChange, tiersDetenteurs, on
     montant: "",
     nature: "",
     dateEmission: "",
-    compte: "4112",
+    compte: "411200",
     libelle: "",
     exercice: String(new Date().getFullYear()),
     // Débiteur
@@ -141,7 +141,7 @@ export default function SatdFormulaire({ open, onOpenChange, tiersDetenteurs, on
     onOpenChange(false);
     setStep(1);
     setForm({
-      reference: "", montant: "", nature: "", dateEmission: "", compte: "4112", libelle: "",
+      reference: "", montant: "", nature: "", dateEmission: "", compte: "411200", libelle: "",
       exercice: String(new Date().getFullYear()),
       civilite: "", nom: "", prenom: "", dateNaissance: "", lieuNaissance: "",
       adresse: "", codePostal: "", ville: "", typeDebiteur: "eleve_famille",
@@ -216,22 +216,44 @@ export default function SatdFormulaire({ open, onOpenChange, tiersDetenteurs, on
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Référence du titre</Label><Input value={form.reference} onChange={e => update("reference", e.target.value)} placeholder="OR-2025-001234" /></div>
                 <div><Label>Montant (€)</Label><Input type="number" value={form.montant} onChange={e => update("montant", e.target.value)} placeholder="450.00" /></div>
-                <div><Label>Compte</Label>
+                <div><Label>Compte d'imputation Op@le (M9-6)</Label>
                   <Select value={form.compte} onValueChange={v => update("compte", v)}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="4112">4112 — Familles</SelectItem>
-                      <SelectItem value="4122">4122 — Commensaux</SelectItem>
-                      <SelectItem value="416">416 — Créances douteuses</SelectItem>
-                      <SelectItem value="421">421 — Agents</SelectItem>
+                    <SelectContent className="max-h-72">
+                      <SelectItem value="411200">411200 — Familles · demi-pension</SelectItem>
+                      <SelectItem value="411300">411300 — Familles · internat</SelectItem>
+                      <SelectItem value="411500">411500 — Familles · voyages scolaires</SelectItem>
+                      <SelectItem value="411800">411800 — Autres créances familles (cautions, manuels)</SelectItem>
+                      <SelectItem value="412200">412200 — Commensaux · repas</SelectItem>
+                      <SelectItem value="412800">412800 — Autres tiers redevables (locations, asso., refacturations)</SelectItem>
+                      <SelectItem value="416200">416200 — Créances contentieuses</SelectItem>
+                      <SelectItem value="416800">416800 — Créances douteuses</SelectItem>
+                      <SelectItem value="425000">425000 — Personnel · avances et acomptes</SelectItem>
+                      <SelectItem value="429000">429000 — Personnel · trop-perçus / débets</SelectItem>
+                      <SelectItem value="441200">441200 — État / collectivité débiteurs</SelectItem>
+                      <SelectItem value="441600">441600 — Autres organismes publics</SelectItem>
+                      <SelectItem value="443110">443110 — Bourses nationales (trop-perçu)</SelectItem>
+                      <SelectItem value="467100">467100 — Comptes débiteurs · associations</SelectItem>
+                      <SelectItem value="467800">467800 — Autres comptes débiteurs divers</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-                <div><Label>Nature</Label>
-                  <Select value={form.nature} onValueChange={v => update("nature", v)}>
+                <div><Label>Nature de la créance</Label>
+                  <Select
+                    value={form.nature}
+                    onValueChange={v => {
+                      update("nature", v);
+                      const opt = NATURE_CREANCE_OPTIONS.find(o => o.value === v);
+                      if (opt?.compte) update("compte", opt.compte);
+                    }}
+                  >
                     <SelectTrigger><SelectValue placeholder="Sélectionner..." /></SelectTrigger>
-                    <SelectContent>
-                      {NATURE_CREANCE_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                    <SelectContent className="max-h-72">
+                      {NATURE_CREANCE_OPTIONS.map(o => (
+                        <SelectItem key={o.value} value={o.value}>
+                          {o.label} <span className="text-muted-foreground">· C/{o.compte}</span>
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

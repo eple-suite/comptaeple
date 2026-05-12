@@ -13,7 +13,7 @@ export interface TiersDetenteur {
 
 export interface Creance {
   id: string;
-  compte: string; // 4112, 4122, 416
+  compte: string; // Op@le M9-6 (6 chiffres) : 411200, 411300, 412200, 412800, 416200, 416800, 467100…
   libelle: string;
   exercice: number;
   montantInitial: number;
@@ -215,8 +215,8 @@ export const mockSatds: Satd[] = [
     debiteur: "M. DUPONT Jean", debiteurAdresse: "12 rue des Lilas", debiteurCP: "13001", debiteurVille: "Marseille",
     typeDebiteur: "agent",
     creances: [
-      { id: "cr1", compte: "4112", libelle: "Restauration 2022-2023", exercice: 2023, montantInitial: 1800, montantRecouvre: 0, resteARecouvrer: 1800 },
-      { id: "cr2", compte: "416", libelle: "Restauration 2021-2022 (douteux)", exercice: 2022, montantInitial: 700, montantRecouvre: 0, resteARecouvrer: 700 },
+      { id: "cr1", compte: "411200", libelle: "Restauration 2022-2023", exercice: 2023, montantInitial: 1800, montantRecouvre: 0, resteARecouvrer: 1800 },
+      { id: "cr2", compte: "416800", libelle: "Restauration 2021-2022 (douteux)", exercice: 2022, montantInitial: 700, montantRecouvre: 0, resteARecouvrer: 700 },
     ],
     montantTotal: 2500, fraisPoursuite: 0, majorations: 0, montantGlobal: 2500,
     tiersDetenteurId: "t1", tiersDetenteur: null,
@@ -249,8 +249,8 @@ export const mockSatds: Satd[] = [
     debiteur: "Mme MARTIN Sophie", debiteurAdresse: "5 avenue Foch", debiteurCP: "13006", debiteurVille: "Marseille",
     typeDebiteur: "eleve_famille",
     creances: [
-      { id: "cr3", compte: "4112", libelle: "Restauration 2023-2024 T1", exercice: 2024, montantInitial: 420, montantRecouvre: 0, resteARecouvrer: 420 },
-      { id: "cr4", compte: "4112", libelle: "Restauration 2023-2024 T2", exercice: 2024, montantInitial: 380, montantRecouvre: 0, resteARecouvrer: 380 },
+      { id: "cr3", compte: "411200", libelle: "Restauration 2023-2024 T1", exercice: 2024, montantInitial: 420, montantRecouvre: 0, resteARecouvrer: 420 },
+      { id: "cr4", compte: "411200", libelle: "Restauration 2023-2024 T2", exercice: 2024, montantInitial: 380, montantRecouvre: 0, resteARecouvrer: 380 },
     ],
     montantTotal: 800, fraisPoursuite: 0, majorations: 0, montantGlobal: 800,
     tiersDetenteurId: "t5", tiersDetenteur: null,
@@ -272,7 +272,7 @@ export const mockSatds: Satd[] = [
     debiteur: "M. BERNARD Pierre", debiteurAdresse: "22 bd Michelet", debiteurCP: "13008", debiteurVille: "Marseille",
     typeDebiteur: "agent",
     creances: [
-      { id: "cr5", compte: "416", libelle: "Restauration 2020-2021", exercice: 2021, montantInitial: 650, montantRecouvre: 650, resteARecouvrer: 0 },
+      { id: "cr5", compte: "416800", libelle: "Restauration 2020-2021", exercice: 2021, montantInitial: 650, montantRecouvre: 650, resteARecouvrer: 0 },
     ],
     montantTotal: 650, fraisPoursuite: 0, majorations: 0, montantGlobal: 650,
     tiersDetenteurId: "t1", tiersDetenteur: null,
@@ -302,7 +302,7 @@ export const mockSatds: Satd[] = [
     debiteur: "Mme GARCIA Maria", debiteurAdresse: "8 rue de la République", debiteurCP: "13002", debiteurVille: "Marseille",
     typeDebiteur: "eleve_famille",
     creances: [
-      { id: "cr6", compte: "416", libelle: "Voyage scolaire 2022", exercice: 2022, montantInitial: 320, montantRecouvre: 0, resteARecouvrer: 320 },
+      { id: "cr6", compte: "416800", libelle: "Voyage scolaire 2022", exercice: 2022, montantInitial: 320, montantRecouvre: 0, resteARecouvrer: 320 },
     ],
     montantTotal: 320, fraisPoursuite: 0, majorations: 0, montantGlobal: 320,
     tiersDetenteurId: "t4", tiersDetenteur: null,
@@ -329,7 +329,7 @@ export const mockSatds: Satd[] = [
     debiteur: "M. PETIT Jacques", debiteurAdresse: "15 traverse des Oliviers", debiteurCP: "13012", debiteurVille: "Marseille",
     typeDebiteur: "eleve_famille",
     creances: [
-      { id: "cr7", compte: "4112", libelle: "Restauration 2024-2025 T1", exercice: 2025, montantInitial: 350, montantRecouvre: 0, resteARecouvrer: 350 },
+      { id: "cr7", compte: "411200", libelle: "Restauration 2024-2025 T1", exercice: 2025, montantInitial: 350, montantRecouvre: 0, resteARecouvrer: 350 },
     ],
     montantTotal: 350, fraisPoursuite: 0, majorations: 0, montantGlobal: 350,
     tiersDetenteurId: "", tiersDetenteur: null,
