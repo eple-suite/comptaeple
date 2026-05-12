@@ -253,23 +253,39 @@ export const BANQUES_COURANTES = [
 // ═══════════════════════════════════════════════════════════
 
 export const NATURE_CREANCE_OPTIONS = [
-  { value: "demi-pension", label: "Frais de demi-pension", compte: "4112" },
-  { value: "internat", label: "Frais d'internat", compte: "4112" },
-  { value: "voyage", label: "Participation voyage scolaire", compte: "4112" },
-  { value: "bourse_trop_percue", label: "Bourse trop perçue", compte: "4112" },
-  { value: "caution", label: "Caution non restituée", compte: "4118" },
-  { value: "cantine_commensaux", label: "Cantine commensaux", compte: "4122" },
-  { value: "location_salle", label: "Location de salle", compte: "4128" },
-  { value: "agent_trop_percu", label: "Agent — trop-perçu", compte: "421" },
-  { value: "fournisseur_avoir", label: "Fournisseur — avoir non réglé", compte: "409" },
-  // Spécifique associations (MDL, FSE, AS, FCPE, amicales, partenaires) débitrices de l'EPLE
-  { value: "asso_convention_locaux", label: "Association — convention de mise à disposition de locaux", compte: "4128" },
-  { value: "asso_fluides_refacturation", label: "Association — refacturation fluides (eau/élec/gaz)", compte: "4128" },
-  { value: "asso_personnel_mad", label: "Association — mise à disposition de personnel non remboursée", compte: "4128" },
-  { value: "asso_repas_commensaux", label: "Association — repas commensaux non payés", compte: "4122" },
-  { value: "asso_subv_trop_percue", label: "Association — subvention trop perçue à reverser", compte: "4671" },
-  { value: "asso_reversement_pj", label: "Association — reversement de produits encaissés pour l'EPLE", compte: "4671" },
-  { value: "autre", label: "Autre créance", compte: "468" },
+  // ─── Familles (élèves) ─── M9-6 / Op@le — comptes 6 chiffres
+  { value: "demi-pension", label: "Frais de demi-pension (familles)", compte: "411200" },
+  { value: "internat", label: "Frais d'internat (familles)", compte: "411300" },
+  { value: "voyage", label: "Participation voyage scolaire (familles)", compte: "411500" },
+  { value: "manuels", label: "Manuels / fournitures non restitués (familles)", compte: "411800" },
+  { value: "caution", label: "Caution non restituée (familles)", compte: "411800" },
+  { value: "bourse_trop_percue", label: "Bourse nationale trop-perçue", compte: "443110" },
+  // ─── Commensaux & autres tiers redevables ───
+  { value: "cantine_commensaux", label: "Repas commensaux (personnels, hôtes)", compte: "412200" },
+  { value: "location_salle", label: "Location de salle (tiers / particulier)", compte: "412800" },
+  { value: "location_logement_ns", label: "Logement NAS / location accessoire", compte: "412800" },
+  { value: "refacturation_fluides", label: "Refacturation fluides (eau / élec / gaz)", compte: "412800" },
+  // ─── Personnel ───
+  { value: "agent_trop_percu", label: "Agent — trop-perçu de rémunération", compte: "429000" },
+  { value: "agent_avance_non_reg", label: "Agent — avance / acompte non régularisé", compte: "425000" },
+  // ─── Fournisseurs ───
+  { value: "fournisseur_avoir", label: "Fournisseur — avoir non réglé / trop-payé", compte: "409100" },
+  // ─── Associations partenaires (MDL, FSE, AS, FCPE, amicales) ───
+  { value: "asso_location_internat", label: "Association — location / hébergement à l'internat non payés", compte: "412800" },
+  { value: "asso_convention_locaux", label: "Association — convention de mise à disposition de locaux", compte: "412800" },
+  { value: "asso_fluides_refacturation", label: "Association — refacturation fluides (eau/élec/gaz)", compte: "412800" },
+  { value: "asso_personnel_mad", label: "Association — mise à disposition de personnel non remboursée", compte: "412800" },
+  { value: "asso_repas_commensaux", label: "Association — repas commensaux non payés", compte: "412200" },
+  { value: "asso_subv_trop_percue", label: "Association — subvention trop perçue à reverser", compte: "467100" },
+  { value: "asso_reversement_pj", label: "Association — reversement de produits encaissés pour l'EPLE", compte: "467100" },
+  // ─── Collectivités / organismes publics ───
+  { value: "collectivite_refacturation", label: "Collectivité — refacturation (fluides, MAD, prestations)", compte: "441200" },
+  { value: "organisme_public", label: "Autre organisme public débiteur", compte: "441600" },
+  // ─── Créances douteuses / contentieuses (transfert depuis 411x/412x) ───
+  { value: "creance_douteuse", label: "Créance déjà transférée en 416 (douteuse)", compte: "416800" },
+  { value: "creance_contentieuse", label: "Créance contentieuse (procédure en cours)", compte: "416200" },
+  // ─── Divers ───
+  { value: "autre", label: "Autre créance (à préciser)", compte: "467800" },
 ];
 
 // ═══════════════════════════════════════════════════════════
@@ -300,13 +316,23 @@ export const BASE_REGLEMENTAIRE = {
     blocage_compte: "15 jours ouvrables (SATD sur compte bancaire)",
   },
   comptes_comptables: {
-    "4112": "Familles — créances de demi-pension, internat, voyages",
-    "4118": "Autres créances sur élèves (cautions, etc.)",
-    "4122": "Commensaux — créances de cantine",
-    "4128": "Autres créances sur personnel et tiers",
-    "416": "Créances douteuses ou litigieuses",
-    "421": "Personnel — rémunérations dues",
-    "491": "Dépréciation des comptes de redevables",
+    // Op@le M9-6 — format 6 chiffres
+    "411200": "Familles — créances de demi-pension",
+    "411300": "Familles — créances d'internat",
+    "411500": "Familles — voyages scolaires (participation)",
+    "411800": "Autres créances familles (cautions, manuels, fournitures)",
+    "412200": "Commensaux — repas (personnels, hôtes, associations)",
+    "412800": "Autres tiers redevables (locations, refacturations, MAD, hébergement associations)",
+    "416200": "Créances contentieuses (procédure judiciaire)",
+    "416800": "Créances douteuses (recouvrement compromis)",
+    "425000": "Personnel — avances et acomptes",
+    "429000": "Personnel — déficits et débets, trop-perçus",
+    "441200": "État / collectivité — subventions à recevoir & refacturations",
+    "441600": "Autres organismes publics — créances",
+    "443110": "Bourses nationales — crédits à répartir (trop-perçus)",
+    "467100": "Comptes débiteurs divers — associations (subv. trop perçues, reversements)",
+    "467800": "Autres comptes débiteurs divers",
+    "491000": "Dépréciation des comptes de redevables",
   },
   tiers_possibles: [
     { type: "Employeur public (Rectorat, DDFiP)", detail: "SATD sur traitement. Adresser la SATD à la DDFiP qui verse le traitement du fonctionnaire." },
