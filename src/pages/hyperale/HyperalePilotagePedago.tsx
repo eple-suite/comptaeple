@@ -33,9 +33,19 @@ function statutBadge(s: Projet['statut']) {
 }
 
 export default function HyperalePilotagePedago() {
+  const navigate = useNavigate();
   const totalProjets = PROJETS.reduce((s, p) => s + p.cout, 0);
   const totalEleves = 1284;
   const coutMoyen = Math.round(totalProjets / PROJETS.reduce((s, p) => s + p.eleves, 0));
+
+  const preparerDBM = () => {
+    const sousConso = DISCIPLINES.filter(d => d.pct < 60);
+    const reaffectable = sousConso.reduce((s, d) => s + (d.dotation - d.conso), 0);
+    toast.success('DBM préparée', {
+      description: `${sousConso.length} discipline(s) sous-consommée(s) — ${reaffectable.toLocaleString('fr-FR')} € réaffectables. Ouverture de l'exécution budgétaire…`,
+    });
+    navigate('/execution');
+  };
 
   return (
     <div className="space-y-6">
