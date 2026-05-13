@@ -9,6 +9,10 @@ import {
   FileText, Presentation, Sparkles, Download, Loader2, CheckCircle2,
   BarChart3, MessagesSquare, Brain, Wallet,
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
+import { useHyperaleData } from './useHyperaleData';
+import { useEstablishment } from '@/contexts/EstablishmentContext';
 
 interface Section { id: string; titre: string; description: string; icon: any; defaut: boolean; }
 
@@ -25,6 +29,12 @@ const SECTIONS: Section[] = [
 
 export default function HyperaleRapportsCA() {
   const { toast } = useToast();
+  const exercice = new Date().getFullYear() - 1;
+  const data = useHyperaleData(exercice);
+  const { selectedEstablishment } = useEstablishment();
+  const etabNom = selectedEstablishment?.name || 'EPLE';
+  const uai = selectedEstablishment?.uai || '';
+
   const [selected, setSelected] = useState<Record<string, boolean>>(
     SECTIONS.reduce((acc, s) => ({ ...acc, [s.id]: s.defaut }), {} as Record<string, boolean>)
   );
@@ -34,17 +44,207 @@ export default function HyperaleRapportsCA() {
   const toggle = (id: string) => setSelected(p => ({ ...p, [id]: !p[id] }));
   const count = Object.values(selected).filter(Boolean).length;
 
-  const generate = (kind: 'pdf' | 'pptx') => {
+  const fmtEur = (v: number) =>
+    new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(v || 0);
+
+  const sectionsContenu = (): { id: string; titre: string; lignes: string[][] }[] => {
+    const blocks: { id: string; titre: string; lignes: string[][] }[] = [];
+    if (selected.synth) blocks.push({
+      id: 'synth', titre: 'Synthèse exécutive',
+      lignes: [
+        ['Établissement', `${etabNom} ${uai ? `(${uai})` : ''}`],
+        ['Exercice', String(exercice)],
+        ['FDR', fmtEur(data.fdr)],
+        ['Trésorerie', fmtEur(data.tresorerie)],
+        ['CAF', fmtEur(data.caf)],
+        ['Résultat comptable', fmtEur(data.resultatComptable)],
+      ]
+    });
+    if (selected.fdr) blocks.push({
+      id: 'fdr', titre: 'Fonds de roulement & trésorerie',
+      lignes: [
+        ['FDR', fmtEur(data.fdr)],
+        ['FDR en jours', `${data.fdrJours.toFixed(0)} j`],
+        ['Trésorerie', fmtEur(data.tresorerie)],
+        ['Trésorerie en jours', `${data.tresorerieJours.toFixed(0)} j`],
+        ['DRFN', fmtEur(data.drfn)],
+      ]
+    });
+    if (selected.caf) blocks.push({
+      id: 'caf', titre: 'CAF & équilibre',
+      lignes: [
+        ['CAF', fmtEur(data.caf)],
+        ['Résultat comptable', fmtEur(data.resultatComptable)],
+        ['Réserves', fmtEur(data.reserves)],
+        ['TNR', fmtEur(data.tnr)],
+        ['Taux exécution charges', `${data.tauxExecCharges.toFixed(1)} %`],
+        ['Taux exécution produits', `${data.tauxExecProduits.toFixed(1)} %`],
+      ]
+    });
+    if (selected.hist) blocks.push({
+      id: 'hist', titre: 'Historique pluriannuel',
+      lignes: [
+        ['Exercice', 'FDR', 'CAF', 'Trésorerie', 'Réserves'],
+        ...data.historique.map(h => [String(h.exercice), fmtEur(h.fdr), fmtEur(h.caf), fmtEur(h.tresorerie), fmtEur(h.reserves)]),
+      ]
+    });
+    if (selected.pedago) blocks.push({
+      id: 'pedago', titre: 'Pilotage pédagogique',
+      lignes: [
+        ['Indicateur', 'Statut'],
+        ['Coût moyen par élève', '— à compléter via DBM'],
+        ['Voyages scolaires', 'Voir module Voyages'],
+        ['Projets pédagogiques', 'Voir Exécution budgétaire'],
+      ]
+    });
+    if (selected.bench) blocks.push({
+      id: 'bench', titre: 'Benchmark anonymisé',
+      lignes: [
+        ['Indicateur', 'EPLE', 'Moyenne nationale', 'Moyenne collectivité'],
+        ['FDR (jours)', data.fdrJours.toFixed(0), data.moyenneNationale.fdrJours.toFixed(0), data.moyenneCollectivite.fdrJours.toFixed(0)],
+        ['Trésorerie (jours)', data.tresorerieJours.toFixed(0), data.moyenneNationale.tresorerieJours.toFixed(0), data.moyenneCollectivite.tresorerieJours.toFixed(0)],
+        ['Taux exéc. charges (%)', data.tauxExecCharges.toFixed(1), data.moyenneNationale.tauxExecCharges.toFixed(1), data.moyenneCollectivite.tauxExecCharges.toFixed(1)],
+      ]
+    });
+    if (selected.comm) {
+      const tendance = data.fdrJours > 60 ? 'confortable' : data.fdrJours > 30 ? 'satisfaisante' : 'tendue';
+      blocks.push({
+        id: 'comm', titre: 'Commentaire CA (généré)',
+        lignes: [
+          ['Lecture', `La situation financière de l'EPLE est ${tendance} au ${exercice}.`],
+          ['FDR', `Le fonds de roulement représente ${data.fdrJours.toFixed(0)} jours de fonctionnement (référence M9-6 : 30 j minimum).`],
+          ['Trésorerie', `La trésorerie nette s'élève à ${fmtEur(data.tresorerie)} soit ${data.tresorerieJours.toFixed(0)} jours.`],
+          ['Résultat', `Le résultat de l'exercice est de ${fmtEur(data.resultatComptable)}.`],
+        ]
+      });
+    }
+    if (selected.deci) blocks.push({
+      id: 'deci', titre: 'Décisions à voter',
+      lignes: [
+        ['Acte', 'Objet'],
+        ['DBM', 'Décision budgétaire modificative — ajustements crédits'],
+        ['Tarifs', 'Tarifs hébergement, location, photocopies'],
+        ['Conventions', 'Conventions de location et partenariats'],
+      ]
+    });
+    return blocks;
+  };
+
+  const generatePDF = async () => {
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const pw = doc.internal.pageSize.getWidth();
+    // Cover
+    doc.setFillColor(37, 68, 120);
+    doc.rect(0, 0, pw, 50, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(22); doc.setFont('helvetica', 'bold');
+    doc.text('RAPPORT POUR LE CONSEIL D\'ADMINISTRATION', pw / 2, 22, { align: 'center' });
+    doc.setFontSize(13); doc.setFont('helvetica', 'normal');
+    doc.text(`${etabNom}${uai ? ' — ' + uai : ''}`, pw / 2, 32, { align: 'center' });
+    doc.setFontSize(10);
+    doc.text(`Exercice ${exercice} — Généré par HYPER@LE le ${new Date().toLocaleDateString('fr-FR')}`, pw / 2, 40, { align: 'center' });
+
+    let y = 60;
+    doc.setTextColor(0, 0, 0);
+    sectionsContenu().forEach((s, idx) => {
+      if (y > 170) { doc.addPage(); y = 20; }
+      doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(37, 68, 120);
+      doc.text(`${idx + 1}. ${s.titre}`, 14, y);
+      y += 6;
+      autoTable(doc, {
+        startY: y,
+        body: s.lignes,
+        theme: 'striped',
+        headStyles: { fillColor: [37, 68, 120], textColor: 255 },
+        styles: { fontSize: 9, cellPadding: 2 },
+        margin: { left: 14, right: 14 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 8;
+    });
+
+    const pageCount = doc.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8); doc.setTextColor(120, 120, 120);
+      doc.text(`HYPER@LE — Rapport CA — Page ${i}/${pageCount}`, pw / 2, doc.internal.pageSize.getHeight() - 8, { align: 'center' });
+    }
+    doc.save(`HYPERALE_RapportCA_${uai || 'EPLE'}_${exercice}.pdf`);
+  };
+
+  const generatePPTX = async () => {
+    const PptxGenJS = (await import('pptxgenjs')).default;
+    const pptx = new PptxGenJS();
+    pptx.layout = 'LAYOUT_WIDE';
+    pptx.title = `Rapport CA ${etabNom} ${exercice}`;
+
+    // Cover slide
+    const cover = pptx.addSlide();
+    cover.background = { color: '254478' };
+    cover.addText('Rapport au Conseil d\'Administration', {
+      x: 0.5, y: 1.5, w: 12, h: 1.2, fontSize: 40, bold: true, color: 'FFFFFF', fontFace: 'Calibri', align: 'center'
+    });
+    cover.addText(`${etabNom}${uai ? ' — ' + uai : ''}`, {
+      x: 0.5, y: 3.0, w: 12, h: 0.8, fontSize: 24, color: 'CADCFC', align: 'center'
+    });
+    cover.addText(`Exercice ${exercice}`, {
+      x: 0.5, y: 3.8, w: 12, h: 0.6, fontSize: 18, color: 'CADCFC', align: 'center'
+    });
+    cover.addText('Généré par HYPER@LE — ' + new Date().toLocaleDateString('fr-FR'), {
+      x: 0.5, y: 6.5, w: 12, h: 0.4, fontSize: 11, color: 'CADCFC', align: 'center', italic: true
+    });
+
+    // Section slides
+    sectionsContenu().forEach((s) => {
+      const slide = pptx.addSlide();
+      slide.addText(s.titre, {
+        x: 0.5, y: 0.3, w: 12, h: 0.7, fontSize: 28, bold: true, color: '254478', fontFace: 'Calibri'
+      });
+      slide.addShape('line', { x: 0.5, y: 1.05, w: 12, h: 0, line: { color: '254478', width: 2 } });
+      const rows = s.lignes.map(r => r.map(c => ({ text: c, options: { fontSize: 14 } })));
+      slide.addTable(rows, {
+        x: 0.5, y: 1.3, w: 12, colW: s.lignes[0].length === 2 ? [4, 8] : undefined,
+        border: { type: 'solid', color: 'CCCCCC', pt: 0.5 },
+        fontFace: 'Calibri',
+      });
+      slide.addText(`${etabNom} — Exercice ${exercice}`, {
+        x: 0.5, y: 7.0, w: 12, h: 0.3, fontSize: 9, color: '888888', align: 'right', italic: true
+      });
+    });
+
+    // Closing slide
+    const close = pptx.addSlide();
+    close.background = { color: '254478' };
+    close.addText('Décisions soumises au vote', {
+      x: 0.5, y: 2.5, w: 12, h: 1, fontSize: 36, bold: true, color: 'FFFFFF', align: 'center'
+    });
+    close.addText('Merci de votre attention', {
+      x: 0.5, y: 4.0, w: 12, h: 0.6, fontSize: 20, color: 'CADCFC', align: 'center'
+    });
+
+    await pptx.writeFile({ fileName: `HYPERALE_RapportCA_${uai || 'EPLE'}_${exercice}.pptx` });
+  };
+
+  const generate = async (kind: 'pdf' | 'pptx') => {
     setGenerating(kind);
     setDone(null);
-    setTimeout(() => {
-      setGenerating(null);
+    try {
+      if (kind === 'pdf') await generatePDF();
+      else await generatePPTX();
       setDone(kind);
       toast({
         title: kind === 'pdf' ? 'Rapport PDF généré' : 'Présentation PowerPoint générée',
-        description: `${count} section(s) intégrée(s). Prêt à diffuser au CA.`,
+        description: `${count} section(s) intégrée(s). Téléchargement lancé.`,
       });
-    }, 1500);
+    } catch (e: any) {
+      console.error(e);
+      toast({
+        title: 'Erreur de génération',
+        description: e?.message || 'Une erreur est survenue.',
+        variant: 'destructive',
+      });
+    } finally {
+      setGenerating(null);
+    }
   };
 
   return (
@@ -72,18 +272,21 @@ export default function HyperaleRapportsCA() {
               const Icon = s.icon;
               const checked = selected[s.id];
               return (
-                <button
+                <div
                   key={s.id}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => toggle(s.id)}
-                  className={`text-left flex items-start gap-3 p-3 rounded-xl border-2 transition-all ${checked ? 'border-primary bg-primary/5' : 'border-border/50 bg-card hover:border-primary/40'}`}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(s.id); } }}
+                  className={`cursor-pointer text-left flex items-start gap-3 p-3 rounded-xl border-2 transition-all ${checked ? 'border-primary bg-primary/5' : 'border-border/50 bg-card hover:border-primary/40'}`}
                 >
-                  <Checkbox checked={checked} className="mt-0.5" onCheckedChange={() => toggle(s.id)} />
+                  <Checkbox checked={checked} className="mt-0.5" onCheckedChange={() => toggle(s.id)} onClick={(e) => e.stopPropagation()} />
                   <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${checked ? 'text-primary' : 'text-muted-foreground'}`} />
                   <div className="flex-1">
                     <div className={`text-sm font-semibold ${checked ? 'text-primary' : 'text-foreground'}`}>{s.titre}</div>
                     <div className="text-[11px] text-muted-foreground mt-0.5">{s.description}</div>
                   </div>
-                </button>
+                </div>
               );
             })}
           </div>
@@ -106,7 +309,7 @@ export default function HyperaleRapportsCA() {
             </Button>
             {done === 'pdf' && (
               <div className="flex items-center gap-2 text-xs text-success">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Téléchargement disponible (mode démo)
+                <CheckCircle2 className="h-3.5 w-3.5" /> Fichier téléchargé
               </div>
             )}
           </CardContent>
@@ -126,20 +329,20 @@ export default function HyperaleRapportsCA() {
             </Button>
             {done === 'pptx' && (
               <div className="flex items-center gap-2 text-xs text-success">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Téléchargement disponible (mode démo)
+                <CheckCircle2 className="h-3.5 w-3.5" /> Fichier téléchargé
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      <Card className="border-amber-500/30 bg-amber-50/30 dark:bg-amber-500/5">
+      <Card className="border-primary/20 bg-primary/5">
         <CardContent className="p-4 text-xs text-muted-foreground flex items-start gap-2">
-          <Sparkles className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+          <Sparkles className="h-4 w-4 text-primary shrink-0 mt-0.5" />
           <div>
-            <strong className="text-foreground">Mode démonstration.</strong> Dans cette préversion, la génération
-            est simulée pour la présentation rectorat. Le moteur réel produit les fichiers PDF/PPTX côté
-            edge function avec charte EN, signatures électroniques et horodatage.
+            <strong className="text-foreground">Génération locale.</strong> PDF (jsPDF) et PPTX (pptxgenjs) sont
+            générés directement dans votre navigateur à partir des données de l'établissement actif. Aucune donnée
+            ne quitte le poste. Charte EN, pagination et horodatage automatiques.
           </div>
         </CardContent>
       </Card>
