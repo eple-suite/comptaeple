@@ -31,9 +31,9 @@ export default function HyperaleRapportsCA() {
   const { toast } = useToast();
   const exercice = new Date().getFullYear() - 1;
   const data = useHyperaleData(exercice);
-  const { activeEstablishment } = useEstablishment();
-  const etabNom = activeEstablishment?.nom || 'EPLE';
-  const uai = activeEstablishment?.uai || '';
+  const { selectedEstablishment } = useEstablishment();
+  const etabNom = selectedEstablishment?.name || 'EPLE';
+  const uai = selectedEstablishment?.uai || '';
 
   const [selected, setSelected] = useState<Record<string, boolean>>(
     SECTIONS.reduce((acc, s) => ({ ...acc, [s.id]: s.defaut }), {} as Record<string, boolean>)
