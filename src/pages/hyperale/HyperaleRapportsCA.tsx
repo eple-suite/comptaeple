@@ -532,6 +532,18 @@ export default function HyperaleRapportsCA() {
     setPromptOpen(true);
   };
 
+  // Ouverture sécurisée d'un lien externe depuis l'iframe de prévisualisation.
+  // Utilise window.top pour casser le sandbox et 'noopener,noreferrer' pour
+  // éviter les fuites de contexte (Tabnabbing / Referrer).
+  const openExternal = (url: string) => {
+    try {
+      const w = (window.top || window).open(url, '_blank', 'noopener,noreferrer');
+      if (w) w.opener = null;
+    } catch {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const copyPrompt = async () => {
     try {
       await navigator.clipboard.writeText(promptText);
