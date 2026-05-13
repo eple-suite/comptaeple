@@ -1,4 +1,6 @@
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,9 +33,19 @@ function statutBadge(s: Projet['statut']) {
 }
 
 export default function HyperalePilotagePedago() {
+  const navigate = useNavigate();
   const totalProjets = PROJETS.reduce((s, p) => s + p.cout, 0);
   const totalEleves = 1284;
   const coutMoyen = Math.round(totalProjets / PROJETS.reduce((s, p) => s + p.eleves, 0));
+
+  const preparerDBM = () => {
+    const sousConso = DISCIPLINES.filter(d => d.pct < 60);
+    const reaffectable = sousConso.reduce((s, d) => s + (d.dotation - d.conso), 0);
+    toast.success('DBM préparée', {
+      description: `${sousConso.length} discipline(s) sous-consommée(s) — ${reaffectable.toLocaleString('fr-FR')} € réaffectables. Ouverture de l'exécution budgétaire…`,
+    });
+    navigate('/execution-budgetaire');
+  };
 
   return (
     <div className="space-y-6">
@@ -150,7 +162,7 @@ export default function HyperalePilotagePedago() {
             crédits (&lt; 60 %). Une réaffectation au prochain CA permettrait de financer 2 projets pédagogiques
             supplémentaires (≈ 6 000 €).
           </div>
-          <Button size="sm">Préparer la DBM</Button>
+          <Button size="sm" onClick={preparerDBM}>Préparer la DBM</Button>
         </CardContent>
       </Card>
     </div>
