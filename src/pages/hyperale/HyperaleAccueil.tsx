@@ -103,7 +103,7 @@ export default function HyperaleAccueil() {
   if (points.length === 0) points.push({ severity: 'info', text: 'Aucun point d\'attention particulier. Les indicateurs sont dans les normes.' });
 
   return (
-    <div className="space-y-6 pb-32">
+    <div className="space-y-6 pb-56">
       {/* Premium hero */}
       <HyperaleHero
         etabName={etabName}
