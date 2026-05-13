@@ -59,7 +59,7 @@ const mainItems: NavItem[] = [
 ];
 
 const analysisItems: NavItem[] = [
-  { title: "Balance comptable", url: "/balance", icon: BarChart3 },
+  { title: "Balance & Anomalies M9-6", url: "/balance", icon: BarChart3 },
   { title: "HYPER@LE", url: "/hyperale", icon: Zap, hot: true },
   { title: "Compte financier", url: "/compte-financier", icon: BookOpen },
 ];
