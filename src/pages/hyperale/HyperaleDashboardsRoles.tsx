@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -103,6 +105,14 @@ const DATA: Record<Role, { titre: string; resume: string; tiles: Tile[]; alertes
 export default function HyperaleDashboardsRoles() {
   const [role, setRole] = useState<Role>('ac');
   const data = DATA[role];
+  const navigate = useNavigate();
+
+  const genererPlanAction = () => {
+    toast.success('Plan d\'action préparé', {
+      description: `Profil ${ROLES.find(r => r.id === role)?.label} — ${data.actions.length} actions consolidées. Ouverture du module Rapports CA…`,
+    });
+    navigate('/hyperale/rapports-ca');
+  };
 
   return (
     <div className="space-y-6">
@@ -194,7 +204,9 @@ export default function HyperaleDashboardsRoles() {
                 </li>
               ))}
             </ul>
-            <Button size="sm" className="mt-4 w-full">Générer un plan d'action complet (PDF)</Button>
+            <Button size="sm" className="mt-4 w-full" onClick={genererPlanAction}>
+              Générer un plan d'action complet (PDF)
+            </Button>
           </CardContent>
         </Card>
       </div>
