@@ -47,6 +47,16 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // ─── Authentification : secret partagé OU JWT admin ─────────────
+  // Cette fonction écrit en base via le service role et bypass RLS.
+  // Elle doit donc être protégée contre tout appel non autorisé.
+  const cronSecret = Deno.env.get("CRON_SECRET");
+  const headerSecret = req.headers.get("x-cron-secret");
+  const authorized = !!cronSecret && headerSecret === cronSecret;
+  if (!authorized) {
+    return jsonResponse({ error: "Forbidden" }, 403);
+  }
+
   const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   if (!supabaseUrl || !serviceKey) {
