@@ -8,6 +8,8 @@
  * - Pas d'invention : tout extrait doit être traçable au texte source
  */
 
+import { verifyAuth } from "../_shared/verifyAuth.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -189,6 +191,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  const authError = await verifyAuth(req);
+  if (authError) return authError;
 
   try {
     const body = await req.json().catch(() => ({}));
