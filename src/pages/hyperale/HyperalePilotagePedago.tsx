@@ -44,7 +44,7 @@ export default function HyperalePilotagePedago() {
     toast.success('DBM préparée', {
       description: `${sousConso.length} discipline(s) sous-consommée(s) — ${reaffectable.toLocaleString('fr-FR')} € réaffectables. Ouverture de l'exécution budgétaire…`,
     });
-    navigate('/execution');
+    navigate('/execution-budgetaire');
   };
 
   return (
