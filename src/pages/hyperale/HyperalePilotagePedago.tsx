@@ -162,7 +162,7 @@ export default function HyperalePilotagePedago() {
             crédits (&lt; 60 %). Une réaffectation au prochain CA permettrait de financer 2 projets pédagogiques
             supplémentaires (≈ 6 000 €).
           </div>
-          <Button size="sm">Préparer la DBM</Button>
+          <Button size="sm" onClick={preparerDBM}>Préparer la DBM</Button>
         </CardContent>
       </Card>
     </div>
