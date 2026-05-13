@@ -1,6 +1,7 @@
 // Edge function: Assistant Expert Comptabilité Publique EPLE
 // Streaming via Lovable AI Gateway avec persona expert
 import { withExpertPersona } from "../_shared/expertEPLEPersona.ts";
+import { verifyAuth } from "../_shared/verifyAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -50,6 +51,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
+  const authError = await verifyAuth(req);
+  if (authError) return authError;
 
   try {
     const { messages, contextModule, contextEstablishment } = await req.json();

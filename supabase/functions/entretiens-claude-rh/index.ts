@@ -1,5 +1,6 @@
 // Edge function: Chatbot Claude RH — assistant pédagogique entretiens BIATSS
 import { withExpertPersona } from "../_shared/expertEPLEPersona.ts";
+import { verifyAuth } from "../_shared/verifyAuth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -35,6 +36,8 @@ RÈGLES :
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+  const authError = await verifyAuth(req);
+  if (authError) return authError;
 
   try {
     const { messages, contextScreen, contextEntretien } = await req.json();
