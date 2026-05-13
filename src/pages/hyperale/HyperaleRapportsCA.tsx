@@ -532,6 +532,18 @@ export default function HyperaleRapportsCA() {
     setPromptOpen(true);
   };
 
+  // Ouverture sécurisée d'un lien externe depuis l'iframe de prévisualisation.
+  // Utilise window.top pour casser le sandbox et 'noopener,noreferrer' pour
+  // éviter les fuites de contexte (Tabnabbing / Referrer).
+  const openExternal = (url: string) => {
+    try {
+      const w = (window.top || window).open(url, '_blank', 'noopener,noreferrer');
+      if (w) w.opener = null;
+    } catch {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   const copyPrompt = async () => {
     try {
       await navigator.clipboard.writeText(promptText);
@@ -645,15 +657,13 @@ export default function HyperaleRapportsCA() {
               <Sparkles className="h-4 w-4" /> Préparer le prompt IA
             </Button>
             <div className="flex gap-2 pt-1">
-              <Button asChild variant="outline" size="sm" className="flex-1 gap-1">
-                <a href="https://notebooklm.google.com/" target="_blank" rel="noreferrer">
-                  <ExternalLink className="h-3 w-3" /> NotebookLM
-                </a>
+              <Button variant="outline" size="sm" className="flex-1 gap-1"
+                onClick={() => openExternal('https://notebooklm.google.com/')}>
+                <ExternalLink className="h-3 w-3" /> NotebookLM
               </Button>
-              <Button asChild variant="outline" size="sm" className="flex-1 gap-1">
-                <a href="https://gamma.app/create" target="_blank" rel="noreferrer">
-                  <ExternalLink className="h-3 w-3" /> Gamma.ai
-                </a>
+              <Button variant="outline" size="sm" className="flex-1 gap-1"
+                onClick={() => openExternal('https://gamma.app/create')}>
+                <ExternalLink className="h-3 w-3" /> Gamma.ai
               </Button>
             </div>
           </CardContent>
@@ -693,15 +703,13 @@ export default function HyperaleRapportsCA() {
             <Button onClick={copyPrompt} className="gap-2">
               <Copy className="h-4 w-4" /> Copier le prompt
             </Button>
-            <Button asChild variant="outline" className="gap-2">
-              <a href="https://notebooklm.google.com/" target="_blank" rel="noreferrer">
-                <ExternalLink className="h-4 w-4" /> Ouvrir NotebookLM
-              </a>
+            <Button variant="outline" className="gap-2"
+              onClick={() => openExternal('https://notebooklm.google.com/')}>
+              <ExternalLink className="h-4 w-4" /> Ouvrir NotebookLM
             </Button>
-            <Button asChild variant="outline" className="gap-2">
-              <a href="https://gamma.app/create" target="_blank" rel="noreferrer">
-                <ExternalLink className="h-4 w-4" /> Ouvrir Gamma.ai
-              </a>
+            <Button variant="outline" className="gap-2"
+              onClick={() => openExternal('https://gamma.app/create')}>
+              <ExternalLink className="h-4 w-4" /> Ouvrir Gamma.ai
             </Button>
           </DialogFooter>
         </DialogContent>
