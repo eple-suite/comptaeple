@@ -6655,6 +6655,10 @@ export type Database = {
         Args: { _establishment_id: string; _user_id: string }
         Returns: boolean
       }
+      user_has_groupement_access: {
+        Args: { _groupement_id: string; _user_id: string }
+        Returns: boolean
+      }
       user_is_entretien_party: {
         Args: { _entretien_id: string; _user_id: string }
         Returns: boolean
