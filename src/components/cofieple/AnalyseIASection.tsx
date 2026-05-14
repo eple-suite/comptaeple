@@ -12,7 +12,6 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useCofiepleStore } from '@/store/useCofiepleStore';
 import { formatEur } from '@/lib/cofieple_calculations';
-import { getSystemPromptForBudgetType } from '@/lib/cofieple_budgetPrompts';
 import { EmptyState } from './SharedComponents';
 import { supabase } from '@/integrations/supabase/client';
 import { Bot, Loader2, Copy, RotateCcw } from 'lucide-react';
