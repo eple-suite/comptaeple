@@ -40,8 +40,7 @@ function SectionNarration({ skey }: { skey: OrdoSectionKey }) {
         body: {
           type: 'narration_section',
           sectionId: `cofiordo_narration_${skey}_${etab.uai}_${etab.exercice}`,
-          systemPrompt: `Tu es un expert-comptable EPLE et un rédacteur institutionnel chevronné. Tu rédiges des rapports de compte financier conformes M9-6.`,
-          prompt: SECTION_PROMPTS[skey],
+          sectionKey: skey,
           context: {
             section: meta.label,
             etablissement: { nom: etab.nom, uai: etab.uai, exercice: etab.exercice, type: etab.type, commune: etab.commune },
