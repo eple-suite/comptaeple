@@ -35,7 +35,21 @@ serve(async (req) => {
   if (authError) return authError;
   try {
     const body = await req.json();
-    const { type, etablissement, resultats, anomalies, bloquants, indicateurs, historique, scopeDescription, detailLevel, systemPrompt: incomingSystemPrompt, prompt: incomingPrompt, sectionId, context } = body;
+    const {
+      type,
+      etablissement,
+      resultats,
+      anomalies,
+      bloquants,
+      indicateurs,
+      historique,
+      scopeDescription,
+      detailLevel,
+      sectionId,
+      sectionKey,
+      budgetType,
+      context,
+    } = body;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
@@ -180,9 +194,15 @@ INDICATEURS FINANCIERS :
 - Réserves (c/1068) : ${fmtEur(R.reserves || 0)}
 - Jours autonomie : ${Math.round(toNum(R.joursAutonomie))}${prelevBlock}${indBlock}${histBlock}`;
     } else if (type === 'analyse_ia_globale') {
-      resolvedSystemPrompt = typeof incomingSystemPrompt === 'string' && incomingSystemPrompt.trim().length > 0
-        ? incomingSystemPrompt
-        : `Tu es expert en comptabilité publique française EPLE, M9-6 2026 et Décret 2012-1246. Tu produis une analyse structurée, pédagogique et exploitable en réunion.`;
+      const baseExpert = `Tu es expert en comptabilité publique française EPLE, M9-6 2026 et Décret 2012-1246. Tu produis une analyse structurée, pédagogique et exploitable en réunion.`;
+      const budgetAddenda: Record<string, string> = {
+        annexe_greta: `Contexte : budget annexe GRETA (M9-6 §2.1.2.3.1). Trésorerie portée par C/185000 (§5.3.2). Domaine D3. Insiste sur la viabilité économique, le CA de formation, et la situation du C/185.`,
+        annexe_cfa: `Contexte : budget annexe CFA (M9-6 §2.1.2.3.1). Financement principal France Compétences. Trésorerie C/185000. Domaine D4. Commente coût/apprenti et dépendance France Compétences.`,
+        annexe_autre: `Contexte : budget annexe SRH (M9-6 §2.1.2.3.1). Trésorerie C/185000. Analyse coût du repas, taux d'occupation hébergement, équilibre exigé.`,
+        principal: `Contexte : budget principal EPLE. Référence M9-6 2026 §4.5.3 (FDR/BFR/TN), §4.5.4 (CAF), §4.5.5 (ratios), §4.5.6 (délais).`,
+      };
+      const addenda = budgetAddenda[String(budgetType ?? 'principal')] ?? budgetAddenda.principal;
+      resolvedSystemPrompt = `${baseExpert}\n\n${addenda}`;
 
       userPrompt = `Rédige une analyse financière globale en français, structurée en sections avec titres courts, sans inventer de données.
 
@@ -210,19 +230,23 @@ Indicateurs clés :
 
 Contrainte : termine avec un bloc "Actions prioritaires" en 5 points maximum.`;
     } else if (type === 'narration_section') {
-      // Narration éditoriale d'une section précise du Rapport Ordonnateur (S1..S13)
-      resolvedSystemPrompt = (typeof incomingSystemPrompt === 'string' && incomingSystemPrompt.trim().length > 0)
-        ? incomingSystemPrompt
-        : `Tu es un expert-comptable EPLE (M9-6 / GBCP). Rédige une analyse éditoriale concise (200-300 mots), structurée en 2-3 paragraphes, ton institutionnel mais accessible. Mets en évidence les chiffres clés en **gras** et termine par une recommandation actionnable.`;
+      // Narration éditoriale d'une section précise — prompts strictement server-side
+      resolvedSystemPrompt = `Tu es un expert-comptable EPLE et un rédacteur institutionnel chevronné (M9-6 / GBCP / décret 2012-1246). Rédige une analyse éditoriale, structurée en paragraphes, ton institutionnel mais accessible. Mets en évidence les chiffres clés en **gras** et termine par une recommandation actionnable.`;
+
+      const ordoSectionPrompts: Record<string, string> = {
+        A: "Rédige une analyse éditoriale (350-500 mots, 3-4 paragraphes) de la SECTION A — INDICATEURS STRUCTURELS du rapport ordonnateur. Présente la structure, l'organisation des services, la population scolaire et les dotations reçues.",
+        B: "Rédige une analyse éditoriale (350-500 mots, 3-4 paragraphes) de la SECTION B — BILAN BUDGÉTAIRE du rapport ordonnateur. Commente le pilotage du budget (DBM), les masses budgétaires, les taux de réalisation et l'emploi des codes d'activité. Termine par une recommandation actionnable.",
+        C: "Rédige une analyse éditoriale (350-500 mots, 3-4 paragraphes) de la SECTION C — EXÉCUTION BUDGÉTAIRE du rapport ordonnateur. Analyse l'exécution charges et produits par service général (AP, VE, ALO, SRH, OPC). Identifie les services en dépassement ou sous-exécution.",
+        D: "Rédige une analyse éditoriale (350-500 mots, 3-4 paragraphes) de la SECTION D — ANALYSE DE GESTION du rapport ordonnateur. Mets en perspective les financements, dépenses pédagogiques, fonds sociaux, viabilisation et restauration. Propose 2-3 axes d'amélioration concrets.",
+      };
+      const userQuestion = (typeof sectionKey === 'string' && ordoSectionPrompts[sectionKey])
+        ? ordoSectionPrompts[sectionKey]
+        : `Analyse cette section et fournis une lecture experte concise (200-300 mots, 2-3 paragraphes).`;
 
       const ctx = context || {};
       const ctxEtab = ctx.etablissement || {};
       const ctxR = ctx.resultats || {};
       const ctxInd = ctx.indicateurs || {};
-      const userQuestion = (typeof incomingPrompt === 'string' && incomingPrompt.trim().length > 0)
-        ? incomingPrompt
-        : `Analyse cette section et fournis une lecture experte.`;
-
       userPrompt = `Section : ${ctx.section || sectionId || 'N/A'}
 Établissement : ${ctxEtab.nom || 'N/A'} (${ctxEtab.uai || 'N/A'}) — Type ${ctxEtab.type || 'N/A'} — Exercice ${ctxEtab.exercice || 'N/A'}
 
