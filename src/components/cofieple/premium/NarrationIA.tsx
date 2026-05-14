@@ -34,8 +34,6 @@ export function NarrationIA({
         body: {
           type: 'narration_section',
           sectionId,
-          systemPrompt: systemPrompt || `Tu es un expert-comptable EPLE. Rédige une analyse éditoriale concise (200-300 mots), structurée en 2-3 paragraphes, avec un ton institutionnel mais accessible. Mets en évidence les chiffres clés en gras, et termine par une recommandation actionnable.`,
-          prompt: initialPrompt || `Analyse cette section et fournis une lecture experte.`,
           context,
         },
       });
