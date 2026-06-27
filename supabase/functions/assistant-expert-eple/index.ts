@@ -2,12 +2,7 @@
 // Streaming via Lovable AI Gateway avec persona expert
 import { withExpertPersona } from "../_shared/expertEPLEPersona.ts";
 import { verifyAuth } from "../_shared/verifyAuth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "../_shared/cors.ts";
 
 const MODULE_PROMPT = `Tu es l'ASSISTANT EXPERT COMPTABILITÉ PUBLIQUE EPLE de la plateforme académique de pilotage.
 

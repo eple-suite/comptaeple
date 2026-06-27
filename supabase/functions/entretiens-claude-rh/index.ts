@@ -1,12 +1,7 @@
 // Edge function: Chatbot Claude RH — assistant pédagogique entretiens BIATSS
 import { withExpertPersona } from "../_shared/expertEPLEPersona.ts";
 import { verifyAuth } from "../_shared/verifyAuth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "../_shared/cors.ts";
 
 const RH_PROMPT = `Tu es Claude, assistant pédagogique spécialisé dans les entretiens professionnels BIATSS dans la fonction publique d'État (Éducation nationale).
 

@@ -1,73 +1,153 @@
-# Welcome to your Lovable project
+# EPLE Suite
 
-## Project info
+Plateforme de gestion comptable et financière des EPLE, GRETA et CFA, développée par l'agence comptable du groupement Coeffin (Guadeloupe).
+Conforme à l'instruction budgétaire et comptable **M9-6**, au **GBCP** (décret 2012-1246) et au **règlement général sur la comptabilité publique (RGP, décret 2022-408)**.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+---
 
-## How can I edit this code?
+## Stack technique
 
-There are several ways of editing your application.
+| Couche | Technologies |
+| --- | --- |
+| Build / langage | Vite 5 + React 18 + TypeScript 5 |
+| UI | Tailwind CSS 3 + shadcn/ui (Radix UI), Lucide, Recharts, Framer Motion |
+| État / données | TanStack Query, Zustand, React Hook Form + Zod |
+| Backend | Supabase (PostgreSQL + Edge Functions Deno) |
+| Hébergement | Vercel |
 
-**Use Lovable**
+Volumétrie du dépôt : **158 pages** (`src/pages/`, 85 routes déclarées dans `App.tsx`), **175 composants**, **11 Edge Functions** Supabase et **63 migrations** SQL.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+---
 
-Changes made via Lovable will be committed automatically to this repo.
+## Prérequis
 
-**Use your preferred IDE**
+- **Node.js ≥ 18** (ou **Bun**) et npm.
+- Accès au projet **Supabase** (URL + clé publique).
+- Un compte **Vercel** pour le déploiement.
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+---
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Installation & lancement local
 
-Follow these steps:
+Le projet utilise **npm** (présence d'un `package-lock.json` ; pas de `bun.lockb`).
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Le serveur de développement démarre sur **http://localhost:8080** (port défini dans `vite.config.ts`).
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## Variables d'environnement
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Les variables sont préfixées `VITE_` (exposées au client par Vite). Renseignez-les dans un fichier `.env` à la racine — **ne jamais committer ce fichier**.
 
-## What technologies are used for this project?
+| Variable | Description |
+| --- | --- |
+| `VITE_SUPABASE_URL` | URL du projet Supabase |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | Clé publique (publishable / anon) Supabase |
+| `VITE_SUPABASE_PROJECT_ID` | Référence du projet Supabase |
 
-This project is built with:
+> Les variables `VITE_*` sont **publiques par nature** : n'y placez jamais de clé de service ou de secret.
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+**CORS des Edge Functions** — l'origine autorisée est pilotée par le secret Supabase `ALLOWED_ORIGIN` (voir `supabase/functions/_shared/cors.ts`). En production, définir `ALLOWED_ORIGIN = https://<domaine-prod>` ; la valeur par défaut `*` ne doit pas être conservée en production.
 
-## How can I deploy this project?
+---
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+## Structure du projet
 
-## Can I connect a custom domain to my Lovable project?
+```
+src/
+├── pages/          # 158 pages (routes applicatives)
+├── components/     # 175 composants
+│   ├── ui/         #   primitives shadcn/ui
+│   ├── auth/       #   authentification
+│   ├── balance/    #   balance comptable
+│   ├── cockpit/    #   cockpit décisionnel
+│   ├── cofieple/   #   compte financier EPLE
+│   ├── opale/      #   imports/exports Op@le
+│   ├── hyperale/   #   analyse Op@le
+│   ├── entretiens/ #   entretiens RH
+│   ├── import/     #   imports de données
+│   ├── rapport/    #   rapports
+│   ├── dashboard/  #   tableaux de bord
+│   ├── parametres/, settings/, demo/
+├── contexts/       # AuthContext, EstablishmentContext, DemoModeContext
+├── lib/            # moteurs métier M9-6, parsers Op@le, bases de connaissances (GBCP, code éducation…)
+├── hooks/          # hooks React réutilisables
+├── integrations/
+│   └── supabase/   #   client.ts (créé via VITE_SUPABASE_*), types.ts générés
+├── store/          # stores Zustand
+├── data/, utils/, styles/, test/
 
-Yes, you can!
+supabase/
+├── config.toml     # project_id
+├── functions/      # 11 Edge Functions Deno (+ _shared)
+└── migrations/     # 63 migrations SQL
+```
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+---
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Supabase
+
+- **Référence du projet** : `qbhxjazikziooyqwxcip`
+- **Sécurité** : Row Level Security (RLS) active, modèle RBAC avec séparation stricte des sphères ordonnateur / agent comptable, conformément à la M9-6.
+
+**Edge Functions** (`supabase/functions/`) :
+
+| Fonction | Rôle |
+| --- | --- |
+| `analyze-balance` | Analyse de la balance comptable |
+| `assistant-expert-eple` | Assistant expert (RAG ancré documentaire) |
+| `chat-eple` | Assistant conversationnel EPLE |
+| `entretiens-claude-rh` | Aide aux entretiens RH |
+| `entretiens-repartir-texte` | Répartition de texte d'entretien |
+| `fs-import-mapping` | Mapping d'import du compte financier |
+| `generate-annexe` | Génération d'annexes |
+| `generate-report` | Génération de rapports |
+| `satd-assistant` | Assistant SATD |
+| `validate-accounts` | Validation des comptes |
+| `voyages-don-tacite-job` | Traitement des dons tacites (voyages) |
+
+Le code CORS partagé se trouve dans `supabase/functions/_shared/cors.ts`.
+
+---
+
+## Scripts disponibles
+
+| Commande | Description |
+| --- | --- |
+| `npm run dev` | Serveur de développement (port 8080) |
+| `npm run build` | Build de production (`vite build`, sortie `dist/`) |
+| `npm run build:dev` | Build en mode développement |
+| `npm run preview` | Prévisualisation du build |
+| `npm run lint` | Analyse ESLint |
+| `npm test` | Tests (Vitest, run unique) |
+| `npm run test:watch` | Tests en mode watch |
+| `npm run recette:diagnostic` | Diagnostic financier de recette |
+| `npm run verify:bilan` / `verify:commentaires` / `verify:sde-sdr` / `verify:balance` | Vérifications métier ciblées |
+| `npm run ci:diagnostic` | Chaîne CI (diagnostic + vérifications bilan/commentaires) |
+| `npm run report:ci` | Génération du rapport CI |
+
+---
+
+## Déploiement
+
+Déploiement sur **Vercel** :
+
+- Commande de build : `vite build` (`npm run build`)
+- Répertoire de sortie : `dist/`
+- En-têtes de sécurité définis dans **`vercel.json`** : Content-Security-Policy, HSTS, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, `X-Frame-Options: DENY`.
+
+Penser à configurer les variables d'environnement `VITE_*` côté Vercel et le secret `ALLOWED_ORIGIN` côté Supabase.
+
+---
+
+## Conformité & données sensibles
+
+- Traitement de données soumises au **RGPD** (données comptables, personnels, établissements).
+- **Ne jamais committer** le fichier `.env`, de clé de service Supabase, ni de **données comptables réelles** (balances, exports Op@le, fichiers de paie, données nominatives).
+- Les imports de données sensibles (paie, exports financiers) sont traités **côté client** lorsque la confidentialité l'exige.
+- Respect des conventions de la chaîne financière et de la séparation ordonnateur / comptable.

@@ -9,12 +9,7 @@
  */
 
 import { verifyAuth } from "../_shared/verifyAuth.ts";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+import { corsHeaders } from "../_shared/cors.ts";
 
 const SYSTEM_PROMPT = `Tu es un secrétaire général d'EPLE expérimenté chargé de formaliser le CREP (Compte Rendu d'Entretien Professionnel) d'un agent BIATSS. Tu reçois en entrée un texte libre rédigé en vrac par le supérieur hiérarchique direct. Tu dois répartir le contenu dans la structure officielle du CREP (annexe C9 du décret 2010-888) sans inventer aucun élément qui ne figure pas dans le texte source.
 

@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,111 +8,112 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { EstablishmentProvider } from "@/contexts/EstablishmentContext";
 import { DemoModeProvider } from "@/contexts/DemoModeContext";
 import { AppLayout } from "@/components/AppLayout";
-import Dashboard from "./pages/Dashboard";
-import DataImport from "./pages/DataImport";
-import Establishments from "./pages/Establishments";
-import BalanceAnalysis from "./pages/BalanceAnalysis";
-// WorkingCapital & Indicators merged into HYPER@LE
-import CompteFinancier from "./pages/CompteFinancier";
-import Voyages from "./pages/Voyages";
-import VoyagesV2Page from "./pages/voyages-v2/VoyagesV2Page";
-import EnquetesRectoratPage from "./pages/voyages-v2/EnquetesRectoratPage";
-import BilanFinancierPageV2 from "./pages/voyages-v2/BilanFinancierPageV2";
-import FondsSociauxV2Home from "./pages/fonds-sociaux-v2/FondsSociauxV2Home";
-import ElevesPage from "./pages/fonds-sociaux-v2/ElevesPage";
-import DecisionsPage from "./pages/fonds-sociaux-v2/DecisionsPage";
-import CommissionsPage from "./pages/fonds-sociaux-v2/CommissionsPage";
-import EnquetePage from "./pages/fonds-sociaux-v2/EnquetePage";
-import TableauBordPage from "./pages/fonds-sociaux-v2/TableauBordPage";
-import GroupementConsolidePage from "./pages/fonds-sociaux-v2/GroupementConsolidePage";
-import RgpdJournalPage from "./pages/fonds-sociaux-v2/RgpdJournalPage";
-import DeliberationsCAPage from "./pages/fonds-sociaux-v2/DeliberationsCAPage";
-import EleveImportPage from "./pages/fonds-sociaux-v2/EleveImportPage";
-import SATD from "./pages/SATD";
-import PassationSgeplePage from "./pages/rentree/PassationSgeplePage";
-import AccreditationOrdoPage from "./pages/rentree/AccreditationOrdoPage";
-import HabilitationsOpalePage from "./pages/rentree/HabilitationsOpalePage";
-import HabilitationsRecapPage from "./pages/rentree/HabilitationsRecapPage";
-import VueRectoratPage from "./pages/rentree/VueRectoratPage";
-import LiensUtilesPage from "./pages/rentree/LiensUtilesPage";
-import EnquetesHubPage from "./pages/enquetes-rectorat/EnquetesHubPage";
-import NomenclaturePage from "./pages/enquetes-rectorat/NomenclaturePage";
-import CalendrierCampagnesPage from "./pages/enquetes-rectorat/CalendrierCampagnesPage";
-import VueRectoratEnquetesPage from "./pages/enquetes-rectorat/VueRectoratEnquetesPage";
-import BibliothequePage from "./pages/enquetes-rectorat/BibliothequePage";
-import WizardReliquatsBopPage from "./pages/enquetes-rectorat/WizardReliquatsBopPage";
-import WizardBoursesSieclePage from "./pages/enquetes-rectorat/WizardBoursesSieclePage";
-import RelancesPage from "./pages/enquetes-rectorat/RelancesPage";
-import HistoriquePluriannuelPage from "./pages/enquetes-rectorat/HistoriquePluriannuelPage";
-import CreditNourriture from "./pages/CreditNourriture";
-import VeilleJuridique from "./pages/VeilleJuridique";
-import Demo from "./pages/Demo";
-import ControleInterne from "./pages/ControleInterne";
-import SettingsPage from "./pages/SettingsPage";
-import RegiesCaisse from "./pages/RegiesCaisse";
-import ExecutionBudgetaire from "./pages/ExecutionBudgetaire";
-import HyperalePage from "./pages/hyperale/HyperalePage";
-import AgencePage from "./pages/agence/AgencePage";
-import MarchesPage from "./pages/marches/MarchesPage";
-import Regle8LogsAdmin from "./pages/admin/Regle8LogsAdmin";
-import EntretiensHome from "./pages/entretiens/EntretiensHome";
-import NouvelEntretienWizard from "./pages/entretiens/NouvelEntretienWizard";
-import CampagneDashboard from "./pages/entretiens/CampagneDashboard";
-import RecoursPage from "./pages/entretiens/RecoursPage";
-import FichesPostePage from "./pages/entretiens/FichesPostePage";
-import ExportEstevePage from "./pages/entretiens/ExportEstevePage";
-import VueRectoratEntretiensPage from "./pages/entretiens/VueRectoratEntretiensPage";
-import AideAccueil from "./pages/aide/AideAccueil";
-import AideArticle from "./pages/aide/AideArticle";
-import AideModule from "./pages/aide/AideModule";
-import AideGlossaire from "./pages/aide/AideGlossaire";
-import AideFAQ from "./pages/aide/AideFAQ";
-import AideModeles from "./pages/aide/AideModeles";
-import AideOnboarding from "./pages/aide/AideOnboarding";
-import AideReglementation from "./pages/aide/AideReglementation";
-import AssistantExpertPage from "./pages/aide/AssistantExpertPage";
-import OpaleAccueil from "./pages/opale/OpaleAccueil";
-import OpaleBibliotheque from "./pages/opale/OpaleBibliotheque";
-import OpaleWizardFiche from "./pages/opale/OpaleWizardFiche";
-import OpaleFicheDetail from "./pages/opale/OpaleFicheDetail";
-import OpaleMesFichesPage from "./pages/opale/OpaleMesFichesPage";
-import OpaleRecherchePage from "./pages/opale/OpaleRecherchePage";
-import OpaleForumPage from "./pages/opale/OpaleForumPage";
-import OpaleTendancesPage from "./pages/opale/OpaleTendancesPage";
-import OpaleDashboardPage from "./pages/opale/OpaleDashboardPage";
-import OpaleModerationPage from "./pages/opale/OpaleModerationPage";
-import OpaleCguPage from "./pages/opale/OpaleCguPage";
-import Auth from "./pages/Auth";
-import ResetPassword from "./pages/ResetPassword";
-import NotFound from "./pages/NotFound";
 import { ChatEple } from "@/components/ChatEple";
+
+// ── Pages chargées paresseusement (code splitting par route) ──
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const DataImport = lazy(() => import("./pages/DataImport"));
+const Establishments = lazy(() => import("./pages/Establishments"));
+const BalanceAnalysis = lazy(() => import("./pages/BalanceAnalysis"));
+const CompteFinancier = lazy(() => import("./pages/CompteFinancier"));
+const Voyages = lazy(() => import("./pages/Voyages"));
+const VoyagesV2Page = lazy(() => import("./pages/voyages-v2/VoyagesV2Page"));
+const EnquetesRectoratPage = lazy(() => import("./pages/voyages-v2/EnquetesRectoratPage"));
+const BilanFinancierPageV2 = lazy(() => import("./pages/voyages-v2/BilanFinancierPageV2"));
+const FondsSociauxV2Home = lazy(() => import("./pages/fonds-sociaux-v2/FondsSociauxV2Home"));
+const ElevesPage = lazy(() => import("./pages/fonds-sociaux-v2/ElevesPage"));
+const DecisionsPage = lazy(() => import("./pages/fonds-sociaux-v2/DecisionsPage"));
+const CommissionsPage = lazy(() => import("./pages/fonds-sociaux-v2/CommissionsPage"));
+const EnquetePage = lazy(() => import("./pages/fonds-sociaux-v2/EnquetePage"));
+const TableauBordPage = lazy(() => import("./pages/fonds-sociaux-v2/TableauBordPage"));
+const GroupementConsolidePage = lazy(() => import("./pages/fonds-sociaux-v2/GroupementConsolidePage"));
+const RgpdJournalPage = lazy(() => import("./pages/fonds-sociaux-v2/RgpdJournalPage"));
+const DeliberationsCAPage = lazy(() => import("./pages/fonds-sociaux-v2/DeliberationsCAPage"));
+const EleveImportPage = lazy(() => import("./pages/fonds-sociaux-v2/EleveImportPage"));
+const SATD = lazy(() => import("./pages/SATD"));
+const PassationSgeplePage = lazy(() => import("./pages/rentree/PassationSgeplePage"));
+const AccreditationOrdoPage = lazy(() => import("./pages/rentree/AccreditationOrdoPage"));
+const HabilitationsOpalePage = lazy(() => import("./pages/rentree/HabilitationsOpalePage"));
+const HabilitationsRecapPage = lazy(() => import("./pages/rentree/HabilitationsRecapPage"));
+const VueRectoratPage = lazy(() => import("./pages/rentree/VueRectoratPage"));
+const LiensUtilesPage = lazy(() => import("./pages/rentree/LiensUtilesPage"));
+const EnquetesHubPage = lazy(() => import("./pages/enquetes-rectorat/EnquetesHubPage"));
+const NomenclaturePage = lazy(() => import("./pages/enquetes-rectorat/NomenclaturePage"));
+const CalendrierCampagnesPage = lazy(() => import("./pages/enquetes-rectorat/CalendrierCampagnesPage"));
+const VueRectoratEnquetesPage = lazy(() => import("./pages/enquetes-rectorat/VueRectoratEnquetesPage"));
+const BibliothequePage = lazy(() => import("./pages/enquetes-rectorat/BibliothequePage"));
+const WizardReliquatsBopPage = lazy(() => import("./pages/enquetes-rectorat/WizardReliquatsBopPage"));
+const WizardBoursesSieclePage = lazy(() => import("./pages/enquetes-rectorat/WizardBoursesSieclePage"));
+const RelancesPage = lazy(() => import("./pages/enquetes-rectorat/RelancesPage"));
+const HistoriquePluriannuelPage = lazy(() => import("./pages/enquetes-rectorat/HistoriquePluriannuelPage"));
+const CreditNourriture = lazy(() => import("./pages/CreditNourriture"));
+const VeilleJuridique = lazy(() => import("./pages/VeilleJuridique"));
+const Demo = lazy(() => import("./pages/Demo"));
+const ControleInterne = lazy(() => import("./pages/ControleInterne"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const RegiesCaisse = lazy(() => import("./pages/RegiesCaisse"));
+const ExecutionBudgetaire = lazy(() => import("./pages/ExecutionBudgetaire"));
+const HyperalePage = lazy(() => import("./pages/hyperale/HyperalePage"));
+const AgencePage = lazy(() => import("./pages/agence/AgencePage"));
+const MarchesPage = lazy(() => import("./pages/marches/MarchesPage"));
+const Regle8LogsAdmin = lazy(() => import("./pages/admin/Regle8LogsAdmin"));
+const EntretiensHome = lazy(() => import("./pages/entretiens/EntretiensHome"));
+const NouvelEntretienWizard = lazy(() => import("./pages/entretiens/NouvelEntretienWizard"));
+const CampagneDashboard = lazy(() => import("./pages/entretiens/CampagneDashboard"));
+const RecoursPage = lazy(() => import("./pages/entretiens/RecoursPage"));
+const FichesPostePage = lazy(() => import("./pages/entretiens/FichesPostePage"));
+const ExportEstevePage = lazy(() => import("./pages/entretiens/ExportEstevePage"));
+const VueRectoratEntretiensPage = lazy(() => import("./pages/entretiens/VueRectoratEntretiensPage"));
+const AideAccueil = lazy(() => import("./pages/aide/AideAccueil"));
+const AideArticle = lazy(() => import("./pages/aide/AideArticle"));
+const AideModule = lazy(() => import("./pages/aide/AideModule"));
+const AideGlossaire = lazy(() => import("./pages/aide/AideGlossaire"));
+const AideFAQ = lazy(() => import("./pages/aide/AideFAQ"));
+const AideModeles = lazy(() => import("./pages/aide/AideModeles"));
+const AideOnboarding = lazy(() => import("./pages/aide/AideOnboarding"));
+const AideReglementation = lazy(() => import("./pages/aide/AideReglementation"));
+const AssistantExpertPage = lazy(() => import("./pages/aide/AssistantExpertPage"));
+const OpaleAccueil = lazy(() => import("./pages/opale/OpaleAccueil"));
+const OpaleBibliotheque = lazy(() => import("./pages/opale/OpaleBibliotheque"));
+const OpaleWizardFiche = lazy(() => import("./pages/opale/OpaleWizardFiche"));
+const OpaleFicheDetail = lazy(() => import("./pages/opale/OpaleFicheDetail"));
+const OpaleMesFichesPage = lazy(() => import("./pages/opale/OpaleMesFichesPage"));
+const OpaleRecherchePage = lazy(() => import("./pages/opale/OpaleRecherchePage"));
+const OpaleForumPage = lazy(() => import("./pages/opale/OpaleForumPage"));
+const OpaleTendancesPage = lazy(() => import("./pages/opale/OpaleTendancesPage"));
+const OpaleDashboardPage = lazy(() => import("./pages/opale/OpaleDashboardPage"));
+const OpaleModerationPage = lazy(() => import("./pages/opale/OpaleModerationPage"));
+const OpaleCguPage = lazy(() => import("./pages/opale/OpaleCguPage"));
+const Auth = lazy(() => import("./pages/Auth"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
+const PageLoader = () => (
+  <div className="min-h-screen flex items-center justify-center bg-background">
+    <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
+  </div>
+);
+
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
   if (!session) return <Navigate to="/auth" replace />;
   return <>{children}</>;
 }
 
 function PublicRoute({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full" />
-      </div>
-    );
-  }
+  if (loading) return <PageLoader />;
   if (session) return <Navigate to="/" replace />;
   return <>{children}</>;
+}
+
+/** L'assistant n'est rendu que pour un utilisateur authentifié. */
+function AuthedChat() {
+  const { session } = useAuth();
+  return session ? <ChatEple /> : null;
 }
 
 const App = () => (
@@ -122,6 +124,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <DemoModeProvider>
+          <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -210,7 +213,8 @@ const App = () => (
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
-          <ChatEple />
+          </Suspense>
+          <AuthedChat />
           </DemoModeProvider>
         </AuthProvider>
       </BrowserRouter>

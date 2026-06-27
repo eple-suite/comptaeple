@@ -1,14 +1,4 @@
-User-agent: Googlebot
-Allow: /
-
-User-agent: Bingbot
-Allow: /
-
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
+# EPLE Suite — application interne d'agent comptable (données comptables sensibles).
+# Aucune indexation publique.
 User-agent: *
-Allow: /
+Disallow: /
