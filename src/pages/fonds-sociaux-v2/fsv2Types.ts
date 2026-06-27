@@ -28,7 +28,9 @@ export type StatutDecision =
   | "annule"
   | "mandate"; // legacy
 export type ModaliteAttribution = "commission" | "urgence";
-export type ModaliteVersement = "aide_directe" | "organisme_tiers";
+// "extinction_creance" : aide restauration/FSC qui éteint la créance demi-pension
+// de la famille (jamais de versement en espèces à la famille — M9-6).
+export type ModaliteVersement = "aide_directe" | "organisme_tiers" | "extinction_creance";
 
 export type NatureAide =
   | "restauration"

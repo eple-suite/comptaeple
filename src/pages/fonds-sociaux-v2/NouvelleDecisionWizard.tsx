@@ -3,7 +3,7 @@
 // 1) Élève  2) Type/Nature  3) Modalités  4) Imputation  5) Récap
 // ═══════════════════════════════════════════════════════════════
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +69,20 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
   const cumulCourant = eleveSelectionne ? cumulAnnuelEleve(eleveSelectionne.id, annee, decisionsExist) : null;
   const premiere = eleveSelectionne ? premiereAideAnnee(eleveSelectionne.id, annee, decisionsExist) : false;
 
+  // ── Règle de régularité M9-6 (2.1) : une aide restauration / FSC éteint la
+  // créance demi-pension de la famille ; jamais de versement en espèces. ──
+  const restoFsc = natureAide === "restauration" || typeFonds === "FSC";
+  useEffect(() => {
+    if (restoFsc) {
+      setExtinctionCreanceDp(true);
+      setModaliteVersement("extinction_creance");
+    } else {
+      setModaliteVersement((m) => (m === "extinction_creance" ? "aide_directe" : m));
+      setExtinctionCreanceDp(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [restoFsc]);
+
   function handleNatureChange(n: NatureAide) {
     setNatureAide(n);
     const tf = defaultTypeFondsForNature(n);
@@ -95,6 +109,10 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
       return toast.error("Le motif est obligatoire pour une aide d'urgence");
     if (modaliteVersement === "organisme_tiers" && (!organismeNom || !organismeSiret))
       return toast.error("Nom et SIRET de l'organisme tiers requis");
+    if (restoFsc && modaliteVersement === "aide_directe")
+      return toast.error("M9-6 : une aide de restauration / cantine ne peut être versée en espèces à la famille — elle doit éteindre la créance demi-pension (C/411xx).");
+    if (restoFsc && !extinctionCreanceDp)
+      return toast.error("Aide restauration / FSC : l'extinction de la créance demi-pension est obligatoire.");
 
     const numero = buildNumeroDecision(typeFonds, annee, nextSeqForType());
     const payload: Partial<FsDecision> = {
@@ -147,6 +165,7 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
     if (step === 1) return montant > 0;
     if (step === 2) {
       if (modaliteAttribution === "commission" && !commissionId) return false;
+      if (restoFsc && modaliteVersement === "aide_directe") return false;
       if (modaliteVersement === "organisme_tiers" && (!organismeNom || !organismeSiret)) return false;
       return true;
     }
@@ -345,44 +364,60 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                 <p className="text-[11px] text-muted-foreground mt-1">Alimente Q15a — fréquence des commissions.</p>
               </div>
             )}
-            <div>
-              <Label>Modalité de versement</Label>
-              <Select value={modaliteVersement} onValueChange={(v) => setModaliteVersement(v as ModaliteVersement)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="aide_directe">Aide directe à la famille</SelectItem>
-                  <SelectItem value="organisme_tiers">Versement à un organisme tiers</SelectItem>
-                </SelectContent>
-              </Select>
-              <p className="text-[11px] text-muted-foreground mt-1">
-                {modaliteVersement === "aide_directe"
-                  ? "Q10 — colonne « aide directe »"
-                  : "Q10 — colonne « via un versement à un organisme tiers »"}
-              </p>
-            </div>
-            {modaliteVersement === "organisme_tiers" && (
-              <div className="grid grid-cols-3 gap-3">
+            {restoFsc ? (
+              <div className="rounded-md border border-warning/40 bg-warning/10 p-3 text-sm flex items-start gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
                 <div>
-                  <Label>Nom organisme</Label>
-                  <Input value={organismeNom} onChange={e => setOrganismeNom(e.target.value)} />
-                </div>
-                <div>
-                  <Label>SIRET</Label>
-                  <Input value={organismeSiret} onChange={e => setOrganismeSiret(e.target.value)} />
-                </div>
-                <div>
-                  <Label>Type d'organisme</Label>
-                  <Select value={organismeType} onValueChange={setOrganismeType}>
-                    <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="caf">CAF</SelectItem>
-                      <SelectItem value="association">Association</SelectItem>
-                      <SelectItem value="commune">Commune</SelectItem>
-                      <SelectItem value="autre">Autre</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="font-medium">Versement par extinction de la créance demi-pension</div>
+                  <div className="text-xs text-muted-foreground mt-0.5">
+                    Aide de restauration / FSC : le montant solde la créance de la famille au compte
+                    <strong> C/{compteCreanceFamille}</strong>. Aucun versement en espèces à la famille n'est
+                    autorisé (M9-6 tome 3).
+                  </div>
                 </div>
               </div>
+            ) : (
+              <>
+                <div>
+                  <Label>Modalité de versement</Label>
+                  <Select value={modaliteVersement} onValueChange={(v) => setModaliteVersement(v as ModaliteVersement)}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="aide_directe">Aide directe à la famille</SelectItem>
+                      <SelectItem value="organisme_tiers">Versement à un organisme tiers</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    {modaliteVersement === "aide_directe"
+                      ? "Q10 — colonne « aide directe »"
+                      : "Q10 — colonne « via un versement à un organisme tiers »"}
+                  </p>
+                </div>
+                {modaliteVersement === "organisme_tiers" && (
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <Label>Nom organisme</Label>
+                      <Input value={organismeNom} onChange={e => setOrganismeNom(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label>SIRET</Label>
+                      <Input value={organismeSiret} onChange={e => setOrganismeSiret(e.target.value)} />
+                    </div>
+                    <div>
+                      <Label>Type d'organisme</Label>
+                      <Select value={organismeType} onValueChange={setOrganismeType}>
+                        <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="caf">CAF</SelectItem>
+                          <SelectItem value="association">Association</SelectItem>
+                          <SelectItem value="commune">Commune</SelectItem>
+                          <SelectItem value="autre">Autre</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </div>
         )}
@@ -405,7 +440,8 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                   <input
                     type="checkbox"
                     checked={extinctionCreanceDp}
-                    onChange={e => setExtinctionCreanceDp(e.target.checked)}
+                    disabled={restoFsc}
+                    onChange={e => { if (!restoFsc) setExtinctionCreanceDp(e.target.checked); }}
                     className="mt-1"
                   />
                   <div>
@@ -443,7 +479,7 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
               <div className="text-muted-foreground">Type / Nature</div><div className="font-medium">{typeFonds} — {NATURE_AIDE_LABELS[natureAide]}</div>
               <div className="text-muted-foreground">Montant</div><div className="font-bold text-primary">{montant.toLocaleString("fr-FR", { style: "currency", currency: "EUR" })}</div>
               <div className="text-muted-foreground">Attribution</div><div className="font-medium">{modaliteAttribution}</div>
-              <div className="text-muted-foreground">Versement</div><div className="font-medium">{modaliteVersement === "aide_directe" ? "Aide directe famille" : `Tiers : ${organismeNom}`}</div>
+              <div className="text-muted-foreground">Versement</div><div className="font-medium">{modaliteVersement === "aide_directe" ? "Aide directe famille" : modaliteVersement === "extinction_creance" ? "Extinction créance demi-pension" : `Tiers : ${organismeNom}`}</div>
               <div className="text-muted-foreground">Imputation</div><div className="font-medium">{codeActivite} / {compteImputation}</div>
               <div className="text-muted-foreground">Date décision</div><div className="font-medium">{dateDecision}</div>
               <div className="text-muted-foreground">N° prévu</div><div className="font-medium">{buildNumeroDecision(typeFonds, annee, nextSeqForType())}</div>
