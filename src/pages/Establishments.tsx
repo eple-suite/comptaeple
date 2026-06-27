@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { Search, MapPin, Plus, Loader2, CheckCircle2, Building2, GraduationCap, BookOpen, UtensilsCrossed, Layers, Trash2 } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Search, MapPin, Plus, Loader2, CheckCircle2, Building2, GraduationCap, BookOpen, UtensilsCrossed, Layers, Trash2, ClipboardCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -372,9 +373,14 @@ const Establishments = () => {
 
   return (
     <div className="space-y-6">
-      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <h1 className="text-2xl font-bold font-display">Établissements</h1>
-        <p className="text-sm text-muted-foreground mt-1">Gérez vos établissements et leurs budgets annexes (CFA, GRETA, SRH).</p>
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold font-display">Établissements</h1>
+          <p className="text-sm text-muted-foreground mt-1">Gérez vos établissements et leurs budgets annexes (CFA, GRETA, SRH).</p>
+        </div>
+        <Button asChild variant="outline">
+          <Link to="/audit"><ClipboardCheck className="h-4 w-4 mr-1.5" /> Auditer un établissement</Link>
+        </Button>
       </motion.div>
 
       <div className="flex gap-3">

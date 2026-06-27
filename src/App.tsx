@@ -87,6 +87,8 @@ const OpaleCguPage = lazy(() => import("./pages/opale/OpaleCguPage"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const AuditHub = lazy(() => import("./pages/audit/AuditHub"));
+const AuditRun = lazy(() => import("./pages/audit/AuditRun"));
 
 const queryClient = new QueryClient();
 
@@ -176,6 +178,8 @@ const App = () => (
               <Route path="/regies" element={<RegiesCaisse />} />
               <Route path="/veille-juridique" element={<VeilleJuridique />} />
               <Route path="/controle-interne" element={<ControleInterne />} />
+              <Route path="/audit" element={<AuditHub />} />
+              <Route path="/audit/:missionId" element={<AuditRun />} />
               <Route path="/execution-budgetaire" element={<ExecutionBudgetaire />} />
               <Route path="/parametres" element={<SettingsPage />} />
               <Route path="/hyperale/*" element={<HyperalePage />} />
