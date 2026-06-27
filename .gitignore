@@ -25,3 +25,8 @@ dist-ssr
 
 # Rapports de recette CI (générés)
 reports/
+tmp/
+tmp_uploads/
+tmp_*.ts
+.env
+.env.*
