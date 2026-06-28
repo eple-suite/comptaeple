@@ -19,6 +19,7 @@ import {
   type FsDecision, type NatureAide, type TypeFonds, type ModaliteAttribution, type ModaliteVersement,
 } from "./fsv2Types";
 import { VoieBadge } from "./VoieBadge";
+import { CompteM96Combobox } from "@/components/CompteM96Combobox";
 import {
   Q10_LIGNE_LABELS, evaluerCompletudeEleve,
   cumulAnnuelEleve, premiereAideAnnee,
@@ -429,10 +430,13 @@ export function NouvelleDecisionWizard({ open, onClose }: Props) {
                 <Label>Code activité Op@le</Label>
                 <Input value={codeActivite} onChange={e => setCodeActivite(e.target.value)} />
               </div>
-              <div>
-                <Label>Compte d'imputation</Label>
-                <Input value={compteImputation} onChange={e => setCompteImputation(e.target.value)} placeholder="ex: 6571" />
-              </div>
+              <CompteM96Combobox
+                label="Compte d'imputation (M9-6)"
+                value={compteImputation}
+                onChange={setCompteImputation}
+                classe={6}
+                imputation="depenses"
+              />
             </div>
             {(natureAide === "restauration" || typeFonds === "FSC") && (
               <div className="rounded-md border border-primary/30 bg-primary/5 p-3 space-y-2">

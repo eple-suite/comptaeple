@@ -16,7 +16,6 @@ const DataImport = lazy(() => import("./pages/DataImport"));
 const Establishments = lazy(() => import("./pages/Establishments"));
 const BalanceAnalysis = lazy(() => import("./pages/BalanceAnalysis"));
 const CompteFinancier = lazy(() => import("./pages/CompteFinancier"));
-const Voyages = lazy(() => import("./pages/Voyages"));
 const VoyagesV2Page = lazy(() => import("./pages/voyages-v2/VoyagesV2Page"));
 const EnquetesRectoratPage = lazy(() => import("./pages/voyages-v2/EnquetesRectoratPage"));
 const BilanFinancierPageV2 = lazy(() => import("./pages/voyages-v2/BilanFinancierPageV2"));
@@ -140,7 +139,8 @@ const App = () => (
               <Route path="/fonds-roulement" element={<Navigate to="/hyperale/analyse" replace />} />
               <Route path="/indicateurs" element={<Navigate to="/hyperale/analyse" replace />} />
               <Route path="/compte-financier" element={<CompteFinancier />} />
-              <Route path="/voyages" element={<Voyages />} />
+              {/* Module legacy déprécié → redirige vers la v2 (plus de saisie dans un module mort) */}
+              <Route path="/voyages" element={<Navigate to="/voyages-v2" replace />} />
               <Route path="/voyages-v2" element={<VoyagesV2Page />} />
               <Route path="/voyages-v2/enquetes-rectorat" element={<EnquetesRectoratPage />} />
               <Route path="/voyages-v2/bilan/:voyageId" element={<BilanFinancierPageV2 />} />
