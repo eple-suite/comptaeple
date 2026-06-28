@@ -9,11 +9,15 @@ import { EstablishmentProvider } from "@/contexts/EstablishmentContext";
 import { DemoModeProvider } from "@/contexts/DemoModeContext";
 import { AppLayout } from "@/components/AppLayout";
 import { ChatEple } from "@/components/ChatEple";
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 // ── Pages chargées paresseusement (code splitting par route) ──
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const DataImport = lazy(() => import("./pages/DataImport"));
 const Establishments = lazy(() => import("./pages/Establishments"));
+const Nouveautes = lazy(() => import("./pages/Nouveautes"));
+const DesignSystem = lazy(() => import("./pages/DesignSystem"));
 const BalanceAnalysis = lazy(() => import("./pages/BalanceAnalysis"));
 const CompteFinancier = lazy(() => import("./pages/CompteFinancier"));
 const VoyagesV2Page = lazy(() => import("./pages/voyages-v2/VoyagesV2Page"));
@@ -121,6 +125,8 @@ function AuthedChat() {
 }
 
 const App = () => (
+  <ErrorBoundary>
+  <ThemeProvider>
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <Toaster />
@@ -137,6 +143,8 @@ const App = () => (
               <Route path="/demo" element={<Demo />} />
               <Route path="/import" element={<DataImport />} />
               <Route path="/etablissements" element={<Establishments />} />
+              <Route path="/nouveautes" element={<Nouveautes />} />
+              <Route path="/design-system" element={<DesignSystem />} />
               <Route path="/balance" element={<BalanceAnalysis />} />
               <Route path="/fonds-roulement" element={<Navigate to="/hyperale/analyse" replace />} />
               <Route path="/indicateurs" element={<Navigate to="/hyperale/analyse" replace />} />
@@ -230,6 +238,8 @@ const App = () => (
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
+  </ThemeProvider>
+  </ErrorBoundary>
 );
 
 export default App;

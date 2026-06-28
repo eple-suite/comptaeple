@@ -1,7 +1,9 @@
 import { useEffect, useRef } from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
-import { Outlet } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Building2, LogOut, ChevronDown, Check, Search, Sparkles } from "lucide-react";
 import { OfflineBanner } from "@/components/OfflineBanner";
 import { CommandPalette } from "@/components/CommandPalette";
@@ -27,6 +29,7 @@ export function AppLayout() {
   const { profile, role, signOut } = useAuth();
   const { establishments, selectedEstablishment, selectEstablishment } = useEstablishment();
   const navigate = useNavigate();
+  const location = useLocation();
   const toastShown = useRef(false);
 
   useEffect(() => {
@@ -125,6 +128,17 @@ export function AppLayout() {
             </button>
 
             <div className="flex items-center gap-2 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 rounded-lg"
+                aria-label="Nouveautés"
+                title="Nouveautés"
+                onClick={() => navigate("/nouveautes")}
+              >
+                <Sparkles className="h-4 w-4 text-primary" />
+              </Button>
+              <ThemeToggle />
               {role && (
                 <Badge variant="outline" className="text-[10px] capitalize rounded-md font-medium hidden sm:inline-flex">
                   {role}
@@ -167,7 +181,9 @@ export function AppLayout() {
             {/* Subtle radial accent */}
             <div className="absolute inset-x-0 top-0 h-64 bg-radial-fade pointer-events-none -z-10" />
             <DemoModuleBanner />
-            <Outlet />
+            <ErrorBoundary key={location.pathname}>
+              <Outlet />
+            </ErrorBoundary>
           </main>
         </div>
       </div>
