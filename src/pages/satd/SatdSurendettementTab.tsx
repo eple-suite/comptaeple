@@ -13,8 +13,7 @@ import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { formatCurrency } from "@/lib/mockData";
 import { createStyledPDF, savePDF } from "@/lib/pdfUtils";
 import autoTable from "jspdf-autotable";
-
-type StatutSurendettement = "declaration" | "recevable" | "plan_conventionnel" | "plan_impose" | "retablissement" | "cloture";
+import { useSatdStore, type DossierSurendettement, type StatutSurendettement } from "@/lib/satd/store";
 
 const STATUT_LABELS: Record<StatutSurendettement, { label: string; color: string }> = {
   declaration: { label: "Déclaration", color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200" },
@@ -25,25 +24,10 @@ const STATUT_LABELS: Record<StatutSurendettement, { label: string; color: string
   cloture: { label: "Clôturé", color: "bg-muted text-muted-foreground" },
 };
 
-interface DossierSurendettement {
-  id: string;
-  debiteur: string;
-  montantCreance: number;
-  dateDeclaration: string;
-  commission: string;
-  reference: string;
-  statut: StatutSurendettement;
-  observations: string;
-}
-
-const mockDossiers: DossierSurendettement[] = [
-  { id: "s1", debiteur: "LEROY Alain", montantCreance: 850, dateDeclaration: "2026-01-10", commission: "Banque de France — Commission de surendettement de Paris", reference: "SUR-2026-001", statut: "recevable", observations: "Dossier déclaré recevable le 15/02/2026" },
-  { id: "s2", debiteur: "PETIT Nathalie", montantCreance: 1200, dateDeclaration: "2025-11-05", commission: "Banque de France — Commission de surendettement de Lyon", reference: "SUR-2025-003", statut: "plan_conventionnel", observations: "Plan de 24 mois accepté" },
-];
-
 const SatdSurendettementTab = () => {
   const { selectedEstablishment } = useEstablishment();
-  const [dossiers, setDossiers] = useState<DossierSurendettement[]>(mockDossiers);
+  const dossiers = useSatdStore(s => s.dossiers);
+  const setDossiers = useSatdStore(s => s.setDossiers);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ debiteur: "", montantCreance: "", dateDeclaration: "", commission: "", observations: "" });
 

@@ -12,9 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { formatCurrency } from "@/lib/mockData";
 import { createStyledPDF, savePDF } from "@/lib/pdfUtils";
-
-type TypeRelance = "amiable1" | "amiable2" | "mise_en_demeure" | "poursuite_forcee";
-type StatutRelance = "envoyee" | "repondue" | "sans_reponse" | "huissier" | "mainlevee";
+import { useSatdStore, type Relance, type TypeRelance, type StatutRelance } from "@/lib/satd/store";
 
 const TYPE_LABELS: Record<TypeRelance, string> = {
   amiable1: "Relance amiable 1",
@@ -31,25 +29,10 @@ const STATUT_LABELS: Record<StatutRelance, { label: string; color: string }> = {
   mainlevee: { label: "Mainlevée", color: "bg-emerald-100 text-emerald-800" },
 };
 
-interface Relance {
-  id: string;
-  debiteur: string;
-  montant: number;
-  type: TypeRelance;
-  statut: StatutRelance;
-  dateEnvoi: string;
-  reference: string;
-}
-
-const mockRelances: Relance[] = [
-  { id: "r1", debiteur: "DUPONT Marie", montant: 450, type: "amiable1", statut: "sans_reponse", dateEnvoi: "2026-01-15", reference: "REL-2026-001" },
-  { id: "r2", debiteur: "MARTIN Jean", montant: 1200, type: "mise_en_demeure", statut: "envoyee", dateEnvoi: "2026-02-20", reference: "REL-2026-002" },
-  { id: "r3", debiteur: "BERNARD Sophie", montant: 320, type: "amiable2", statut: "repondue", dateEnvoi: "2026-02-10", reference: "REL-2026-003" },
-];
-
 const SatdRelancesTab = () => {
   const { selectedEstablishment } = useEstablishment();
-  const [relances, setRelances] = useState<Relance[]>(mockRelances);
+  const relances = useSatdStore(s => s.relances);
+  const setRelances = useSatdStore(s => s.setRelances);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ debiteur: "", montant: "", type: "amiable1" as TypeRelance, dateEnvoi: "", reference: "" });
 

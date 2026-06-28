@@ -24,9 +24,9 @@ import { KpiCard } from "@/components/KpiCard";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import {
   Satd, TiersDetenteur, Creance, EtapeProcedure,
-  mockSatds, mockTiers,
   STATUT_SATD_CONFIG, TYPE_DEBITEUR_LABELS, TYPE_TIERS_LABELS, ETAPE_LABELS,
 } from "./satd/types";
+import { useSatdStore } from "@/lib/satd/store";
 import SatdDocuments from "./satd/SatdDocuments";
 import SatdStats from "./satd/SatdStats";
 import SatdProcedure from "./satd/SatdProcedure";
@@ -40,8 +40,10 @@ import SatdIntelligence from "./satd/SatdIntelligence";
 
 const SATD = () => {
   const { selectedEstablishment } = useEstablishment();
-  const [satds, setSatds] = useState<Satd[]>(mockSatds);
-  const [tiersDetenteurs, setTiersDetenteurs] = useState<TiersDetenteur[]>(mockTiers);
+  const satds = useSatdStore(s => s.satds);
+  const setSatds = useSatdStore(s => s.setSatds);
+  const tiersDetenteurs = useSatdStore(s => s.tiersDetenteurs);
+  const setTiersDetenteurs = useSatdStore(s => s.setTiersDetenteurs);
   const [openFormulaire, setOpenFormulaire] = useState(false);
   const [openTiers, setOpenTiers] = useState(false);
   const [openCalc, setOpenCalc] = useState(false);
