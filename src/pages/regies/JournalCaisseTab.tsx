@@ -10,27 +10,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { formatCurrency } from "@/lib/mockData";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
+import { useRegiesStore } from "@/lib/regies/store";
 import autoTable from "jspdf-autotable";
-
-interface LigneCaisse {
-  id: string;
-  date: string;
-  libelle: string;
-  entree: number;
-  sortie: number;
-}
-
-const mockLignes: LigneCaisse[] = [
-  { id: "1", date: "2026-03-01", libelle: "Report solde février", entree: 245.50, sortie: 0 },
-  { id: "2", date: "2026-03-03", libelle: "Vente photocopies", entree: 12.00, sortie: 0 },
-  { id: "3", date: "2026-03-05", libelle: "Achat fournitures menues dépenses", entree: 0, sortie: 34.80 },
-  { id: "4", date: "2026-03-07", libelle: "Remboursement frais élève", entree: 0, sortie: 15.00 },
-  { id: "5", date: "2026-03-10", libelle: "Encaissement cantine jour", entree: 87.50, sortie: 0 },
-];
 
 const JournalCaisseTab = () => {
   const { selectedEstablishment } = useEstablishment();
-  const [lignes, setLignes] = useState<LigneCaisse[]>(mockLignes);
+  const lignes = useRegiesStore(s => s.lignes);
+  const setLignes = useRegiesStore(s => s.setLignes);
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ date: "", libelle: "", entree: "", sortie: "" });
   const [filterMonth, setFilterMonth] = useState("all");

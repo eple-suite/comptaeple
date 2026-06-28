@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { AlertTriangle, CheckCircle2, Download, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFoo
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { formatCurrency } from "@/lib/mockData";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
+import { useRegiesStore } from "@/lib/regies/store";
 import autoTable from "jspdf-autotable";
 
 const DENOMINATIONS = [
@@ -31,9 +32,12 @@ const DENOMINATIONS = [
 
 const BilletageTab = () => {
   const { selectedEstablishment } = useEstablishment();
-  const [soldeTheorique, setSoldeTheorique] = useState(295.20);
-  const [quantities, setQuantities] = useState<Record<number, number>>({});
-  const [explicationsEcart, setExplicationsEcart] = useState("");
+  const soldeTheorique = useRegiesStore(s => s.soldeTheorique);
+  const setSoldeTheorique = useRegiesStore(s => s.setSoldeTheorique);
+  const quantities = useRegiesStore(s => s.quantities);
+  const setQuantities = useRegiesStore(s => s.setQuantities);
+  const explicationsEcart = useRegiesStore(s => s.explicationsEcart);
+  const setExplicationsEcart = useRegiesStore(s => s.setExplicationsEcart);
 
   const soldePhysique = useMemo(
     () => DENOMINATIONS.reduce((sum, d) => sum + d.value * (quantities[d.value] || 0), 0),

@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { motion } from "framer-motion";
 import { UtensilsCrossed, Fuel, Target, AlertTriangle, CheckCircle, TrendingDown, Calendar, Download, Printer, Users, Info, BarChart3, FileSpreadsheet, CalendarDays } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
 import { WordExportButton } from "@/components/WordExportButton";
 import autoTable from "jspdf-autotable";
 import CreditNourritureImport from "./credit-nourriture/CreditNourritureImport";
+import { useCreditNourritureStore } from "@/lib/credit-nourriture/store";
 
 // ═══════ Structure SRH ═══════
 interface EffectifsSRH {
@@ -33,21 +34,30 @@ interface CoutRepas {
 }
 
 const CreditNourriture = () => {
-  // --- Paramètres du trimestre ---
-  const [repasPrevisionnels, setRepasPrevisionnels] = useState(28000);
-  const [repasServis, setRepasServis] = useState(18200);
-  const [budgetInitial, setBudgetInitial] = useState(142000);
-  const [depensesRealisees, setDepensesRealisees] = useState(89500);
+  // --- Paramètres du trimestre (persistés localStorage) ---
+  const repasPrevisionnels = useCreditNourritureStore(s => s.repasPrevisionnels);
+  const setRepasPrevisionnels = useCreditNourritureStore(s => s.setRepasPrevisionnels);
+  const repasServis = useCreditNourritureStore(s => s.repasServis);
+  const setRepasServis = useCreditNourritureStore(s => s.setRepasServis);
+  const budgetInitial = useCreditNourritureStore(s => s.budgetInitial);
+  const setBudgetInitial = useCreditNourritureStore(s => s.setBudgetInitial);
+  const depensesRealisees = useCreditNourritureStore(s => s.depensesRealisees);
+  const setDepensesRealisees = useCreditNourritureStore(s => s.setDepensesRealisees);
 
   // --- Effectifs SRH ---
-  const [effectifsDP, setEffectifsDP] = useState(420);
-  const [effectifsInternes, setEffectifsInternes] = useState(85);
-  const [effectifsCommensaux, setEffectifsCommensaux] = useState(35);
+  const effectifsDP = useCreditNourritureStore(s => s.effectifsDP);
+  const setEffectifsDP = useCreditNourritureStore(s => s.setEffectifsDP);
+  const effectifsInternes = useCreditNourritureStore(s => s.effectifsInternes);
+  const setEffectifsInternes = useCreditNourritureStore(s => s.setEffectifsInternes);
+  const effectifsCommensaux = useCreditNourritureStore(s => s.effectifsCommensaux);
+  const setEffectifsCommensaux = useCreditNourritureStore(s => s.setEffectifsCommensaux);
   const effectifsTotal = effectifsDP + effectifsInternes + effectifsCommensaux;
 
   // --- Coûts détaillés (denrées vs charges indirectes) ---
-  const [coutDenrees, setCoutDenrees] = useState(62000); // Achats denrées uniquement (cpt 60)
-  const [chargesIndirectes, setChargesIndirectes] = useState(27500); // Personnel SRH, énergie, entretien
+  const coutDenrees = useCreditNourritureStore(s => s.coutDenrees); // Achats denrées uniquement (cpt 60)
+  const setCoutDenrees = useCreditNourritureStore(s => s.setCoutDenrees);
+  const chargesIndirectes = useCreditNourritureStore(s => s.chargesIndirectes); // Personnel SRH, énergie, entretien
+  const setChargesIndirectes = useCreditNourritureStore(s => s.setChargesIndirectes);
 
   // --- Barème académique de référence ---
   const baremeAcademique = { dp: 2.15, interne: 6.10, commensal: 3.80 };

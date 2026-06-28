@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ShieldCheck, ClipboardCheck, CheckCircle2, AlertTriangle, ListChecks,
-  Plus, Trash2, ArrowRight, Map, MessageCircleQuestion, Gauge,
+  Plus, Trash2, ArrowRight, Map as MapIcon, MessageCircleQuestion, Gauge,
 } from "lucide-react";
 import { PageHeader } from "@/components/PageHeader";
 import { KpiCard } from "@/components/KpiCard";
@@ -227,7 +227,7 @@ const AuditHub = () => {
       <Card className="shadow-card">
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
-            <Map className="h-4 w-4 text-primary" /> Cartographie consolidée des risques
+            <MapIcon className="h-4 w-4 text-primary" /> Cartographie consolidée des risques
           </CardTitle>
         </CardHeader>
         <CardContent>

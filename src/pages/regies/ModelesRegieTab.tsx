@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { Download, FileSignature } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -8,8 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { createStyledPDF, savePDF } from "@/lib/pdfUtils";
-
-type TypeRegie = "avances_menues" | "recettes" | "avances_voyage" | "temporaire";
+import { useRegiesStore, type TypeRegie } from "@/lib/regies/store";
 
 const TYPES_REGIE: Record<TypeRegie, { label: string; plafond: string; desc: string }> = {
   avances_menues: { label: "Régie d'avances — Menues dépenses", plafond: "1 000 €", desc: "Dépenses courantes de fonctionnement < seuil réglementaire" },
@@ -20,11 +18,16 @@ const TYPES_REGIE: Record<TypeRegie, { label: string; plafond: string; desc: str
 
 const ModelesRegieTab = () => {
   const { selectedEstablishment } = useEstablishment();
-  const [typeRegie, setTypeRegie] = useState<TypeRegie>("avances_menues");
-  const [mandataire, setMandataire] = useState("");
-  const [montantPlafond, setMontantPlafond] = useState("1000");
-  const [dateDebut, setDateDebut] = useState("");
-  const [dateFin, setDateFin] = useState("");
+  const typeRegie = useRegiesStore(s => s.typeRegie);
+  const setTypeRegie = useRegiesStore(s => s.setTypeRegie);
+  const mandataire = useRegiesStore(s => s.mandataire);
+  const setMandataire = useRegiesStore(s => s.setMandataire);
+  const montantPlafond = useRegiesStore(s => s.montantPlafond);
+  const setMontantPlafond = useRegiesStore(s => s.setMontantPlafond);
+  const dateDebut = useRegiesStore(s => s.dateDebut);
+  const setDateDebut = useRegiesStore(s => s.setDateDebut);
+  const dateFin = useRegiesStore(s => s.dateFin);
+  const setDateFin = useRegiesStore(s => s.setDateFin);
 
   const genererActeConstitutif = () => {
     const est = selectedEstablishment;
