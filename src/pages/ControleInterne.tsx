@@ -1,46 +1,32 @@
-import { useState } from "react";
-import { motion } from "framer-motion";
-import { ShieldCheck, CheckCircle2, AlertTriangle, Clock, Download, Printer, BarChart3, FileText, Plus, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { ShieldCheck, CheckCircle2, AlertTriangle, Clock, Download, BarChart3, FileText, Plus, Pencil, Trash2, Target } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Separator } from "@/components/ui/separator";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { KpiCard } from "@/components/KpiCard";
+import { DictationButton } from "@/components/DictationButton";
 import {
   PieChart as RPieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
 } from "recharts";
-import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import { createStyledPDF, savePDF, type PDFOrientation } from "@/lib/pdfUtils";
+import {
+  useControleInterneStore, nouveauControle, cadenceSemaine, controlesEnRetard,
+  PROCESSUS, FREQUENCES, type PointControle, type FrequenceControle,
+  type StatutControle, type RisqueControle,
+} from "@/lib/controle-interne/store";
+import { genererPvControle } from "@/lib/controle-interne/pvControle";
 
-interface PointControle {
-  id: string;
-  processus: string;
-  action: string;
-  frequence: "quotidien" | "hebdomadaire" | "mensuel" | "trimestriel" | "annuel";
-  responsable: string;
-  statut: "conforme" | "anomalie" | "non_realise" | "en_cours";
-  dateControle: string;
-  observation: string;
-  risque: "faible" | "moyen" | "eleve" | "critique";
-}
-
-const PROCESSUS_CIC = [
-  "P1 — Recettes",
-  "P2 — Dépenses",
-  "P3 — Trésorerie",
-  "P4 — Régies",
-  "P5 — Patrimoine / Inventaire",
-  "P6 — Paie (conventions)",
-  "P7 — Comptes de tiers",
-  "P8 — États financiers",
-  "P9 — Bourses & Aides sociales",
-];
+const PROCESSUS_CIC = [...PROCESSUS];
 
 const FREQUENCE_LABELS: Record<string, string> = {
   quotidien: "Quotidien",
@@ -64,7 +50,7 @@ const STATUT_CONTROLE: Record<string, { label: string; color: string }> = {
   en_cours: { label: "En cours", color: "bg-warning/10 text-warning border-0" },
 };
 
-const mockControles: PointControle[] = [
+const CONTROLES_INITIAUX: PointControle[] = [
   { id: "c1", processus: "P1 — Recettes", action: "Rapprochement titres émis / encaissements", frequence: "mensuel", responsable: "Fondé de pouvoir", statut: "conforme", dateControle: "2026-02-28", observation: "Cohérent. Aucun écart.", risque: "moyen" },
   { id: "c2", processus: "P1 — Recettes", action: "Contrôle de l'exhaustivité des OR émis", frequence: "trimestriel", responsable: "Agent comptable", statut: "conforme", dateControle: "2026-01-15", observation: "Tous les OR ont été émis pour les services fait.", risque: "moyen" },
   { id: "c3", processus: "P2 — Dépenses", action: "Vérification pièces justificatives avant mandatement", frequence: "quotidien", responsable: "Fondé de pouvoir", statut: "conforme", dateControle: "2026-03-07", observation: "RAS", risque: "eleve" },
@@ -86,10 +72,19 @@ const mockControles: PointControle[] = [
 ];
 
 const ControleInterne = () => {
-  const [controles, setControles] = useState<PointControle[]>(mockControles);
+  const { controles, objectifHebdo, seedSiVide, upsert, remove, setObjectif } = useControleInterneStore();
   const [filterProcessus, setFilterProcessus] = useState("all");
   const [filterStatut, setFilterStatut] = useState("all");
   const [pdfOrientation, setPdfOrientation] = useState<PDFOrientation>("landscape");
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [edit, setEdit] = useState<PointControle | null>(null);
+
+  useEffect(() => { seedSiVide(CONTROLES_INITIAUX); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const ouvrirNouveau = () => { setEdit(nouveauControle()); setDialogOpen(true); };
+  const ouvrirEdition = (c: PointControle) => { setEdit({ ...c }); setDialogOpen(true); };
+  const enregistrer = () => { if (edit) { upsert(edit); setDialogOpen(false); setEdit(null); } };
 
   const filtered = filterProcessus === "all" && filterStatut === "all"
     ? controles
@@ -103,6 +98,9 @@ const ControleInterne = () => {
   const nonRealises = controles.filter(c => c.statut === "non_realise").length;
   const enCours = controles.filter(c => c.statut === "en_cours").length;
   const tauxConformite = controles.length > 0 ? (conformes / controles.length) * 100 : 0;
+
+  const cadence = cadenceSemaine(controles, objectifHebdo);
+  const enRetard = controlesEnRetard(controles);
 
   // Charts data
   const pieStatut = [
@@ -210,7 +208,7 @@ const ControleInterne = () => {
             </div>
             <div>
               <h1 className="text-2xl font-bold font-display tracking-tight">Contrôle interne comptable</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">Plan de contrôle & suivi des actions — Référentiel CIC EPLE</p>
+              <p className="text-sm text-muted-foreground mt-0.5">Plan de contrôle &amp; suivi des actions — Référentiel CIC EPLE</p>
             </div>
           </div>
         </div>
@@ -225,6 +223,9 @@ const ControleInterne = () => {
           <Button size="sm" variant="outline" onClick={genererPlanControle} className="h-8 text-xs rounded-lg">
             <Download className="h-3.5 w-3.5 mr-1" /> Plan CIC PDF
           </Button>
+          <Button size="sm" onClick={ouvrirNouveau} className="h-8 text-xs rounded-lg">
+            <Plus className="h-3.5 w-3.5 mr-1" /> Nouveau contrôle
+          </Button>
         </div>
       </div>
 
@@ -235,6 +236,57 @@ const ControleInterne = () => {
         <KpiCard title="Anomalies" value={`${anomalies}`} icon={AlertTriangle} variant="destructive" />
         <KpiCard title="Non réalisés" value={`${nonRealises}`} icon={Clock} variant="warning" />
       </div>
+
+      {/* Planificateur / cadence hebdomadaire */}
+      <Card className="shadow-card">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <Target className="h-4 w-4 text-primary" /> Planificateur — cadence hebdomadaire
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Badge variant="secondary" className={`text-sm ${cadence.conforme ? "bg-success/10 text-success border-0" : "bg-warning/10 text-warning border-0"}`}>
+                {cadence.faits} / {cadence.objectif} contrôles réalisés cette semaine
+              </Badge>
+              {cadence.conforme
+                ? <span className="text-xs text-success font-medium">Objectif atteint</span>
+                : <span className="text-xs text-warning font-medium">Cadence à tenir</span>}
+            </div>
+            <div className="flex items-center gap-2 ml-auto">
+              <Label htmlFor="objectif" className="text-xs text-muted-foreground">Objectif / semaine</Label>
+              <Input id="objectif" type="number" min={1} value={objectifHebdo}
+                onChange={e => setObjectif(parseInt(e.target.value) || 1)} className="w-20 h-8 text-xs" />
+            </div>
+          </div>
+          <Progress value={Math.min(100, (cadence.faits / Math.max(1, cadence.objectif)) * 100)} className="h-2" />
+
+          {enRetard.length > 0 && (
+            <div className="space-y-2 pt-1">
+              <p className="text-xs font-semibold text-warning flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5" /> À réaliser / relancer ({enRetard.length})
+              </p>
+              <div className="space-y-1.5">
+                {enRetard.map(c => (
+                  <div key={c.id} className="flex items-center justify-between gap-3 rounded-lg border bg-warning/5 px-3 py-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium truncate">{c.action}</p>
+                      <p className="text-[11px] text-muted-foreground">{c.processus} — {c.responsable || "Non affecté"}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant="secondary" className={`text-[10px] ${STATUT_CONTROLE[c.statut].color}`}>{STATUT_CONTROLE[c.statut].label}</Badge>
+                      <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => ouvrirEdition(c)}>
+                        <Pencil className="h-3 w-3 mr-1" /> Réaliser
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -374,25 +426,126 @@ const ControleInterne = () => {
                 <TableHead>Date</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead>Observation</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.map(c => (
-                <TableRow key={c.id} className={c.statut === "anomalie" ? "bg-destructive/5" : ""}>
-                  <TableCell className="text-xs font-medium">{c.processus}</TableCell>
-                  <TableCell className="text-xs">{c.action}</TableCell>
+                <TableRow key={c.id} className={`group ${c.statut === "anomalie" ? "bg-destructive/5" : ""}`}>
+                  <TableCell className="text-xs font-medium cursor-pointer" onClick={() => ouvrirEdition(c)}>{c.processus}</TableCell>
+                  <TableCell className="text-xs cursor-pointer" onClick={() => ouvrirEdition(c)}>{c.action}</TableCell>
                   <TableCell className="text-xs">{FREQUENCE_LABELS[c.frequence]}</TableCell>
                   <TableCell className="text-xs">{c.responsable}</TableCell>
                   <TableCell><Badge variant="secondary" className={`text-[10px] ${RISQUE_CONFIG[c.risque].color}`}>{RISQUE_CONFIG[c.risque].label}</Badge></TableCell>
                   <TableCell className="text-xs">{c.dateControle ? new Date(c.dateControle).toLocaleDateString("fr-FR") : "—"}</TableCell>
                   <TableCell><Badge variant="secondary" className={`text-[10px] ${STATUT_CONTROLE[c.statut].color}`}>{STATUT_CONTROLE[c.statut].label}</Badge></TableCell>
                   <TableCell className="text-xs text-muted-foreground max-w-[200px] truncate">{c.observation}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-end gap-1">
+                      <Button size="icon" variant="ghost" className="h-7 w-7" title="PV de contrôle" onClick={() => genererPvControle(c)}>
+                        <FileText className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7" title="Éditer" onClick={() => ouvrirEdition(c)}>
+                        <Pencil className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" title="Supprimer" onClick={() => remove(c.id)}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         </CardContent>
       </Card>
+
+      {/* Dialog création / édition */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4 text-primary" />
+              {edit && controles.some(c => c.id === edit.id) ? "Éditer le contrôle" : "Nouveau contrôle"}
+            </DialogTitle>
+            <DialogDescription>Renseignez le point de contrôle interne comptable.</DialogDescription>
+          </DialogHeader>
+
+          {edit && (
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Processus</Label>
+                <Select value={edit.processus} onValueChange={v => setEdit({ ...edit, processus: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PROCESSUS_CIC.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Action de contrôle</Label>
+                <Input value={edit.action} onChange={e => setEdit({ ...edit, action: e.target.value })} placeholder="Ex. Rapprochement bancaire" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Fréquence</Label>
+                  <Select value={edit.frequence} onValueChange={(v: FrequenceControle) => setEdit({ ...edit, frequence: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {FREQUENCES.map(f => <SelectItem key={f} value={f}>{FREQUENCE_LABELS[f]}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Niveau de risque</Label>
+                  <Select value={edit.risque} onValueChange={(v: RisqueControle) => setEdit({ ...edit, risque: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(RISQUE_CONFIG).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Responsable</Label>
+                <Input value={edit.responsable} onChange={e => setEdit({ ...edit, responsable: e.target.value })} placeholder="Ex. Agent comptable" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Statut</Label>
+                  <Select value={edit.statut} onValueChange={(v: StatutControle) => setEdit({ ...edit, statut: v })}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(STATUT_CONTROLE).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Date du contrôle</Label>
+                  <Input type="date" value={edit.dateControle} onChange={e => setEdit({ ...edit, dateControle: e.target.value })} />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label className="text-xs">Observation</Label>
+                  <DictationButton onAppend={t => setEdit(prev => prev ? { ...prev, observation: (prev.observation ? prev.observation + " " : "") + t } : prev)} size="sm" />
+                </div>
+                <Textarea value={edit.observation} onChange={e => setEdit({ ...edit, observation: e.target.value })} rows={3} placeholder="Constat, écart, suite donnée…" />
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Annuler</Button>
+            <Button onClick={enregistrer} disabled={!edit?.action}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
