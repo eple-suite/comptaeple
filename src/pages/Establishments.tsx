@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Search, MapPin, Plus, Loader2, CheckCircle2, Building2, GraduationCap, BookOpen, UtensilsCrossed, Layers, Trash2, ClipboardCheck } from "lucide-react";
+import { Search, MapPin, Plus, Loader2, CheckCircle2, Building2, GraduationCap, BookOpen, UtensilsCrossed, Layers, Trash2, ClipboardCheck, Home, ShieldCheck } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -378,9 +378,17 @@ const Establishments = () => {
           <h1 className="text-2xl font-bold font-display">Établissements</h1>
           <p className="text-sm text-muted-foreground mt-1">Gérez vos établissements et leurs budgets annexes (CFA, GRETA, SRH).</p>
         </div>
-        <Button asChild variant="outline">
-          <Link to="/audit"><ClipboardCheck className="h-4 w-4 mr-1.5" /> Auditer un établissement</Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link to="/audit"><ClipboardCheck className="h-4 w-4 mr-1.5" /> Auditer un établissement</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/controle-interne"><ShieldCheck className="h-4 w-4 mr-1.5" /> Contrôle interne</Link>
+          </Button>
+          <Button asChild variant="outline">
+            <Link to="/logements"><Home className="h-4 w-4 mr-1.5" /> Logements</Link>
+          </Button>
+        </div>
       </motion.div>
 
       <div className="flex gap-3">
