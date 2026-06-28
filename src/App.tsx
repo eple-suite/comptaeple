@@ -30,6 +30,7 @@ const RgpdJournalPage = lazy(() => import("./pages/fonds-sociaux-v2/RgpdJournalP
 const DeliberationsCAPage = lazy(() => import("./pages/fonds-sociaux-v2/DeliberationsCAPage"));
 const EleveImportPage = lazy(() => import("./pages/fonds-sociaux-v2/EleveImportPage"));
 const SATD = lazy(() => import("./pages/SATD"));
+const CfaNpecPage = lazy(() => import("./pages/cfa/CfaNpecPage"));
 const PassationSgeplePage = lazy(() => import("./pages/rentree/PassationSgeplePage"));
 const AccreditationOrdoPage = lazy(() => import("./pages/rentree/AccreditationOrdoPage"));
 const HabilitationsOpalePage = lazy(() => import("./pages/rentree/HabilitationsOpalePage"));
@@ -157,6 +158,7 @@ const App = () => (
               <Route path="/fonds-sociaux/v2/rgpd" element={<RgpdJournalPage />} />
               <Route path="/fonds-sociaux/v2/deliberations" element={<DeliberationsCAPage />} />
               <Route path="/satd" element={<SATD />} />
+              <Route path="/cfa-npec" element={<CfaNpecPage />} />
               <Route path="/rentree/passation-sgeple" element={<PassationSgeplePage />} />
               <Route path="/rentree/accreditation" element={<AccreditationOrdoPage />} />
               <Route path="/rentree/habilitations-opale" element={<HabilitationsOpalePage />} />

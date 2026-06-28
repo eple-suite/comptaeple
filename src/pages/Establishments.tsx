@@ -391,6 +391,9 @@ const Establishments = () => {
           <Button asChild variant="outline">
             <Link to="/valeurs-inactives"><Layers className="h-4 w-4 mr-1.5" /> Valeurs inactives</Link>
           </Button>
+          <Button asChild variant="outline">
+            <Link to="/cfa-npec"><GraduationCap className="h-4 w-4 mr-1.5" /> CFA / NPEC</Link>
+          </Button>
         </div>
       </motion.div>
 
