@@ -49,6 +49,7 @@ const CreditNourriture = lazy(() => import("./pages/CreditNourriture"));
 const VeilleJuridique = lazy(() => import("./pages/VeilleJuridique"));
 const Demo = lazy(() => import("./pages/Demo"));
 const ControleInterne = lazy(() => import("./pages/ControleInterne"));
+const ValeursInactivesPage = lazy(() => import("./pages/valeurs-inactives/ValeursInactivesPage"));
 const LogementsPage = lazy(() => import("./pages/logements/LogementsPage"));
 const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const RegiesCaisse = lazy(() => import("./pages/RegiesCaisse"));
@@ -179,6 +180,7 @@ const App = () => (
               <Route path="/regies" element={<RegiesCaisse />} />
               <Route path="/veille-juridique" element={<VeilleJuridique />} />
               <Route path="/controle-interne" element={<ControleInterne />} />
+              <Route path="/valeurs-inactives" element={<ValeursInactivesPage />} />
               <Route path="/logements" element={<LogementsPage />} />
               <Route path="/audit" element={<AuditHub />} />
               <Route path="/audit/:missionId" element={<AuditRun />} />

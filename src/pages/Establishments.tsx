@@ -388,6 +388,9 @@ const Establishments = () => {
           <Button asChild variant="outline">
             <Link to="/logements"><Home className="h-4 w-4 mr-1.5" /> Logements</Link>
           </Button>
+          <Button asChild variant="outline">
+            <Link to="/valeurs-inactives"><Layers className="h-4 w-4 mr-1.5" /> Valeurs inactives</Link>
+          </Button>
         </div>
       </motion.div>
 
