@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Outlet, useLocation } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { NotificationsBell } from "@/components/NotificationsBell";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Building2, LogOut, ChevronDown, Check, Search, Sparkles } from "lucide-react";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -183,6 +184,7 @@ export function AppLayout() {
             {/* Subtle radial accent */}
             <div className="absolute inset-x-0 top-0 h-64 bg-radial-fade pointer-events-none -z-10" />
             <DemoModuleBanner />
+            <Breadcrumbs />
             <ErrorBoundary key={location.pathname}>
               <Outlet />
             </ErrorBoundary>
