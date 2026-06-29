@@ -17,6 +17,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.3.0",
+    date: "2026-06-28",
+    titre: "Centre de notifications",
+    nouveautes: [
+      { tag: "Design", texte: "Nouvelle cloche de notifications dans la barre supérieure : les alertes ouvertes du groupement (échéances, contrôles, anomalies…) sont visibles d'un coup d'œil, avec accès direct au module concerné." },
+    ],
+  },
+  {
     version: "1.2.0",
     date: "2026-06-28",
     titre: "Fiabilité & performance des données",

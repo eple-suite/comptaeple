@@ -3,6 +3,7 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Outlet, useLocation } from "react-router-dom";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { NotificationsBell } from "@/components/NotificationsBell";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Building2, LogOut, ChevronDown, Check, Search, Sparkles } from "lucide-react";
 import { OfflineBanner } from "@/components/OfflineBanner";
@@ -138,6 +139,7 @@ export function AppLayout() {
               >
                 <Sparkles className="h-4 w-4 text-primary" />
               </Button>
+              <NotificationsBell />
               <ThemeToggle />
               {role && (
                 <Badge variant="outline" className="text-[10px] capitalize rounded-md font-medium hidden sm:inline-flex">
