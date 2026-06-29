@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/sidebar";
 import { useCofiepleStore } from "@/store/useCofiepleStore";
 import { DemoModeToggle } from "@/components/demo/DemoModeToggle";
+import { RepubliqueFrancaiseBlock } from "@/components/RepubliqueFrancaiseBlock";
 
 interface NavItem {
   title: string;
@@ -123,6 +124,11 @@ export function AppSidebar() {
       {/* Premium gradient header */}
       <SidebarHeader className="p-4 pb-3 relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-transparent pointer-events-none" />
+        {!collapsed && (
+          <div className="relative mb-3 pb-3 border-b border-sidebar-border/40">
+            <RepubliqueFrancaiseBlock subtitle="Agence comptable · Groupement Coeffin" />
+          </div>
+        )}
         <div className="relative flex items-center gap-3">
           <div className="relative h-10 w-10 rounded-xl gradient-primary flex items-center justify-center shrink-0 shadow-primary">
             <Shield className="h-5 w-5 text-primary-foreground" strokeWidth={2.4} />

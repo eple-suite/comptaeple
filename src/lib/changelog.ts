@@ -17,6 +17,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.4.0",
+    date: "2026-06-28",
+    titre: "Identité institutionnelle",
+    nouveautes: [
+      { tag: "Design", texte: "En-tête institutionnel sobre (variante DSFR) : liseré tricolore « République Française » et identité « Agence comptable · Groupement Coeffin » dans le bandeau latéral." },
+    ],
+  },
+  {
     version: "1.3.0",
     date: "2026-06-28",
     titre: "Centre de notifications",
