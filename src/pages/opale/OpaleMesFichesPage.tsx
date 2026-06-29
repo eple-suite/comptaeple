@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useMesFiches } from "@/hooks/queries/useOpaleFiches";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
@@ -11,22 +10,7 @@ import { OPALE_MODULES_LABELS, STATUT_PUBLICATION_LABELS } from "@/lib/opale/typ
 import { BadgeActualite } from "@/components/opale/StatutBadges";
 
 export default function OpaleMesFichesPage() {
-  const [fiches, setFiches] = useState<OpaleFiche[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { setLoading(false); return; }
-      const { data } = await supabase
-        .from("opale_fiches")
-        .select("*")
-        .eq("auteur_id", user.id)
-        .order("date_maj", { ascending: false });
-      if (data) setFiches(data as unknown as OpaleFiche[]);
-      setLoading(false);
-    })();
-  }, []);
+  const { data: fiches = [], isLoading: loading } = useMesFiches();
 
   const par = (statut: string) => fiches.filter((f) => f.statut_publication === statut);
 

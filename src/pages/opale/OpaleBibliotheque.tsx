@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { supabase } from "@/integrations/supabase/client";
+import { useFichesPubliees } from "@/hooks/queries/useOpaleFiches";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,24 +12,10 @@ import {
 import { BadgeActualite, BadgeVersion } from "@/components/opale/StatutBadges";
 
 export default function OpaleBibliotheque() {
-  const [fiches, setFiches] = useState<OpaleFiche[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: fiches = [], isLoading: loading } = useFichesPubliees();
   const [q, setQ] = useState("");
   const [moduleF, setModuleF] = useState<string>("all");
   const [tri, setTri] = useState<string>("recents");
-
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase
-        .from("opale_fiches")
-        .select("*")
-        .eq("statut_publication", "publiee")
-        .order("date_publication", { ascending: false })
-        .limit(200);
-      if (!error && data) setFiches(data as unknown as OpaleFiche[]);
-      setLoading(false);
-    })();
-  }, []);
 
   const filtered = useMemo(() => {
     let arr = fiches;
