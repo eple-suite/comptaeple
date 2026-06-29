@@ -10,6 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CompteM96Combobox } from "@/components/CompteM96Combobox";
 import { AlertTriangle, CheckCircle2, ChevronLeft, ChevronRight, Save } from "lucide-react";
 import { toast } from "sonner";
 import { useFamilles, useSeuilsCcp, useMarches, useCreateMarche } from "./hooks/useMarchesData";
@@ -323,7 +324,7 @@ export default function MarcheNouveau() {
             </div>
             <div className="grid md:grid-cols-3 gap-4">
               <div><Label>Chapitre budgétaire</Label><Input value={d.chapitre_budgetaire || ""} onChange={(e) => upd({ chapitre_budgetaire: e.target.value })} /></div>
-              <div><Label>Compte d'imputation</Label><Input value={d.compte_imputation || ""} onChange={(e) => upd({ compte_imputation: e.target.value })} /></div>
+              <div><Label>Compte d'imputation</Label><CompteM96Combobox value={d.compte_imputation || ""} onChange={(v) => upd({ compte_imputation: v })} imputation="depenses" placeholder="ex. 2183, 6068…" /></div>
               <div><Label>Code activité</Label><Input value={d.code_activite || ""} onChange={(e) => upd({ code_activite: e.target.value })} /></div>
             </div>
           </CardContent>
