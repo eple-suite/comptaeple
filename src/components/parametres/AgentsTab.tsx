@@ -12,32 +12,8 @@ import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { toast } from "sonner";
 import { validateAgent, ValidationIssue, hasBlockingIssues } from "@/lib/parametres/validations";
 import { downloadCsvTemplate, buildPreview, ImportPreview, getDedupKey } from "@/lib/parametres/csvImport";
-
-interface AgentRow {
-  id: string;
-  nom: string;
-  prenom: string;
-  corps: string | null;
-  grade: string | null;
-  role_principal: string | null;
-  fonction: string | null;
-  statut: string | null;
-  date_entree_etablissement: string | null;
-  actif: boolean;
-  email_professionnel?: string | null;
-  telephone_professionnel?: string | null;
-  date_naissance?: string | null;
-  echelon?: number | null;
-  indice_majore?: number | null;
-  quotite_travail?: number | null;
-  roles_secondaires?: string[] | null;
-  administration_origine?: string | null;
-  establishment_id: string;
-  photo_url?: string | null;
-  matricule_education_nationale?: string | null;
-  notes_rh?: string | null;
-  civilite?: "mme" | "m" | null;
-}
+import { useAgents } from "@/hooks/queries/useAgents";
+import type { AgentRow } from "@/services/agents";
 
 const ROLE_OPTIONS = [
   "ac","fp","ordonnateur","ordonnateur_suppleant","sg","adjoint_gestionnaire","assistant_gestion",
@@ -50,8 +26,7 @@ const STATUT_OPTIONS = ["titulaire","stagiaire","contractuel_cdd","contractuel_c
 
 export default function AgentsTab() {
   const { selectedEstablishment } = useEstablishment();
-  const [agents, setAgents] = useState<AgentRow[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { data: agents = [], isLoading: loading, refetch } = useAgents(selectedEstablishment?.id);
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState<string>("all");
   const [filterStatut, setFilterStatut] = useState<string>("all");
@@ -59,21 +34,6 @@ export default function AgentsTab() {
   const [openCreate, setOpenCreate] = useState(false);
   const [openImport, setOpenImport] = useState(false);
   const [openEdit, setOpenEdit] = useState<AgentRow | null>(null);
-
-  async function load() {
-    if (!selectedEstablishment) { setAgents([]); return; }
-    setLoading(true);
-    const { data, error } = await supabase
-      .from("agents")
-      .select("*")
-      .eq("establishment_id", selectedEstablishment.id)
-      .order("nom");
-    if (error) toast.error(error.message);
-    else setAgents((data ?? []) as AgentRow[]);
-    setLoading(false);
-  }
-
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [selectedEstablishment?.id]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -196,12 +156,12 @@ export default function AgentsTab() {
 
       <AgentEditDialog
         open={openCreate || openEdit != null}
-        onClose={() => { setOpenCreate(false); setOpenEdit(null); load(); }}
+        onClose={() => { setOpenCreate(false); setOpenEdit(null); refetch(); }}
         agent={openEdit}
         establishmentId={selectedEstablishment.id}
       />
 
-      <ImportAgentsDialog open={openImport} onClose={() => { setOpenImport(false); load(); }} establishmentId={selectedEstablishment.id} />
+      <ImportAgentsDialog open={openImport} onClose={() => { setOpenImport(false); refetch(); }} establishmentId={selectedEstablishment.id} />
     </div>
   );
 }
