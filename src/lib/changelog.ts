@@ -17,6 +17,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.6.0",
+    date: "2026-06-28",
+    titre: "Lettre d'observations d'audit",
+    nouveautes: [
+      { tag: "Documents", texte: "Génération d'une lettre d'observations à l'ordonnateur (PDF) depuis une mission d'audit : courrier institutionnel reprenant les observations critiques/importantes et leurs recommandations, en complément du rapport d'audit." },
+    ],
+  },
+  {
     version: "1.5.0",
     date: "2026-06-28",
     titre: "Audit EPLE enrichi",

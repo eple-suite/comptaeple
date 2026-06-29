@@ -7,4 +7,4 @@ export {
   criticite, critMeta, scoreMission, cartographie, planActionsAuto, constatAuto,
 } from "./engine";
 export { useAuditStore } from "./store";
-export { genererRapportAudit } from "./rapport";
+export { genererRapportAudit, genererLettreObservations } from "./rapport";

@@ -79,3 +79,77 @@ export function genererRapportAudit(mission: AuditMission) {
 
   doc.save(`Rapport_audit_${mission.budgetType}_${mission.campagne}.pdf`);
 }
+
+// Lettre d'observations à l'ordonnateur (amélioration #30) : courrier institutionnel
+// reprenant les observations critiques/importantes et leurs recommandations.
+const RANG_RISQUE: Record<string, number> = { critique: 0, important: 1, moyen: 2, faible: 3 };
+
+export function genererLettreObservations(mission: AuditMission) {
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  const W = doc.internal.pageSize.getWidth();
+  const H = doc.internal.pageSize.getHeight();
+  const today = new Date().toLocaleDateString("fr-FR");
+
+  // En-tête institutionnel
+  doc.setFontSize(11); doc.setTextColor(...NAVY);
+  doc.text("Agence comptable du groupement Coeffin", 14, 18);
+  doc.setFontSize(9); doc.setTextColor(60, 60, 60);
+  doc.text(mission.etablissementNom, 14, 24);
+  doc.text("À l'attention de Madame, Monsieur l'Ordonnateur", W - 14, 18, { align: "right" });
+  doc.text(`Le ${today}`, W - 14, 24, { align: "right" });
+
+  doc.setTextColor(30, 30, 30); doc.setFontSize(11);
+  doc.text("Objet : lettre d'observations — audit comptable", 14, 40);
+
+  doc.setFontSize(9.5);
+  const intro = doc.splitTextToSize(
+    `Madame, Monsieur l'Ordonnateur,\n\nÀ l'issue de l'audit conduit sur le périmètre ${mission.budgetType} au titre de la campagne ${mission.campagne}, `
+    + `je vous prie de bien vouloir trouver ci-après les principales observations relevées ainsi que les recommandations associées, `
+    + `établies conformément à l'instruction M9-6, au décret GBCP n° 2012-1246 et au règlement général sur la comptabilité publique (ordonnance n° 2022-408).`,
+    W - 28);
+  doc.text(intro, 14, 48);
+  let y = 48 + intro.length * 5 + 4;
+
+  const obs = Object.entries(mission.controles)
+    .filter(([, s]) => s.resultat === "non_conforme" || s.resultat === "conforme_reserve")
+    .map(([id, s]) => ({ d: def(id), s }))
+    .sort((a, b) => (RANG_RISQUE[a.d?.risque ?? "faible"] ?? 3) - (RANG_RISQUE[b.d?.risque ?? "faible"] ?? 3));
+
+  if (obs.length) {
+    autoTable(doc, {
+      startY: y,
+      head: [["Domaine", "Observation", "Recommandation"]],
+      body: obs.map(({ d, s }) => [
+        domaineLabel(d?.domaineId ?? ""),
+        d?.intitule ?? "—",
+        s.recommandation || d?.objectif || "Mettre en conformité au regard du fondement réglementaire.",
+      ]),
+      theme: "grid", headStyles: { fillColor: NAVY }, styles: { fontSize: 7.5, cellPadding: 1.6 },
+      columnStyles: { 0: { cellWidth: 32 }, 1: { cellWidth: 70 } },
+      margin: { left: 14, right: 14 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 8;
+  } else {
+    doc.text("L'audit n'a pas relevé d'observation majeure sur le périmètre contrôlé.", 14, y);
+    y += 8;
+  }
+
+  if (y > 240) { doc.addPage(); y = 20; }
+  doc.setFontSize(9.5);
+  const clot = doc.splitTextToSize(
+    `Je vous saurais gré de bien vouloir mettre en œuvre les mesures correctives correspondantes et de m'en tenir informé. `
+    + `Le suivi des recommandations fera l'objet d'un point d'étape à échéance que je vous propose de fixer à trois mois.\n\n`
+    + `Je vous prie d'agréer, Madame, Monsieur l'Ordonnateur, l'expression de ma considération distinguée.`,
+    W - 28);
+  doc.text(clot, 14, y);
+  y += clot.length * 5 + 10;
+
+  doc.setFontSize(9); doc.setTextColor(40, 40, 40);
+  doc.text("L'Agent comptable", W - 14, y, { align: "right" });
+  doc.text(mission.signatureAuditeur || mission.auditeur || "____________________", W - 14, y + 10, { align: "right" });
+
+  doc.setFontSize(8); doc.setTextColor(120, 120, 120);
+  doc.text(`Généré le ${today} — EPLE Suite · M9-6 · GBCP · RGP 2022-408`, 14, H - 10);
+
+  doc.save(`Lettre_observations_${mission.budgetType}_${mission.campagne}.pdf`);
+}

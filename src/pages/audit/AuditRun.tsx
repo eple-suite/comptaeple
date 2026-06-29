@@ -26,7 +26,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { DictationButton } from "@/components/DictationButton";
 import {
   DOMAINES, controlesPourBudget, criticite, critMeta, scoreMission,
-  cartographie, planActionsAuto, constatAuto, genererRapportAudit,
+  cartographie, planActionsAuto, constatAuto, genererRapportAudit, genererLettreObservations,
   useAuditStore,
 } from "@/lib/audit";
 import type {
@@ -132,6 +132,9 @@ const AuditRun = () => {
         </Button>
         <Button variant="outline" size="sm" onClick={() => genererRapportAudit(mission)}>
           <FileText className="h-4 w-4 mr-1.5" /> Rapport PDF
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => genererLettreObservations(mission)}>
+          <FileText className="h-4 w-4 mr-1.5" /> Lettre d'observations
         </Button>
         <Button size="sm" onClick={cloturer} disabled={cloturee}>
           <Lock className="h-4 w-4 mr-1.5" /> Clôturer
