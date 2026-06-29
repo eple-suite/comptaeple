@@ -17,6 +17,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.2.0",
+    date: "2026-06-28",
+    titre: "Fiabilité & performance des données",
+    nouveautes: [
+      { tag: "Fondations", texte: "Couche d'accès aux données unifiée et mise en cache : les listes (agents, fiches Op@le) se chargent plus vite et se rafraîchissent automatiquement après modification." },
+      { tag: "Fondations", texte: "Tests automatisés des moteurs de calcul critiques (crédit nourriture, nomenclature M9-6) pour fiabiliser les chiffres." },
+    ],
+  },
+  {
     version: "1.1.0",
     date: "2026-06-28",
     titre: "Fondations & visibilité",
