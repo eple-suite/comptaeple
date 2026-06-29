@@ -17,6 +17,15 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.5.0",
+    date: "2026-06-28",
+    titre: "Audit EPLE enrichi",
+    nouveautes: [
+      { tag: "Métier", texte: "Référentiel d'audit étendu à 85 points de contrôle couvrant tous les cycles : gouvernance, dépenses/PJ, recettes/tarifs, recouvrement/prescription, régies, valeurs inactives, immobilisations, marchés, paie/vacations, logements de fonction, fonds sociaux, compte financier." },
+      { tag: "Métier", texte: "Détection automatique d'irrégularités enrichie (29 règles) : fonds social cantine versé à la famille, créance proche prescription, saucissonnage de marché, logement sans titre exécutoire, tarifs non délibérés, découvert au Trésor, etc." },
+    ],
+  },
+  {
     version: "1.4.0",
     date: "2026-06-28",
     titre: "Identité institutionnelle",
