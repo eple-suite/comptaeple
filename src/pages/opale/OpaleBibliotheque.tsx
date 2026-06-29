@@ -10,6 +10,7 @@ import {
   OPALE_MODULES, OPALE_MODULES_LABELS, type OpaleFiche, type OpaleModule, OPALE_TYPES_LABELS,
 } from "@/lib/opale/types";
 import { BadgeActualite, BadgeVersion } from "@/components/opale/StatutBadges";
+import { LoadingState, EmptyState } from "@/components/states";
 
 export default function OpaleBibliotheque() {
   const { data: fiches = [], isLoading: loading } = useFichesPubliees();
@@ -78,11 +79,9 @@ export default function OpaleBibliotheque() {
       </Card>
 
       {loading ? (
-        <p className="text-muted-foreground">Chargement...</p>
+        <LoadingState rows={6} />
       ) : filtered.length === 0 ? (
-        <Card><CardContent className="py-12 text-center text-muted-foreground">
-          Aucune fiche publiée pour le moment. Soyez le premier à contribuer !
-        </CardContent></Card>
+        <EmptyState title="Aucune fiche publiée" description="Soyez le premier à contribuer à la bibliothèque." />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((f) => (

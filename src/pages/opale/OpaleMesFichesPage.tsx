@@ -8,6 +8,7 @@ import { ArrowLeft, FileText, Plus } from "lucide-react";
 import type { OpaleFiche } from "@/lib/opale/types";
 import { OPALE_MODULES_LABELS, STATUT_PUBLICATION_LABELS } from "@/lib/opale/types";
 import { BadgeActualite } from "@/components/opale/StatutBadges";
+import { LoadingState, EmptyState } from "@/components/states";
 
 export default function OpaleMesFichesPage() {
   const { data: fiches = [], isLoading: loading } = useMesFiches();
@@ -29,7 +30,7 @@ export default function OpaleMesFichesPage() {
         <p className="text-muted-foreground">Brouillons, soumissions, publications et rejets.</p>
       </header>
 
-      {loading ? <p>Chargement…</p> : (
+      {loading ? <LoadingState rows={5} /> : (
         <Tabs defaultValue="brouillon">
           <TabsList>
             <TabsTrigger value="brouillon">Brouillons ({par("brouillon").length})</TabsTrigger>
@@ -40,7 +41,7 @@ export default function OpaleMesFichesPage() {
           {(["brouillon", "soumise", "publiee", "rejetee"] as const).map((s) => (
             <TabsContent key={s} value={s} className="space-y-3 mt-4">
               {par(s).length === 0 ? (
-                <Card><CardContent className="py-10 text-center text-muted-foreground">Aucune fiche.</CardContent></Card>
+                <EmptyState title="Aucune fiche" />
               ) : par(s).map((f) => (
                 <Card key={f.id}>
                   <CardHeader className="pb-2">
