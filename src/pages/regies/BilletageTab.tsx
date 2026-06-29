@@ -58,7 +58,7 @@ const BilletageTab = () => {
       subtitle: `${est?.name || "Établissement"} — ${est?.uai || ""}`,
     });
 
-    let y = 48;
+    const y = 48;
     doc.setFontSize(10);
     doc.setTextColor(0, 0, 0);
     doc.text(`Établissement : ${est?.name || "___________"}`, 14, y);

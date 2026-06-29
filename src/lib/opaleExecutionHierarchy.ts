@@ -387,8 +387,11 @@ function getUsableExecutionRows<T extends { service: string; domaine?: string; a
 }
 
 export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
-  const meaningfulRows = getUsableExecutionRows(rows.filter((row) => hasAnySdeAmounts(row)));
-  const sourceRows = meaningfulRows;
+  const withAmounts = rows.filter((row) => hasAnySdeAmounts(row));
+  // Cascade Op@le : si une ligne globale (TOTAL ÉTABLISSEMENT) existe, elle prime
+  // sur les services/détails — évite le double comptage global + détail.
+  const globalRows = withAmounts.filter((row) => row.aggregationLevel === "global");
+  const sourceRows = globalRows.length > 0 ? globalRows : getUsableExecutionRows(withAmounts);
   const totalBudget = sourceRows.reduce((sum, row) => sum + (row.budget || 0), 0);
   const totalRealise = sourceRows.reduce((sum, row) => sum + (row.realise || 0), 0);
   const totalForRate = totalRealise;
@@ -409,8 +412,10 @@ export function deriveSdeExecutionTotals(rows: LigneSDE[]) {
 }
 
 export function deriveSdrExecutionTotals(rows: LigneSDR[]) {
-  const meaningfulRows = getUsableExecutionRows(rows.filter((row) => hasAnySdrAmounts(row)));
-  const sourceRows = meaningfulRows;
+  const withAmounts = rows.filter((row) => hasAnySdrAmounts(row));
+  // Cascade Op@le : la ligne globale prime sur services/détails (anti double comptage).
+  const globalRows = withAmounts.filter((row) => row.aggregationLevel === "global");
+  const sourceRows = globalRows.length > 0 ? globalRows : getUsableExecutionRows(withAmounts);
   const totalBudget = sourceRows.reduce((sum, row) => sum + (row.budget || 0), 0);
   const totalRealise = sourceRows.reduce((sum, row) => sum + (row.realise || 0), 0);
   const totalForRate = totalRealise;

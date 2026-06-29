@@ -318,8 +318,9 @@ describe('3. Moteur M9-6 — Calculs réglementaires', () => {
     expect(sdrExcel[0].aggregationLevel).toBe('global');
     expect(r.totalChargesPrev).toBeCloseTo(100000, 2);
     expect(r.totalProduitsPrev).toBeCloseTo(120000, 2);
-    expect(r.tauxExecCharges).toBeCloseTo(0.65, 4);
-    expect(r.tauxExecProduits).toBeCloseTo(0.75, 4);
+    // Réalisé = mandaté/encaissé (colonne 3), budget = colonne 1 (cohérent avec le parser Op@le).
+    expect(r.tauxExecCharges).toBeCloseTo(0.52, 4);    // 52 000 / 100 000
+    expect(r.tauxExecProduits).toBeCloseTo(0.7083, 3); // 85 000 / 120 000
   });
 
   it('détecte les colonnes montant même quand l’en-tête composite place le libellé avant le numéro de colonne', () => {
