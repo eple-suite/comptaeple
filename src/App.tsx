@@ -18,6 +18,7 @@ const DataImport = lazy(() => import("./pages/DataImport"));
 const Establishments = lazy(() => import("./pages/Establishments"));
 const Nouveautes = lazy(() => import("./pages/Nouveautes"));
 const DesignSystem = lazy(() => import("./pages/DesignSystem"));
+const CentreDocumentaire = lazy(() => import("./pages/documents/CentreDocumentaire"));
 const BalanceAnalysis = lazy(() => import("./pages/BalanceAnalysis"));
 const CompteFinancier = lazy(() => import("./pages/CompteFinancier"));
 const VoyagesV2Page = lazy(() => import("./pages/voyages-v2/VoyagesV2Page"));
@@ -145,6 +146,7 @@ const App = () => (
               <Route path="/etablissements" element={<Establishments />} />
               <Route path="/nouveautes" element={<Nouveautes />} />
               <Route path="/design-system" element={<DesignSystem />} />
+              <Route path="/documents" element={<CentreDocumentaire />} />
               <Route path="/balance" element={<BalanceAnalysis />} />
               <Route path="/fonds-roulement" element={<Navigate to="/hyperale/analyse" replace />} />
               <Route path="/indicateurs" element={<Navigate to="/hyperale/analyse" replace />} />

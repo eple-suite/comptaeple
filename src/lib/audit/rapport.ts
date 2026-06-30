@@ -6,6 +6,7 @@ import autoTable from "jspdf-autotable";
 import type { AuditMission } from "./types";
 import { scoreMission, cartographie, critMeta } from "./engine";
 import { CONTROLES, domaineLabel } from "./referentiel";
+import { archiverPdf } from "@/lib/documents/archiver";
 
 const NAVY: [number, number, number] = [30, 41, 59];
 const def = (id: string) => CONTROLES.find((c) => c.id === id);
@@ -77,6 +78,14 @@ export function genererRapportAudit(mission: AuditMission) {
   doc.setFontSize(8); doc.setTextColor(120, 120, 120);
   doc.text(`Généré le ${new Date().toLocaleDateString("fr-FR")} — EPLE Suite · M9-6 · GBCP · RGP 2022-408`, 14, H - 10);
 
+  void archiverPdf(doc, {
+    type: "rapport_audit",
+    titre: `Rapport d'audit — ${mission.etablissementNom} · ${mission.campagne}`,
+    fileName: `Rapport_audit_${mission.budgetType}_${mission.campagne}.pdf`,
+    etablissementId: mission.etablissementId,
+    etablissementNom: mission.etablissementNom,
+    exercice: mission.campagne,
+  });
   doc.save(`Rapport_audit_${mission.budgetType}_${mission.campagne}.pdf`);
 }
 
@@ -151,5 +160,13 @@ export function genererLettreObservations(mission: AuditMission) {
   doc.setFontSize(8); doc.setTextColor(120, 120, 120);
   doc.text(`Généré le ${today} — EPLE Suite · M9-6 · GBCP · RGP 2022-408`, 14, H - 10);
 
+  void archiverPdf(doc, {
+    type: "lettre_observations",
+    titre: `Lettre d'observations — ${mission.etablissementNom} · ${mission.campagne}`,
+    fileName: `Lettre_observations_${mission.budgetType}_${mission.campagne}.pdf`,
+    etablissementId: mission.etablissementId,
+    etablissementNom: mission.etablissementNom,
+    exercice: mission.campagne,
+  });
   doc.save(`Lettre_observations_${mission.budgetType}_${mission.campagne}.pdf`);
 }

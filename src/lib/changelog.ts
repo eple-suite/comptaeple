@@ -17,6 +17,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.7.0",
+    date: "2026-06-28",
+    titre: "Centre documentaire",
+    nouveautes: [
+      { tag: "Documents", texte: "Nouveau Centre documentaire (/documents) : tous les actes générés sont archivés automatiquement, recherchables et ré-exportables, rattachés à l'établissement et à l'exercice. Les rapports d'audit et lettres d'observations y sont classés dès leur génération." },
+    ],
+  },
+  {
     version: "1.6.0",
     date: "2026-06-28",
     titre: "Lettre d'observations d'audit",

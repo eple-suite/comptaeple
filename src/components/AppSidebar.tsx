@@ -23,6 +23,7 @@ import {
   GraduationCap,
   ClipboardList,
   Brain,
+  Archive,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
@@ -81,6 +82,7 @@ const pilotageItems: NavItem[] = [
   { title: "Marchés publics", url: "/marches", icon: Scale },
   { title: "Habilitations Op@le", url: "/rentree/habilitations-opale", icon: ShieldCheck, hot: true },
   { title: "Enquêtes Rectorat", url: "/enquetes-rectorat", icon: ClipboardList, hot: true },
+  { title: "Centre documentaire", url: "/documents", icon: Archive },
 ];
 
 const ressourcesItems: NavItem[] = [
