@@ -10,6 +10,7 @@ import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { formatCurrency } from "@/lib/mockData";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
 import { useRegiesStore } from "@/lib/regies/store";
+import { archiverPdf } from "@/lib/documents/archiver";
 import autoTable from "jspdf-autotable";
 
 const DENOMINATIONS = [
@@ -113,8 +114,10 @@ const BilletageTab = () => {
     doc.setFontSize(7);
     doc.text("Réf. : M9.6 — Recueil des régies 2023 — Décret 2012-1246 art. 22 et 23", 14, sigY + 34);
 
+    const fileName = `PV_caisse_${new Date().toISOString().split("T")[0]}.pdf`;
+    void archiverPdf(doc, { type: "pv_caisse", titre: `PV d'arrêté de caisse — ${est?.name ?? "Établissement"}`, fileName, etablissementId: est?.id, etablissementNom: est?.name });
     if (print) printPDF(doc);
-    else savePDF(doc, `PV_caisse_${new Date().toISOString().split("T")[0]}.pdf`);
+    else savePDF(doc, fileName);
   };
 
   return (

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { createStyledPDF, savePDF } from "@/lib/pdfUtils";
 import { useRegiesStore, type TypeRegie } from "@/lib/regies/store";
+import { archiverPdf } from "@/lib/documents/archiver";
 
 const TYPES_REGIE: Record<TypeRegie, { label: string; plafond: string; desc: string }> = {
   avances_menues: { label: "Régie d'avances — Menues dépenses", plafond: "1 000 €", desc: "Dépenses courantes de fonctionnement < seuil réglementaire" },
@@ -106,7 +107,9 @@ const ModelesRegieTab = () => {
     doc.setTextColor(140, 140, 140);
     doc.text("Document généré par Cockpit Comptable EPLE — Conforme M9.6 2026 — Décret 2012-1246", 14, y + 16);
 
-    savePDF(doc, `acte_regie_${typeRegie}_${new Date().toISOString().split("T")[0]}.pdf`);
+    const fileName = `acte_regie_${typeRegie}_${new Date().toISOString().split("T")[0]}.pdf`;
+    void archiverPdf(doc, { type: "acte_regie", titre: `Acte constitutif de régie (${typeRegie}) — ${est?.name ?? "Établissement"}`, fileName, etablissementId: est?.id, etablissementNom: est?.name });
+    savePDF(doc, fileName);
   };
 
   const genererPVInventaire = () => {
@@ -166,7 +169,9 @@ const ModelesRegieTab = () => {
     doc.setTextColor(140, 140, 140);
     doc.text("Réf. : M9.6 — Recueil des régies 2023 — Décret 2012-1246 art. 22 et 23", 14, y + 16);
 
-    savePDF(doc, `PV_inventaire_caisse_${new Date().toISOString().split("T")[0]}.pdf`);
+    const fileName = `PV_inventaire_caisse_${new Date().toISOString().split("T")[0]}.pdf`;
+    void archiverPdf(doc, { type: "pv_caisse", titre: `PV d'inventaire de caisse — ${est?.name ?? "Établissement"}`, fileName, etablissementId: est?.id, etablissementNom: est?.name });
+    savePDF(doc, fileName);
   };
 
   return (

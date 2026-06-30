@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { formatCurrency } from "@/lib/mockData";
 import { createStyledPDF, savePDF, printPDF } from "@/lib/pdfUtils";
+import { archiverPdf } from "@/lib/documents/archiver";
 import { useRegiesStore } from "@/lib/regies/store";
 import autoTable from "jspdf-autotable";
 
@@ -90,8 +91,10 @@ const JournalCaisseTab = () => {
     doc.setFontSize(7);
     doc.text("Réf. : M9.6 — Instruction codificatrice 2026 — Décret 2012-1246", 14, y + 50);
 
+    const fileName = `journal_caisse_${new Date().toISOString().split("T")[0]}.pdf`;
+    void archiverPdf(doc, { type: "autre", titre: `Journal de caisse — ${est?.name ?? "Établissement"}`, fileName, etablissementId: est?.id, etablissementNom: est?.name });
     if (print) printPDF(doc);
-    else savePDF(doc, `journal_caisse_${new Date().toISOString().split("T")[0]}.pdf`);
+    else savePDF(doc, fileName);
   };
 
   const months = useMemo(() => {
