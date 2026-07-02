@@ -1,6 +1,7 @@
 // PV de vérification généré PAR contrôle interne (PDF horodaté, archivable).
 import jsPDF from "jspdf";
 import type { PointControle } from "./store";
+import { archiverPdf } from "@/lib/documents/archiver";
 
 const NAVY: [number, number, number] = [30, 41, 59];
 const STATUT_LABEL: Record<string, string> = {
@@ -40,5 +41,7 @@ export function genererPvControle(c: PointControle, etablissement?: string, agen
   doc.text(`Fait le ${new Date().toLocaleDateString("fr-FR")}`, W - 14, y, { align: "right" });
   doc.text("Signature :", W - 14, y + 16, { align: "right" });
 
-  doc.save(`PV_controle_${c.processus.split(" ")[0]}_${(c.dateControle || "").slice(0, 10) || "draft"}.pdf`);
+  const fileName = `PV_controle_${c.processus.split(" ")[0]}_${(c.dateControle || "").slice(0, 10) || "draft"}.pdf`;
+  void archiverPdf(doc, { type: "pv_controle", titre: `PV de contrôle interne — ${c.processus}`, fileName, etablissementNom: etablissement });
+  doc.save(fileName);
 }

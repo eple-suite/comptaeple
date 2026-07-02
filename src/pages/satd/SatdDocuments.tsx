@@ -7,6 +7,7 @@ import { formatCurrency } from "@/lib/mockData";
 import { FileText, Download, Printer } from "lucide-react";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { archiverPdf } from "@/lib/documents/archiver";
 
 interface Props {
   satds: Satd[];
@@ -58,7 +59,9 @@ export default function SatdDocuments({ satds, tiers }: Props) {
     doc.text("Veuillez agréer, Madame, Monsieur, mes salutations distinguées.", 20, y + 30);
     doc.text("L'Agent Comptable", 130, y + 50);
 
-    doc.save(`satd_lettre_tiers_${satd.reference}.pdf`);
+    const fileName = `satd_lettre_tiers_${satd.reference}.pdf`;
+    void archiverPdf(doc, { type: "acte_recouvrement", titre: `SATD ${satd.reference} — Lettre au tiers détenteur (${satd.debiteur})`, fileName, etablissementNom: satd.organisme });
+    doc.save(fileName);
   };
 
   const genererLettreDebiteur = (satd: Satd) => {
@@ -97,7 +100,9 @@ export default function SatdDocuments({ satds, tiers }: Props) {
     doc.text("de votre domicile.", 20, y + 32);
     doc.text("L'Agent Comptable", 130, y + 50);
 
-    doc.save(`satd_lettre_debiteur_${satd.reference}.pdf`);
+    const fileName = `satd_lettre_debiteur_${satd.reference}.pdf`;
+    void archiverPdf(doc, { type: "acte_recouvrement", titre: `SATD ${satd.reference} — Notification au débiteur (${satd.debiteur})`, fileName, etablissementNom: satd.organisme });
+    doc.save(fileName);
   };
 
   const genererBordereauRecap = (satd: Satd) => {
@@ -140,7 +145,9 @@ export default function SatdDocuments({ satds, tiers }: Props) {
       styles: { fontSize: 7 },
     });
 
-    doc.save(`satd_bordereau_${satd.reference}.pdf`);
+    const fileName = `satd_bordereau_${satd.reference}.pdf`;
+    void archiverPdf(doc, { type: "acte_recouvrement", titre: `SATD ${satd.reference} — Bordereau récapitulatif (${satd.debiteur})`, fileName, etablissementNom: satd.organisme });
+    doc.save(fileName);
   };
 
   const genererAvisAvantPoursuites = (satd: Satd) => {
@@ -170,7 +177,9 @@ export default function SatdDocuments({ satds, tiers }: Props) {
     doc.setFontSize(7);
     doc.text("Art. L. 1617-5 al. 4 du CGCT — Envoi obligatoire avant toute poursuite", 20, 270);
 
-    doc.save(`avis_avant_poursuites_${satd.reference}.pdf`);
+    const fileName = `avis_avant_poursuites_${satd.reference}.pdf`;
+    void archiverPdf(doc, { type: "acte_recouvrement", titre: `Avis avant poursuites ${satd.reference} — ${satd.debiteur}`, fileName, etablissementNom: satd.organisme });
+    doc.save(fileName);
   };
 
   const genererDemandeFicoba = (satd: Satd) => {
@@ -196,7 +205,9 @@ export default function SatdDocuments({ satds, tiers }: Props) {
     doc.setFontSize(7);
     doc.text("Art. L. 151 A du LPF — Droit de communication du comptable public", 20, 270);
 
-    doc.save(`demande_ficoba_${satd.reference}.pdf`);
+    const fileName = `demande_ficoba_${satd.reference}.pdf`;
+    void archiverPdf(doc, { type: "acte_recouvrement", titre: `Demande FICOBA ${satd.reference} — ${satd.debiteur}`, fileName, etablissementNom: satd.organisme });
+    doc.save(fileName);
   };
 
   const genererDemandeAutorisation = (satd: Satd) => {
@@ -230,7 +241,9 @@ export default function SatdDocuments({ satds, tiers }: Props) {
     doc.text("Signature : ____________________", 120, 219);
     doc.setFontSize(7);
     doc.text("Art. L. 1617-5 al. 2 du CGCT — Autorisation préalable obligatoire", 20, 270);
-    doc.save(`demande_autorisation_${satd.reference}.pdf`);
+    const fileName = `demande_autorisation_${satd.reference}.pdf`;
+    void archiverPdf(doc, { type: "acte_recouvrement", titre: `Demande d'autorisation de poursuites ${satd.reference} — ${satd.debiteur}`, fileName, etablissementNom: satd.organisme });
+    doc.save(fileName);
   };
 
   const genererMainlevee = (satd: Satd) => {
@@ -253,7 +266,9 @@ export default function SatdDocuments({ satds, tiers }: Props) {
     doc.text(`à l'encontre de ${satd.debiteur} est levée.`, 20, 125);
     doc.text("Cette mainlevée prend effet à compter de la réception de la présente.", 20, 138);
     doc.text("L'Agent Comptable", 130, 170);
-    doc.save(`mainlevee_${satd.reference}.pdf`);
+    const fileName = `mainlevee_${satd.reference}.pdf`;
+    void archiverPdf(doc, { type: "acte_recouvrement", titre: `Mainlevée SATD ${satd.reference} — ${satd.debiteur}`, fileName, etablissementNom: satd.organisme });
+    doc.save(fileName);
   };
 
   const genererRegistreComplet = () => {
@@ -279,7 +294,9 @@ export default function SatdDocuments({ satds, tiers }: Props) {
       headStyles: { fontSize: 7 },
     });
 
-    doc.save("registre_satd.pdf");
+    const fileName = "registre_satd.pdf";
+    void archiverPdf(doc, { type: "acte_recouvrement", titre: `Registre des SATD — extrait au ${new Date().toLocaleDateString("fr-FR")}`, fileName });
+    doc.save(fileName);
   };
 
   const satdsAvecDocuments = satds.filter(s => s.statut !== "relance");

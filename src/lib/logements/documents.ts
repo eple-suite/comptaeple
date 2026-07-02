@@ -6,6 +6,7 @@ import autoTable from "jspdf-autotable";
 import type { Logement, ReleveConso } from "./types";
 import { CONCESSION_LABELS, FLUIDE_LABELS } from "./types";
 import { decompteAnnuel, montantTitre } from "./engine";
+import { archiverPdf } from "@/lib/documents/archiver";
 
 const NAVY: [number, number, number] = [30, 41, 59];
 const eur = (n: number) => (n ?? 0).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
@@ -40,7 +41,9 @@ export function arreteConcession(l: Logement, etab: string, signataire = "Le Che
   lignes.forEach((t) => { const s = doc.splitTextToSize(t, W - 28); doc.text(s, 14, y); y += s.length * 6 + 1; });
   doc.text(`Fait à ${etab}, le ${new Date().toLocaleDateString("fr-FR")}`, W - 14, y + 8, { align: "right" });
   doc.text(signataire, W - 14, y + 22, { align: "right" });
-  doc.save(fichier(l, "Arrete-concession"));
+  const fileName = fichier(l, "Arrete-concession");
+  void archiverPdf(doc, { type: "autre", titre: `Arrêté de concession — ${l.libelle}`, fileName, etablissementNom: etab });
+  doc.save(fileName);
 }
 
 export function titreExecutoire(l: Logement, etab: string, mois = 12, periode = "") {
@@ -64,7 +67,9 @@ export function titreExecutoire(l: Logement, etab: string, mois = 12, periode = 
   const y = (doc as any).lastAutoTable.finalY + 12;
   doc.setFontSize(9);
   doc.text("Pièce à rapprocher de l'ordre de recettes émis dans Op@le (compte de redevances).", 14, y);
-  doc.save(fichier(l, "Titre-executoire"));
+  const fileName = fichier(l, "Titre-executoire");
+  void archiverPdf(doc, { type: "titre_executoire", titre: `Titre exécutoire logement — ${l.occupantNom} (${l.libelle})`, fileName, etablissementNom: etab });
+  doc.save(fileName);
 }
 
 export function decomptePdf(l: Logement, releves: ReleveConso[], annee: number, etab: string) {
@@ -88,5 +93,7 @@ export function decomptePdf(l: Logement, releves: ReleveConso[], annee: number, 
   ligne("Charges réelles", eur(d.chargesReelles));
   ligne("Provisions appelées", eur(d.provisionsAppelees));
   ligne(d.regularisation >= 0 ? "Solde à recouvrer auprès de l'occupant" : "Solde à restituer à l'occupant", eur(Math.abs(d.regularisation)), true);
-  doc.save(fichier(l, `Decompte-charges-${annee}`));
+  const fileName = fichier(l, `Decompte-charges-${annee}`);
+  void archiverPdf(doc, { type: "decompte_charges", titre: `Décompte de charges ${annee} — ${l.libelle}`, fileName, etablissementNom: etab, exercice: annee });
+  doc.save(fileName);
 }

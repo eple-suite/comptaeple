@@ -3,6 +3,7 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { ValeurInactive, MouvementVI, ControleVI } from "./store";
 import { TYPE_VALEUR_LABELS, stockTheorique, valeurStock, totalRegistre } from "./store";
+import { archiverPdf } from "@/lib/documents/archiver";
 
 const NAVY: [number, number, number] = [30, 41, 59];
 const eur = (n: number) => (n ?? 0).toLocaleString("fr-FR", { style: "currency", currency: "EUR" });
@@ -47,5 +48,12 @@ export function genererPvValeursInactives(
   doc.text(`Contrôle effectué par l'agent comptable : ${agent || "—"}`, 14, y);
   doc.text(`Fait le ${new Date().toLocaleDateString("fr-FR")}`, W - 14, y, { align: "right" });
   doc.text("Signature :", W - 14, y + 16, { align: "right" });
-  doc.save(`Registre_valeurs_inactives_P503_${new Date().toISOString().slice(0, 10)}.pdf`);
+  const fileName = `Registre_valeurs_inactives_P503_${new Date().toISOString().slice(0, 10)}.pdf`;
+  void archiverPdf(doc, {
+    type: "autre",
+    titre: `Registre des valeurs inactives (P503) — ${etablissement || "Établissement"}`,
+    fileName,
+    etablissementNom: etablissement,
+  });
+  doc.save(fileName);
 }

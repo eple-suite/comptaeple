@@ -7,7 +7,8 @@ import { persist } from "zustand/middleware";
 
 export type TypeDocument =
   | "rapport_audit" | "lettre_observations" | "pv_caisse" | "acte_regie"
-  | "pv_controle" | "titre_executoire" | "decompte_charges" | "autre";
+  | "pv_controle" | "titre_executoire" | "decompte_charges"
+  | "acte_recouvrement" | "autre";
 
 export const TYPE_DOCUMENT_LABELS: Record<TypeDocument, string> = {
   rapport_audit: "Rapport d'audit",
@@ -17,6 +18,7 @@ export const TYPE_DOCUMENT_LABELS: Record<TypeDocument, string> = {
   pv_controle: "PV de contrôle interne",
   titre_executoire: "Titre exécutoire",
   decompte_charges: "Décompte de charges",
+  acte_recouvrement: "Acte de recouvrement (SATD)",
   autre: "Autre",
 };
 

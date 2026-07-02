@@ -17,6 +17,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.8.0",
+    date: "2026-07-02",
+    titre: "Archivage étendu au Centre documentaire",
+    nouveautes: [
+      { tag: "Documents", texte: "L'archivage automatique couvre désormais le registre des valeurs inactives (P503), les actes logements (arrêté de concession, titre exécutoire, décompte de charges), le PV de contrôle interne et l'ensemble des actes de recouvrement SATD (avis avant poursuites, demande d'autorisation, lettres débiteur/tiers, bordereau, FICOBA, mainlevée, registre). Nouveau type « Acte de recouvrement » filtrable dans le Centre documentaire." },
+    ],
+  },
+  {
     version: "1.7.0",
     date: "2026-06-28",
     titre: "Centre documentaire",
