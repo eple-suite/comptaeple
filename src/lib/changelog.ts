@@ -17,6 +17,14 @@ export interface Release {
 
 export const CHANGELOG: Release[] = [
   {
+    version: "1.9.0",
+    date: "2026-07-02",
+    titre: "Page d'état du service",
+    nouveautes: [
+      { tag: "Fondations", texte: "Nouvelle page publique /status : health check de la configuration (variables d'environnement), de la joignabilité du backend Supabase et de la session d'authentification, avec version applicative en cours. Accessible sans être connecté pour diagnostiquer rapidement une panne." },
+    ],
+  },
+  {
     version: "1.8.0",
     date: "2026-07-02",
     titre: "Archivage étendu au Centre documentaire",

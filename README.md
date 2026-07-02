@@ -15,7 +15,7 @@ Conforme à l'instruction budgétaire et comptable **M9-6**, au **GBCP** (décre
 | Backend | Supabase (PostgreSQL + Edge Functions Deno) |
 | Hébergement | Vercel |
 
-Volumétrie du dépôt : **158 pages** (`src/pages/`, 85 routes déclarées dans `App.tsx`), **175 composants**, **11 Edge Functions** Supabase et **63 migrations** SQL.
+Volumétrie du dépôt : **166 pages** (`src/pages/`, 92 routes déclarées dans `App.tsx`), **185 composants**, **12 Edge Functions** Supabase et **69 migrations** SQL.
 
 ---
 
@@ -60,8 +60,8 @@ Les variables sont préfixées `VITE_` (exposées au client par Vite). Renseigne
 
 ```
 src/
-├── pages/          # 158 pages (routes applicatives)
-├── components/     # 175 composants
+├── pages/          # 166 pages (routes applicatives)
+├── components/     # 185 composants
 │   ├── ui/         #   primitives shadcn/ui
 │   ├── auth/       #   authentification
 │   ├── balance/    #   balance comptable
@@ -84,8 +84,8 @@ src/
 
 supabase/
 ├── config.toml     # project_id
-├── functions/      # 11 Edge Functions Deno (+ _shared)
-└── migrations/     # 63 migrations SQL
+├── functions/      # 12 Edge Functions Deno (+ _shared)
+└── migrations/     # 69 migrations SQL
 ```
 
 ---

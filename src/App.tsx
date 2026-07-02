@@ -94,6 +94,7 @@ const OpaleCguPage = lazy(() => import("./pages/opale/OpaleCguPage"));
 const Auth = lazy(() => import("./pages/Auth"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const StatusPage = lazy(() => import("./pages/StatusPage"));
 const AuditHub = lazy(() => import("./pages/audit/AuditHub"));
 const AuditRun = lazy(() => import("./pages/audit/AuditRun"));
 
@@ -139,6 +140,7 @@ const App = () => (
           <Routes>
             <Route path="/auth" element={<PublicRoute><Auth /></PublicRoute>} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/status" element={<StatusPage />} />
             <Route element={<ProtectedRoute><EstablishmentProvider><AppLayout /></EstablishmentProvider></ProtectedRoute>}>
               <Route path="/" element={<Dashboard />} />
               <Route path="/demo" element={<Demo />} />
