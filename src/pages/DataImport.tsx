@@ -27,6 +27,7 @@ import { selectOpaleBalanceSheet } from "@/lib/opaleWorkbook";
 import { selectOpaleSdeSdrSheet, parseSdeRows, parseSdrRows } from "@/lib/opaleSdeSdrParser";
 import { useEstablishment } from "@/contexts/EstablishmentContext";
 import { persistImport } from "@/lib/import/importService";
+import { ingestOpaleWorkbookIntoStore, recomputeCofieple, type IngestKind } from "@/lib/import/cofiepleBridge";
 import { DropZoneMulti } from "@/components/import/DropZoneMulti";
 import { CrossValidationPanel } from "@/components/import/CrossValidationPanel";
 import { HistoriqueImports } from "@/components/import/HistoriqueImports";
@@ -306,9 +307,23 @@ const DataImport = () => {
         anomalies: pf.anomalies,
       });
       setFiles((prev) => prev.map((f) => f.id === pf.id ? { ...f, status: 'imported' } : f));
+
+      // Alimente aussi le hub COFIEPLE (balance/SDE/SDR) → Compte financier,
+      // HYPER@LE et Analyse de balance se mettent à jour sans ré-import.
+      let ingere = false;
+      if ((['balance', 'sde', 'sdr'] as const).includes(type as IngestKind)) {
+        try {
+          const wb = XLSX.read(await pf.file.arrayBuffer(), { type: 'array' });
+          if (ingestOpaleWorkbookIntoStore(wb, type as IngestKind)) {
+            recomputeCofieple();
+            ingere = true;
+          }
+        } catch { /* ingestion best-effort : n'interrompt pas l'archivage */ }
+      }
+
       toast({
         title: 'Import archivé',
-        description: `${pf.file.name} — ${IMPORT_TYPE_LABELS[type]} • ${result.ecraseCount > 0 ? `${result.ecraseCount} version(s) précédente(s) marquée(s) écrasée(s)` : 'aucune version précédente'}.`,
+        description: `${pf.file.name} — ${IMPORT_TYPE_LABELS[type]} • ${result.ecraseCount > 0 ? `${result.ecraseCount} version(s) précédente(s) marquée(s) écrasée(s)` : 'aucune version précédente'}.${ingere ? ' Données disponibles dans Compte financier et HYPER@LE.' : ''}`,
       });
     } catch (err) {
       toast({

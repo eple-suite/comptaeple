@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { ExpectedFilesGuide } from '@/components/import/ExpectedFilesGuide';
+import { Link } from 'react-router-dom';
+import { useCofiepleStore } from '@/store/useCofiepleStore';
 
 type ImportStatus = 'idle' | 'parsing' | 'preview' | 'done' | 'error';
 
@@ -25,6 +27,11 @@ export default function HyperaleImport() {
   const addEtablissement = useHyperaleStore(s => s.addEtablissement);
   const updateDonnees = useHyperaleStore(s => s.updateDonnees);
   const etablissements = useHyperaleStore(s => s.etablissements);
+
+  // Le hub COFIEPLE (alimenté par « Import des données » ou « Compte financier »)
+  // alimente déjà HYPER@LE automatiquement — inutile de ré-importer ici.
+  const resultatsHub = useCofiepleStore(s => s.resultats);
+  const hubAlimente = !!(resultatsHub.principal && (resultatsHub.principal.fdrBas || resultatsHub.principal.fdrHaut || resultatsHub.principal.tresorerie));
 
   const processFile = useCallback(async (file: File) => {
     setFileName(file.name);
@@ -119,6 +126,29 @@ export default function HyperaleImport() {
           Chargez un fichier exporté depuis Op@le pour alimenter les indicateurs financiers.
         </p>
       </div>
+
+      {/* Rappel : la balance/SDE/SDR importée dans « Import des données » alimente
+          déjà HYPER@LE via le hub COFIEPLE — pas besoin de ré-importer ici. */}
+      {hubAlimente ? (
+        <div className="flex items-start gap-2 rounded-lg border border-green-500/30 bg-green-500/10 p-3 text-sm">
+          <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0 mt-0.5" />
+          <p className="text-foreground">
+            Des données sont déjà disponibles (importées via « Import des données » ou « Compte financier ») et
+            alimentent automatiquement HYPER@LE. Cet import n'est utile que pour un <strong>fichier consolidé
+            pluriannuel multi-établissements</strong> (voir ci-dessous).
+          </p>
+        </div>
+      ) : (
+        <div className="flex items-start gap-2 rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+          <Info className="h-4 w-4 text-primary shrink-0 mt-0.5" />
+          <p className="text-foreground">
+            La balance, le SDE et le SDR importés dans{' '}
+            <Link to="/import" className="font-semibold text-primary underline underline-offset-2">Import des données</Link>{' '}
+            alimentent automatiquement HYPER@LE. Cet écran ne sert qu'à charger un <strong>fichier consolidé
+            pluriannuel</strong> (indicateurs déjà calculés) pour comparer plusieurs EPLE.
+          </p>
+        </div>
+      )}
 
       {/* Drop zone */}
       {(status === 'idle' || status === 'error') && (
